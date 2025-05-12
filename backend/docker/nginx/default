@@ -1,0 +1,126 @@
+server {
+    # 将 HTTP 重定向到 HTTPS
+    listen 80;
+    server_name securityshare.xyz www.securityshare.xyz;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;      # 监听 TCP 端口 443，支持 HTTP/2 和 SSL
+    listen 443 quic reuseport; # 监听 UDP 端口 443，用于 QUIC 和 HTTP/3
+    # 'reuseport' 允许多个 worker 进程共享同一个端口，推荐用于 QUIC
+
+    # 确保 SSL 协议至少包含 TLSv1.3，因为 HTTP/3 要求 TLSv1.3
+    ssl_protocols TLSv1.3 TLSv1.2; # 确保 TLSv1.3 在前面
+
+    # 添加 HTTP/3 特定的头部，告知浏览器 HTTP/3 可用
+    # Alt-Svc (Alternative Service) 头部
+    # h3=":443" 表示 HTTP/3 在当前域名和 443 端口上可用
+    # ma=86400 表示这个信息缓存 24 小时 (86400 秒)
+    add_header Alt-Svc 'h3=":443"; ma=86400';
+
+    # (可选，但推荐) 启用 0-RTT 数据，可以进一步减少延迟
+    # 需要客户端和服务器都支持
+    ssl_early_data on;
+
+    server_name securityshare.xyz www.securityshare.xyz;
+
+    # SSL 配置
+    ssl_certificate /etc/letsencrypt/live/securityshare.xyz/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/securityshare.xyz/privkey.pem;
+    
+    # SSL 优化
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_session_tickets off;
+
+    # 现代配置
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+
+    # HSTS (谨慎启用)
+    # add_header Strict-Transport-Security "max-age=63072000" always;
+    
+    # 定义前端构建产物在容器内的根路径
+    # !!! 重要: 请将此路径修改为您的前端项目构建后在Nginx容器内的实际路径 !!!
+    set $frontend_build_root /home/ubuntu/workdir_atbj/clipboard_web;
+
+    # 1. 优先处理 Next.js 的核心静态资源 (_next/static)
+    location /_next/static/ {
+        alias $frontend_build_root/.next/static/;
+        expires 365d;             # 长时间缓存
+        access_log off;           # 关闭此路径的访问日志
+        add_header Cache-Control "public"; # 明确告知浏览器可以公开缓存
+    }
+
+    # WebSocket 信令服务器配置
+    location /socket.io/ {
+        proxy_pass http://localhost:3001/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # CORS 配置
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
+
+        # WebSocket 相关优化
+        proxy_read_timeout 86400;     # 24h
+        proxy_send_timeout 86400;     # 24h
+        proxy_connect_timeout 7d;
+        proxy_buffering off;
+    }
+    # 后端API地址--转发
+    location /api/ {
+        proxy_pass http://localhost:3001/api/; # 后端API地址--转发
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # 修改 CORS 配置，只设置一个 Origin
+        add_header Access-Control-Allow-Origin "https://www.securityshare.xyz" always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range" always;
+        add_header Access-Control-Allow-Credentials "true" always;
+        
+    }
+    # Next.js 图片优化服务 (通常由 Next.js 应用处理)
+    location /_next/image {
+        proxy_pass http://localhost:3000; # 指向 Next.js 应用
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+    # 2. 处理 public 目录下的静态文件和 Next.js 动态请求
+    #    这个 location 应该在特定代理 (如 /api/, /socket.io/) 之后，
+    #    但在 /_next/static/ 之前或之后都可以，因为它们匹配不同的路径。
+    #    为了清晰，我们把它放在这里。
+    location / {
+        # root 指向 public 目录的父目录，即前端构建产物的根目录
+        root $frontend_build_root/public;
+
+        # 尝试按顺序查找文件:
+        # 1. $uri: 作为 public 目录下的文件 (例如 /image.png -> $frontend_build_root/public/image.png)
+        # 2. $uri/: 作为 public 目录下的目录 (通常不直接用于 Next.js public 文件)
+        # 3. @nextjs: 如果以上都未找到，则将请求传递给 Next.js 应用处理
+        try_files $uri $uri/ @nextjs_app;
+    }
+    # 命名 location, 用于将请求代理到 Next.js 应用
+    location @nextjs_app {
+        proxy_pass http://localhost:3000; # 指向 Next.js 应用
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}

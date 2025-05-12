@@ -1,0 +1,24 @@
+{
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development tsx watch src/server.ts",
+    "build": "rimraf dist && tsc",
+    "start": "cross-env NODE_ENV=production node dist/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "ioredis": "^5.4.1",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.4",
+    "cross-env": "^7.0.3",
+    "rimraf": "^6.0.1",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
