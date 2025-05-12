@@ -1,7 +1,7 @@
-import { Router, RequestHandler } from 'express';
-import { redis } from '../services/redis';
-import * as roomService from '../services/room';
-import { ReferrerTrack, LogMessage } from '../types/room';
+import { Router, RequestHandler } from "express";
+import { redis } from "../services/redis";
+import * as roomService from "../services/room";
+import { ReferrerTrack, LogMessage } from "../types/room";
 
 const router = Router();
 
@@ -15,10 +15,13 @@ interface CheckRoomRequest {
 }
 
 // 创建房间的路由处理函数
-const createRoomHandler: RequestHandler<{}, any, CreateRoomRequest> = async (req, res) => {
+const createRoomHandler: RequestHandler<{}, any, CreateRoomRequest> = async (
+  req,
+  res
+) => {
   const { roomId } = req.body;
   if (!roomId) {
-    res.status(400).json({ error: 'Room ID is required' });
+    res.status(400).json({ error: "Room ID is required" });
     return;
   }
 
@@ -26,7 +29,7 @@ const createRoomHandler: RequestHandler<{}, any, CreateRoomRequest> = async (req
     const exists = await roomService.isRoomExist(roomId);
     const response = {
       success: !exists,
-      message: exists ? 'roomId is already exists' : 'create room success'
+      message: exists ? "roomId is already exists" : "create room success",
     };
 
     if (!exists) {
@@ -35,8 +38,8 @@ const createRoomHandler: RequestHandler<{}, any, CreateRoomRequest> = async (req
 
     res.json(response);
   } catch (error) {
-    console.error('Error checking room:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error checking room:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -47,16 +50,19 @@ const getRoomHandler: RequestHandler = async (req, res) => {
     await roomService.createRoom(roomId);
     res.json({ roomId });
   } catch (error) {
-    console.error('Error getting room:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error getting room:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // 检查房间的路由处理函数
-const checkRoomHandler: RequestHandler<{}, any, CheckRoomRequest> = async (req, res) => {
+const checkRoomHandler: RequestHandler<{}, any, CheckRoomRequest> = async (
+  req,
+  res
+) => {
   const { roomId } = req.body;
   if (!roomId) {
-    res.status(400).json({ error: 'Room ID is required' });
+    res.status(400).json({ error: "Room ID is required" });
     return;
   }
 
@@ -64,60 +70,62 @@ const checkRoomHandler: RequestHandler<{}, any, CheckRoomRequest> = async (req, 
     const exists = await roomService.isRoomExist(roomId);
     res.json({ available: !exists });
   } catch (error) {
-    console.error('Error checking room:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error checking room:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // 设置跟踪的路由处理函数
-const setTrackHandler: RequestHandler<{}, any, ReferrerTrack> = async (req, res) => {
-  if (req.method !== 'POST') {
-    res.status(405).json({ message: 'Method not allowed' });
+const setTrackHandler: RequestHandler<{}, any, ReferrerTrack> = async (
+  req,
+  res
+) => {
+  if (req.method !== "POST") {
+    res.status(405).json({ message: "Method not allowed" });
     return;
   }
 
   try {
     const { ref, timestamp, path } = req.body;
     // 按日期统计
-    const date = new Date(timestamp).toISOString().split('T')[0];
-    //"referrers:daily:2024-01-20" : { "producthunt": "5", "twitter": "3" }
+    const date = new Date(timestamp).toISOString().split("T")[0];
     const dailyKey = `referrers:daily:${date}`;
     const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
 
-     // 使用MULTI确保hincrby和expire的原子性
-     await redis.multi()
-     .hincrby(dailyKey, ref, 1) // \"referrers:daily:2024-01-20\" : { \"producthunt\": \"5\", \"twitter\": \"3\" }
-     .expire(dailyKey, thirtyDaysInSeconds) // 设置30天过期
-     .exec();
-     
-    await redis.hincrby(`referrers:daily:${date}`, ref, 1);
-    //"referrers:sources" : ["producthunt", "twitter", ...]  // 来源集合
-    await redis.sadd('referrers:sources', ref);
-    
+    // 使用MULTI确保hincrby和expire的原子性
+    await redis
+      .multi()
+      .hincrby(dailyKey, ref, 1) // \"referrers:daily:2024-01-20\" : { \"producthunt\": \"5\", \"twitter\": \"3\" }
+      .expire(dailyKey, thirtyDaysInSeconds) // 设置30天过期
+      .exec();
+
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error('Track API Error:', error);
-    res.status(500).json({ success: false, error: 'Failed to track referrer' });
+    console.error("Track API Error:", error);
+    res.status(500).json({ success: false, error: "Failed to track referrer" });
   }
 };
 
 // 日志调试的路由处理函数
-const logsDebugHandler: RequestHandler<{}, any, LogMessage> = async (req, res) => {
+const logsDebugHandler: RequestHandler<{}, any, LogMessage> = async (
+  req,
+  res
+) => {
   try {
     const { message, timestamp } = req.body;
     console.log(`logs----timestamp:${timestamp} message:${message}`);
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error('Error checking room:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Error checking room:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
 // 注册路由
-router.post('/api/creat_room', createRoomHandler);
-router.get('/api/get_room', getRoomHandler);
-router.post('/api/check_room', checkRoomHandler);
-router.post('/api/set_track', setTrackHandler);
-router.post('/api/logs_debug', logsDebugHandler);
+router.post("/api/creat_room", createRoomHandler);
+router.get("/api/get_room", getRoomHandler);
+router.post("/api/check_room", checkRoomHandler);
+router.post("/api/set_track", setTrackHandler);
+router.post("/api/logs_debug", logsDebugHandler);
 
 export default router;
