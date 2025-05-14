@@ -1,3 +1,18 @@
+/**
+ * Redis Data Structures Used by setTrackHandler:
+ * 
+ * 1. Daily Referrer Counts:
+ *    - Key Pattern: `referrers:daily:<YYYY-MM-DD>` (e.g., "referrers:daily:2024-03-15")
+ *    - Type: Hash
+ *    - Fields: Referrer source string (e.g., "producthunt", "twitter").
+ *    - Values: Count of referrals from that source for that day.
+ *    - TTL: Set to 30 days upon creation or update.
+ *    - Operations: 
+ *      - `HINCRBY`: Increments the count for a specific referrer for the given day.
+ *      - `EXPIRE`: Sets/refreshes the 30-day TTL for the daily statistics key.
+ *      - These operations are performed within a `MULTI` transaction.
+ * 
+ */
 import { Router, RequestHandler } from "express";
 import { redis } from "../services/redis";
 import * as roomService from "../services/room";
