@@ -13,7 +13,7 @@ export function setupSocketHandlers(io: Server): void {
     console.log('New client connected:', socket.id);
 
     socket.on('join', async (data: JoinData) => {
-      const { roomId } = data;
+      const { roomId: targetRoomId } = data; // Renamed for clarity
       try {
         // 获取客户端IP
         const clientIp = socket.handshake.headers['x-forwarded-for'] || 
@@ -23,42 +23,29 @@ export function setupSocketHandlers(io: Server): void {
         if (!rateLimitCheck.allowed) {
           socket.emit('joinResponse', {
             success: false,
-            message: `Rate limit exceeded. Please try again in ${rateLimitCheck.resetAfter} seconds. ` +
-                    `You have ${rateLimitCheck.remaining} attempts remaining.`,
-            roomId: roomId
+            message: `Rate limit exceeded. Try again in ${rateLimitCheck.resetAfter}s. Attempts left: ${rateLimitCheck.remaining}.`,
+            roomId: targetRoomId
           });
           return;
         }
-        const roomExist = await roomService.isRoomExist(roomId);
-        console.log(`room ${roomId} roomExist:${roomExist}`);
-
-        if (roomExist) {//房间存在
-          const existingRoomId = await roomService.getRoomBySocketId(socket.id);
-          if (!existingRoomId) {//socket.id不在房间里面 才允许新连接进入房间
-            socket.join(roomId);
-            console.log(`Client ${socket.id} joined room ${roomId}`);
-            await roomService.bindSocketToRoom(socket.id, roomId);
-          }
-          
-          await roomService.refreshRoom(roomId);
-          // 通知用户加入成功
-          socket.emit('joinResponse', {
-            success: true,
-            message: 'Successfully joined room',
-            roomId: roomId
-          });
-          // 通知房间内所有其他用户有新成员加入
-          socket.to(roomId).emit('ready', {
-            peerId: socket.id
-          });
-        } else {
-          console.log(`room ${roomId} roomExist:${roomExist},Room does not exist branch`);
-          socket.emit('joinResponse', {
-            success: false,
-            message: 'Room does not exist',
-            roomId: roomId
-          });
+        const targetRoomExists = await roomService.isRoomExist(targetRoomId);
+        if (!targetRoomExists) {
+          socket.emit('joinResponse', { success: false, message: 'Room does not exist', roomId: targetRoomId });
+          return;
         }
+        
+        const existingRoomId = await roomService.getRoomBySocketId(socket.id);
+        if (!existingRoomId) {//socket.id不在房间里面 才允许新连接进入房间
+          socket.join(targetRoomId);
+          console.log(`Client ${socket.id} joined room ${targetRoomId}`);
+          await roomService.bindSocketToRoom(socket.id, targetRoomId);
+        }
+        
+        await roomService.refreshRoom(targetRoomId);
+        // 通知用户加入成功
+        socket.emit('joinResponse', { success: true, message: 'Successfully joined room', roomId: targetRoomId });
+        // 通知房间内所有其他用户有新成员加入
+        socket.to(targetRoomId).emit('ready', { peerId: socket.id });
       } catch (error) {
         console.error('Error joining room:', error);
         socket.emit('joinResponse', {
@@ -117,8 +104,10 @@ export function setupSocketHandlers(io: Server): void {
         if (await roomService.isRoomEmpty(roomId)) {
           // await deleteRoom(roomId);
           await roomService.refreshRoom(roomId, 3600);
-          console.log(`Room ${roomId} is empty and will deleted in 1 hour`);
+          console.log(`Room ${roomId} is empty and will be deleted in 1 hour due to disconnect.`);
         }
+        // Notify other users in the room that this peer has left
+        // io.to(roomId).emit('peer-disconnected', { peerId: socket.id });
       }
     });
   });
