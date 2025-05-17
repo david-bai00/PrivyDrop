@@ -90,18 +90,18 @@ configure_nginx() {
     done < "$NGINX_TEMPLATE" > "$TEMP_NGINX"
 
     # 复制配置文件到目标位置
-    # cp "$TEMP_NGINX" /etc/nginx/sites-available/
-    cp "$TEMP_NGINX" default
+    cp "$TEMP_NGINX" /etc/nginx/sites-available/
+    # cp "$TEMP_NGINX" default_temp
     rm "$TEMP_NGINX"
 }
 
 # 执行配置
 configure_nginx
 
-# # # 测试Nginx配置
-# cp nginx.conf /etc/nginx
-# nginx -t
+# 测试Nginx配置
+cp nginx.conf /etc/nginx
+nginx -t
 
-# /etc/init.d/nginx restart
+/etc/init.d/nginx restart
 
 echo "Nginx configuration completed."
