@@ -1,10 +1,10 @@
 #!/bin/bash
 # 证书监控续期脚本--自动检查，如果少于30天则续期, 手动执行：
-# cd /home/ubuntu/workdir_atbj/clipboard_backend_node/docker/nginx && bash renew_ssl.sh
+# cd path/to/privydrop/backend/docker/Nginx && bash renew_ssl.sh
 # crontab 自动任务
-# chmod +x /home/ubuntu/workdir_atbj/clipboard_backend_node/docker/nginx/renew_ssl.sh
+# chmod +x path/to/privydrop/backend/docker/Nginx/renew_ssl.sh
 # crontab -e 打开编辑器
-# 0 0 * * * bash /home/ubuntu/workdir_atbj/clipboard_backend_node/docker/nginx/renew_ssl.sh >> /home/ubuntu/workdir_atbj/certbot-renew.log 2>&1
+# 0 0 * * * bash path/to/privydrop/backend/docker/Nginx/renew_ssl.sh >> path/to/log/certbot-renew.log 2>&1
 
 # 首先切换到脚本所在目录
 cd "$(dirname "$(readlink -f "$0")")" || exit 1
@@ -39,6 +39,6 @@ for CERT_PATH in "$CERTBOT_DIR"/*/fullchain.pem; do
             echo "Failed to renew certificate for $DOMAIN"
         fi
         # 启动ngnix
-        sudo bash cp_cfg_run.sh
+        sudo bash configure.sh ../../.env.production.local
     fi
 done
