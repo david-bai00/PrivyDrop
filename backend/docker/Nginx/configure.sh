@@ -15,12 +15,6 @@ validate_env_vars() {
     local env_file=$1
 
     echo "正在验证 Nginx 环境变量配置..."
-    
-    # 检查环境变量文件是否存在
-    if [ ! -f "$env_file" ]; then
-        echo "错误: 找不到环境配置文件 $env_file"
-        exit 1
-    fi
 
     # 加载环境变量
     source "$env_file"
@@ -60,7 +54,7 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 
 # 验证环境变量
-validate_env_vars "$1"
+validate_env_vars "$ENV_FILE"
 
 # 读取环境变量
 source "$ENV_FILE"
