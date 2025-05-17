@@ -1,7 +1,7 @@
 server {
     # 将 HTTP 重定向到 HTTPS
     listen 80;
-    server_name securityshare.xyz www.securityshare.xyz;
+    server_name YourDomain www.YourDomain;
     return 301 https://$server_name$request_uri;
 }
 
@@ -23,11 +23,11 @@ server {
     # 需要客户端和服务器都支持
     ssl_early_data on;
 
-    server_name securityshare.xyz www.securityshare.xyz;
+    server_name YourDomain www.YourDomain;
 
     # SSL 配置
-    ssl_certificate /etc/letsencrypt/live/securityshare.xyz/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/securityshare.xyz/privkey.pem;
+    ssl_certificate path/to/your/certFile;
+    ssl_certificate_key path/to/your/privkeyFile;
     
     # SSL 优化
     ssl_session_timeout 1d;
@@ -43,7 +43,7 @@ server {
     
     # 定义前端构建产物在容器内的根路径
     # !!! 重要: 请将此路径修改为您的前端项目构建后在Nginx容器内的实际路径 !!!
-    set $frontend_build_root /home/ubuntu/workdir_atbj/clipboard_web;
+    set $frontend_build_root path/to/your/frontend_build_root;
 
     # 1. 优先处理 Next.js 的核心静态资源 (_next/static)
     location /_next/static/ {
