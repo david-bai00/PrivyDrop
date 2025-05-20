@@ -23,13 +23,13 @@
 - **CORS:** 用于启用跨域资源共享的中间件。
 - **dotenv:** 用于从 `.env` 文件加载环境变量的模块。
 - **PM2 (已提供 Ecosystem 文件):** Node.js 应用程序的生产流程管理器。
-- **Docker:** 容器化平台。
 
 ## 项目结构
 
 后端源代码主要位于 `src/` 目录中：
 .
-├── DEPLOYMENT.md
+├── README.md
+├── README.zh-CN.md
 ├── docker # Docker 相关文件 (Dockerfile, Nginx/TURN 配置等)。
 │ ├── Dockerfile
 │ ├── env_install.log
@@ -44,13 +44,11 @@
 │ ├── turnserver_development.conf
 │ └── turnserver_production.conf
 ├── docs
-│ ├── host_preparation.md
-│ └── turn_nginx_notes.md
+│ ├── DEPLOYMENT_GUIDE.en-US.md
+│ └── DEPLOYMENT_GUIDE.zh-CN.md
 ├── ecosystem.config.js
 ├── package.json
 ├── package-lock.json
-├── readme.md
-├── README.md
 ├── scripts
 │ ├── del_logs.js
 │ ├── export-tracking-data.js
@@ -79,9 +77,13 @@
 - npm 或 yarn
 - 一个正在运行的 Redis 实例
 
+有关详细的依赖服务安装和配置（如 Redis, TURN/STUN 服务器）以及生产环境部署指南，请参阅 [部署指南](./docs/DEPLOYMENT_GUIDE.zh-CN.md)。
+
 ## 环境变量
 
-在 `backend/` 目录中创建一个 `.env.development.local` 文件用于本地开发（或为类生产环境创建 `.env.production.local` 文件）。用以下变量填充它：
+应用程序的运行依赖于环境变量。简化的本地开发环境配置如下：
+
+在 `backend/` 目录中创建一个 `.env.development.local` 文件，并填充以下基本变量：
 
 ```ini
 # 服务器配置
@@ -90,12 +92,15 @@ NODE_ENV=development # 或 production
 CORS_ORIGIN=http://localhost:3000 # 你的前端应用程序 URL
 
 # Redis 配置
-REDIS_HOST=127.0.0.1 # 或者你的 Redis 服务器主机
-REDIS_PORT=6379      # 或者你的 Redis 服务器端口
-# REDIS_PASSWORD=your_redis_password # 可选：如果你的 Redis 受密码保护（代码需要调整才能使用）
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+# REDIS_PASSWORD=your_redis_password # 如果 Redis 受密码保护，请取消注释并设置
 ```
 
-**注意：** 如果未定义 `REDIS_HOST` 或 `REDIS_PORT`，应用程序将在启动时退出。
+**注意：**
+
+- 如果未定义 `REDIS_HOST` 或 `REDIS_PORT`，应用程序将在启动时退出。
+- 更全面的环境变量配置（包括 TURN 服务器、生产特定设置等）请参考 [部署指南](./docs/DEPLOYMENT_GUIDE.zh-CN.md) 的第 4.3 节。
 
 ## 入门 (本地开发)
 
@@ -110,7 +115,7 @@ REDIS_PORT=6379      # 或者你的 Redis 服务器端口
     # 或
     yarn install
     ```
-4.  **确保 Redis 正在运行**，并且可以使用您在 `.env` 文件中提供的凭据进行访问。
+4.  **确保 Redis 正在运行**，并且可以使用您在 `.env` 文件中提供的凭据进行访问。详细的 Redis 安装和配置，请参阅 [部署指南](./docs/DEPLOYMENT_GUIDE.zh-CN.md) 的第 3.1 节。
 5.  如上所述，**创建并配置您的 `.env.development.local` 文件**。
 6.  **运行开发服务器：**
     ```bash
@@ -118,28 +123,7 @@ REDIS_PORT=6379      # 或者你的 Redis 服务器端口
     ```
     服务器应在您 `PORT` 环境变量指定的端口上启动（默认为 3001）。
 
-## Docker 部署
-
-1.  **导航到 `backend/` 目录。** (这假设您的 `Dockerfile` 位于 `backend/docker/Dockerfile`，但构建上下文是 `backend/`)
-2.  **构建 Docker 镜像：**
-    ```bash
-    docker build -t privydrop-backend -f docker/Dockerfile .
-    ```
-3.  **运行 Docker 容器：**
-    ```bash
-    docker run -d \
-      -p 3001:3001 \
-      --name privydrop-backend-container \
-      -e PORT=3001 \
-      -e NODE_ENV=production \
-      -e CORS_ORIGIN="http://your-frontend-domain.com" \
-      -e REDIS_HOST="your-redis-host" \
-      -e REDIS_PORT="your-redis-port" \
-      privydrop-backend
-    ```
-    - 如果您的内部 `PORT` 不同或您想映射到不同的主机端口，请调整 `-p`。
-    - 替换环境变量 (`-e`) 的占位符值。
-    - 对于生产设置，您可能需要使用 Docker Compose，并可能将 Nginx 作为反向代理和 TURN 服务器运行。请参考 `backend/docker/nginx/` 和 `backend/docker/turn/` 目录中的配置（如果您按建议构建它们）以及可能的 `docker-compose.yml` 文件。
+对于**生产环境部署**，请参考 [部署指南](./docs/DEPLOYMENT_GUIDE.zh-CN.md) 中关于使用 PM2 进行部署的详细说明（第 4.5 节）。
 
 ## API 端点
 

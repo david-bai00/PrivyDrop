@@ -14,8 +14,8 @@
 - **Node.js：** v18.x 或更高版本。
 - **npm (或 yarn)：** Node.js 的包管理器。
 - **Root 或 Sudo 权限：** 安装软件包和配置服务所需。
+- **可选：基础环境与 Docker 镜像参考：** 如果您需要从一个非常纯净的系统环境开始搭建，或者希望了解用于 Docker 构建的基础依赖，可以参考 `backend/docker/Dockerfile` 文件（用于 Docker 镜像构建）和 `backend/docker/env_install.log` 文件（可能包含特定环境下的依赖安装记录）。对于大多数标准 Linux 发行版，遵循本指南后续步骤即可。
 
-基础镜像或基础依赖安装：请参考 backend/docker/Dockerfile 或 backend/docker/env_install.log
 
 ## 3. 依赖服务安装与配置
 

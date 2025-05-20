@@ -1,36 +1,36 @@
 # Privydrop - Backend
 
-This is the backend server for Privydrop, a WebRTC based file sharing application. It handles signaling for WebRTC connections, room management, API requests from the frontend, and other related backend logic.
+This is the backend server for Privydrop, a WebRTC-based file-sharing application. It handles signaling for WebRTC connections, room management, API requests from the frontend, and other related backend logic.
 
 ## Features
 
-- **WebRTC Signaling:** Facilitates peer-to-peer connections using Socket.IO for exchanging SDP offers, answers, and ICE candidates.
-- **Room Management:** Allows users to create and join unique rooms for file sharing sessions. Room state and participant information are managed using Redis.
-- **API Endpoints:** Provides HTTP APIs for the frontend to interact with (e.g., creating/joining rooms, checking room availability).
-- **Real-time Communication:** Uses Socket.IO for instant messaging between clients and server.
-- **Rate Limiting:** Basic IP-based rate limiting for certain operations to prevent abuse.
-- **Ephemeral Data Storage:** Leverages Redis for storing temporary data like room information and session details, with automatic expiry.
-- **Referrer Tracking:** Basic daily tracking of traffic sources (referrers).
+- **WebRTC Signaling:** Uses Socket.IO to exchange SDP offers, answers, and ICE candidates to facilitate peer-to-peer connections.
+- **Room Management:** Allows users to create and join unique rooms for file-sharing sessions. Room state and participant information are managed using Redis.
+- **API Endpoints:** Provides HTTP APIs for frontend interaction (e.g., creating/joining rooms, checking room availability).
+- **Real-time Communication:** Uses Socket.IO for instant messaging between clients and the server.
+- **Rate Limiting:** Basic IP-based rate limiting on certain operations to prevent abuse.
+- **Temporary Data Storage:** Utilizes Redis to store temporary data like room information and session details with automatic expiration.
+- **Referrer Tracking:** Daily tracking of traffic sources (referrers).
 
 ## Tech Stack
 
 - **Node.js:** JavaScript runtime environment.
 - **Express.js:** Web application framework for Node.js.
-- **TypeScript:** Superset of JavaScript for static typing.
-- **Socket.IO:** Library for real-time, bidirectional event-based communication.
-- **Redis:** In-memory data structure store, used for caching, session management, and message brokering.
+- **TypeScript:** Superset of JavaScript for static type checking.
+- **Socket.IO:** Library for real-time, bidirectional, event-based communication.
+- **Redis:** In-memory data structure store, used as a cache, session manager, and message broker.
   - **ioredis:** A robust Redis client for Node.js.
 - **CORS:** Middleware for enabling Cross-Origin Resource Sharing.
-- **dotenv:** Module to load environment variables from a `.env` file.
+- **dotenv:** Module for loading environment variables from an `.env` file.
 - **PM2 (Ecosystem file provided):** Production process manager for Node.js applications.
-- **Docker:** Containerization platform.
 
 ## Project Structure
 
 The backend source code is primarily located in the `src/` directory:
 .
-├── DEPLOYMENT.md
-├── docker # Docker related files (Dockerfile, Nginx/TURN configs if used).
+├── README.md
+├── README.zh-CN.md
+├── docker # Docker-related files (Dockerfile, Nginx/TURN configurations, etc.).
 │ ├── Dockerfile
 │ ├── env_install.log
 │ ├── Nginx
@@ -44,25 +44,23 @@ The backend source code is primarily located in the `src/` directory:
 │ ├── turnserver_development.conf
 │ └── turnserver_production.conf
 ├── docs
-│ ├── host_preparation.md
-│ └── turn_nginx_notes.md
+│ ├── DEPLOYMENT_GUIDE.en-US.md
+│ └── DEPLOYMENT_GUIDE.zh-CN.md
 ├── ecosystem.config.js
 ├── package.json
 ├── package-lock.json
-├── readme.md
-├── README.md
 ├── scripts
 │ ├── del_logs.js
 │ ├── export-tracking-data.js
 │ └── redis-monitor.js
 ├── src
-│ ├── config # Environment variables and server configurations (CORS).
+│ ├── config # Environment variables and server configuration (CORS).
 │ │ ├── env.ts
 │ │ └── server.ts
-│ ├── routes # API route definitions (Express routers).
+│ ├── routes # API route definitions (Express routes).
 │ │ └── api.ts
 │ ├── server.ts # Main application entry point: Express server and Socket.IO setup.
-│ ├── services # Core business logic (room management, Redis interactions, rate limiting).
+│ ├── services # Core business logic (room management, Redis interaction, rate limiting).
 │ │ ├── rateLimit.ts
 │ │ ├── redis.ts
 │ │ └── room.ts
@@ -79,23 +77,30 @@ The backend source code is primarily located in the `src/` directory:
 - npm or yarn
 - A running Redis instance
 
+For detailed installation and configuration of dependency services (like Redis, TURN/STUN server) and production deployment guidelines, please refer to the [Deployment Guide](./docs/DEPLOYMENT_GUIDE.en-US.md).
+
 ## Environment Variables
 
-Create a `.env.development.local` file in the `backend/` directory for local development (or `.env.production.local` for production-like environments). Populate it with the following variables:
+The application relies on environment variables to run. A simplified local development environment configuration is as follows:
+
+Create a `.env.development.local` file in the `backend/` directory and populate it with the following basic variables:
 
 ```ini
 # Server Configuration
 PORT=3001
 NODE_ENV=development # or production
-CORS_ORIGIN=http://localhost:3000 # URL of your frontend application
+CORS_ORIGIN=http://localhost:3000 # Your frontend application URL
 
 # Redis Configuration
-REDIS_HOST=127.0.0.1 # Or your Redis server host
-REDIS_PORT=6379      # Or your Redis server port
-# REDIS_PASSWORD=your_redis_password # Optional: if your Redis is password protected (code needs adjustment to use this)
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+# REDIS_PASSWORD=your_redis_password # Uncomment and set if your Redis is password-protected
 ```
 
-**Note:** The application will exit on startup if `REDIS_HOST` or `REDIS_PORT` are not defined.
+**Note:**
+
+- If `REDIS_HOST` or `REDIS_PORT` are not defined, the application will exit on startup.
+- For more comprehensive environment variable configurations (including TURN server, production-specific settings, etc.), please refer to Section 4.3 of the [Deployment Guide](./docs/DEPLOYMENT_GUIDE.en-US.md).
 
 ## Getting Started (Local Development)
 
@@ -110,36 +115,15 @@ REDIS_PORT=6379      # Or your Redis server port
     # or
     yarn install
     ```
-4.  **Ensure Redis is running** and accessible with the credentials provided in your `.env` file.
+4.  **Ensure Redis is running** and accessible with the credentials provided in your `.env` file. For detailed Redis installation and configuration, refer to Section 3.1 of the [Deployment Guide](./docs/DEPLOYMENT_GUIDE.en-US.md).
 5.  **Create and configure your `.env.development.local` file** as described above.
 6.  **Run the development server:**
     ```bash
     npm run dev
     ```
-    The server should start on the port specified in your `PORT` environment variable (defaults to 3001).
+    The server should start on the port specified by your `PORT` environment variable (defaults to 3001).
 
-## Docker Deployment
-
-1.  **Navigate to the `backend/` directory.** (This assumes your `Dockerfile` is in `backend/docker/Dockerfile` but the build context is `backend/`)
-2.  **Build the Docker image:**
-    ```bash
-    docker build -t privydrop-backend -f docker/Dockerfile .
-    ```
-3.  **Run the Docker container:**
-    ```bash
-    docker run -d \
-      -p 3001:3001 \
-      --name privydrop-backend-container \
-      -e PORT=3001 \
-      -e NODE_ENV=production \
-      -e CORS_ORIGIN="http://your-frontend-domain.com" \
-      -e REDIS_HOST="your-redis-host" \
-      -e REDIS_PORT="your-redis-port" \
-      privydrop-backend
-    ```
-    - Adjust `-p` if your internal `PORT` differs or you want to map to a different host port.
-    - Replace placeholder values for environment variables (`-e`).
-    - For a production setup, you'll likely use Docker Compose and might run Nginx as a reverse proxy and a TURN server. Refer to configurations in the `backend/docker/nginx/` and `backend/docker/turn/` directories (if you structure them as suggested) and potentially a `docker-compose.yml` file.
+For **production deployment**, please refer to the detailed instructions on using PM2 in the [Deployment Guide](./docs/DEPLOYMENT_GUIDE.en-US.md) (Section 4.5).
 
 ## API Endpoints
 
@@ -153,11 +137,11 @@ All API endpoints are prefixed with `/api`.
   - Generates a unique, available room ID and creates the room.
   - Response: `{ "roomId": "string" }`
 - **`POST /api/check_room`**
-  - Checks if a given `roomId` is available (i.e., does not exist).
+  - Checks if the given `roomId` is available (i.e., does not exist).
   - Request Body: `{ "roomId": "string" }`
   - Response: `{ "available": boolean }`
 - **`POST /api/set_track`**
-  - Tracks a referrer event. Stores daily statistics in Redis with a 30-day TTL.
+  - Tracks a referrer event. Stores daily stats in Redis with a 30-day TTL.
   - Request Body: `{ "ref": "string", "timestamp": number, "path": "string" }`
   - Response: `{ "success": boolean }`
 - **`POST /api/logs_debug`** (For frontend debugging)
@@ -179,9 +163,9 @@ The server listens for and emits the following Socket.IO events for WebRTC signa
   - Data: `{ peerId: string, answer: RTCSessionDescriptionInit, from?: string }`
 - **`ice-candidate`**: Client sends an ICE candidate to a peer.
   - Data: `{ peerId: string, candidate: RTCIceCandidateInit, from?: string }`
-- **`initiator-online`**: (Custom) Initiator signals it's online/ready in a room.
+- **`initiator-online`**: (Custom) Initiator signals online/ready status in the room.
   - Data: `{ roomId: string }`
-- **`recipient-ready`**: (Custom) Recipient signals it's ready in a room.
+- **`recipient-ready`**: (Custom) Recipient signals ready status in the room.
   - Data: `{ roomId: string, peerId: string }`
 
 **Server-to-Client Events:**
@@ -196,7 +180,7 @@ The server listens for and emits the following Socket.IO events for WebRTC signa
   - Data: `{ answer: RTCSessionDescriptionInit, peerId: string }` (ID of the sender)
 - **`ice-candidate`**: Forwards an ICE candidate from one peer to another.
   - Data: `{ candidate: RTCIceCandidateInit, peerId: string }` (ID of the sender)
-- **`initiator-online`**: (Custom) Broadcasts that an initiator is online in the room.
+- **`initiator-online`**: (Custom) Broadcasts that the initiator is online in the room.
   - Data: `{ roomId: string }`
 - **`recipient-ready`**: (Custom) Broadcasts that a recipient is ready.
   - Data: `{ peerId: string }` (ID of the ready recipient)
@@ -207,11 +191,11 @@ The server listens for and emits the following Socket.IO events for WebRTC signa
 
 Redis is used for:
 
-- **Room Information (`room:<roomId>` - Hash):** Stores room creation time. TTL managed.
-- **Sockets in Room (`room:<roomId>:sockets` - Set):** Stores `socketId`s of clients in a room. TTL tied to room TTL.
-- **Socket to Room Mapping (`socket:<socketId>` - String):** Maps a `socketId` to its `roomId`. TTL managed.
-- **Rate Limiting (`ratelimit:join:<ipAddress>` - Sorted Set):** Tracks request timestamps for IP-based rate limiting on join operations. TTL managed.
-- **Referrer Tracking (`referrers:daily:<YYYY-MM-DD>` - Hash):** Stores daily counts of referrers. TTL of 30 days.
+- **Room Information (`room:<roomId>` - Hash):** Stores room creation time. TTL is managed.
+- **Sockets in Room (`room:<roomId>:sockets` - Set):** Stores `socketId`s of clients in a room. TTL is tied to the room's TTL.
+- **Socket to Room Mapping (`socket:<socketId>` - String):** Maps a `socketId` to its `roomId`. TTL is managed.
+- **Rate Limiting (`ratelimit:join:<ipAddress>` - Sorted Set):** Tracks IP-based request timestamps for join operations for rate limiting. TTL is managed.
+- **Referrer Tracking (`referrers:daily:<YYYY-MM-DD>` - Hash):** Stores daily referrer counts. TTL is 30 days.
 
 ## Contributing
 
