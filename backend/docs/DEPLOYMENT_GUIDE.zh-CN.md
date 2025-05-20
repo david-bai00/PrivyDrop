@@ -15,6 +15,8 @@
 - **npm (或 yarn)：** Node.js 的包管理器。
 - **Root 或 Sudo 权限：** 安装软件包和配置服务所需。
 
+基础镜像或基础依赖安装：请参考 backend/docker/Dockerfile 或 backend/docker/env_install.log
+
 ## 3. 依赖服务安装与配置
 
 Privydrop 后端依赖于多个外部服务。
@@ -72,24 +74,26 @@ sudo apt install coturn
     ```
 
 2.  **Coturn 配置文件:**
-    docker/TURN/turnserver_production.conf 和 docker/TURN/turnserver_development.conf 是生产和开发环境对应的模板配置文件，你不需要手动修改，只需要在环境变量配置文件中加入对应的字段就行。
+    `docker/TURN/turnserver_production.conf` 和 `docker/TURN/turnserver_development.conf` 是生产和开发环境对应的模板配置文件，你不需要手动修改，只需要在环境变量配置文件中加入对应的字段就行（详见本节步骤 6）。
 
 3.  **防火墙配置：**
     在服务器的防火墙上打开必要的端口 (例如，使用 `ufw`)：
 
     - **TCP & UDP `3478`**: 用于 STUN 和 TURN。
-    - **TCP & UDP `5349`**: 用于 TURNS (TURN over TLS/DTLS) - _生产环境_。
+    - **TCP & UDP `5349`**: 用于 TURNS (TURN over TLS/DTLS) - **主要用于生产环境**。
     - **UDP `49152-65533`**: Coturn 的默认中继端口范围 (可在 `turnserver.conf` 中使用 `min-port` 和 `max-port` 配置)。
 
     ```bash
     sudo ufw allow 3478
-    sudo ufw allow 5349 # 用于生产环境
+    sudo ufw allow 5349 # 用于生产环境的 TURNS
     sudo ufw allow 49152:65535/udp
     sudo ufw enable
     sudo ufw status
     ```
 
-4.  **生产环境的 SSL 证书 (TURNS)：**
+    **注意：** 以下关于 SSL 证书和 TURNS 的配置（步骤 4 和步骤 5）主要针对**生产环境**。如果仅设置开发或测试环境，并使用非加密的 TURN (`turn:你的服务器公网IP:3478`)，则可以跳过这些步骤，并在步骤 6 中仅配置开发环境所需的变量。
+
+4.  **生产环境的 SSL 证书 (TURNS)：(生产环境步骤)**
     如果为生产环境部署并使用 `TURNS` (TURN over TLS)，您需要为您的 TURN 域名（例如 `turn.yourdomain.com`）准备 SSL 证书。
 
     - 确保您有一个 DNS 'A' 记录将 `turn.yourdomain.com` 指向您服务器的公网 IP。
@@ -100,7 +104,7 @@ sudo apt install coturn
       ```
       证书和私钥通常存储在 `/etc/letsencrypt/live/turn.yourdomain.com/`。
 
-5.  **SSL 证书权限 (生产环境)：**
+5.  **SSL 证书权限 (生产环境)：(生产环境步骤)**
     Coturn 进程（通常以用户 `turnserver` 运行）需要读取 SSL 证书和密钥的权限。
 
     - 检查当前权限：
@@ -120,45 +124,57 @@ sudo apt install coturn
       ```
       验证 `/etc/letsencrypt/archive/` 和 `/etc/letsencrypt/live/` 上的新权限。
 
-6.  填写配置到环境变量文件
-    在配置文件中修改你的 TURN 服务器配置信息，比如在.env.development.local 环境变量配置中加入如下内容：
-    `# TURN Server Configuration`
-    TURN_EXTERNAL_IP=YourServerPublicIP e.g.:123.123.456.567
-    TURN_REALM=YourServerPublicIP
-    TURN_USERNAME=UserName
-    TURN_PASSWORD=PassWord
+6.  **填写配置到环境变量文件**
+    在相应的 `.env` 文件中修改您的 TURN 服务器配置信息。
 
-    在.env.production.local 环境变量配置中加入如下内容：
-    `# TURN Server Configuration`
-    TURN_EXTERNAL_IP=YourServerPublicIP e.g.:123.123.456.567
-    TURN_REALM=turn.YourDomain
-    TURN_USERNAME=UserName
-    TURN_PASSWORD=PassWord
-    TURN_CERT_PATH=/etc/letsencrypt/live/turn.YourDomain/fullchain.pem
-    TURN_KEY_PATH=/etc/letsencrypt/live/turn.YourDomain/privkey.pem
+    - 对于**开发/测试环境** (例如，在 `.env.development.local` 文件中加入如下内容)：
+      ```env
+      # TURN Server Configuration (Development)
+      TURN_EXTERNAL_IP=YourServerPublicIP # 例如: 123.123.456.567
+      TURN_REALM=YourServerPublicIP
+      TURN_USERNAME=YourTurnUsername
+      TURN_PASSWORD=YourTurnPassword
+      ```
+    - 对于**生产环境** (例如，在 `.env.production.local` 文件中加入如下内容)：
+      ```env
+        # TURN Server Configuration (Production)
+        TURN_EXTERNAL_IP=YourServerPublicIP # 例如: 123.123.456.567
+        TURN_REALM=turn.yourdomain
+        TURN_USERNAME=YourTurnUsername
+        TURN_PASSWORD=YourTurnPassword
+        TURN_CERT_PATH=/etc/letsencrypt/live/turn.yourdomain/fullchain.pem
+        TURN_KEY_PATH=/etc/letsencrypt/live/turn.yourdomain/privkey.pem
+      ```
 
 7.  **启动/重启并测试 Coturn：**
 
     ```bash
-    sudo bash ./docker/TURN/configure_turn.sh .env.development.local or .env.production.local
+    # 使用适当的环境变量文件路径替换 "your_env_file_path"
+    # 例如: sudo bash ./docker/TURN/configure.sh .env.development.local
+    # 或: sudo bash ./docker/TURN/configure.sh .env.production.local
+    sudo bash ./docker/TURN/configure.sh your_env_file_path
     sudo systemctl status coturn
     ```
 
-    检查 `/var/log/turnserver.log` 中是否有任何错误。
+    检查 `/var/log/turnserver.log` (或 Coturn 日志文件路径) 中是否有任何错误。
 
     **测试您的 TURN 服务器：**
     使用在线工具，如 Metered TURN Server Tester (https://www.metered.ca/turn-server-testing)：
 
-    - **用于测试 (非 TLS)：**
+    - **用于开发/测试 (非 TLS)：**
       - TURN URL: `turn:你的服务器公网IP:3478`
       - 用户名: `你的Turn用户名`
       - 密码: `你的Turn密码`
-    - **用于生产 (TURNS)：**
-      _ TURNS URL: `turns:turn.yourdomain.com:5349`
-      _ 用户名: `你的Turn用户名` \* 密码: `你的Turn密码`
-      查找 "Success" 或 "Reachable" 消息。
+    - **用于生产 (TURNS) (若已配置)：**
+      - TURNS URL: `turns:turn.yourdomain:5349`
+      - 用户名: `你的Turn用户名`
+      - 密码: `你的Turn密码`
+
+    查找 "Success" 或 "Reachable" 消息。
 
 ### 3.3. Nginx (反向代理 - 生产环境)
+
+**注意：本节内容完全针对生产环境。如果您正在设置开发或测试环境，并且不使用 Nginx 作为反向代理，则可以跳过此整个 3.3 节。**
 
 建议在生产环境中使用 Nginx 作为反向代理，处理 SSL 终止、提供静态文件（如果适用）并启用 HTTP/3。
 
@@ -196,7 +212,7 @@ sudo apt install coturn
     sudo apt install nginx
     ```
 
-**配置：**
+**配置 (生产环境)：**
 
 1.  **防火墙配置：**
 
@@ -222,16 +238,19 @@ sudo apt install coturn
     按照提示操作。这也会尝试为 SSL 配置 Nginx。
 
 3.  **Nginx 配置：**
-    docker/Nginx/default 为配置模板，你不需要修改该文件，只需要将以下配置添加到环境变量文件.env.production.local 中：
+    `docker/Nginx/default` 是 Nginx 配置模板。您不需要手动修改该文件，只需要将以下配置添加到生产环境变量文件 `.env.production.local` 中：
+    ```env
+    # Nginx Configuration (Production)
+    NGINX_SERVER_NAME=yourdomain # 不带 www 前缀,yourdomain包含了后缀
+    NGINX_SSL_CERT=/etc/letsencrypt/live/yourdomain/fullchain.pem
+    NGINX_SSL_KEY=/etc/letsencrypt/live/yourdomain/privkey.pem
+    NGINX_FRONTEND_ROOT=/path/to/your/frontend/build # 前端静态文件构建产物的路径
     ```
-    # Nginx Configuration
-    NGINX_SERVER_NAME=YourDomain # without www pre-fix
-    NGINX_SSL_CERT=/etc/letsencrypt/live/YourDomain/fullchain.pem
-    NGINX_SSL_KEY=/etc/letsencrypt/live/YourDomain/privkey.pem
-    NGINX_FRONTEND_ROOT=path/to/frontend
-    ```
-4.  **测试 Nginx 配置并重启：**
+4.  **应用 Nginx 配置并重启：**
+    ```bash
+    # 此脚本会使用 .env.production.local 中的 NGINX_* 变量来生成 Nginx 配置文件
     sudo bash docker/Nginx/configure.sh .env.production.local
+    ```
 
 ## 4. 后端应用部署
 
@@ -250,31 +269,54 @@ cd privydrop/backend
 npm install
 ```
 
-### 4.3. 环境变量
+### 4.3. 环境变量配置
 
-在`.env.production.local`或`.env.development.local`中加入与后端相关的配置内容，如下：
-NODE_ENV=development or production
+后端应用的运行依赖于环境变量。请根据您的部署环境（开发/测试或生产）在 `privydrop/backend` 目录下创建并配置相应的 `.env` 文件。
+
+- **开发/测试环境**: 创建 `.env.development.local` 文件。
+- **生产环境**: 创建 `.env.production.local` 文件。 **(生产环境步骤)**
+
+在对应的 `.env` 文件中加入以下与后端相关的基本配置内容：
+
+```env
+NODE_ENV=development # 或 production
 BACKEND_PORT=3001
-CORS_ORIGIN=http://localhost:3000 or htts://www.YourDomain
+CORS_ORIGIN=http://localhost:3000 # 开发环境示例, 生产环境应为 https://www.yourdomain
+```
 
-### 4.3 测试
+**重要提示：** 请确保之前在 **第 3.1 节 (Redis)** 和 **第 3.2 节 (TURN 服务器)** 中讨论的 Redis 和 TURN 服务器相关环境变量也已正确添加到相应的 `.env.development.local` 或 `.env.production.local` 文件中。
 
-sudo npm run dev
+对于**生产环境 (`.env.production.local`)**，请务必确认所有配置（如 `NODE_ENV=production`，生产 TURN URL，生产 CORS origin 等）均已正确设置。
 
-### 4.4. 生产部署
+### 4.4. 启动开发/测试服务器
 
-一般使用 PM2 进行生产级别的进程管理，PM2 是 Node.js 应用程序的生产流程管理器。
+完成开发环境配置 (`.env.development.local`) 后，可以使用以下命令启动后端服务进行开发或测试：
+
+```bash
+# 确保您在 privydrop/backend 目录下
+npm run dev
+```
+
+此命令通常会使用 `.env.development.local` 中的配置。
+
+### 4.5. 生产环境部署 (使用 PM2)
+
+**注意：本节介绍如何使用 PM2 进行生产环境部署。如果仅设置开发/测试环境，可以跳过此节。**
+
+PM2 是 Node.js 应用程序的生产流程管理器，建议用于生产部署。
 
 1.  **全局安装 PM2：**
     ```bash
     sudo npm install -g pm2
     ```
 2.  **使用 `ecosystem.config.js` 文件启动应用程序：**
+    项目根目录下的 `backend/ecosystem.config.js` 是 PM2 的配置文件。
 
     ```bash
-    # 如果尚未在后端目录中，请导航至该目录
+    # 确保您在 privydrop/backend 目录下
     # cd /path/to/privydrop/backend
 
+    # 启动前，请确保 .env.production.local 文件已按生产环境要求配置完毕
     sudo pm2 start ecosystem.config.js
     ```
 
@@ -300,18 +342,19 @@ sudo npm run dev
 
 ## 5. Docker 化部署 (目前暂不支持)
 
-虽然本指南侧重于传统部署，但您也可以将 Privydrop 后端容器化。`backend/docker/Dockerfile`提供基本的环境构建过程记录。
+虽然本指南侧重于传统部署，但您也可以将 Privydrop 后端容器化。`backend/docker/Dockerfile` 提供了基本的环境构建过程记录。
 
-对于生产 Docker 设置，请考虑使用 `docker-compose` 来编排后端应用程序、Nginx（作为 Docker 内或主机上的反向代理）、Redis 以及可能的 Coturn（尽管 Coturn 通常直接在主机上运行以获得更好的网络访问效果）。在 Docker 化环境中管理 SSL 证书和网络配置需要仔细规划。
+**注意：** 此部署方式当前主要供参考，官方支持尚不完善。生产环境的 Docker 部署需要更详细的规划，包括使用 `docker-compose` 来编排后端应用程序、Nginx（作为 Docker 内或主机上的反向代理）、Redis 以及可能的 Coturn（尽管 Coturn 通常直接在主机上运行以获得更好的网络访问效果）。在 Docker 化环境中管理 SSL 证书和网络配置需要仔细规划。
 
 ## 6. 安全与维护
 
-- **SSL 证书续订：** Certbot 通常会设置自动续订。您可以使用 `sudo certbot renew --dry-run` 进行测试。确保续订过程有权在需要时重新启动 Nginx。可以参考`backend/docker/Nginx/renew_ssl.sh`脚本进行自动续订。
+- **SSL 证书续订 (生产环境相关)：** 可以参考 `backend/docker/Nginx/renew_ssl.sh` 脚本进行自动续订。
 - **防火墙：** 保持防火墙规则严格，仅允许必要的端口。
 
 ## 7. 故障排除
 
-- **连接问题：** 检查防火墙规则、Nginx 代理设置、后端 .env 文件中的 `CORS_ORIGIN`，并确保所有服务（Redis、Coturn、Node.js 应用）都在运行。
-- **Nginx 错误：** `sudo nginx -t` 将检查配置语法。检查 Nginx 错误日志。
-- **PM2 问题：** 使用 `pm2 logs <app_name>` 查看应用程序错误。
-- **证书权限：** 如果 Coturn 或 Nginx 无法读取 SSL 证书，请仔细检查文件权限和组成员身份。
+- **连接问题：** 检查防火墙规则、Nginx 代理设置（生产环境）、后端 `.env` 文件中的 `CORS_ORIGIN`，并确保所有服务（Redis、Coturn、Node.js 应用）都在运行且配置正确。
+- **Nginx 错误 (生产环境)：** `sudo nginx -t` 将检查配置语法。检查 Nginx 错误日志 (通常在 `/var/log/nginx/error.log`)。
+- **PM2 问题 (生产环境)：** 使用 `pm2 logs <app_name>` 查看应用程序错误。
+- **证书权限 (生产环境)：** 如果 Coturn 或 Nginx 无法读取 SSL 证书，请仔细检查文件权限和用户/组设置。
+- **Coturn 日志：** 检查 `/var/log/turnserver.log` (或您系统中 Coturn 的日志路径) 获取 Coturn 服务相关的错误信息。
