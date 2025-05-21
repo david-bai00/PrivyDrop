@@ -161,11 +161,13 @@ sudo apt install coturn
     Use an online tool like the Metered TURN Server Tester (https://www.metered.ca/turn-server-testing):
 
     - **For Development/Testing (non-TLS):**
-      - TURN URL: `turn:YourServerPublicIP:3478`
+      - TURN URL: `YourServerPublicIP`
+      - TURN Port: `3478`
       - Username: `YourTurnUsername`
       - Password: `YourTurnPassword`
     - **For Production (TURNS) (if configured):**
-      - TURNS URL: `turns:turn.yourdomain:5349`
+      - TURNS URL: `turn.yourdomain`
+      - TURNS Port: `5349`
       - Username: `YourTurnUsername`
       - Password: `YourTurnPassword`
 

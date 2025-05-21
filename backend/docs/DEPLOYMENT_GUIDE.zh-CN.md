@@ -16,7 +16,6 @@
 - **Root 或 Sudo 权限：** 安装软件包和配置服务所需。
 - **可选：基础环境与 Docker 镜像参考：** 如果您需要从一个非常纯净的系统环境开始搭建，或者希望了解用于 Docker 构建的基础依赖，可以参考 `backend/docker/Dockerfile` 文件（用于 Docker 镜像构建）和 `backend/docker/env_install.log` 文件（可能包含特定环境下的依赖安装记录）。对于大多数标准 Linux 发行版，遵循本指南后续步骤即可。
 
-
 ## 3. 依赖服务安装与配置
 
 Privydrop 后端依赖于多个外部服务。
@@ -162,11 +161,13 @@ sudo apt install coturn
     使用在线工具，如 Metered TURN Server Tester (https://www.metered.ca/turn-server-testing)：
 
     - **用于开发/测试 (非 TLS)：**
-      - TURN URL: `turn:你的服务器公网IP:3478`
+      - TURN URL: `你的服务器公网IP`
+      - TURN Port: `3478`
       - 用户名: `你的Turn用户名`
       - 密码: `你的Turn密码`
     - **用于生产 (TURNS) (若已配置)：**
-      - TURNS URL: `turns:turn.yourdomain:5349`
+      - TURNS URL: `turn.yourdomain`
+      - TURNS Port: `5349`
       - 用户名: `你的Turn用户名`
       - 密码: `你的Turn密码`
 
