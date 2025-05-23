@@ -19,7 +19,7 @@ This is the backend server for Privydrop, a WebRTC-based file-sharing applicatio
 - **TypeScript:** Superset of JavaScript for static type checking.
 - **Socket.IO:** Library for real-time, bidirectional, event-based communication.
 - **Redis:** In-memory data structure store, used as a cache, session manager, and message broker.
-  - **ioredis:** A robust Redis client for Node.js.
+- **ioredis:** A robust Redis client for Node.js.
 - **CORS:** Middleware for enabling Cross-Origin Resource Sharing.
 - **dotenv:** Module for loading environment variables from an `.env` file.
 - **PM2 (Ecosystem file provided):** Production process manager for Node.js applications.
@@ -50,9 +50,7 @@ The backend source code is primarily located in the `src/` directory:
 ├── package.json
 ├── package-lock.json
 ├── scripts
-│ ├── del_logs.js
-│ ├── export-tracking-data.js
-│ └── redis-monitor.js
+│ └── export-tracking-data.js
 ├── src
 │ ├── config # Environment variables and server configuration (CORS).
 │ │ ├── env.ts
@@ -74,7 +72,7 @@ The backend source code is primarily located in the `src/` directory:
 ## Prerequisites
 
 - Node.js (v18.x or later recommended)
-- npm or yarn
+- npm
 - A running Redis instance
 
 For detailed installation and configuration of dependency services (like Redis, TURN/STUN server) and production deployment guidelines, please refer to the [Deployment Guide](./docs/DEPLOYMENT_GUIDE.en-US.md).
@@ -112,8 +110,6 @@ REDIS_PORT=6379
 3.  **Install dependencies:**
     ```bash
     npm install
-    # or
-    yarn install
     ```
 4.  **Ensure Redis is running** and accessible with the credentials provided in your `.env` file. For detailed Redis installation and configuration, refer to Section 3.1 of the [Deployment Guide](./docs/DEPLOYMENT_GUIDE.en-US.md).
 5.  **Create and configure your `.env.development.local` file** as described above.

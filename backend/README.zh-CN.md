@@ -19,7 +19,7 @@
 - **TypeScript:** JavaScript 的超集，用于静态类型检查。
 - **Socket.IO:** 用于实时、双向、基于事件的通信库。
 - **Redis:** 内存数据结构存储，用作缓存、会话管理和消息代理。
-  - **ioredis:** Node.js 的一个健壮的 Redis 客户端。
+- **ioredis:** Node.js 的一个健壮的 Redis 客户端。
 - **CORS:** 用于启用跨域资源共享的中间件。
 - **dotenv:** 用于从 `.env` 文件加载环境变量的模块。
 - **PM2 (已提供 Ecosystem 文件):** Node.js 应用程序的生产流程管理器。
@@ -50,9 +50,7 @@
 ├── package.json
 ├── package-lock.json
 ├── scripts
-│ ├── del_logs.js
-│ ├── export-tracking-data.js
-│ └── redis-monitor.js
+│ └── export-tracking-data.js
 ├── src
 │ ├── config # 环境变量和服务器配置 (CORS)。
 │ │ ├── env.ts
@@ -74,7 +72,7 @@
 ## 先决条件
 
 - Node.js (推荐 v18.x 或更高版本)
-- npm 或 yarn
+- npm
 - 一个正在运行的 Redis 实例
 
 有关详细的依赖服务安装和配置（如 Redis, TURN/STUN 服务器）以及生产环境部署指南，请参阅 [部署指南](./docs/DEPLOYMENT_GUIDE.zh-CN.md)。
@@ -112,8 +110,6 @@ REDIS_PORT=6379
 3.  **安装依赖：**
     ```bash
     npm install
-    # 或
-    yarn install
     ```
 4.  **确保 Redis 正在运行**，并且可以使用您在 `.env` 文件中提供的凭据进行访问。详细的 Redis 安装和配置，请参阅 [部署指南](./docs/DEPLOYMENT_GUIDE.zh-CN.md) 的第 3.1 节。
 5.  如上所述，**创建并配置您的 `.env.development.local` 文件**。
