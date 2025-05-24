@@ -147,12 +147,10 @@ const AdvancedClipboardApp = () => {
   const debouncedCheckRoom = useMemo(
     () =>
       debounce(async (roomId: string): Promise<boolean> => {
-        // Ensure messages is loaded before trying to access its properties
-        if (!messages) return false; // Or handle differently
         const available = await checkRoom(roomId);
         return available;
       }, 300),
-    [messages] // Add messages as a dependency if it's used inside
+    []
   );
 
   const handleShareRoomCheck = async (roomId: string) => {
@@ -228,7 +226,7 @@ const AdvancedClipboardApp = () => {
   }, []);
   //定义一些文件接收处理函数
   useEffect(() => {
-    if (sender && senderFileTransfer && messages) {
+    if (sender && senderFileTransfer) {
       sender.onConnectionStateChange = (
         state: RTCPeerConnectionState,
         peerId: string
@@ -254,8 +252,7 @@ const AdvancedClipboardApp = () => {
       sender.onDataChannelOpen = sendStringAndMetas;
     }
 
-    if (receiver && receiverFileTransfer && messages) {
-      // Added messages dependency
+    if (receiver && receiverFileTransfer) {
       receiver.onConnectionStateChange = (state: string, peerId: string) => {
         console.log(`connection status: ${state} with peerId: ${peerId}`);
         setRetrievePeerCount(receiver.peerConnections.size);
@@ -279,8 +276,7 @@ const AdvancedClipboardApp = () => {
       // };
     }
 
-    if (receiverFileTransfer && messages) {
-      // Added messages dependency
+    if (receiverFileTransfer) {
       receiverFileTransfer.onStringReceived = (value: string) => {
         setRetrievedContent(value);
       };
@@ -404,11 +400,9 @@ const AdvancedClipboardApp = () => {
           isSender,
           6000
         );
-        if (isSender) {
-          // Only generate share link if sender joins
-          const link = `${window.location.origin}${window.location.pathname}?roomId=${currentRoomId}`;
-          setShareLink(link);
-        }
+
+        const link = `${window.location.origin}${window.location.pathname}?roomId=${currentRoomId}`;
+        setShareLink(link);
       } catch (error) {
         if (error instanceof Error) {
           const errorMsg =
