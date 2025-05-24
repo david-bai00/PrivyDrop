@@ -73,13 +73,13 @@ export function useRoomManager({
         } catch (error) {
           console.error("Error checking room availability:", error);
           putMessageInMs(
-            messages.text.ClipboardApp.roomCheck.error_msg ||
-              "Error checking room.",
+            //messages.text.ClipboardApp.roomCheck.error_msg ||
+            "Error checking room.",
             true
           );
           return undefined;
         }
-      }, 300),
+      }, 50),
     [messages, putMessageInMs]
   );
 
