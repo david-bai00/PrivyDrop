@@ -41,6 +41,7 @@ import { useLocale } from "@/hooks/useLocale";
 import type { Messages } from "@/types/messages";
 import { useClipboardAppMessages } from "@/hooks/useClipboardAppMessages";
 import { usePageSetup } from "@/hooks/usePageSetup";
+import { useRoomManager } from "@/hooks/useRoomManager";
 
 const developmentEnv = process.env.NEXT_PUBLIC_development!; //开发环境
 // 处理 beforeunload 事件的函数
@@ -56,8 +57,7 @@ function allowUnload() {
 const AdvancedClipboardApp = () => {
   const { shareMessage, retrieveMessage, putMessageInMs } =
     useClipboardAppMessages();
-  const [shareRoomId, setShareRoomId] = useState(""); //发送端--房间ID
-  const [initShareRoomId, setInitShareRoomId] = useState(""); //系统随机初始化的房间ID
+
   const [retrieveRoomId, setRetrieveRoomId] = useState(""); //接收端--房间ID
   //发送端：编辑器文本、文件
   const [shareContent, setShareContent] = useState("");
@@ -90,13 +90,9 @@ const AdvancedClipboardApp = () => {
   const [receiverFileTransfer, setReceiverFileTransfer] =
     useState<FileReceiver | null>(null);
 
-  const [shareLink, setShareLink] = useState(""); //分享链接
   const retrieveJoinRoomBtnRef = useRef<HTMLButtonElement>(null); //接收方--加入房间按钮ref
-  const [activeTab, setActiveTab] = useState("send"); //代表tab的当前激活窗口
+  const [activeTab, setActiveTab] = useState<"send" | "retrieve">("send");
   const richTextToPlainText = useRichTextToPlainText();
-  // 房间状态--显示
-  const [shareRoomStatus, setShareRoomStatus] = useState("");
-  const [retrieveRoomStatus, setRetrieveRoomStatus] = useState("");
   // 1. 添加一个状态来追踪连接数量
   const [sharePeerCount, setSharePeerCount] = useState(0);
   const [retrievePeerCount, setRetrievePeerCount] = useState(0);
@@ -106,27 +102,40 @@ const AdvancedClipboardApp = () => {
     setActiveTab,
     retrieveJoinRoomBtnRef,
   });
-  // 使用 useEffect 钩子来在组件加载时生成一个随机ID
-  useEffect(() => {
-    if (messages && putMessageInMs) {
-      // Ensure messages and putMessageInMs are available
-      const initRoom = async () => {
-        try {
-          const newRoomId = await fetchRoom();
-          setShareRoomId(newRoomId);
-          setInitShareRoomId(newRoomId);
-        } catch (err) {
-          console.error("Error fetching room:", err);
-          // Use a fallback message if messages.text.ClipboardApp.fetchRoom_err is not yet loaded
-          const errorMsg =
-            messages.text?.ClipboardApp?.fetchRoom_err ||
-            "Error fetching room ID.";
-          putMessageInMs(errorMsg);
-        }
-      };
-      initRoom();
-    }
-  }, [messages]);
+  // This function will be properly defined in useWebRTCConnection or useFileTransferHandler
+  const dummyBroadcastDataToPeers = useCallback(async () => {
+    if (!senderFileTransfer || !sender) return;
+    console.log("Attempting to broadcast data (dummy)...");
+    const peerIds = Array.from(sender.peerConnections.keys());
+    await Promise.all(
+      peerIds.map(async (peerId) => {
+        if (shareContent)
+          await senderFileTransfer.sendString(shareContent, peerId);
+        if (sendFiles.length)
+          senderFileTransfer.sendFileMeta(sendFiles, peerId);
+      })
+    );
+  }, [sender, senderFileTransfer, shareContent, sendFiles]);
+  const {
+    shareRoomId,
+    // initShareRoomId, // Not directly used in JSX, managed internally by hook
+    setShareRoomId, // Keep this if shareRoomId can be set from input/clipboard
+    shareLink,
+    shareRoomStatusText,
+    retrieveRoomStatusText,
+    checkAndSetShareRoomId,
+    joinRoom,
+    generateShareLinkAndBroadcast,
+  } = useRoomManager({
+    messages,
+    putMessageInMs,
+    sender, // Placeholder
+    receiver, // Placeholder
+    activeTab,
+    sharePeerCount, // Placeholder
+    retrievePeerCount, // Placeholder
+    broadcastDataToPeers: dummyBroadcastDataToPeers, // Placeholder for actual broadcast function
+  });
 
   useEffect(() => {
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -144,29 +153,6 @@ const AdvancedClipboardApp = () => {
     };
   }, [sendFiles, shareContent, retrievedFiles, retrievedContent]);
 
-  const debouncedCheckRoom = useMemo(
-    () =>
-      debounce(async (roomId: string): Promise<boolean> => {
-        const available = await checkRoom(roomId);
-        return available;
-      }, 300),
-    []
-  );
-
-  const handleShareRoomCheck = async (roomId: string) => {
-    if (!messages) return; // Guard against messages not being loaded
-    if (roomId.length === 0) {
-      putMessageInMs(messages.text.ClipboardApp.roomCheck.empty_msg);
-      return;
-    }
-    const available = await debouncedCheckRoom(roomId);
-    if (available) {
-      putMessageInMs(messages.text.ClipboardApp.roomCheck.available_msg);
-      setShareRoomId(roomId);
-    } else {
-      putMessageInMs(messages.text.ClipboardApp.roomCheck.notAvailable_msg);
-    }
-  };
   //useCallback 钩子来定义 函数。这确保了函数只在其依赖项（content, files, senderFileTransfer）发生变化时才会重新创建
   const sendStringAndMetas = useCallback(
     async (peerId: string) => {
@@ -348,88 +334,6 @@ const AdvancedClipboardApp = () => {
       }
     });
   }, []);
-  // 分享内容的处理函数
-  const handleShare = useCallback(async () => {
-    if (!sender || !messages) return; // Added messages dependency
-    if (sender.peerConnections.size === 0) {
-      putMessageInMs(messages.text.ClipboardApp.waitting_tips);
-    } else {
-      // 广播给所有连接方
-      const peerIds = Array.from(sender.peerConnections.keys());
-      // 使用 Promise.all 并行发送给所有peer
-      await Promise.all(peerIds.map((peerId) => sendStringAndMetas(peerId)));
-    }
-    // 生成分享链接,并展示获取方法
-    const link = `${window.location.origin}${window.location.pathname}?roomId=${shareRoomId}`;
-    setShareLink(link);
-  }, [sender, messages, sendStringAndMetas, shareRoomId]);
-  // 加入房间，等有人进入后会自动建立连接
-  const handleJoinRoom = useCallback(
-    async (isSender: boolean) => {
-      if (!sender || !receiver || !messages) return;
-      // 根据 isSender 确定使用的变量
-      const currentRoomId = isSender ? shareRoomId : retrieveRoomId;
-      const peer = isSender ? sender : receiver;
-
-      // 检查房间 ID
-      if (!currentRoomId) {
-        putMessageInMs(messages.text.ClipboardApp.joinRoom.EmptyMsg, isSender);
-        return;
-      }
-
-      // 只有发送方能创建房间
-      if (isSender && activeTab === "send" && !peer.isInRoom) {
-        if (currentRoomId !== initShareRoomId) {
-          //如果是系统初始化的RoomID，则不需要重复创建房间
-          const success = await createRoom(currentRoomId);
-          if (!success) {
-            putMessageInMs(
-              messages.text.ClipboardApp.joinRoom.DuplicateMsg,
-              isSender
-            );
-            return;
-          }
-        }
-      }
-
-      try {
-        await peer.joinRoom(currentRoomId, isSender);
-        // 成功加入房间后的逻辑
-        putMessageInMs(
-          messages.text.ClipboardApp.joinRoom.successMsg,
-          isSender,
-          6000
-        );
-
-        const link = `${window.location.origin}${window.location.pathname}?roomId=${currentRoomId}`;
-        setShareLink(link);
-      } catch (error) {
-        if (error instanceof Error) {
-          const errorMsg =
-            error.message === "Room does not exist"
-              ? messages.text.ClipboardApp.joinRoom.notExist
-              : `${messages.text.ClipboardApp.joinRoom.failMsg} ${error.message}`;
-          putMessageInMs(errorMsg, isSender);
-        } else {
-          putMessageInMs(
-            messages.text.ClipboardApp.joinRoom.failMsg + " Unknown error",
-            isSender
-          );
-        }
-        console.error("Failed to join room:", error);
-      }
-    },
-    [
-      sender,
-      receiver,
-      messages,
-      shareRoomId,
-      retrieveRoomId,
-      activeTab,
-      initShareRoomId,
-      setShareLink,
-    ]
-  );
 
   //选择保存目录
   const onLocationPick = useCallback(async (): Promise<boolean> => {
@@ -472,58 +376,6 @@ const AdvancedClipboardApp = () => {
     },
     [receiverFileTransfer]
   );
-  //更新房间状态
-  useEffect(() => {
-    if (
-      !messages ||
-      (!sender && activeTab === "send") ||
-      (!receiver && activeTab === "retrieve")
-    ) {
-      // If messages or relevant peer object is not loaded, do nothing or set a default status
-      if (activeTab === "send") setShareRoomStatus("");
-      else setRetrieveRoomStatus("");
-      return;
-    }
-
-    const Peer = activeTab === "send" ? sender : receiver;
-    const currentPeerCount =
-      activeTab === "send" ? sharePeerCount : retrievePeerCount;
-    let status = "";
-
-    if (Peer) {
-      // Check if Peer is not null
-      if (!Peer.isInRoom) {
-        status =
-          activeTab === "retrieve"
-            ? messages.text.ClipboardApp.roomStatus.receiverEmptyMsg
-            : messages.text.ClipboardApp.roomStatus.senderEmptyMsg;
-      } else if (currentPeerCount === 0) {
-        status = messages.text.ClipboardApp.roomStatus.onlyOneMsg;
-      } else {
-        if (activeTab === "send") {
-          status = format_peopleMsg(
-            messages.text.ClipboardApp.roomStatus.peopleMsg_template,
-            currentPeerCount + 1
-          );
-        } else {
-          status = messages.text.ClipboardApp.roomStatus.connected_dis;
-        }
-      }
-    }
-
-    if (activeTab === "send") {
-      setShareRoomStatus(status);
-    } else {
-      setRetrieveRoomStatus(status);
-    }
-  }, [
-    activeTab,
-    sharePeerCount,
-    retrievePeerCount,
-    sender,
-    receiver,
-    messages,
-  ]);
 
   if (isLoadingMessages || !messages) {
     // Updated loading condition
@@ -559,8 +411,8 @@ const AdvancedClipboardApp = () => {
           {activeTab === "send" ? (
             <>
               <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
-                {shareRoomStatus && (
-                  <span>{`${messages.text.ClipboardApp.html.RoomStatus_dis} ${shareRoomStatus}`}</span>
+                {shareRoomStatusText && (
+                  <span>{`${messages.text.ClipboardApp.html.RoomStatus_dis} ${shareRoomStatusText}`}</span>
                 )}
               </div>
               <RichTextEditor
@@ -590,12 +442,12 @@ const AdvancedClipboardApp = () => {
                 <span>{messages.text.ClipboardApp.html.inputRoomId_tips}</span>
                 <Input
                   value={shareRoomId} //展示值
-                  onChange={(e) => handleShareRoomCheck(e.target.value)}
+                  onChange={(e) => checkAndSetShareRoomId(e.target.value)}
                   className="w-full md:w-36 border-2 border-gray-300 rounded-md px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
                 />
                 <Button
                   className="w-full"
-                  onClick={() => handleJoinRoom(true)}
+                  onClick={() => joinRoom(true, shareRoomId)}
                   disabled={sender ? sender.isInRoom : false} //如果已经在房间则停用进入房间功能
                 >
                   {messages.text.ClipboardApp.html.joinRoom_dis}
@@ -604,7 +456,7 @@ const AdvancedClipboardApp = () => {
               <div className="flex space-x-2 mb-2">
                 <AnimatedButton
                   className="w-full"
-                  onClick={handleShare}
+                  onClick={generateShareLinkAndBroadcast}
                   loadingText={
                     messages.text.ClipboardApp.html.startSending_loadingText
                   }
@@ -617,8 +469,8 @@ const AdvancedClipboardApp = () => {
           ) : (
             <>
               <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
-                {retrieveRoomStatus && (
-                  <span>{`${messages.text.ClipboardApp.html.RoomStatus_dis} ${retrieveRoomStatus}`}</span>
+                {retrieveRoomStatusText && (
+                  <span>{`${messages.text.ClipboardApp.html.RoomStatus_dis} ${retrieveRoomStatusText}`}</span>
                 )}
               </div>
               <div className="mb-4">
@@ -640,7 +492,7 @@ const AdvancedClipboardApp = () => {
               <div className="mb-4">
                 <Button
                   className="w-full"
-                  onClick={() => handleJoinRoom(false)}
+                  onClick={() => joinRoom(false, retrieveRoomId)}
                   ref={retrieveJoinRoomBtnRef}
                   disabled={receiver ? receiver.isInRoom : false} //如果已经在房间则停用进入房间功能
                 >
@@ -675,22 +527,18 @@ const AdvancedClipboardApp = () => {
           )}
         </CardContent>
       </Card>
-      {activeTab === "send" &&
-        shareLink !== "" &&
-        messages && ( // Ensure messages is loaded
-          <Card className="border-2 shadow-md mt-4">
-            {" "}
-            {/* Added mt-4 for spacing */}
-            <CardHeader>
-              <CardTitle>
-                {messages.text.ClipboardApp.html.RetrieveMethodTitle}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <QRCodeComponent RoomID={shareRoomId} shareLink={shareLink} />
-            </CardContent>
-          </Card>
-        )}
+      {activeTab === "send" && shareLink !== "" && messages && (
+        <Card className="border-2 shadow-md mt-4">
+          <CardHeader>
+            <CardTitle>
+              {messages.text.ClipboardApp.html.RetrieveMethodTitle}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <QRCodeComponent RoomID={shareRoomId} shareLink={shareLink} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
