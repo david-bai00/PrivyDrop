@@ -8,10 +8,6 @@ import React, {
 } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import WebRTC_Initiator from "../lib/webrtc_Initiator";
-import WebRTC_Recipient from "../lib/webrtc_Recipient";
-import FileReceiver from "../lib/fileReceiver";
-import FileSender from "../lib/fileSender";
 import { debounce } from "lodash";
 import FileListDisplay from "./self_define/FileListDisplay";
 import { FileMeta, CustomFile, fileMetadata } from "@/lib/types/file";
@@ -30,18 +26,16 @@ import JSZip from "jszip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip } from "./Tooltip";
 import RichTextEditor from "@/components/Editor/RichTextEditor";
-import { config } from "@/app/config/environment";
-import { fetchRoom, createRoom, checkRoom } from "@/app/config/api";
-import { trackReferrer } from "@/components/utils/tracking";
-import { postLogInDebug } from "@/app/config/api";
 import AnimatedButton from "./self_define/AnimatedButton";
-import { format_peopleMsg } from "@/utils/formatMessage";
-import { getDictionary } from "@/lib/dictionary";
 import { useLocale } from "@/hooks/useLocale";
 import type { Messages } from "@/types/messages";
 import { useClipboardAppMessages } from "@/hooks/useClipboardAppMessages";
 import { usePageSetup } from "@/hooks/usePageSetup";
 import { useRoomManager } from "@/hooks/useRoomManager";
+import {
+  useWebRTCConnection,
+  ProgressState,
+} from "@/hooks/useWebRTCConnection";
 
 const developmentEnv = process.env.NEXT_PUBLIC_development!; //开发环境
 // 处理 beforeunload 事件的函数
@@ -54,72 +48,81 @@ const handleBeforeUnload = (event: any) => {
 function allowUnload() {
   window.removeEventListener("beforeunload", handleBeforeUnload);
 }
+
 const AdvancedClipboardApp = () => {
   const { shareMessage, retrieveMessage, putMessageInMs } =
     useClipboardAppMessages();
 
   const [retrieveRoomId, setRetrieveRoomId] = useState(""); //接收端--房间ID
-  //发送端：编辑器文本、文件
-  const [shareContent, setShareContent] = useState("");
-  const [sendFiles, setSendFiles] = useState<CustomFile[]>([]); //FILE对象只会先引用文件，并不会将文件内容读取进内存。只有当分片读取时，才加载一小片到内存。理论上支持大文件。
-
-  const [sendProgress, setSendProgress] = useState<{
-    //文件的进度--发送端--{fileId:0-1}--支持区分多个接收端
-    [fileId: string]: {
-      [peerId: string]: { progress: number; speed: number };
-    };
-  }>({});
-
-  const [receiveProgress, setReceiveProgress] = useState<{
-    //文件的进度--接收端--{fileId:0-1}--目前只有一个发送端（为了和发送进度保持一致）
-    [fileId: string]: {
-      [peerId: string]: { progress: number; speed: number };
-    };
-  }>({});
-
-  // 取回端：编辑器文本、文件
-  const [retrievedContent, setRetrievedContent] = useState("");
-  const [retrievedFiles, setRetrievedFiles] = useState<CustomFile[]>([]);
-  const [retrievedFileMetas, setRetrievedFileMetas] = useState<FileMeta[]>([]); //接收到的meta信息
-
-  //初始化 p2p通信/文件传输 对象
-  const [sender, setSender] = useState<WebRTC_Initiator | null>(null);
-  const [receiver, setReceiver] = useState<WebRTC_Recipient | null>(null);
-  const [senderFileTransfer, setSenderFileTransfer] =
-    useState<FileSender | null>(null);
-  const [receiverFileTransfer, setReceiverFileTransfer] =
-    useState<FileReceiver | null>(null);
-
-  const retrieveJoinRoomBtnRef = useRef<HTMLButtonElement>(null); //接收方--加入房间按钮ref
   const [activeTab, setActiveTab] = useState<"send" | "retrieve">("send");
-  const richTextToPlainText = useRichTextToPlainText();
-  // 1. 添加一个状态来追踪连接数量
-  const [sharePeerCount, setSharePeerCount] = useState(0);
-  const [retrievePeerCount, setRetrievePeerCount] = useState(0);
-  const locale = useLocale();
+  const retrieveJoinRoomBtnRef = useRef<HTMLButtonElement>(null); //接收方--加入房间按钮ref
   const { messages, isLoadingMessages } = usePageSetup({
     setRetrieveRoomId,
     setActiveTab,
     retrieveJoinRoomBtnRef,
   });
-  // This function will be properly defined in useWebRTCConnection or useFileTransferHandler
-  const dummyBroadcastDataToPeers = useCallback(async () => {
-    if (!senderFileTransfer || !sender) return;
-    console.log("Attempting to broadcast data (dummy)...");
-    const peerIds = Array.from(sender.peerConnections.keys());
-    await Promise.all(
-      peerIds.map(async (peerId) => {
-        if (shareContent)
-          await senderFileTransfer.sendString(shareContent, peerId);
-        if (sendFiles.length)
-          senderFileTransfer.sendFileMeta(sendFiles, peerId);
-      })
-    );
-  }, [sender, senderFileTransfer, shareContent, sendFiles]);
+  //发送端：编辑器文本、文件
+  const [shareContent, setShareContent] = useState("");
+  const [sendFiles, setSendFiles] = useState<CustomFile[]>([]); //FILE对象只会先引用文件，并不会将文件内容读取进内存。只有当分片读取时，才加载一小片到内存。理论上支持大文件。
+  // 取回端：编辑器文本、文件
+  const [retrievedContent, setRetrievedContent] = useState("");
+  const [retrievedFiles, setRetrievedFiles] = useState<CustomFile[]>([]);
+  const [retrievedFileMetas, setRetrievedFileMetas] = useState<FileMeta[]>([]); //接收到的meta信息
+
+  const richTextToPlainText = useRichTextToPlainText();
+
+  // Initialize WebRTC Connection Hook
+  const {
+    sender,
+    receiver,
+    sharePeerCount,
+    retrievePeerCount,
+    sendProgress,
+    receiveProgress,
+    broadcastDataToAllPeers,
+    requestFile,
+    requestFolder,
+    setReceiverDirectoryHandle,
+    getReceiverSaveType,
+  } = useWebRTCConnection({
+    messages, // Pass messages for logging or potential internal messages from the hook
+    putMessageInMs, // Pass for user feedback on connection events
+    onStringReceived: useCallback((data, peerId) => {
+      if (developmentEnv)
+        console.log(
+          `App received string from ${peerId}: ${data.substring(0, 30)}`
+        );
+      setRetrievedContent(data);
+    }, []), // Empty dependency array if setRetrievedContent is stable
+    onFileMetaReceived: useCallback((meta, peerId) => {
+      if (developmentEnv)
+        console.log(`App received file meta from ${peerId}: ${meta.name}`);
+      const { type, ...metaWithoutType } = meta; // Assuming type is part of fileMetadata but not FileMeta
+      setRetrievedFileMetas((prev) => {
+        const DPrev = prev.filter(
+          (existingFile) => existingFile.fileId !== metaWithoutType.fileId
+        ); // Prevent duplicates by fileId
+        return [...DPrev, metaWithoutType];
+      });
+    }, []),
+    onFileReceived: useCallback((file, peerId) => {
+      if (developmentEnv)
+        console.log(`App received file from ${peerId}: ${file.name}`);
+      setRetrievedFiles((prev) => {
+        const isDuplicate = prev.some(
+          (existingFile) =>
+            existingFile.fullName === file.fullName &&
+            existingFile.size === file.size
+        ); // More robust duplicate check
+        if (isDuplicate) return prev;
+        return [...prev, file];
+      });
+    }, []),
+  });
+  // Initialize Room Manager Hook
   const {
     shareRoomId,
-    // initShareRoomId, // Not directly used in JSX, managed internally by hook
-    setShareRoomId, // Keep this if shareRoomId can be set from input/clipboard
+    setShareRoomId, // If needed for pasting room ID directly into sender's input
     shareLink,
     shareRoomStatusText,
     retrieveRoomStatusText,
@@ -129,12 +132,14 @@ const AdvancedClipboardApp = () => {
   } = useRoomManager({
     messages,
     putMessageInMs,
-    sender, // Placeholder
-    receiver, // Placeholder
+    sender,
+    receiver,
     activeTab,
-    sharePeerCount, // Placeholder
-    retrievePeerCount, // Placeholder
-    broadcastDataToPeers: dummyBroadcastDataToPeers, // Placeholder for actual broadcast function
+    sharePeerCount,
+    retrievePeerCount,
+    // Pass the actual broadcast function from useWebRTCConnection
+    broadcastDataToPeers: () =>
+      broadcastDataToAllPeers(shareContent, sendFiles),
   });
 
   useEffect(() => {
@@ -153,184 +158,71 @@ const AdvancedClipboardApp = () => {
     };
   }, [sendFiles, shareContent, retrievedFiles, retrievedContent]);
 
-  //useCallback 钩子来定义 函数。这确保了函数只在其依赖项（content, files, senderFileTransfer）发生变化时才会重新创建
-  const sendStringAndMetas = useCallback(
-    async (peerId: string) => {
-      if (!senderFileTransfer) {
-        console.error(
-          "senderFileTransfer is not initialized, delaying send operation..."
-        );
-        // 重试逻辑改为异步
-        setTimeout(async () => {
-          if (senderFileTransfer) {
-            console.log("Retrying send operation...");
-            if (shareContent)
-              await (senderFileTransfer as FileSender).sendString(
-                shareContent,
-                peerId
-              );
-            if (sendFiles.length)
-              (senderFileTransfer as FileSender).sendFileMeta(
-                sendFiles,
-                peerId
-              );
-          }
-        }, 1000);
-        return;
-      }
-      if (shareContent) {
-        if (developmentEnv === "true")
-          postLogInDebug(`Sending string content:${shareContent}`);
-        // console.log('Sending string content:', shareContent);
-        await senderFileTransfer.sendString(shareContent, peerId);
-      }
-      if (sendFiles.length) {
-        // console.log('Sending file metadata:', sendFiles);
-        senderFileTransfer.sendFileMeta(sendFiles, peerId);
-      }
-    },
-    [shareContent, sendFiles, senderFileTransfer]
-  );
-
-  // 使用useEffect钩子来 在组件加载时 初始化，并在组件卸载时清理连接
-  useEffect(() => {
-    const senderConnection = new WebRTC_Initiator(config.API_URL);
-    const receiverConnection = new WebRTC_Recipient(config.API_URL);
-
-    setSender(senderConnection);
-    setReceiver(receiverConnection);
-
-    const senderFT = new FileSender(senderConnection);
-    const receiverFT = new FileReceiver(receiverConnection);
-    setSenderFileTransfer(senderFT);
-    setReceiverFileTransfer(receiverFT);
-
-    return () => {
-      senderConnection.cleanUpBeforeExit();
-      receiverConnection.cleanUpBeforeExit();
-    };
-  }, []);
-  //定义一些文件接收处理函数
-  useEffect(() => {
-    if (sender && senderFileTransfer) {
-      sender.onConnectionStateChange = (
-        state: RTCPeerConnectionState,
-        peerId: string
-      ) => {
-        console.log(`connection status: ${state} with peerId: ${peerId}`);
-        setSharePeerCount(sender.peerConnections.size);
-        if (state === "connected") {
-          //当建立连接后，设置进度回调函数
-          senderFileTransfer?.setProgressCallback(
-            (fileId: string, progress: number, speed: number) => {
-              setSendProgress((prev) => ({
-                ...prev,
-                [fileId]: {
-                  ...prev[fileId],
-                  [peerId]: { progress, speed },
-                },
-              }));
-            },
-            peerId
-          );
-        }
-      };
-      sender.onDataChannelOpen = sendStringAndMetas;
-    }
-
-    if (receiver && receiverFileTransfer) {
-      receiver.onConnectionStateChange = (state: string, peerId: string) => {
-        console.log(`connection status: ${state} with peerId: ${peerId}`);
-        setRetrievePeerCount(receiver.peerConnections.size);
-        if (state === "connected") {
-          receiverFileTransfer?.setProgressCallback(
-            (fileId: string, progress: number, speed: number) => {
-              setReceiveProgress((prev) => ({
-                ...prev,
-                [fileId]: {
-                  ...prev[fileId],
-                  [peerId]: { progress, speed },
-                },
-              }));
-            }
-          );
-        }
-      };
-
-      // receiver.onDataChannelOpen = () => {
-      //   putMessageInMs(messages!.text.ClipboardApp.channelOpen_msg,false);
-      // };
-    }
-
-    if (receiverFileTransfer) {
-      receiverFileTransfer.onStringReceived = (value: string) => {
-        setRetrievedContent(value);
-      };
-
-      receiverFileTransfer.onFileMetaReceived = (fileMeta: fileMetadata) => {
-        const { type, ...metaWithoutType } = fileMeta; // 剔除 type 属性
-        setRetrievedFileMetas((prev) => [...prev, metaWithoutType]);
-      };
-
-      receiverFileTransfer.onFileReceived = async (file: CustomFile) => {
-        setRetrievedFiles((prev) => {
-          // 检查 fullName 是否已经存在
-          const isDuplicate = prev.some(
-            (existingFile) => existingFile.fullName === file.fullName
-          );
-          if (isDuplicate) {
-            return prev; // 如果存在，返回原数组
-          }
-          return [...prev, file]; // 否则添加到数组中
-        });
-      };
-    }
-  }, [
-    sender,
-    receiver,
-    senderFileTransfer,
-    receiverFileTransfer,
-    sendStringAndMetas,
-    messages,
-  ]);
   //只有接收端支持下载
   const handleDownload = useCallback(
     async (meta: FileMeta) => {
-      if (meta.folderName !== "") {
-        const downloadFiles = retrievedFiles.filter(
+      if (meta.folderName && meta.folderName !== "") {
+        // Check for non-empty folderName
+        const filesToZip = retrievedFiles.filter(
           (file) => file.folderName === meta.folderName
         );
+        if (filesToZip.length === 0) {
+          putMessageInMs(
+            `No files found for folder ${meta.folderName} to download.`,
+            false
+          );
+          return;
+        }
         const zip = new JSZip();
-        for (let file of downloadFiles) zip.file(file.fullName, file); // Add files to the zip
+        for (let file of filesToZip) {
+          zip.file(file.fullName, file);
+        }
         try {
           // Generate the zip file
           const content = await zip.generateAsync({ type: "blob" });
-          DownloadAs(content, `downloaded_folder_${meta.folderName}.zip`);
+          DownloadAs(content, `${meta.folderName}.zip`);
         } catch (error) {
           console.error("Error creating zip file:", error);
-          // alert('An error occurred while creating the zip file.');
+          putMessageInMs(
+            // messages?.text.ClipboardApp.zipError ||
+            "Error creating ZIP.",
+            false
+          );
         }
       } else {
-        const downloadFiles = retrievedFiles.filter(
+        const filesToDownload = retrievedFiles.filter(
           (file) => file.name === meta.name
         );
-        for (let file of downloadFiles) DownloadAs(file, file.name);
+        if (filesToDownload) {
+          for (let file of filesToDownload) DownloadAs(file, file.name);
+        } else {
+          putMessageInMs(`File ${meta.name} not found for download.`, false);
+        }
       }
     },
-    [retrievedFiles]
+    [retrievedFiles, messages]
   );
 
-  const onFilePicked = useCallback((files: CustomFile[]) => {
-    setSendFiles((prevFiles) => [...prevFiles, ...files]);
-  }, []);
-  //点击删除按钮之后，将对应文件删掉
-  const removeSenderFile = useCallback((meta: FileMeta) => {
-    // Uses sendFiles
+  const onFilePicked = useCallback((pickedFiles: CustomFile[]) => {
     setSendFiles((prevFiles) => {
-      if (meta.folderName !== "") {
-        return prevFiles.filter((file) => file.folderName !== meta.folderName);
+      // Basic duplicate check by name and size for picked files
+      const newFiles = pickedFiles.filter(
+        (pf) =>
+          !prevFiles.some((ef) => ef.name === pf.name && ef.size === pf.size)
+      );
+      return [...prevFiles, ...newFiles];
+    });
+  }, []);
+
+  //点击删除按钮之后，将对应文件删掉
+  const removeSenderFile = useCallback((metaToRemove: FileMeta) => {
+    setSendFiles((prevFiles) => {
+      if (metaToRemove.folderName && metaToRemove.folderName !== "") {
+        return prevFiles.filter(
+          (file) => file.folderName !== metaToRemove.folderName
+        );
       } else {
-        return prevFiles.filter((file) => file.name !== meta.name);
+        return prevFiles.filter((file) => file.name !== metaToRemove.name);
       }
     });
   }, []);
@@ -339,48 +231,57 @@ const AdvancedClipboardApp = () => {
   const onLocationPick = useCallback(async (): Promise<boolean> => {
     if (!messages) return false; // Added messages dependency
     if (!window.showDirectoryPicker) {
-      console.error("showDirectoryPicker is not supported in this browser.");
+      putMessageInMs(
+        //messages.text.ClipboardApp.pickSaveUnsupported ||
+        "Directory picker not supported.",
+        false
+      );
+      console.error("showDirectoryPicker is not supported.");
       return false;
     }
 
-    // 确认操作
-    const userConfirmed = window.confirm(
-      messages.text.ClipboardApp.pickSaveMsg
-    );
-    if (!userConfirmed) return false;
-
+    if (!window.confirm(messages.text.ClipboardApp.pickSaveMsg)) return false;
     try {
-      // 选择保存目录
-      const directory = await window.showDirectoryPicker();
-
-      if (receiverFileTransfer && directory) {
-        console.log("onLocationPick", directory);
-        await receiverFileTransfer.setSaveDirectory(directory);
-        return true;
+      const directoryHandle = await window.showDirectoryPicker();
+      await setReceiverDirectoryHandle(directoryHandle); // From useWebRTCConnection
+      putMessageInMs(
+        // messages.text.ClipboardApp.pickSaveSuccess ||
+        "Save location set.",
+        false
+      );
+      return true;
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        // Don't show error if user cancelled
+        console.error("Failed to set up folder receive:", err);
+        putMessageInMs(
+          // messages.text.ClipboardApp.pickSaveError ||
+          "Could not set save location.",
+          false
+        );
       }
       return false;
-    } catch (err) {
-      console.error("Failed to set up folder receive:", err);
-      return false;
     }
-  }, [receiverFileTransfer, messages]); // Added messages
+  }, [messages, putMessageInMs, setReceiverDirectoryHandle]);
 
-  const handleRequest = useCallback(
-    async (meta: FileMeta) => {
-      if (!receiverFileTransfer) return;
+  const handleFileRequest = useCallback(
+    (meta: FileMeta) => {
       if (meta.folderName) {
-        receiverFileTransfer.requestFolder(meta.folderName);
+        requestFolder(meta.folderName);
+      } else if (meta.fileId) {
+        // Ensure fileId exists for individual file requests
+        requestFile(meta.fileId);
       } else {
-        receiverFileTransfer.requestFile(meta.fileId);
+        console.warn("Cannot request file: missing fileId", meta);
       }
     },
-    [receiverFileTransfer]
+    [requestFile, requestFolder]
   );
 
   if (isLoadingMessages || !messages) {
-    // Updated loading condition
-    return <div>Loading...</div>;
+    return <div className="p-4 text-center">Loading messages...</div>;
   }
+
   return (
     <div className="container mx-auto px-4 py-8 w-full md:max-w-4xl">
       <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
@@ -388,6 +289,7 @@ const AdvancedClipboardApp = () => {
           variant={activeTab === "send" ? "default" : "outline"}
           onClick={() => setActiveTab("send")}
           className="flex-1"
+          aria-selected={activeTab === "send"}
         >
           {messages.text.ClipboardApp.html.senderTab}
         </Button>
@@ -395,6 +297,7 @@ const AdvancedClipboardApp = () => {
           variant={activeTab === "retrieve" ? "default" : "outline"}
           onClick={() => setActiveTab("retrieve")}
           className="flex-1"
+          aria-selected={activeTab === "retrieve"}
         >
           {messages.text.ClipboardApp.html.retrieveTab}
         </Button>
@@ -415,34 +318,40 @@ const AdvancedClipboardApp = () => {
                   <span>{`${messages.text.ClipboardApp.html.RoomStatus_dis} ${shareRoomStatusText}`}</span>
                 )}
               </div>
-              <RichTextEditor
-                value={shareContent}
-                onChange={(value) => setShareContent(value)}
-              />
+              <RichTextEditor value={shareContent} onChange={setShareContent} />
               <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
                 <ReadClipboardButton
                   title={messages.text.ClipboardApp.html.Paste_dis}
-                  onRead={(text: string) => setShareContent(text)}
+                  onRead={setShareContent}
                 />
                 <WriteClipboardButton
                   title={messages.text.ClipboardApp.html.Copy_dis}
                   textToCopy={richTextToPlainText(shareContent)}
                 />
               </div>
-              <div className="mb-2">
-                <FileUploadHandler onFilePicked={onFilePicked} />
+              <div className="mb-3">
+                <FileUploadHandler
+                  onFilePicked={onFilePicked}
+                  // messages={messages}
+                />
                 <FileListDisplay
                   mode="sender"
                   files={sendFiles}
                   fileProgresses={sendProgress}
                   onDelete={removeSenderFile}
+                  // messages={messages}
                 />
               </div>
               <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-2 mb-2">
                 <span>{messages.text.ClipboardApp.html.inputRoomId_tips}</span>
                 <Input
-                  value={shareRoomId} //展示值
+                  aria-label="Share Room ID"
+                  value={shareRoomId}
                   onChange={(e) => checkAndSetShareRoomId(e.target.value)}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData("text");
+                    checkAndSetShareRoomId(pastedText); // also check pasted text
+                  }}
                   className="w-full md:w-36 border-2 border-gray-300 rounded-md px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
                 />
                 <Button
@@ -476,7 +385,7 @@ const AdvancedClipboardApp = () => {
               <div className="mb-4">
                 <ReadClipboardButton
                   title={messages.text.ClipboardApp.html.readClipboard_dis}
-                  onRead={(text: string) => setRetrieveRoomId(text)}
+                  onRead={setRetrieveRoomId}
                 />
               </div>
               <div className="mb-4">
@@ -503,7 +412,7 @@ const AdvancedClipboardApp = () => {
                 <>
                   <RichTextEditor
                     value={retrievedContent}
-                    onChange={(value) => setRetrievedContent(value)}
+                    onChange={setRetrievedContent}
                   />
                   <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-2">
                     <WriteClipboardButton
@@ -518,16 +427,17 @@ const AdvancedClipboardApp = () => {
                 files={retrievedFileMetas}
                 fileProgresses={receiveProgress}
                 onDownload={handleDownload}
-                onRequest={handleRequest}
+                onRequest={handleFileRequest}
                 onLocationPick={onLocationPick}
-                saveType={receiverFileTransfer?.saveType}
+                saveType={getReceiverSaveType()}
+                // messages={messages}
               />
               {retrieveMessage && <p className="mb-4">{retrieveMessage}</p>}
             </>
           )}
         </CardContent>
       </Card>
-      {activeTab === "send" && shareLink !== "" && messages && (
+      {activeTab === "send" && shareLink && messages && (
         <Card className="border-2 shadow-md mt-4">
           <CardHeader>
             <CardTitle>

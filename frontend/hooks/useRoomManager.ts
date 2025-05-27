@@ -24,7 +24,7 @@ interface UseRoomManagerProps {
   // `sendStringAndMetas` itself will be part of useWebRTCConnection or useFileTransfer.
   // For now, we might need to pass a simplified broadcast function or rethink.
   // Let's assume for now `broadcastData` is a function passed from the hook that will own `sendStringAndMetas`.
-  broadcastDataToPeers: () => Promise<void>;
+  broadcastDataToPeers: () => Promise<boolean>;
 }
 
 export function useRoomManager({
