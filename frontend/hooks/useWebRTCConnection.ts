@@ -156,7 +156,7 @@ export function useWebRTCConnection({
           );
         onFileMetaReceived(meta, peerId || "unknown_peer");
       };
-      receiverFileTransfer.onFileReceived = (file) => {
+      receiverFileTransfer.onFileReceived = async (file) => {
         const peerId = "testId";
         if (developmentEnv)
           console.log(`File received from peer ${peerId}: ${file.name}`);
@@ -216,7 +216,7 @@ export function useWebRTCConnection({
         console.log(
           `Requesting file ${fileId} from peer ${peerId || "default"}`
         );
-      receiverFileTransfer.requestFile(fileId, peerId);
+      receiverFileTransfer.requestFile(fileId);
     },
     [receiverFileTransfer]
   );
@@ -228,7 +228,7 @@ export function useWebRTCConnection({
         console.log(
           `Requesting folder ${folderName} from peer ${peerId || "default"}`
         );
-      receiverFileTransfer.requestFolder(folderName, peerId);
+      receiverFileTransfer.requestFolder(folderName);
     },
     [receiverFileTransfer]
   );
