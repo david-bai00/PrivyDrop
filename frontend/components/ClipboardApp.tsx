@@ -69,11 +69,11 @@ const ClipboardApp = () => {
   // Initialize Room Manager Hook
   const {
     shareRoomId,
-    // setShareRoomId, // Keep if shareRoomId can be set from input/clipboard
+    initShareRoomId,
     shareLink,
     shareRoomStatusText,
     retrieveRoomStatusText,
-    checkAndSetShareRoomId,
+    processRoomIdInput,
     joinRoom,
     generateShareLinkAndBroadcast,
   } = useRoomManager({
@@ -137,12 +137,12 @@ const ClipboardApp = () => {
               removeFileToSend={removeFileToSend}
               richTextToPlainText={richTextToPlainText}
               sendProgress={sendProgress}
-              shareRoomId={shareRoomId}
-              checkAndSetShareRoomId={checkAndSetShareRoomId}
+              processRoomIdInput={processRoomIdInput}
               joinRoom={joinRoom}
               generateShareLinkAndBroadcast={generateShareLinkAndBroadcast}
               sender={sender}
               shareMessage={shareMessage}
+              currentValidatedShareRoomId={shareRoomId}
             />
           ) : (
             <RetrieveTabPanel
