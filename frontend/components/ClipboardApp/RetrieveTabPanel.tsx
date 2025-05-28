@@ -120,7 +120,6 @@ export function RetrieveTabPanel({
         <ReadClipboardButton
           title={messages.text.ClipboardApp.html.readClipboard_dis}
           onRead={setRetrieveRoomIdInput}
-          buttonClassName="w-full sm:w-auto flex-shrink-0"
         />
         <Input
           aria-label="Retrieve Room ID"
@@ -147,14 +146,14 @@ export function RetrieveTabPanel({
       {retrievedContent && (
         <div className="my-3 p-2 border rounded bg-gray-50">
           <h3 className="font-semibold text-md mb-1">
-            {messages.text.ClipboardApp.html.receivedTextTitle}
+            {/* {messages.text.ClipboardApp.html.receivedTextTitle} */}
+            TextTitle_placeholder
           </h3>
           <RichTextEditor
             value={retrievedContent}
             onChange={() => {
               /* Read-only */
             }}
-            readOnly
           />
           <div className="mt-2">
             <WriteClipboardButton
@@ -172,7 +171,6 @@ export function RetrieveTabPanel({
         onRequest={handleFileRequestFromPanel} // Use the panel's own handler
         onLocationPick={onLocationPick} // Use the panel's own handler
         saveType={getReceiverSaveType()}
-        messages={messages}
       />
       {retrieveMessage && (
         <p className="mt-3 text-sm text-blue-600">{retrieveMessage}</p>

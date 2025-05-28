@@ -12,7 +12,7 @@ import { useFileTransferHandler } from "@/hooks/useFileTransferHandler";
 import { SendTabPanel } from "./ClipboardApp/SendTabPanel";
 import { RetrieveTabPanel } from "./ClipboardApp/RetrieveTabPanel";
 
-const AdvancedClipboardApp = () => {
+const ClipboardApp = () => {
   const { shareMessage, retrieveMessage, putMessageInMs } =
     useClipboardAppMessages();
 
@@ -183,4 +183,4 @@ const AdvancedClipboardApp = () => {
   );
 };
 
-export default AdvancedClipboardApp;
+export default ClipboardApp;
