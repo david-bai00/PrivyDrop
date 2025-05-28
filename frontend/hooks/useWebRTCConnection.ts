@@ -4,7 +4,6 @@ import WebRTC_Recipient from "@/lib/webrtc_Recipient";
 import FileSender from "@/lib/fileSender";
 import FileReceiver from "@/lib/fileReceiver";
 import { config } from "@/app/config/environment"; // For API_URL
-import { postLogInDebug } from "@/app/config/api"; // For debug logging
 import type { CustomFile, fileMetadata, FileMeta } from "@/lib/types/file"; // Assuming FileMeta might be used by caller
 import type { Messages } from "@/types/messages";
 
@@ -16,6 +15,8 @@ export type FileProgressPeers = { [peerId: string]: PeerProgressDetails };
 export type ProgressState = { [fileId: string]: FileProgressPeers };
 
 interface UseWebRTCConnectionProps {
+  shareContent: string;
+  sendFiles: CustomFile[];
   // Callbacks for data received from peers
   onStringReceived: (data: string, peerId: string) => void;
   onFileMetaReceived: (meta: fileMetadata, peerId: string) => void;
@@ -31,6 +32,8 @@ interface UseWebRTCConnectionProps {
 }
 
 export function useWebRTCConnection({
+  shareContent,
+  sendFiles,
   onStringReceived,
   onFileMetaReceived,
   onFileReceived,
@@ -82,20 +85,9 @@ export function useWebRTCConnection({
         return;
       }
       if (textContent) {
-        if (developmentEnv)
-          postLogInDebug(
-            `Sending string content to ${peerId}: ${textContent.substring(
-              0,
-              100
-            )}...`
-          );
         await senderFileTransfer.sendString(textContent, peerId);
       }
       if (filesToSend.length > 0) {
-        if (developmentEnv)
-          postLogInDebug(
-            `Sending file metadata to ${peerId} for ${filesToSend.length} files.`
-          );
         senderFileTransfer.sendFileMeta(filesToSend, peerId);
       }
     },
@@ -120,9 +112,8 @@ export function useWebRTCConnection({
         }
         // Add more detailed user messages based on state if needed via putMessageInMs
       };
-      // The original `sender.onDataChannelOpen = sendStringAndMetas` is removed.
-      // Sending is now explicitly triggered by `broadcastDataToAllPeers`.
-      // `FileSender` should internally handle queueing if data channel is not open yet.
+      sender.onDataChannelOpen = () =>
+        broadcastDataToAllPeers(shareContent, sendFiles);
     }
 
     if (receiver && receiverFileTransfer) {

@@ -203,14 +203,7 @@ export function useRoomManager({
     // Always generate/update the share link
     const link = `${window.location.origin}${window.location.pathname}?roomId=${shareRoomId}`;
     setShareLink(link);
-  }, [
-    sender,
-    messages,
-    putMessageInMs,
-    broadcastDataToPeers,
-    shareRoomId,
-    setShareLink,
-  ]);
+  }, [sender, messages, putMessageInMs, shareRoomId, setShareLink]);
 
   // useEffect for room status text
   useEffect(() => {

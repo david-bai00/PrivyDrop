@@ -57,6 +57,8 @@ const ClipboardApp = () => {
     setReceiverDirectoryHandle,
     getReceiverSaveType,
   } = useWebRTCConnection({
+    shareContent,
+    sendFiles,
     messages,
     putMessageInMs,
     onStringReceived: onStringDataReceived,
