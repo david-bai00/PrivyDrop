@@ -1,125 +1,104 @@
-import React, { useState,useEffect } from 'react';
-import { Clipboard, FileText, Check } from 'lucide-react';
+import React from "react";
+import { Clipboard, FileText, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getDictionary } from '@/lib/dictionary';
-import { useLocale } from '@/hooks/useLocale';
-import type { Messages } from '@/types/messages';
-//type==0 --> 剪贴板样式，type!=0 --> 纯文本样式
+import { useClipboardActions } from "@/hooks/useClipboardActions";
+
 interface WriteClipboardButtonProps {
-  title: string;
+  title?: string; // Made title optional, can use default from messages
   textToCopy: string;
 }
 
 interface ReadClipboardButtonProps {
-  title: string;
-  onRead: (text: string) => void;
+  title?: string; // Made title optional
+  onRead: (text: string | null) => void; // Allow null if read fails
 }
 
-export const WriteClipboardButton: React.FC<WriteClipboardButtonProps> = ({ title, textToCopy }) => {
-  const locale = useLocale();
-  const [messages, setMessages] = useState<Messages | null>(null);
-  const [isCopied, setIsCopied] = useState<boolean>(false);
+export const WriteClipboardButton: React.FC<WriteClipboardButtonProps> = ({
+  title,
+  textToCopy,
+}) => {
+  const { copyText, isCopied, isLoadingMessages, clipboardMessages, error } =
+    useClipboardActions();
 
-  useEffect(() => {
-    getDictionary(locale)
-      .then(dict => setMessages(dict))
-      .catch(error => console.error('Failed to load messages:', error));
-  }, [locale]);
+  const buttonText = title || clipboardMessages.copyError || "Copy"; // Fallback title
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(textToCopy);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
-  };
-  if (messages === null) {
-    return <div>Loading...</div>;
+  if (isLoadingMessages && !clipboardMessages.copiedSuccess) {
+    // Only show loading if messages truly not ready
+    return (
+      <Button variant="outline" disabled>
+        {clipboardMessages.loading || "Loading..."}
+      </Button>
+    );
   }
+
   return (
-    <Button variant="outline" onClick={handleCopy}>
+    <Button
+      variant="outline"
+      onClick={() => copyText(textToCopy)}
+      disabled={isCopied || isLoadingMessages}
+    >
       {isCopied ? (
         <>
           <Check className="w-4 h-4 mr-2" />
-          {messages.text.clipboard_btn.Copied_dis}
+          {clipboardMessages.copiedSuccess}
         </>
-      ): (
+      ) : (
         <>
-        <FileText className="mr-2 h-4 w-4" /> {title}
+          <FileText className="mr-2 h-4 w-4" /> {buttonText}
         </>
       )}
+      {/* Optionally display error */}
+      {/* {error && <span className="ml-2 text-red-500">{error}</span>} */}
     </Button>
   );
 };
 
-export const ReadClipboardButton: React.FC<ReadClipboardButtonProps> = ({ title, onRead }) => {
-  const [isReaded, setIsReaded] = useState<boolean>(false);
-  const locale = useLocale();
-  const [messages, setMessages] = useState<Messages | null>(null);
-  useEffect(() => {
-    getDictionary(locale)
-      .then(dict => setMessages(dict))
-      .catch(error => console.error('Failed to load messages:', error));
-  }, [locale]);
+export const ReadClipboardButton: React.FC<ReadClipboardButtonProps> = ({
+  title,
+  onRead,
+}) => {
+  const {
+    readClipboard,
+    isPasted,
+    isLoadingMessages,
+    clipboardMessages,
+    error,
+  } = useClipboardActions();
+
   const handleRead = async () => {
-    try {
-      // 尝试读取富文本内容
-      const clipboardItems = await navigator.clipboard.read();
-      
-      for (const clipboardItem of clipboardItems) {
-        // 优先尝试读取 HTML 格式
-        if (clipboardItem.types.includes('text/html')) {
-          const blob = await clipboardItem.getType('text/html');
-          const html = await blob.text();
-          onRead(html);
-          setIsReaded(true);
-          setTimeout(() => setIsReaded(false), 2000);
-          return;
-        }
-        
-        // 如果没有 HTML 格式，尝试读取富文本格式
-        if (clipboardItem.types.includes('text/plain')) {
-          const blob = await clipboardItem.getType('text/plain');
-          const text = await blob.text();
-          // 将换行符转换为 HTML 换行标签
-          const formattedText = text.replace(/\n/g, '<br>');
-          onRead(formattedText);
-          setIsReaded(true);
-          setTimeout(() => setIsReaded(false), 2000);
-          return;
-        }
-      }
-    } catch (err) {
-      // 如果新 API 不支持，回退到传统的 readText 方法
-      try {
-        const text = await navigator.clipboard.readText();
-        const formattedText = text.replace(/\n/g, '<br>');
-        onRead(formattedText);
-        setIsReaded(true);
-        setTimeout(() => setIsReaded(false), 2000);
-      } catch (fallbackErr) {
-        console.error('Failed to read clipboard: ', fallbackErr);
-        onRead('');
-      }
-    }
+    const text = await readClipboard();
+    onRead(text); // Pass null if read failed or no suitable content
   };
-  if (messages === null) {
-    return <div>Loading...</div>;
+
+  const buttonText = title || clipboardMessages.readError || "Paste"; // Fallback title
+
+  if (isLoadingMessages && !clipboardMessages.pastedSuccess) {
+    // Only show loading if messages truly not ready
+    return (
+      <Button variant="outline" disabled>
+        {clipboardMessages.loading || "Loading..."}
+      </Button>
+    );
   }
+
   return (
-    <Button variant="outline" onClick={handleRead}>
-      {isReaded ? (
+    <Button
+      variant="outline"
+      onClick={handleRead}
+      disabled={isPasted || isLoadingMessages}
+    >
+      {isPasted ? (
         <>
           <Check className="w-4 h-4 mr-2" />
-          {messages.text.clipboard_btn.Pasted_dis}
+          {clipboardMessages.pastedSuccess}
         </>
       ) : (
         <>
-          <Clipboard className="w-4 h-4 mr-2" /> {title}
+          <Clipboard className="w-4 h-4 mr-2" /> {buttonText}
         </>
       )}
+      {/* Optionally display error */}
+      {/* {error && <span className="ml-2 text-red-500">{error}</span>} */}
     </Button>
   );
 };
