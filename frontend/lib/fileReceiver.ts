@@ -1,6 +1,6 @@
 //接收文件(夹)的流程：先批量接收文件 meta 信息，【判断是否需要让用户选择保存目录】，然后点击请求，再接收文件内容，接收到endMeta之后，发送ack，结束
 //发送文件夹的流程（同上）：接收批量文件请求
-import { SpeedCalculator } from "@/lib/myUtils";
+import { SpeedCalculator } from "@/lib/speedCalculator";
 import WebRTC_Recipient from "./webrtc_Recipient";
 import {
   CustomFile,
