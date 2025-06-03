@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import useRichTextToPlainText from "./self_define/rich-text-to-plain-text";
+import useRichTextToPlainText from "@/hooks/useRichTextToPlainText";
 import QRCodeComponent from "./self_define/RetrieveMethod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useClipboardAppMessages } from "@/hooks/useClipboardAppMessages";
