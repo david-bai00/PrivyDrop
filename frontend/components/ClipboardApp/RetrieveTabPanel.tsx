@@ -6,7 +6,7 @@ import {
   ReadClipboardButton,
   WriteClipboardButton,
 } from "@/components/self_define/clipboard_btn";
-import FileListDisplay from "@/components/self_define/FileListDisplay";
+import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import type { Messages } from "@/types/messages";
 import type { FileMeta } from "@/lib/types/file";
 import type { ProgressState } from "@/hooks/useWebRTCConnection"; // 假设此类型已导出

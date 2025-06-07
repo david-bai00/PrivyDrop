@@ -7,8 +7,8 @@ import {
   WriteClipboardButton,
 } from "@/components/self_define/clipboard_btn";
 import { FileUploadHandler } from "@/components/self_define/file-upload-handler";
-import FileListDisplay from "@/components/self_define/FileListDisplay";
-import AnimatedButton from "@/components/self_define/AnimatedButton";
+import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
+import AnimatedButton from "@/components/ui/AnimatedButton";
 import type { Messages } from "@/types/messages";
 import type { CustomFile, FileMeta } from "@/lib/types/file";
 import type { ProgressState } from "@/hooks/useWebRTCConnection";
