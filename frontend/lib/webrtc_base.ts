@@ -1,6 +1,5 @@
 // BaseWebRTC.js
-import io from 'socket.io-client';
-import { Socket } from 'socket.io-client';
+import io, { Socket, ManagerOptions, SocketOptions } from 'socket.io-client';
 import { getIceServers, getSocketOptions } from '@/app/config/environment';
 import { WakeLockManager } from './wakeLockManager';
 import { postLogInDebug } from '@/app/config/api';
@@ -17,6 +16,12 @@ interface CallbackTypes {
   onDataReceived?: (data: string | ArrayBuffer, peerId: string) => void;
   onConnectionEstablished?: (peerId: string) => void;
   onConnectionStateChange?: (state: RTCPeerConnectionState, peerId: string) => void;
+}
+
+export interface WebRTCConfig {
+  iceServers: RTCIceServer[];
+  socketOptions: Partial<ManagerOptions & SocketOptions>;
+  signalingServer: string;// signalingServer: 信令服务器的URL，用于初始化Socket.IO连接。
 }
 
 export default class BaseWebRTC {
@@ -42,9 +47,9 @@ export default class BaseWebRTC {
   protected reconnectionInProgress: boolean;//防止重复重连
   protected wakeLockManager: WakeLockManager;
 
-  constructor(signalingServer: string) {// signalingServer: 信令服务器的URL，用于初始化Socket.IO连接。
-    this.iceServers = getIceServers();
-    this.socket = io(signalingServer, getSocketOptions());
+  constructor(config: WebRTCConfig) {
+    this.iceServers = config.iceServers;
+    this.socket = io(config.signalingServer, config.socketOptions);
     this.peerConnections = new Map();// Map<targetPeerId, RTCPeerConnection>
     this.dataChannels = new Map();// Map<targetPeerId, RTCDataChannel>
     

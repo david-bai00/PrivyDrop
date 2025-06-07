@@ -3,7 +3,11 @@ import WebRTC_Initiator from "@/lib/webrtc_Initiator";
 import WebRTC_Recipient from "@/lib/webrtc_Recipient";
 import FileSender from "@/lib/fileSender";
 import FileReceiver from "@/lib/fileReceiver";
-import { config } from "@/app/config/environment"; // For API_URL
+import {
+  config,
+  getIceServers,
+  getSocketOptions,
+} from "@/app/config/environment";
 import type { CustomFile, fileMetadata, FileMeta } from "@/types/webrtc"; // Assuming FileMeta might be used by caller
 import type { Messages } from "@/types/messages";
 
@@ -55,8 +59,13 @@ export function useWebRTCConnection({
 
   // Initialize WebRTC objects and their cleanup
   useEffect(() => {
-    const senderConn = new WebRTC_Initiator(config.API_URL);
-    const receiverConn = new WebRTC_Recipient(config.API_URL);
+    const webRTCConfig = {
+      iceServers: getIceServers(),
+      socketOptions: getSocketOptions()|| {},
+      signalingServer: config.API_URL,
+    };
+    const senderConn = new WebRTC_Initiator(webRTCConfig);
+    const receiverConn = new WebRTC_Recipient(webRTCConfig);
     setSender(senderConn);
     setReceiver(receiverConn);
 

@@ -1,11 +1,11 @@
 // 发起方 流程: 加入房间; 收到 'ready' 事件（新的接收方进入后socker server就会触发这个事件） -> createPeerConnection + createDataChannel -> createAndSendOffer
-import BaseWebRTC from './webrtc_base';
+import BaseWebRTC, { WebRTCConfig } from './webrtc_base';
 import { postLogInDebug } from '@/app/config/api';
 const developmentEnv = process.env.NEXT_PUBLIC_development!;//开发环境
 
 export default class WebRTC_Initiator extends BaseWebRTC {
-  constructor(signalingServer: string) {
-    super(signalingServer);
+  constructor(config: WebRTCConfig) {
+    super(config);
     this.setupInitiatorSocketListeners();
 
   }

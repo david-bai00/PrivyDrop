@@ -1,5 +1,5 @@
 // 接收方 流程: 加入房间; 收到 'offer' 事件 -> createPeerConnection + createDataChannel -> 发送 answer
-import BaseWebRTC from './webrtc_base';
+import BaseWebRTC, { WebRTCConfig } from './webrtc_base';
 import { postLogInDebug } from '@/app/config/api';
 const developmentEnv = process.env.NEXT_PUBLIC_development!;//开发环境
 
@@ -8,8 +8,8 @@ interface AnswerPayload {
   peerId: string;
 }
 export default class WebRTC_Recipient extends BaseWebRTC {
-  constructor(signalingServer: string) {
-    super(signalingServer);
+  constructor(config: WebRTCConfig) {
+    super(config);
     this.setupRecipientSocketListeners();
   }
 
