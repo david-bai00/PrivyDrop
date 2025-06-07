@@ -5,8 +5,8 @@ import RichTextEditor from "@/components/Editor/RichTextEditor";
 import {
   ReadClipboardButton,
   WriteClipboardButton,
-} from "@/components/self_define/clipboard_btn";
-import { FileUploadHandler } from "@/components/self_define/file-upload-handler";
+} from "@/components/common/clipboard_btn";
+import { FileUploadHandler } from "@/components/ClipboardApp/FileUploadHandler";
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import AnimatedButton from "@/components/ui/AnimatedButton";
 import type { Messages } from "@/types/messages";

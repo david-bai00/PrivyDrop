@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Copy, Download, Check } from 'lucide-react';
-import { WriteClipboardButton } from '../self_define/clipboard_btn';
+import { WriteClipboardButton } from '../common/clipboard_btn';
 
 import { getDictionary } from '@/lib/dictionary';
 import { useLocale } from '@/hooks/useLocale';

@@ -5,7 +5,7 @@ import RichTextEditor from "@/components/Editor/RichTextEditor";
 import {
   ReadClipboardButton,
   WriteClipboardButton,
-} from "@/components/self_define/clipboard_btn";
+} from "@/components/common/clipboard_btn";
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import type { Messages } from "@/types/messages";
 import type { FileMeta } from "@/lib/types/file";

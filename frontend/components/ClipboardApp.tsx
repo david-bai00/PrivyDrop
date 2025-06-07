@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import useRichTextToPlainText from "@/hooks/useRichTextToPlainText";
-import ShareCard from "./ClipboardApp/ShareCard";
+import useRichTextToPlainText from "../hooks/useRichTextToPlainText";
+import QRCodeComponent from "./ClipboardApp/ShareCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useClipboardAppMessages } from "@/hooks/useClipboardAppMessages";
 import { usePageSetup } from "@/hooks/usePageSetup";
@@ -177,7 +177,7 @@ const ClipboardApp = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ShareCard RoomID={shareRoomId} shareLink={shareLink} />
+            <QRCodeComponent RoomID={shareRoomId} shareLink={shareLink} />
           </CardContent>
         </Card>
       )}
