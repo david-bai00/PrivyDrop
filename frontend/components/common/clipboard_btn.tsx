@@ -10,7 +10,7 @@ interface WriteClipboardButtonProps {
 
 interface ReadClipboardButtonProps {
   title?: string; // Made title optional
-  onRead: (text: string | null) => void; // Allow null if read fails
+  onRead: (text: string) => void;
 }
 
 export const WriteClipboardButton: React.FC<WriteClipboardButtonProps> = ({
