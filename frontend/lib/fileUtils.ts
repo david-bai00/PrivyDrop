@@ -17,3 +17,18 @@ export const formatFileSize = (sizeInBytes: number): string => {
 export const generateFileId = (file: CustomFile): string => {
   return `${file.fullName}-${file.size}-${file.type}-${file.lastModified}`;
 };
+/**
+ * Triggers a browser download for the given file-like object.
+ * @param file - The file blob or any file-like object that can be used with URL.createObjectURL.
+ * @param saveName - The name to use for the downloaded file.
+ */
+export const downloadAs = async (file: Blob | File, saveName: string): Promise<void> => {
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = saveName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};

@@ -241,14 +241,5 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
     </>
   );
 };
-export const DownloadAs = async (file:any,saveName:string) => {
-  const url = URL.createObjectURL(file);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = saveName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-};
+
 export { FileUploadHandler };

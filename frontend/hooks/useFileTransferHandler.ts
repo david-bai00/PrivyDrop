@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { CustomFile, FileMeta, fileMetadata } from "@/lib/types/file";
 import { Messages } from "@/types/messages";
 import JSZip from "jszip";
-import { DownloadAs } from "@/components/self_define/file-upload-handler"; // Assuming this path is correct
+import { downloadAs } from "@/lib/fileUtils";
 
 // Helper functions for beforeunload (can be kept local to this hook if not used elsewhere)
 const handleWindowBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -155,7 +155,7 @@ export function useFileTransferHandler({
         }
         try {
           const content = await zip.generateAsync({ type: "blob" });
-          DownloadAs(content, `${meta.folderName}.zip`);
+          downloadAs(content, `${meta.folderName}.zip`);
         } catch (error) {
           console.error("Error creating zip file:", error);
           putMessageInMs(
@@ -167,7 +167,7 @@ export function useFileTransferHandler({
       } else {
         const fileToDownload = retrievedFiles.find((f) => f.name === meta.name);
         if (fileToDownload) {
-          DownloadAs(fileToDownload, fileToDownload.name);
+          downloadAs(fileToDownload, fileToDownload.name);
         } else {
           putMessageInMs(
             // messages.text.ClipboardApp.fileNotFoundMsg ||

@@ -2,7 +2,7 @@
 import React, { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import useRichTextToPlainText from "@/hooks/useRichTextToPlainText";
-import QRCodeComponent from "./self_define/RetrieveMethod";
+import ShareCard from "./ClipboardApp/ShareCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useClipboardAppMessages } from "@/hooks/useClipboardAppMessages";
 import { usePageSetup } from "@/hooks/usePageSetup";
@@ -177,7 +177,7 @@ const ClipboardApp = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <QRCodeComponent RoomID={shareRoomId} shareLink={shareLink} />
+            <ShareCard RoomID={shareRoomId} shareLink={shareLink} />
           </CardContent>
         </Card>
       )}

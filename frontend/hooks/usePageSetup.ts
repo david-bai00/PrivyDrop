@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getDictionary } from '@/lib/dictionary';
 import { useLocale } from '@/hooks/useLocale';
-import { trackReferrer } from '@/components/utils/tracking';
+import { trackReferrer } from '@/lib/tracking';
 import type { Messages } from '@/types/messages';
 
 interface UsePageSetupProps {

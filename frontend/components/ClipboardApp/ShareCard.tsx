@@ -3,17 +3,17 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Copy, Download, Check } from 'lucide-react';
-import { WriteClipboardButton } from './clipboard_btn';
+import { WriteClipboardButton } from '../self_define/clipboard_btn';
 
 import { getDictionary } from '@/lib/dictionary';
 import { useLocale } from '@/hooks/useLocale';
 import type { Messages } from '@/types/messages';
-interface QRCodeComponentProps {
+interface ShareCardProps {
   RoomID: string;
   shareLink: string;
 }
 
-const QRCodeComponent: React.FC<QRCodeComponentProps> = ({ RoomID,shareLink }) => {
+const ShareCard: React.FC<ShareCardProps> = ({ RoomID,shareLink }) => {
   const locale = useLocale();
   const [messages, setMessages] = useState<Messages | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
@@ -145,4 +145,4 @@ const QRCodeComponent: React.FC<QRCodeComponentProps> = ({ RoomID,shareLink }) =
   );
 };
 
-export default QRCodeComponent;
+export default ShareCard;
