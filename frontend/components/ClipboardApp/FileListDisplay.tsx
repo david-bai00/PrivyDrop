@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2 } from "lucide-react";
 import { Tooltip } from "@/components/Tooltip";
-import TransferProgress from "@/components/ClipboardApp/TransferProgress";
+import TransferProgress from "./TransferProgress";
 import { formatFileSize, generateFileId } from "@/lib/fileUtils";
 import { AutoPopupDialog } from "@/components/common/AutoPopupDialog";
 import { FileMeta, CustomFile, Progress } from "@/lib/types/file";
@@ -10,7 +10,23 @@ import FileTransferButton from "./FileTransferButton";
 import { getDictionary } from "@/lib/dictionary";
 import { useLocale } from "@/hooks/useLocale";
 import type { Messages } from "@/types/messages";
-import { formatFolderTips, formatFolderDis } from "@/utils/formatMessage";
+
+function formatFolderDis(
+  template: string, 
+  num: number, 
+  size: string
+) {
+  return template.replace('{num}', num.toString()).replace('{size}', size);
+}
+
+function formatFolderTips(
+  template: string, 
+  name: string, 
+  num: number, 
+  size: string
+) {
+  return template.replace('{name}', name).replace('{num}', num.toString()).replace('{size}', size);
+}
 
 interface FileListDisplayProps {
   mode: "sender" | "receiver";

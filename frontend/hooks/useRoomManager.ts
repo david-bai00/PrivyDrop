@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { fetchRoom, createRoom, checkRoom } from "@/app/config/api";
 import { debounce } from "lodash";
-import { format_peopleMsg } from "@/utils/formatMessage";
 import type { Messages } from "@/types/messages";
 import type WebRTC_Initiator from "@/lib/webrtc_Initiator";
 import type WebRTC_Recipient from "@/lib/webrtc_Recipient";
+
+function format_peopleMsg(
+  template: string, 
+  peerCount: number
+) {
+  return template.replace('{peerCount}', peerCount.toString());
+}
 
 interface UseRoomManagerProps {
   messages: Messages | null;

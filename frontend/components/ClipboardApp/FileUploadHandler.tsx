@@ -16,7 +16,7 @@ declare module "@/components/ui/input" {
     directory?: string | boolean;
   }
 }
-import {formatFileChosen } from '@/utils/formatMessage';
+
 import { getDictionary } from '@/lib/dictionary';
 import { useLocale } from '@/hooks/useLocale';
 import type { Messages } from '@/types/messages';
@@ -58,6 +58,16 @@ const traverseFileTree = async (item: FileSystemEntry, path = ''): Promise<Custo
     }
   });
 };
+
+function formatFileChosen(
+  template: string, 
+  fileNum: number, 
+  folderNum: number
+) {
+  return template.replace('{fileNum}', fileNum.toString())
+                .replace('{folderNum}', folderNum.toString());
+}
+
 interface FileUploadHandlerProps {
   onFilePicked: (files: CustomFile[]) => void;
 }
