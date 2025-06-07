@@ -8,7 +8,7 @@ import {
 } from "@/components/common/clipboard_btn";
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import type { Messages } from "@/types/messages";
-import type { FileMeta } from "@/lib/types/file";
+import type { FileMeta } from "@/types/webrtc";
 import type { ProgressState } from "@/hooks/useWebRTCConnection"; // 假设此类型已导出
 import type WebRTC_Recipient from "@/lib/webrtc_Recipient";
 

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { CustomFile, FileMeta, fileMetadata } from "@/lib/types/file";
+import { CustomFile, FileMeta, fileMetadata } from "@/types/webrtc";
 import { Messages } from "@/types/messages";
 import JSZip from "jszip";
 import { downloadAs } from "@/lib/fileUtils";

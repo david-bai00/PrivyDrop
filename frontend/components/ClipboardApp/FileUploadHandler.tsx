@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent, useRef, useCallback } from 'react';
 import { Input } from "@/components/ui/input";
 import { Upload } from 'lucide-react';
-import {FileMeta,CustomFile } from '@/lib/types/file';
+import {FileMeta,CustomFile } from '@/types/webrtc';
 import {
   Dialog,
   DialogContent,

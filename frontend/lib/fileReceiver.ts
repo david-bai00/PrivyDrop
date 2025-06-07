@@ -13,7 +13,7 @@ import {
   FileEnd,
   FileHandlers,
   FileMeta,
-} from "@/lib/types/file";
+} from "@/types/webrtc";
 
 class FileReceiver {
   private webrtcConnection: WebRTC_Recipient;

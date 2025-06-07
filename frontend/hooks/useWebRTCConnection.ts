@@ -4,7 +4,7 @@ import WebRTC_Recipient from "@/lib/webrtc_Recipient";
 import FileSender from "@/lib/fileSender";
 import FileReceiver from "@/lib/fileReceiver";
 import { config } from "@/app/config/environment"; // For API_URL
-import type { CustomFile, fileMetadata, FileMeta } from "@/lib/types/file"; // Assuming FileMeta might be used by caller
+import type { CustomFile, fileMetadata, FileMeta } from "@/types/webrtc"; // Assuming FileMeta might be used by caller
 import type { Messages } from "@/types/messages";
 
 const developmentEnv = process.env.NEXT_PUBLIC_development === "true";

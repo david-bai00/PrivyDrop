@@ -10,7 +10,7 @@ import { FileUploadHandler } from "@/components/ClipboardApp/FileUploadHandler";
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import AnimatedButton from "@/components/ui/AnimatedButton";
 import type { Messages } from "@/types/messages";
-import type { CustomFile, FileMeta } from "@/lib/types/file";
+import type { CustomFile, FileMeta } from "@/types/webrtc";
 import type { ProgressState } from "@/hooks/useWebRTCConnection";
 import type WebRTC_Initiator from "@/lib/webrtc_Initiator";
 

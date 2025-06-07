@@ -5,7 +5,7 @@ import { Tooltip } from "@/components/Tooltip";
 import TransferProgress from "./TransferProgress";
 import { formatFileSize, generateFileId } from "@/lib/fileUtils";
 import { AutoPopupDialog } from "@/components/common/AutoPopupDialog";
-import { FileMeta, CustomFile, Progress } from "@/lib/types/file";
+import { FileMeta, CustomFile, Progress } from "@/types/webrtc";
 import FileTransferButton from "./FileTransferButton";
 import { getDictionary } from "@/lib/dictionary";
 import { useLocale } from "@/hooks/useLocale";

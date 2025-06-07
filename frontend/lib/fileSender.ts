@@ -11,7 +11,7 @@ import {
   PeerState,
   FolderMeta,
   FileRequest,
-} from "@/lib/types/file";
+} from "@/types/webrtc";
 
 class FileSender {
   private webrtcConnection: WebRTC_Initiator;

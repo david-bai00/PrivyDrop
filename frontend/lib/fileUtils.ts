@@ -1,4 +1,4 @@
-import { CustomFile } from '@/lib/types/file';
+import { CustomFile } from '@/types/webrtc';
 
 //对文件大小自适应单位并格式化输出
 export const formatFileSize = (sizeInBytes: number): string => {

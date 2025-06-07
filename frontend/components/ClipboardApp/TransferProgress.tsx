@@ -1,5 +1,5 @@
 import React from 'react';
-import {Progress } from '@/lib/types/file';
+import {Progress } from '@/types/webrtc';
 
 interface TransferProgressProps {
   message: string;

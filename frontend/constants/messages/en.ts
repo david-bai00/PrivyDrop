@@ -224,7 +224,7 @@ export const en: Messages = {
         senderEmptyMsg: "Room is empty",
         receiverEmptyMsg: "You can accept an invitation to join the room",
         onlyOneMsg: "You’re the only one here",
-        peopleMsg_template: "{peerCount} Peoples in the room",
+        peopleMsg_template: "{peerCount} People in the room",
         connected_dis:"Connected",
       },
       html:{//html 部分的消息
