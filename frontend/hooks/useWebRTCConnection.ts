@@ -61,7 +61,7 @@ export function useWebRTCConnection({
   useEffect(() => {
     const webRTCConfig = {
       iceServers: getIceServers(),
-      socketOptions: getSocketOptions()|| {},
+      socketOptions: getSocketOptions() || {},
       signalingServer: config.API_URL,
     };
     const senderConn = new WebRTC_Initiator(webRTCConfig);
@@ -123,6 +123,12 @@ export function useWebRTCConnection({
       };
       sender.onDataChannelOpen = () =>
         broadcastDataToAllPeers(shareContent, sendFiles);
+
+      sender.onError = (error) => {
+        console.error("Sender Error:", error.message, error.context);
+        // Optionally, use putMessageInMs to show a user-friendly error
+        putMessageInMs(`Connection error: ${error.message}`, true);
+      };
     }
 
     if (receiver && receiverFileTransfer) {
@@ -161,6 +167,11 @@ export function useWebRTCConnection({
         if (developmentEnv)
           console.log(`File received from peer ${peerId}: ${file.name}`);
         onFileReceived(file, peerId || "unknown_peer");
+      };
+
+      receiver.onError = (error) => {
+        console.error("Receiver Error:", error.message, error.context);
+        putMessageInMs(`Connection error: ${error.message}`, false);
       };
     }
   }, [

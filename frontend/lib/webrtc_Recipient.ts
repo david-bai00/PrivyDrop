@@ -1,7 +1,7 @@
 // 接收方 流程: 加入房间; 收到 'offer' 事件 -> createPeerConnection + createDataChannel -> 发送 answer
-import BaseWebRTC, { WebRTCConfig } from './webrtc_base';
-import { postLogInDebug } from '@/app/config/api';
-const developmentEnv = process.env.NEXT_PUBLIC_development!;//开发环境
+import BaseWebRTC, { WebRTCConfig } from "./webrtc_base";
+import { postLogInDebug } from "@/app/config/api";
+const developmentEnv = process.env.NEXT_PUBLIC_development!; //开发环境
 
 interface AnswerPayload {
   answer: RTCSessionDescriptionInit;
@@ -14,31 +14,41 @@ export default class WebRTC_Recipient extends BaseWebRTC {
   }
 
   private setupRecipientSocketListeners(): void {
-    
-    this.socket.on('offer', ({ peerId, offer, from }) => {
-      this.handleOffer({ peerId,offer, from });
+    this.socket.on("offer", ({ peerId, offer, from }) => {
+      this.handleOffer({ peerId, offer, from });
     });
-    
-    this.socket.on('answer', ({ answer, peerId }) => {
+
+    this.socket.on("answer", ({ answer, peerId }) => {
       this.handleAnswer({ answer, peerId });
     });
 
     // 添加发起方重新上线的监听
-    this.socket.on('initiator-online', ({ roomId }) => {
-      console.log(`[Recipient] Received initiator-online for room: ${roomId}`,this.roomId);
+    this.socket.on("initiator-online", ({ roomId }) => {
+      this.log("log", `Received initiator-online for room: ${roomId}`);
       // 发送准备就绪的响应
-      console.log(`[Recipient] Sending recipient-ready, my peerId: ${this.socket.id}`,this.peerId);
+      this.log(
+        "log",
+        `Sending recipient-ready, my peerId: ${this.socket.id}`,
+        this.peerId
+      );
       // 发送准备就绪的响应
-      this.socket.emit('recipient-ready', {
+      this.socket.emit("recipient-ready", {
         roomId: this.roomId,
-        peerId: this.socket.id
+        peerId: this.socket.id,
       });
     });
-
   }
   // 接收方 收到 offer 时创建连接
-  private async handleOffer({ peerId, offer, from }: { offer: RTCSessionDescriptionInit; peerId: string; from: string }): Promise<void> {
-    console.log(`Handling offer from peer ${from}`);
+  private async handleOffer({
+    peerId,
+    offer,
+    from,
+  }: {
+    offer: RTCSessionDescriptionInit;
+    peerId: string;
+    from: string;
+  }): Promise<void> {
+    this.log("log", `Handling offer from peer ${from}`);
     try {
       // 1. 清理已存在的连接
       await this.cleanupExistingConnection(from);
@@ -49,23 +59,24 @@ export default class WebRTC_Recipient extends BaseWebRTC {
 
       // 4. 设置远程描述
       // console.log(`Setting remote description for peer ${from}`);
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+      await peerConnection.setRemoteDescription(
+        new RTCSessionDescription(offer)
+      );
       // 创建并设置本地描述（answer）
       // console.log(`Creating answer for peer ${from}`);
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
       // 发送 answer
-      console.log(`Sending answer to peer ${from}`);
-      this.socket.emit('answer', {
+      this.log("log", `Sending answer to peer ${from}`);
+      this.socket.emit("answer", {
         answer,
         peerId: from,
-        from: this.socket.id
+        from: this.socket.id,
       });
       // 最后处理已缓存的 ICE candidates
       await this.addQueuedIceCandidates(from);
-
     } catch (error) {
-      console.error('Error handling offer:', error);
+      this.fireError("Error handling offer", { error, from });
       // 清理失败的连接
       await this.cleanupExistingConnection(from);
     }
@@ -73,24 +84,29 @@ export default class WebRTC_Recipient extends BaseWebRTC {
 
   private async handleAnswer({ answer, peerId }: AnswerPayload): Promise<void> {
     const peerConnection = this.peerConnections.get(peerId);
-    if (!peerConnection) return;
+    if (!peerConnection) {
+      this.fireError("No peer connection for handleAnswer", { peerId });
+      return;
+    }
 
     try {
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+      await peerConnection.setRemoteDescription(
+        new RTCSessionDescription(answer)
+      );
     } catch (error) {
-      console.error('Error handling answer:', error);
+      this.fireError("Error handling answer", { error, peerId });
     }
   }
 
   protected async createDataChannel(peerId: string): Promise<void> {
     const peerConnection = this.peerConnections.get(peerId);
     if (!peerConnection) {
-      console.error(`No peer connection found for peer ${peerId}`);
+      this.fireError(`No peer connection found for peer ${peerId}`, { peerId });
       return;
     }
-    
+
     peerConnection.ondatachannel = (event) => {
-      // console.log(`Received data channel from peer ${peerId}`);
+      // this.log('log', `Received data channel from peer ${peerId}`);
       this.setupDataChannel(event.channel, peerId);
       this.dataChannels.set(peerId, event.channel);
     };
