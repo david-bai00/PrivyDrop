@@ -100,7 +100,7 @@ export default class BaseWebRTC {
     console[level](prefix, message, ...args);
   }
 
-  protected fireError(message: string, context?: Record<string, any>) {
+  public fireError(message: string, context?: Record<string, any>) {
     const error = new WebRTCError(message, context);
     this.log("error", message, context);
     this.onError?.(error);
