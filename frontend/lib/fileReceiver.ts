@@ -15,76 +15,64 @@ import {
   FileMeta,
 } from "@/types/webrtc";
 
+/**
+ * Manages the state of an active file reception.
+ */
+interface ActiveFileReception {
+  meta: fileMetadata; //有meta信息--表示当前正在接收该文件，为null--当前没有接收文件
+  chunks: (ArrayBuffer | null)[]; //接收的（存放内存的）文件块
+  receivedSize: number;
+  fileHandle: FileSystemFileHandle | null; //写入磁盘相关对象--当前文件
+  writeStream: FileSystemWritableFileStream | null; //写入磁盘相关对象
+  completionNotifier: {
+    resolve: () => void;
+    reject: (reason?: any) => void;
+  };
+}
+
 class FileReceiver {
-  private webrtcConnection: WebRTC_Recipient;
-  private readonly largeFileThreshold: number;
-  private currentFileMeta: fileMetadata | null;
-  private currentFolderName: string | null;
-  private currentFileChunks: (ArrayBuffer | null)[];
-  private writeStream: FileSystemWritableFileStream | null;
-  private currentFileHandle: FileSystemFileHandle | null;
-  private folderProgresses: Record<string, FolderProgress>;
-  public saveType: Record<string, boolean>;
-  private saveDirectory: FileSystemDirectoryHandle | null;
-  private pendingFilesMeta: Map<string, fileMetadata>;
-  private fileReceiveDone: boolean;
-  public onFileMetaReceived: ((meta: fileMetadata) => void) | null;
-  public onStringReceived: ((str: string) => void) | null;
+  // region Private Properties
+  private readonly webrtcConnection: WebRTC_Recipient;
+  private readonly largeFileThreshold: number = 1 * 1024 * 1024 * 1024; // 1 GB,如果大于这个阈值，则需要用户选择保存目录直接储存在磁盘
+  private readonly speedCalculator: SpeedCalculator;
+  private fileHandlers: FileHandlers;
+
+  private peerId: string = "";
+  private saveDirectory: FileSystemDirectoryHandle | null = null;
+
+  // State Management
+  private pendingFilesMeta = new Map<string, fileMetadata>(); // 存储文件元信息,fileId:meta
+  private folderProgresses: Record<string, FolderProgress> = {}; // 文件夹 进度信息, fileId:{totalSize:0,receivedSize:0,fileIds:[]};
+  public saveType: Record<string, boolean> = {}; // fileId or folderName -> isSavedToDisk
+
+  // Active transfer state
+  private activeFileReception: ActiveFileReception | null = null;
+  private activeStringReception: CurrentString | null = null;
+  private currentFolderName: string | null = null; //有name--表示当前正在接收文件夹，为null--当前没有接收文件夹
+
+  // Callbacks
+  public onFileMetaReceived: ((meta: fileMetadata) => void) | null = null;
+  public onStringReceived: ((str: string) => void) | null = null;
+  public onFileReceived: ((file: CustomFile) => Promise<void>) | null = null;
   private progressCallback:
     | ((id: string, progress: number, speed: number) => void)
-    | null;
-  public onFileReceived: ((file: CustomFile) => Promise<void>) | null;
-  private speedCalculator: SpeedCalculator;
-  private peerId: string;
-  private readonly chunkSize: number;
-  private currentString: CurrentString | null;
-  private fileHandlers: FileHandlers;
-  private currentFileReceivedSize: number;
+    | null = null;
+  // endregion
+
   constructor(WebRTC_recipient: WebRTC_Recipient) {
     this.webrtcConnection = WebRTC_recipient;
-    this.largeFileThreshold = 1 * 1024 * 1024 * 1024; // 1 * 1GB,如果大于这个阈值，则需要用户选择保存目录直接储存在磁盘
-    // 当前接收状态
-    this.currentFileMeta = null; //有meta信息--表示当前正在接收该文件，为null--当前没有接收文件
-    this.currentFolderName = null; //有name--表示当前正在接收文件夹，为null--当前没有接收文件夹
-    this.currentFileChunks = []; //接收的（存放内存的）文件块
-
-    this.writeStream = null; //写入磁盘相关对象
-    this.currentFileHandle = null; //写入磁盘相关对象--当前文件
-
-    this.folderProgresses = {}; // 文件夹 进度信息, fileId:{totalSize:0,receivedSize:0,fileIds:[]};
-
-    this.saveType = {}; //fileId:IsSaveToDisk,表示已接收到的文件是存储在磁盘还是内存
-    // 存储目录
-    this.saveDirectory = null;
-
-    // 待接收文件管理--用来展示
-    this.pendingFilesMeta = new Map(); // 存储文件元信息,fileId:meta
-    this.fileReceiveDone = false; //当前文件是否接收处理完
-    // 回调函数
-    this.onFileMetaReceived = null;
-    this.onStringReceived = null;
-    this.progressCallback = null;
-    this.onFileReceived = null; //接收到文件的回调,由上层区分属于哪个文件夹
-
-    // 创建 SpeedCalculator 实例
     this.speedCalculator = new SpeedCalculator();
-
-    this.peerId = ""; //唯一一个连接方
-
-    this.chunkSize = 65536; // 64 KB chunks
-    this.currentString = null;
-    this.currentFileReceivedSize = 0;
-
-    this.setupDataHandler();
 
     this.fileHandlers = {
       string: this.handleReceivedStringChunk.bind(this),
       stringMetadata: this.handleStringMetadata.bind(this),
-
       fileMeta: this.handleFileMetadata.bind(this),
       fileEnd: this.handleFileEnd.bind(this),
     };
+
+    this.setupDataHandler();
   }
+
   // region Logging and Error Handling
   private log(
     level: "log" | "warn" | "error",
@@ -105,8 +93,15 @@ class FileReceiver {
     } else {
       this.log("error", message, context);
     }
+
+    if (this.activeFileReception) {
+      this.activeFileReception.completionNotifier.reject(new Error(message));
+      this.activeFileReception = null;
+    }
   }
   // endregion
+
+  // region Setup and Public API
   private setupDataHandler(): void {
     this.webrtcConnection.onDataReceived = this.handleReceivedData.bind(this);
   }
@@ -117,10 +112,105 @@ class FileReceiver {
     this.progressCallback = callback;
   }
 
+  public setSaveDirectory(directory: FileSystemDirectoryHandle): Promise<void> {
+    this.saveDirectory = directory;
+    return Promise.resolve();
+  }
+
+  /**
+   * Requests a single file from the peer.
+   */
+  public async requestFile(fileId: string, singleFile = true): Promise<void> {
+    if (this.saveType[fileId]) {
+      this.log("log", "File already received, skipping request.", { fileId });
+      return;
+    }
+    if (this.activeFileReception) {
+      this.log("warn", "Another file reception is already in progress.");
+      return;
+    }
+
+    if (singleFile) this.currentFolderName = null;
+
+    const fileInfo = this.pendingFilesMeta.get(fileId);
+    if (!fileInfo) {
+      this.fireError("File info not found for the requested fileId", {
+        fileId,
+      });
+      return;
+    }
+
+    const receptionPromise = new Promise<void>((resolve, reject) => {
+      this.activeFileReception = {
+        meta: fileInfo,
+        chunks: [],
+        receivedSize: 0,
+        fileHandle: null,
+        writeStream: null,
+        completionNotifier: { resolve, reject },
+      };
+    });
+
+    const shouldSaveToDisk =
+      !!this.saveDirectory ||
+      fileInfo.size >= this.largeFileThreshold ||
+      !!this.currentFolderName;
+
+    if (shouldSaveToDisk) {
+      await this.createDiskWriteStream(fileInfo);
+    }
+
+    const request = JSON.stringify({ type: "fileRequest", fileId });
+    if (this.peerId) {
+      this.webrtcConnection.sendData(request, this.peerId);
+      this.log("log", "Sent fileRequest", { fileId });
+    }
+
+    return receptionPromise;
+  }
+
+  /**
+   * Requests all files belonging to a folder from the peer.
+   */
+  public async requestFolder(folderName: string): Promise<void> {
+    if (this.saveType[folderName]) {
+      this.log("log", "Folder already received, skipping request.", {
+        folderName,
+      });
+      return;
+    }
+
+    const folderProgress = this.folderProgresses[folderName];
+    if (folderProgress?.fileIds.length > 0) {
+      this.log("log", "Requesting to receive folder", { folderName });
+      this.currentFolderName = folderName;
+      for (const fileId of folderProgress.fileIds) {
+        try {
+          await this.requestFile(fileId, false);
+        } catch (error) {
+          this.fireError(
+            `Failed to receive file ${fileId} in folder ${folderName}`,
+            { error }
+          );
+          // Stop receiving other files in the folder on error
+          break;
+        }
+      }
+      this.currentFolderName = null;
+    } else {
+      this.log("warn", "No files found for the requested folder.", {
+        folderName,
+      });
+    }
+  }
+  // endregion
+
+  // region WebRTC Data Handlers
   private async handleReceivedData(
     data: string | ArrayBuffer,
     peerId: string
   ): Promise<void> {
+    this.peerId = peerId;
     if (typeof data === "string") {
       try {
         const parsedData = JSON.parse(data) as WebRTCMessage;
@@ -133,34 +223,35 @@ class FileReceiver {
         this.fireError("Error parsing received JSON data", { error });
       }
     } else if (data instanceof ArrayBuffer) {
-      this.updateProgress(data.byteLength); //更新 进度
-      await this.handleFileChunk(data); //接收数据
+      if (!this.activeFileReception) {
+        this.fireError(
+          "Received a file chunk without an active file reception.",
+          { peerId }
+        );
+        return;
+      }
+      this.updateProgress(data.byteLength);
+      await this.handleFileChunk(data);
     }
   }
 
-  private async handleFileMetadata(
-    metadata: fileMetadata,
-    peerId: string
-  ): Promise<void> {
-    this.peerId = peerId;
-    this.log("log", "Received file metadata", { metadata });
+  private handleFileMetadata(metadata: fileMetadata): void {
     if (this.pendingFilesMeta.has(metadata.fileId)) return; //如果已经接收过，则忽略
-    this.pendingFilesMeta.set(metadata.fileId, metadata); //fileId:meta
-    this.onFileMetaReceived?.(metadata);
 
+    this.log("log", "Received file metadata", { metadata });
+    this.pendingFilesMeta.set(metadata.fileId, metadata);
+    this.onFileMetaReceived?.(metadata);
     //把属于folder的部分关于文件大小的记录下来，用于计算进度
-    const folderName = metadata.folderName;
-    if (folderName) {
-      const fileId = folderName;
-      if (!(fileId in this.folderProgresses)) {
-        //初始化
-        this.folderProgresses[fileId] = {
+    if (metadata.folderName) {
+      const folderId = metadata.folderName;
+      if (!(folderId in this.folderProgresses)) {
+        this.folderProgresses[folderId] = {
           totalSize: 0,
           receivedSize: 0,
           fileIds: [],
-        }; //fileId:{totalSize:0,receivedSize:0,fileIds:[]};
+        };
       }
-      const folderProgress = this.folderProgresses[fileId];
+      const folderProgress = this.folderProgresses[folderId];
       if (!folderProgress.fileIds.includes(metadata.fileId)) {
         //防止重复计算
         folderProgress.totalSize += metadata.size;
@@ -168,235 +259,125 @@ class FileReceiver {
       }
     }
   }
-  //同步 文件夹 进度--包含回调
-  private syncFolderProgress(fileId: string, bytesReceived: number): void {
-    const folderProgress = this.folderProgresses[fileId];
-    if (!folderProgress) return;
-    folderProgress.receivedSize += bytesReceived;
 
-    this.speedCalculator.updateSendSpeed(
-      this.peerId,
-      folderProgress.receivedSize
-    ); // 使用累计接收量
-    const speed = this.speedCalculator.getSendSpeed(this.peerId);
-
-    const progress = folderProgress.receivedSize / folderProgress.totalSize;
-    this.progressCallback?.(fileId, progress, speed);
-  }
-  //更新 进度 并回调
-  private async updateProgress(byteLength: number): Promise<void> {
-    if (!this.peerId || !this.currentFileMeta) return;
-
-    if (this.currentFolderName) {
-      this.syncFolderProgress(this.currentFolderName, byteLength); //接收文件夹，只回传总进度
-    } else {
-      this.currentFileReceivedSize += byteLength;
-      const received = this.currentFileReceivedSize;
-
-      this.speedCalculator.updateSendSpeed(this.peerId, received); // 使用累计接收量
-      const speed = this.speedCalculator.getSendSpeed(this.peerId);
-      this.progressCallback?.(
-        this.currentFileMeta.fileId,
-        received / this.currentFileMeta.size,
-        speed
-      ); //同步 单文件 进度
-    }
-  }
-  private handleStringMetadata(metadata: StringMetadata, peedId: string): void {
-    this.currentString = {
+  private handleStringMetadata(metadata: StringMetadata): void {
+    this.activeStringReception = {
       length: metadata.length,
       chunks: [],
       receivedChunks: 0,
     };
-    // console.log("handleStringMetadata",this.currentString);
   }
-  private handleReceivedStringChunk(data: StringChunk, peerId: string) {
-    if (this.currentString) {
-      this.currentString.chunks[data.index] = data.chunk;
-      this.currentString.receivedChunks++;
 
-      // console.log("handleReceivedStringChunk",this.currentString,data.total);
-      if (this.currentString.receivedChunks === data.total) {
-        const fullString = this.currentString.chunks.join("");
-        // console.log("fullString",this.onStringReceived);
-        this.onStringReceived?.(fullString);
-        this.currentString = null;
-      }
+  private handleReceivedStringChunk(data: StringChunk): void {
+    if (!this.activeStringReception) return;
+
+    this.activeStringReception.chunks[data.index] = data.chunk;
+    this.activeStringReception.receivedChunks++;
+
+    if (this.activeStringReception.receivedChunks === data.total) {
+      const fullString = this.activeStringReception.chunks.join("");
+      this.onStringReceived?.(fullString);
+      this.activeStringReception = null;
     }
   }
+
   private async handleFileEnd(metadata: FileEnd): Promise<void> {
     this.log("log", "File transmission ended", { metadata });
-    const file = this.pendingFilesMeta.get(metadata.fileId);
-    if (file) {
-      if (!this.currentFolderName) {
-        //接收单独的文件时，回传进度
-        this.progressCallback?.(file.fileId, 1, 0);
-      }
-
-      await this.finalizeFileReceive(); //接收完--处理
-      this.sendFileAck(file.fileId); //文件接收完毕 -- 发ack信号
-      this.fileReceiveDone = true; //当前文件接收处理完
-      this.log("log", "Sent file-finish ack", { fileId: file.fileId });
-    }
-  }
-
-  private async finalizeMemoryFileReceive(): Promise<void> {
-    if (!this.currentFileMeta) return;
-
-    const fileBlob = new Blob(this.currentFileChunks as ArrayBuffer[], {
-      type: this.currentFileMeta.fileType,
-    });
-    const file = new File([fileBlob], this.currentFileMeta.name, {
-      type: this.currentFileMeta.fileType,
-    });
-
-    this.saveType[this.currentFileMeta.fileId] = false; //存放在内存
-    if (this.currentFolderName) {
-      this.saveType[this.currentFolderName] = false; //对应的文件夹也存放在内存
-    }
-
-    const customFile = Object.assign(file, {
-      fullName: this.currentFileMeta.fullName,
-      folderName: this.currentFolderName as string,
-    });
-    await this.onFileReceived?.(customFile);
-  }
-
-  private async handleNextFileInFolder(): Promise<void> {
-    if (!this.currentFolderName || !this.currentFileMeta) {
-      this.resetFileReceiveState();
-      return;
-    }
-    const folderName = this.currentFolderName;
-    const folderProgress = this.folderProgresses[folderName];
-    if (!folderProgress) {
-      this.resetFileReceiveState();
+    const reception = this.activeFileReception;
+    if (!reception || reception.meta.fileId !== metadata.fileId) {
+      this.log("warn", "Received fileEnd for unexpected file", { metadata });
       return;
     }
 
-    const completedFileId = this.currentFileMeta.fileId;
-    const curIdx = folderProgress.fileIds.indexOf(completedFileId);
-    const isLastFileInFolder = curIdx === folderProgress.fileIds.length - 1;
+    if (!this.currentFolderName) {
+      this.progressCallback?.(reception.meta.fileId, 1, 0);
+    }
 
-    this.resetFileReceiveState(); //重置状态
+    await this.finalizeFileReceive();
+    this.sendFileAck(reception.meta.fileId);
+    this.log("log", "Sent file-finish ack", { fileId: reception.meta.fileId });
 
-    if (!isLastFileInFolder) {
-      const nextFileId = folderProgress.fileIds[curIdx + 1];
-      const nextFileMeta = this.pendingFilesMeta.get(nextFileId);
-      if (nextFileMeta) {
-        this.log("log", `Starting next file in folder`, {
-          nextFileId,
-          folderName,
-        });
-        this.currentFileMeta = nextFileMeta;
-        if (this.saveDirectory) {
-          //如果选择过保存目录
-          await this.creatDiskWriteStream(this.currentFileMeta); //根据当前fileMeta创建磁盘流
-        }
-      }
+    reception.completionNotifier.resolve();
+    this.activeFileReception = null;
+  }
+  // endregion
+
+  // region File and Folder Processing
+  private async handleFileChunk(chunk: ArrayBuffer): Promise<void> {
+    if (!this.activeFileReception) return;
+
+    if (this.activeFileReception.writeStream) {
+      await this.writeLargeFileChunk(chunk);
     } else {
-      this.log("log", `All files in folder received`, { folderName });
+      this.activeFileReception.chunks.push(chunk);
     }
   }
-  private async finalizeFileReceive(): Promise<void> {
-    if (!this.currentFileMeta) return;
 
-    if (this.currentFileHandle) {
-      //（已经选择过目录  直接保存到磁盘
-      await this.finalizeLargeFileReceive(); //磁盘文件 完成终止
+  private async finalizeFileReceive(): Promise<void> {
+    if (!this.activeFileReception) return;
+
+    if (this.activeFileReception.writeStream) {
+      await this.finalizeLargeFileReceive();
     } else {
       await this.finalizeMemoryFileReceive();
     }
+  }
+
+  private updateProgress(byteLength: number): void {
+    if (!this.peerId || !this.activeFileReception) return;
+
+    this.activeFileReception.receivedSize += byteLength;
+    const reception = this.activeFileReception;
 
     if (this.currentFolderName) {
-      await this.handleNextFileInFolder();
-    } else {
-      this.resetFileReceiveState();
-    }
-  }
-  //重置 文件接收 状态
-  private resetFileReceiveState(): void {
-    this.currentFileMeta = null;
-    this.currentFileChunks = [];
-    this.currentFileHandle = null;
-    this.currentFileReceivedSize = 0;
-  }
-  // 请求开始接收文件
-  public async requestFile(fileId: string, singleFile = true): Promise<void> {
-    if (fileId in this.saveType && this.saveType[fileId]) return; //已经请求过 & 并且保存在磁盘，不重复请求
+      const folderProgress = this.folderProgresses[this.currentFolderName];
+      if (!folderProgress) return;
+      folderProgress.receivedSize += byteLength;
 
-    if (singleFile) this.currentFolderName = null; //不是在请求文件夹
-
-    const fileInfo = this.pendingFilesMeta.get(fileId);
-    // console.log('requestFile,fileInfo',fileInfo);
-    if (!fileInfo) return;
-    this.currentFileMeta = fileInfo; //当前正在接收的文件
-    this.fileReceiveDone = false; //当前文件 没有 接收处理完
-    this.currentFileReceivedSize = 0;
-    if (
-      this.saveDirectory ||
-      fileInfo.size >= this.largeFileThreshold ||
-      this.currentFolderName
-    ) {
-      //需要存储
-      await this.creatDiskWriteStream(this.currentFileMeta); //存放在磁盘
-    } else {
-      this.currentFileChunks = [];
-    }
-    // console.log('send fileRequest,this.peerId',this.peerId);
-    const request = JSON.stringify({ type: "fileRequest", fileId });
-    if (this.peerId) {
-      this.webrtcConnection.sendData(request, this.peerId);
-    }
-
-    // 如果当前正在传输文件,则等待传输完成--等发送fileAck
-    await this.waitForTransferComplete();
-  }
-  private async waitForTransferComplete(): Promise<void> {
-    while (!this.fileReceiveDone) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-  }
-  // 请求开始接收文件夹,上层来区分 回传的文件 是否属于文件夹
-  public async requestFolder(folderName: string): Promise<void> {
-    const receivedFileIds = Object.keys(this.saveType);
-    const received = receivedFileIds.some((fileId) => {
-      //至少有一个满足
-      const fileMeta = this.pendingFilesMeta.get(fileId);
-      return (
-        fileMeta?.folderName === folderName && this.saveType[fileMeta.fileId]
+      this.speedCalculator.updateSendSpeed(
+        this.peerId,
+        folderProgress.receivedSize
       );
-    });
-    this.log("log", "Requesting to receive folder", { folderName, received });
-    if (received) return; //已经请求过 & 已经保存到磁盘，不重复请求
-
-    const fileId = folderName;
-    const folderProgress = this.folderProgresses[fileId];
-    if (folderProgress) {
-      this.currentFolderName = folderName; //请求文件夹
-      for (const fileId of folderProgress.fileIds) {
-        await this.requestFile(fileId, false);
-      }
-      this.currentFolderName = null; //请求文件夹结束--清空标注
-    }
-  }
-  //接收文件 处理
-  private async handleFileChunk(chunk: ArrayBuffer): Promise<void> {
-    if (this.currentFileHandle) {
-      await this.writeLargeFileChunk(chunk); //保存到磁盘
+      const speed = this.speedCalculator.getSendSpeed(this.peerId);
+      const progress =
+        folderProgress.totalSize > 0
+          ? folderProgress.receivedSize / folderProgress.totalSize
+          : 0;
+      this.progressCallback?.(this.currentFolderName, progress, speed);
     } else {
-      this.currentFileChunks.push(chunk); //保存到内存
+      this.speedCalculator.updateSendSpeed(this.peerId, reception.receivedSize);
+      const speed = this.speedCalculator.getSendSpeed(this.peerId);
+      const progress =
+        reception.meta.size > 0
+          ? reception.receivedSize / reception.meta.size
+          : 0;
+      this.progressCallback?.(reception.meta.fileId, progress, speed);
     }
   }
+  // endregion
 
-  private sendFileAck(fileId: string): void {
-    if (!this.peerId) return;
+  // region Disk Operations
+  private async createDiskWriteStream(meta: FileMeta): Promise<void> {
+    if (!this.saveDirectory || !this.activeFileReception) {
+      this.log("warn", "Save directory not set, falling back to in-memory.");
+      return;
+    }
 
-    const confirmation = JSON.stringify({
-      type: "fileAck",
-      fileId,
-    });
-    this.webrtcConnection.sendData(confirmation, this.peerId);
+    try {
+      const folderHandle = await this.createFolderStructure(meta.fullName);
+      const fileHandle = await folderHandle.getFileHandle(meta.name, {
+        create: true,
+      });
+      const writeStream = await fileHandle.createWritable();
+
+      this.activeFileReception.fileHandle = fileHandle;
+      this.activeFileReception.writeStream = writeStream;
+    } catch (err) {
+      this.fireError("Failed to create file on disk", {
+        err,
+        fileName: meta.name,
+      });
+    }
   }
 
   private async createFolderStructure(
@@ -406,95 +387,97 @@ class FileReceiver {
       throw new Error("Save directory not set");
     }
 
-    const parts_rela_path = fullName.split("/"); // 根据斜杠分割路径
-    parts_rela_path.pop(); // 移除最后一个元素（文件名）
+    const parts = fullName.split("/");
+    parts.pop(); // Remove filename
 
-    this.log("log", "Creating folder structure", {
-      fullName,
-      path: parts_rela_path,
-    });
-    let currentPath = this.saveDirectory;
-    for (const part of parts_rela_path) {
+    let currentDir = this.saveDirectory;
+    for (const part of parts) {
       if (part) {
-        currentPath = await currentPath.getDirectoryHandle(part, {
+        currentDir = await currentDir.getDirectoryHandle(part, {
           create: true,
         });
       }
     }
-    return currentPath;
+    return currentDir;
   }
-  public async setSaveDirectory(
-    directory: FileSystemDirectoryHandle
-  ): Promise<void> {
-    this.saveDirectory = directory;
-  }
-  //建立磁盘写入流,存在保存目录的情况，否则还是保存在内存中
-  public async creatDiskWriteStream(meta: FileMeta): Promise<void> {
-    if (!this.saveDirectory) {
-      this.log("warn", "Save directory not set, falling back to in-memory.");
-      this.currentFileChunks = [];
-    } else {
-      try {
-        const folderStructure = await this.createFolderStructure(meta.fullName);
-        this.currentFileHandle = await folderStructure.getFileHandle(
-          meta.name,
-          { create: true }
-        );
 
-        this.writeStream = await this.currentFileHandle.createWritable();
-      } catch (err) {
-        this.fireError("Failed to create file", {
-          err,
-          fileName: meta.name,
-        });
-        this.log("warn", "Falling back to in-memory storage for file", {
-          fileName: meta.name,
-        });
-        this.currentFileChunks = [];
-      }
-    }
-  }
-  //保存文件到磁盘
   private async writeLargeFileChunk(chunk: ArrayBuffer): Promise<void> {
-    if (!this.writeStream) {
-      //用户没有授权的情况，保存到内存
-      this.currentFileChunks.push(chunk);
+    const stream = this.activeFileReception?.writeStream;
+    if (!stream) {
+      // Fallback to memory if stream is not available for some reason
+      this.activeFileReception?.chunks.push(chunk);
       return;
     }
     try {
-      await this.writeStream.write(chunk); //写入磁盘
-      this.currentFileChunks.push(null); // Just to keep track of the number of chunks
+      await stream.write(chunk);
+      this.activeFileReception?.chunks.push(null); // Keep track of chunk count
     } catch (error) {
       this.fireError("Error writing chunk to disk", { error });
     }
   }
-  //磁盘文件 完成终止
+
   private async finalizeLargeFileReceive(): Promise<void> {
-    if (this.writeStream) {
-      try {
-        await this.writeStream.close();
-      } catch (error) {
-        this.fireError("Error closing write stream", { error });
-      }
+    const reception = this.activeFileReception;
+    if (!reception?.writeStream || !reception.fileHandle) return;
+
+    try {
+      await reception.writeStream.close();
+    } catch (error) {
+      this.fireError("Error closing write stream", { error });
     }
-    if (this.currentFileHandle && this.currentFileMeta) {
-      //存在磁盘写入
-      const file = await this.currentFileHandle.getFile(); //与发送端一样，只是拿到了磁盘文件的一个引用，不占用内存
-      const customFile = Object.assign(file, {
-        fullName: this.currentFileMeta.fullName,
-        folderName: this.currentFolderName as string,
-      });
 
-      this.saveType[this.currentFileMeta.fileId] = true; //存放在磁盘
+    // A CustomFile is a standard File object with added properties.
+    // This is a common pattern for attaching extra metadata.
+    const file = await reception.fileHandle.getFile();
+    const customFile = Object.assign(file, {
+      fullName: reception.meta.fullName,
+      folderName: this.currentFolderName,
+    }) as CustomFile;
 
-      if (!this.currentFolderName) {
-        //如果当前处于接收文件夹的状态 & 写入磁盘了，则不回传文件，不支持下载
-        await this.onFileReceived?.(customFile);
-      } else {
-        this.saveType[this.currentFolderName] = true; //对应的文件夹也存放在磁盘
-      }
+    this.saveType[reception.meta.fileId] = true;
+    if (this.currentFolderName) {
+      this.saveType[this.currentFolderName] = true;
+      // For files in a folder saved to disk, we don't call onFileReceived
+      // as the user experience is typically to "open folder" after download.
+    } else {
+      await this.onFileReceived?.(customFile);
     }
   }
+  // endregion
+
+  // region In-Memory Operations
+  private async finalizeMemoryFileReceive(): Promise<void> {
+    const reception = this.activeFileReception;
+    if (!reception) return;
+
+    const fileBlob = new Blob(reception.chunks as ArrayBuffer[], {
+      type: reception.meta.fileType,
+    });
+    const file = new File([fileBlob], reception.meta.name, {
+      type: reception.meta.fileType,
+    });
+
+    const customFile = Object.assign(file, {
+      fullName: reception.meta.fullName,
+      folderName: this.currentFolderName,
+    }) as CustomFile;
+
+    this.saveType[reception.meta.fileId] = false;
+    if (this.currentFolderName) {
+      this.saveType[this.currentFolderName] = false;
+    }
+
+    await this.onFileReceived?.(customFile);
+  }
+  // endregion
+
+  // region Communication
+  private sendFileAck(fileId: string): void {
+    if (!this.peerId) return;
+    const confirmation = JSON.stringify({ type: "fileAck", fileId });
+    this.webrtcConnection.sendData(confirmation, this.peerId);
+  }
+  // endregion
 }
 
 export default FileReceiver;
