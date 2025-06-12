@@ -18,8 +18,7 @@ const nextConfig = {
         hostname: 'img.youtube.com',
         pathname: '/vi/**',
       },
-    ],
-    unoptimized: true, // 禁用图片优化
+    ]
   },
 
 }
