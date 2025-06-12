@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import RichTextEditor from "@/components/Editor/RichTextEditor";
 import {
   ReadClipboardButton,
   WriteClipboardButton,
@@ -13,6 +13,19 @@ import type { Messages } from "@/types/messages";
 import type { CustomFile, FileMeta } from "@/types/webrtc";
 import type { ProgressState } from "@/hooks/useWebRTCConnection";
 import type WebRTC_Initiator from "@/lib/webrtc_Initiator";
+
+// Dynamically import the RichTextEditor
+const RichTextEditor = dynamic(
+  () => import("@/components/Editor/RichTextEditor"),
+  {
+    ssr: false, // This component is client-side only
+    loading: () => (
+      <div className="p-4 border rounded-lg min-h-[200px] md:min-h-[400px] bg-gray-50 flex items-center justify-center">
+        Loading Editor...
+      </div>
+    ),
+  }
+);
 
 interface SendTabPanelProps {
   messages: Messages;
