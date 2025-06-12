@@ -145,10 +145,6 @@ export function RetrieveTabPanel({
       </div>
       {retrievedContent && (
         <div className="my-3 p-2 border rounded bg-gray-50">
-          <h3 className="font-semibold text-md mb-1">
-            {/* {messages.text.ClipboardApp.html.receivedTextTitle} */}
-            TextTitle_placeholder
-          </h3>
           <RichTextEditor
             value={retrievedContent}
             onChange={() => {
