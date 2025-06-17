@@ -79,14 +79,16 @@
 
 ## 环境变量
 
-应用程序的运行依赖于环境变量。简化的本地开发环境配置如下：
+应用程序的运行依赖于环境变量。
+
+### 后端开发环境变量
 
 在 `backend/` 目录中创建一个 `.env.development.local` 文件，并填充以下基本变量：
 
 ```ini
 # 服务器配置
 PORT=3001
-NODE_ENV=development # 或 production
+NODE_ENV=development
 CORS_ORIGIN=http://localhost:3000 # 你的前端应用程序 URL
 
 # Redis 配置
@@ -98,7 +100,10 @@ REDIS_PORT=6379
 **注意：**
 
 - 如果未定义 `REDIS_HOST` 或 `REDIS_PORT`，应用程序将在启动时退出。
-- 更全面的环境变量配置（包括 TURN 服务器、生产特定设置等）请参考 [部署指南](./docs/DEPLOYMENT_GUIDE.zh-CN.md) 的第 4.3 节。
+
+### 后端生产环境变量
+
+更全面的后端环境变量配置（包括生产特定设置等）请参考 [部署指南](./docs/DEPLOYMENT_GUIDE.zh-CN.md)。
 
 ## 入门 (本地开发)
 

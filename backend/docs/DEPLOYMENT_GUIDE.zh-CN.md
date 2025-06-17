@@ -54,6 +54,8 @@ sudo apt install redis-server
 
 ### 3.2. TURN/STUN 服务器 (Coturn)
 
+**重要提示：本节为可选配置。** Privydrop 默认仅使用公共 STUN 服务器，在多数网络环境下足以建立连接。对于初次体验、开发测试，或部署于网络限制不严格的环境，**您可以跳过本节**。只有当您对 NAT 穿透成功率有极高要求时，才需要搭建自己的 TURN 服务器。
+
 TURN 服务器对于 WebRTC 穿透 NAT 和防火墙至关重要，可确保可靠的点对点连接。Coturn 是一个流行的开源 TURN 服务器实现。
 
 **安装 (Ubuntu 示例)：**

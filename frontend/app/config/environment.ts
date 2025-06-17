@@ -1,29 +1,43 @@
 export const config = {
   API_URL: process.env.NEXT_PUBLIC_API_URL!,
-  SERVER_IP: process.env.NEXT_PUBLIC_SERVER_IP!,
   USE_HTTPS: process.env.NEXT_PUBLIC_USE_HTTPS === "true",
   USE_CREDENTIALS: process.env.NEXT_PUBLIC_USE_CREDENTIALS === "true",
-  TURN_USERNAME: "secureUser",
-  TURN_CREDENTIAL: "QWERTY!@#456",
+
+  // Optional: Self-hosted TURN server settings
+  // To enable, set NEXT_PUBLIC_TURN_HOST, NEXT_PUBLIC_TURN_USERNAME, and NEXT_PUBLIC_TURN_PASSWORD in your .env file
+  TURN_HOST: process.env.NEXT_PUBLIC_TURN_HOST,
+  TURN_USERNAME: process.env.NEXT_PUBLIC_TURN_USERNAME,
+  TURN_CREDENTIAL: process.env.NEXT_PUBLIC_TURN_PASSWORD,
 };
 
 export const getIceServers = () => {
-  const stunUrl = [
-    `stun:${config.SERVER_IP}:3478`,
-    "stun:stun.l.google.com:19302",
-  ];
-  const turnUrls = config.USE_HTTPS
-    ? [`turn:${config.SERVER_IP}:3478`, `turns:${config.SERVER_IP}:5349`]
-    : [`turn:${config.SERVER_IP}:3478`];
-
-  return [
-    { urls: stunUrl },
+  // Default public STUN server
+  const iceServers: RTCIceServer[] = [
     {
+      urls: "stun:stun.l.google.com:19302",
+    },
+  ];
+
+  // Add self-hosted TURN/STUN server if configured through environment variables
+  if (config.TURN_HOST && config.TURN_USERNAME && config.TURN_CREDENTIAL) {
+    const turnUrls = config.USE_HTTPS
+      ? [`turns:${config.TURN_HOST}:5349`, `turn:${config.TURN_HOST}:3478`]
+      : [`turn:${config.TURN_HOST}:3478`];
+
+    // Add STUN from the self-hosted server
+    iceServers.push({
+      urls: `stun:${config.TURN_HOST}:3478`,
+    });
+
+    // Add TURN from the self-hosted server
+    iceServers.push({
       urls: turnUrls,
       username: config.TURN_USERNAME,
       credential: config.TURN_CREDENTIAL,
-    },
-  ];
+    });
+  }
+
+  return iceServers;
 };
 
 export const getSocketOptions = () => {
