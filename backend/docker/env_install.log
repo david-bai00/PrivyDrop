@@ -16,6 +16,39 @@ sudo apt-get update
 sudo apt install -y nodejs
 sudo npm install -g pnpm
 
+# 安装Nginx (支持 HTTP/3，Ubuntu 示例)
+参考: https://nginx.org/en/linux_packages.html#Ubuntu
+
+1.  **安装先决条件：**
+    
+    sudo apt install curl gnupg2 ca-certificates lsb-release ubuntu-keyring
+    
+2.  **导入 Nginx 签名密钥：**
+    
+    curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
+     | sudo tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
+    
+3.  **验证密钥：**
+    
+    gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg
+    # 期望指纹: 573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62
+    
+4.  **为稳定版 Nginx 包设置 apt 仓库：**
+    
+    echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
+    http://nginx.org/packages/ubuntu `lsb_release -cs` nginx" \
+     | sudo tee /etc/apt/sources.list.d/nginx.list
+    
+5.  **设置仓库 pinning：**
+    
+    echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" \
+     | sudo tee /etc/apt/preferences.d/99nginx
+    
+6.  **安装 Nginx：**
+    
+    sudo apt update
+    sudo apt install nginx
+
 sudo apt-get clean autoclean
 sudo apt-get autoremove --yes
 sudo rm -rf /var/lib/{apt,cache,log}/ && sudo rm -rf /tmp/*
