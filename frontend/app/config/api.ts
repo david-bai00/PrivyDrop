@@ -5,7 +5,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 export const API_ROUTES = {
   get_room: `${API_URL}/api/get_room`,
   check_room: `${API_URL}/api/check_room`,
-  creat_room: `${API_URL}/api/creat_room`,
+  create_room: `${API_URL}/api/create_room`,
   set_track: `${API_URL}/api/set_track`,
   logs_debug: `${API_URL}/api/logs_debug`,
 };
@@ -56,7 +56,7 @@ export const createRoom = async (roomId: string): Promise<boolean> => {
     body: JSON.stringify({ roomId }),
   });
   const data = await apiCall<{ success: boolean }>(
-    API_ROUTES.creat_room,
+    API_ROUTES.create_room,
     options
   );
   return data?.success ?? false;
