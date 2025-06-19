@@ -1,13 +1,13 @@
 "use client";
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import Image from 'next/image';
-import { Menu, X } from 'lucide-react';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { Messages } from '@/types/messages'
+import Image from "next/image";
+import { Menu, X } from "lucide-react";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { Messages } from "@/types/messages";
 
 interface HeaderProps {
   messages: Messages;
@@ -33,8 +33,16 @@ const Header = ({ messages, lang }: HeaderProps) => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
           <Link href={`/${lang}`} className="flex items-center space-x-2">
-            <Image src="/logo.png" alt="SecureShare Logo" width={40} height={40} priority />
-            <span className="font-bold text-xl hidden sm:inline">SecureShare</span>
+            <Image
+              src="/logo.png"
+              alt="SecureShare Logo"
+              width={40}
+              height={40}
+              priority
+            />
+            <span className="font-bold text-xl hidden sm:inline">
+              SecureShare
+            </span>
           </Link>
 
           {/* 桌面端导航和语言切换 */}
@@ -68,7 +76,7 @@ const Header = ({ messages, lang }: HeaderProps) => {
               className="p-2"
               onClick={() => setIsOpen(!isOpen)}
               aria-label="Toggle menu"
-              >
+            >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
