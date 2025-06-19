@@ -73,7 +73,10 @@
   @apply text-gray-600;
 }
 
-.prose h1, .prose h2, .prose h3, .prose h4 {
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
   @apply text-gray-900 font-bold mt-8 mb-4;
 }
 
@@ -93,7 +96,8 @@
   @apply mb-6 leading-relaxed;
 }
 
-.prose ul, .prose ol {
+.prose ul,
+.prose ol {
   @apply my-6 ml-6;
 }
 
@@ -135,4 +139,11 @@
 
 .prose figure figcaption {
   @apply text-center text-sm text-gray-600 mt-2 italic;
+}
+
+/* Hide GitHub ribbon on small screens */
+@media (max-width: 640px) {
+  .github-corner {
+    display: none;
+  }
 }
