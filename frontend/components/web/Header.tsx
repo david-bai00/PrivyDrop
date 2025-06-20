@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Github } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Messages } from "@/types/messages";
 
@@ -72,6 +72,15 @@ const Header = ({ messages, lang }: HeaderProps) => {
           {/* 移动端菜单按钮 */}
           <div className="md:hidden flex items-center space-x-2">
             <LanguageSwitcher />
+            <Button asChild variant="ghost" size="icon">
+              <Link
+                href="https://github.com/david-bai00/PrivyDrop"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Github className="h-5 w-5" />
+              </Link>
+            </Button>
             <button
               className="p-2"
               onClick={() => setIsOpen(!isOpen)}
