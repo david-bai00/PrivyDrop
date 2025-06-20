@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /api/
+Disallow: /*?roomId=
+Allow: /
+Sitemap: https://www.securityshare.xyz/sitemap.xml
