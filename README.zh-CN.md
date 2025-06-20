@@ -1,4 +1,4 @@
-# PrivyDrop(前 SecureShare) - 基于 WebRTC 的隐私安全文件分享工具
+# PrivyDrop - 基于 WebRTC 的隐私安全文件分享工具
 
 [![开源协议](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
@@ -77,7 +77,7 @@ PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）�
 
 ## 🤝 参与贡献
 
-我们热烈欢迎任何形式的贡献！无论是报告 Bug、提出功能建议还是提交代码，都对 PrivyDrop 的成长帮助巨大。请阅读我们的 [**贡献指南**](./.github/CONTRIBUTING.md) 来开始你的贡献之旅。
+我们热烈欢迎任何形式的贡献！无论是报告 Bug、提出功能建议、提交代码还是加星，都对 PrivyDrop 的成长帮助巨大。请阅读我们的 [**贡献指南**](./.github/CONTRIBUTING.md) 来开始你的贡献之旅。
 
 ## 📄 开源协议
 
