@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     name: "signaling-server",
-    script: "./dist/server.js",  // 指向编译后的文件
+    script: "./dist/server.js",  // Point to the compiled file
     watch: false,
     env: {
       "NODE_ENV": "production",
@@ -13,6 +13,6 @@ module.exports = {
     max_memory_restart: "500M",
     instances: 1,
     exec_mode: "fork",
-    group: "ssl-cert"  // 添加这行，指定进程运行的组
+    group: "ssl-cert"  // Add this line to specify the group the process runs as
   }]
 }

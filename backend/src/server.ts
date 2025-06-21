@@ -1,14 +1,14 @@
-import express from "express"; //express: 用于创建一个简洁且灵活的Node.js web应用框架
+import express from "express"; // express: A minimalist and flexible Node.js web application framework
 import cors from "cors";
 import http from "http";
-import { Server } from "socket.io"; //实时通信库，基于WebSocket协议，实现双向通信
+import { Server } from "socket.io"; // socket.io: A library for real-time web applications, enables real-time, bi-directional communication between web clients and servers.
 import { CONFIG } from "./config/env";
 import { corsOptions, corsWSOptions } from "./config/server";
 import apiRouter from "./routes/api";
 import { setupSocketHandlers } from "./socket/handlers";
 
-const app = express(); //创建一个Express应用
-app.use(cors(corsOptions)); // 添加 CORS 中间件
+const app = express(); // Create an Express application
+app.use(cors(corsOptions)); // Add CORS middleware
 app.use(express.json());
 app.use(apiRouter);
 

@@ -20,7 +20,7 @@ import { ReferrerTrack, LogMessage } from "../types/room";
 
 const router = Router();
 
-// 定义接口提高代码可读性和类型安全性
+// Define interfaces to improve code readability and type safety
 interface CreateRoomRequest {
   roomId: string;
 }
@@ -29,7 +29,7 @@ interface CheckRoomRequest {
   roomId: string;
 }
 
-// 创建房间的路由处理函数
+// Route handler for creating a room
 const createRoomHandler: RequestHandler<{}, any, CreateRoomRequest> = async (
   req,
   res
@@ -58,7 +58,7 @@ const createRoomHandler: RequestHandler<{}, any, CreateRoomRequest> = async (
   }
 };
 
-// 获取房间的路由处理函数
+// Route handler for getting a room
 const getRoomHandler: RequestHandler = async (req, res) => {
   try {
     const roomId = await roomService.getAvailableRoomId();
@@ -70,7 +70,7 @@ const getRoomHandler: RequestHandler = async (req, res) => {
   }
 };
 
-// 检查房间的路由处理函数
+// Route handler for checking a room
 const checkRoomHandler: RequestHandler<{}, any, CheckRoomRequest> = async (
   req,
   res
@@ -90,7 +90,7 @@ const checkRoomHandler: RequestHandler<{}, any, CheckRoomRequest> = async (
   }
 };
 
-// 设置跟踪的路由处理函数
+// Route handler for setting tracking
 const setTrackHandler: RequestHandler<{}, any, ReferrerTrack> = async (
   req,
   res
@@ -102,16 +102,16 @@ const setTrackHandler: RequestHandler<{}, any, ReferrerTrack> = async (
 
   try {
     const { ref, timestamp, path } = req.body;
-    // 按日期统计
+    // Statistics by date
     const date = new Date(timestamp).toISOString().split("T")[0];
     const dailyKey = `referrers:daily:${date}`;
     const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
 
-    // 使用MULTI确保hincrby和expire的原子性
+    // Use MULTI to ensure atomicity of hincrby and expire
     await redis
       .multi()
       .hincrby(dailyKey, ref, 1) // \"referrers:daily:2024-01-20\" : { \"producthunt\": \"5\", \"twitter\": \"3\" }
-      .expire(dailyKey, thirtyDaysInSeconds) // 设置30天过期
+      .expire(dailyKey, thirtyDaysInSeconds) // Set a 30-day expiration
       .exec();
 
     res.status(200).json({ success: true });
@@ -121,7 +121,7 @@ const setTrackHandler: RequestHandler<{}, any, ReferrerTrack> = async (
   }
 };
 
-// 日志调试的路由处理函数
+// Route handler for log debugging
 const logsDebugHandler: RequestHandler<{}, any, LogMessage> = async (
   req,
   res
@@ -136,7 +136,7 @@ const logsDebugHandler: RequestHandler<{}, any, LogMessage> = async (
   }
 };
 
-// 注册路由
+// Register routes
 router.post("/api/create_room", createRoomHandler);
 router.get("/api/get_room", getRoomHandler);
 router.post("/api/check_room", checkRoomHandler);

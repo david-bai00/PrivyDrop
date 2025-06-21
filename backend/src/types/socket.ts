@@ -2,7 +2,7 @@ export interface JoinData {
   roomId: string;
 }
 
-// 添加 WebRTC 相关类型定义
+// Add WebRTC related type definitions
 declare global {
   interface RTCSessionDescriptionInit {
     type: RTCSdpType;

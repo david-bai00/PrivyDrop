@@ -29,7 +29,7 @@ import { redis, ROOM_PREFIX, SOCKET_PREFIX, ROOM_EXPIRY } from './redis';
 const MAX_NUMERIC_ID_ATTEMPTS = 10;
 const MAX_ALPHANUMERIC_ID_ATTEMPTS = 50;
 
-// 生成随机房间号--4位数字
+// Generate a random 4-digit numeric room ID
 function generateNumericRoomId(length: number = 4): string {
   let id = '';
   for (let i = 0; i < length; i++) {
@@ -37,6 +37,7 @@ function generateNumericRoomId(length: number = 4): string {
   }
   return id;
 }
+// Generate a random 4-character alphanumeric room ID
 function generateAlphanumericRoomId(length: number = 4): string {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
@@ -46,11 +47,11 @@ function generateAlphanumericRoomId(length: number = 4): string {
   }
   return result;
 }
-// 检查房间是否存在
+// Check if a room exists
 export async function isRoomExist(roomId: string): Promise<boolean> {
-  return await redis.hexists(ROOM_PREFIX + roomId, 'created_at') === 1;//hset和hexists方法操作哈希,created_at是字段名
+  return await redis.hexists(ROOM_PREFIX + roomId, 'created_at') === 1; // hset and hexists operate on hashes, 'created_at' is the field name
 }
-// 创建新房间
+// Create a new room
 // (Hash)
 // "room:1234" : {
 //   "created_at": "1705123456789"
@@ -59,16 +60,16 @@ export async function createRoom(roomId: string): Promise<void> {
   const roomKey = ROOM_PREFIX + roomId;
   const socketsKey = `${roomKey}:sockets`;
   await redis.multi()
-    .hset(roomKey, 'created_at', Date.now())//设置hash，存储房间的创建时间；
-    .expire(roomKey, ROOM_EXPIRY)//设置过期时间
+    .hset(roomKey, 'created_at', Date.now()) // Set hash to store the room's creation time
+    .expire(roomKey, ROOM_EXPIRY) // Set expiration time
     .expire(socketsKey, ROOM_EXPIRY)
     .exec();
 }
-// 删除房间
+// Delete a room
 export async function deleteRoom(roomId: string): Promise<void> {
   await redis.del(ROOM_PREFIX + roomId);
 }
-// 刷新房间过期时间
+// Refresh a room's expiration time
 export async function refreshRoom(roomId: string, expiry: number = 0): Promise<void> {
   const actualExpiry = expiry > 0 ? expiry : ROOM_EXPIRY;
   const roomKey = ROOM_PREFIX + roomId;
@@ -79,7 +80,7 @@ export async function refreshRoom(roomId: string, expiry: number = 0): Promise<v
     .expire(socketsKey, actualExpiry)
     .exec();
 }
-// 获取可用房间号
+// Get an available room ID
 export async function getAvailableRoomId(): Promise<string> {
   let roomId: string;
   let attempts = 0;
@@ -106,32 +107,32 @@ export async function getAvailableRoomId(): Promise<string> {
   }
   return roomId;
 }
-// 将socket.id与房间号绑定
+// Bind a socket.id to a room ID
 export async function bindSocketToRoom(socketId: string, roomId: string): Promise<void> {
   await redis.multi()
-    //字符串，存储与该socket ID相关联的房间号,"socket:abcd1234" : "1234"
+    // String, stores the room ID associated with this socket ID, e.g., "socket:abcd1234" : "1234"
     .set(SOCKET_PREFIX + socketId, roomId, 'EX', ROOM_EXPIRY+3600) // Set with expiry
-    //添加集合，房间内的 Socket 列表 (Set),"room:1234:sockets" : ["socket1", "socket2", ...]
+    // Set, list of sockets in the room, e.g., "room:1234:sockets" : ["socket1", "socket2", ...]
     .sadd(ROOM_PREFIX + roomId + ':sockets', socketId)
     .exec();
 }
-// 获取socket.id对应的房间号
+// Get the room ID for a given socket.id
 export async function getRoomBySocketId(socketId: string): Promise<string | null> {
   return await redis.get(SOCKET_PREFIX + socketId);
 }
-// 解绑socket.id与房间号
+// Unbind a socket.id from a room ID
 export async function unbindSocketFromRoom(socketId: string, roomId: string): Promise<void> {
   await redis.multi()
-    .del(SOCKET_PREFIX + socketId)//解绑socket ID与房间号
-    .srem(ROOM_PREFIX + roomId + ':sockets', socketId)//从房间的集合中移除socket ID
+    .del(SOCKET_PREFIX + socketId) // Unbind socket ID from room ID
+    .srem(ROOM_PREFIX + roomId + ':sockets', socketId) // Remove socket ID from the room's set
     .exec();
 }
-// 检查房间是否为空
+// Check if a room is empty
 export async function isRoomEmpty(roomId: string): Promise<boolean> {
-  const count = await redis.scard(ROOM_PREFIX + roomId + ':sockets');//返回集合中元素的数量
+  const count = await redis.scard(ROOM_PREFIX + roomId + ':sockets'); // Returns the number of elements in the set
   return count === 0;
 }
-// 检查房间连接数
+// Get the number of connections in a room
 export async function roomNumOfConnection(roomId: string): Promise<number> {
   return await redis.scard(ROOM_PREFIX + roomId + ':sockets');
 }

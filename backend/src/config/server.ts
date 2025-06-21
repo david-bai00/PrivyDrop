@@ -1,6 +1,6 @@
 import { CorsOptions } from 'cors';
 import { CONFIG } from './env';
-// 配置 CORS
+// Configure CORS
 export const corsOptions: CorsOptions = CONFIG.NODE_ENV === 'production' 
   ? {
       origin: CONFIG.CORS_ORIGIN,
@@ -9,23 +9,23 @@ export const corsOptions: CorsOptions = CONFIG.NODE_ENV === 'production'
       allowedHeaders: ['Content-Type', 'Authorization']
     }
   : {
-    origin: true, // 开发环境允许所有源
+    origin: true, // Allow all origins in development environment
     credentials: true,
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
   };
-// 配置 Socket.IO 的 CORS
+// Configure CORS for Socket.IO
 export const corsWSOptions = CONFIG.NODE_ENV === 'production'
   ? {
-      origin: CONFIG.CORS_ORIGIN,// 允许的源，替换为你的Next.js应用的URL
+      origin: CONFIG.CORS_ORIGIN, // Allowed origin, replace with your Next.js application's URL
       methods: ['GET', 'POST'],
       credentials: true
     }
   : {
-      // 开发环境下允许多个源
+      // Allow multiple origins in development environment
       origin: [
         CONFIG.CORS_ORIGIN,
-        /^http:\/\/192\.168\.\d+\.\d+:3000$/,// 匹配所有 192.168.x.x:3000 格式的局域网地址
+        /^http:\/\/192\.168\.\d+\.\d+:3000$/, // Match all LAN addresses in the format 192.168.x.x:3000
       ],
       methods: ['GET', 'POST'],
       credentials: true

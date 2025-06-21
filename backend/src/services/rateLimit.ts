@@ -20,8 +20,8 @@
 import { redis } from './redis';
 
 const RATE_LIMIT_PREFIX = 'ratelimit:join:';
-const RATE_WINDOW = 5; // 5秒时间窗口
-const RATE_LIMIT = 2;  // 允许的最大请求次数
+const RATE_WINDOW = 5; // 5-second time window
+const RATE_LIMIT = 2;  // Maximum number of requests allowed
 
 export async function checkRateLimit(ip: string): Promise<{
   allowed: boolean;
@@ -32,7 +32,7 @@ export async function checkRateLimit(ip: string): Promise<{
   const now = Date.now();
   const windowStart = now - (RATE_WINDOW * 1000);
 
-  // 使用 Redis 的 MULTI 命令开启事务
+  // Use Redis's MULTI command to start a transaction
   const pipeline = redis.pipeline();
   
   // 1. Add current request's timestamp
