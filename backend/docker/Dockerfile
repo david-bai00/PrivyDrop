@@ -1,27 +1,27 @@
-# 使用 Ubuntu 20.04 镜像作为基础
+# Use Ubuntu 20.04 image as base
 FROM ubuntu:20.04
 
-# 设置环境变量，以避免交互式安装
+# Set environment variables to avoid interactive installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 设置清华大学软件源
+# Set Tsinghua University software source
 RUN sed -i 's/archive.ubuntu.com/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 
 RUN apt-get update && apt-get install -y tzdata
 
-# 设置上海时区
+# Set Shanghai time zone
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
-# 安装 certbot nginx
+# Install certbot nginx
 RUN apt install -y certbot python3-certbot-nginx
 
-# TURN服务器
+# TURN server
 RUN apt-get install -y vim coturn
 
-# redis服务
+# redis service
 RUN apt-get install -y redis-server
 
-# 安装nodejs 20
+# Install nodejs 20
 RUN apt-get install -y curl
 
 # node.js

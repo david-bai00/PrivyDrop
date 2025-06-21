@@ -1,44 +1,44 @@
 #!/bin/bash
-# 证书监控续期脚本--自动检查，如果少于30天则续期, 手动执行：
+# Certificate monitoring and renewal script--auto-checks, and renews if less than 30 days, manual execution:
 # cd path/to/privydrop/backend/docker/Nginx && bash renew_ssl.sh
-# crontab 自动任务
+# crontab automatic task
 # chmod +x path/to/privydrop/backend/docker/Nginx/renew_ssl.sh
-# crontab -e 打开编辑器
+# crontab -e open editor
 # 0 0 * * * bash path/to/privydrop/backend/docker/Nginx/renew_ssl.sh >> path/to/log/certbot-renew.log 2>&1
 
-# 首先切换到脚本所在目录
+# First switch to the script directory
 cd "$(dirname "$(readlink -f "$0")")" || exit 1
 
-# 定义证书目录
+# Define certificate directory
 CERTBOT_DIR="/etc/letsencrypt/live"
 
-# 遍历所有证书
+# Iterate over all certificates
 for CERT_PATH in "$CERTBOT_DIR"/*/fullchain.pem; do
-    # 获取域名
+    # Get domain name
     DOMAIN=$(basename "$(dirname "$CERT_PATH")")
     
-    # 检查证书有效期
+    # Check certificate validity
     DAYS_REMAINING=$(openssl x509 -enddate -noout -in "$CERT_PATH" | cut -d= -f2 | xargs -I{} date -d "{}" +%s)
     NOW=$(date +%s)
     DAYS=$(( ($DAYS_REMAINING - $NOW) / 86400 ))
 
     echo "Domain: $DOMAIN, Days left: $DAYS days"
 
-    # 如果剩余时间少于 30 天，自动续期
+    # If the remaining time is less than 30 days, renew automatically
     if [ $DAYS -lt 30 ]; then
         echo "Warning: Certificate for $DOMAIN will expire in $DAYS days. Renewing..."
-        # 运行续期命令之前要解除80端口占用--暂停ngnix
+        # Before running the renewal command, release port 80 -- stop nginx
         sudo bash stop_clean-log.sh
-        # 使用 Certbot 自动续期
+        # Use Certbot for automatic renewal
         sudo certbot renew --force-renewal --cert-name "$DOMAIN"
         
-        # 检查续期是否成功
+        # Check if renewal was successful
         if [ $? -eq 0 ]; then
             echo "Renewal successful for $DOMAIN"
         else
             echo "Failed to renew certificate for $DOMAIN"
         fi
-        # 启动ngnix
+        # Start nginx
         sudo bash configure.sh ../../.env.production.local
     fi
 done
