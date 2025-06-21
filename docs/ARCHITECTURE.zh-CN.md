@@ -34,26 +34,26 @@ graph TD
         TURN[TURN/STUN 服务器]
     end
 
-    ClientA -- 1.创建/加入房间 (HTTP/Socket) --> Nginx
+    ClientA -- 1.&nbsp;创建/加入房间 (HTTP/Socket) --> Nginx
     Nginx --> Backend
     Backend -- 读/写房间状态 --> Redis
 
-    ClientB -- 2.加入同一房间 (HTTP/Socket) --> Nginx
+    ClientB -- 2.&nbsp;加入同一房间 (HTTP/Socket) --> Nginx
 
-    Backend -- 3.广播用户加入事件 --> ClientA
-    Backend -- 3.广播用户加入事件 --> ClientB
+    Backend -- 3.&nbsp;广播用户加入事件 --> ClientA
+    Backend -- 3.&nbsp;广播用户加入事件 --> ClientB
 
-    ClientA -- 4.发送信令 (Offer/ICE) --> Backend
-    Backend -- 5.转发信令 --> ClientB
-    ClientB -- 6.发送信令 (Answer/ICE) --> Backend
-    Backend -- 7.转发信令 --> ClientA
+    ClientA -- 4.&nbsp;发送信令 (Offer/ICE) --> Backend
+    Backend -- 5.&nbsp;转发信令 --> ClientB
+    ClientB -- 6.&nbsp;发送信令 (Answer/ICE) --> Backend
+    Backend -- 7.&nbsp;转发信令 --> ClientA
 
-    ClientA <-.-> |8.STUN检查| TURN
-    ClientB <-.-> |8.STUN检查| TURN
+    ClientA <-.-> |8.&nbsp;STUN检查| TURN
+    ClientB <-.-> |8.&nbsp;STUN检查| TURN
 
-    ClientA <-..- |9.P2P直连数据传输| ClientB
-    ClientA <-.-> |9.TURN中继数据传输| TURN
-    ClientB <-.-> |9.TURN中pey数据传输| TURN
+    ClientA <-..- |9.&nbsp;P2P直连数据传输| ClientB
+    ClientA <-.-> |9.&nbsp;TURN中继数据传输| TURN
+    ClientB <-.-> |9.&nbsp;TURN中pey数据传输| TURN
 ```
 
 **流程说明:**

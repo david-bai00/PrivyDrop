@@ -34,26 +34,26 @@ graph TD
         TURN[TURN/STUN Server]
     end
 
-    ClientA -- 1.Create/Join Room (HTTP/Socket) --> Nginx
+    ClientA -- 1.&nbsp;Create/Join Room (HTTP/Socket) --> Nginx
     Nginx --> Backend
     Backend -- Read/Write Room Status --> Redis
 
-    ClientB -- 2.Join Same Room (HTTP/Socket) --> Nginx
+    ClientB -- 2.&nbsp;Join Same Room (HTTP/Socket) --> Nginx
 
-    Backend -- 3.Broadcast user join event --> ClientA
-    Backend -- 3.Broadcast user join event --> ClientB
+    Backend -- 3.&nbsp;Broadcast user join event --> ClientA
+    Backend -- 3.&nbsp;Broadcast user join event --> ClientB
 
-    ClientA -- 4.Send Signal (Offer/ICE) --> Backend
-    Backend -- 5.Forward Signal --> ClientB
-    ClientB -- 6.Send Signal (Answer/ICE) --> Backend
-    Backend -- 7.Forward Signal --> ClientA
+    ClientA -- 4.&nbsp;Send Signal (Offer/ICE) --> Backend
+    Backend -- 5.&nbsp;Forward Signal --> ClientB
+    ClientB -- 6.&nbsp;Send Signal (Answer/ICE) --> Backend
+    Backend -- 7.&nbsp;Forward Signal --> ClientA
 
-    ClientA <-.-> |8.STUN Check| TURN
-    ClientB <-.-> |8.STUN Check| TURN
+    ClientA <-.-> |8.&nbsp;STUN Check| TURN
+    ClientB <-.-> |8.&nbsp;STUN Check| TURN
 
-    ClientA <-..- |9.P2P Direct Data Transfer| ClientB
-    ClientA <-.-> |9.TURN Relayed Data Transfer| TURN
-    ClientB <-.-> |9.TURN Relayed Data Transfer| TURN
+    ClientA <-..- |9.&nbsp;P2P Direct Data Transfer| ClientB
+    ClientA <-.-> |9.&nbsp;TURN Relayed Data Transfer| TURN
+    ClientB <-.-> |9.&nbsp;TURN Relayed Data Transfer| TURN
 ```
 
 **Flow Description:**

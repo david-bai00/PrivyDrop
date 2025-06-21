@@ -1,4 +1,4 @@
- # PrivyDrop Frontend Architecture Documentation
+# PrivyDrop Frontend Architecture Documentation
 
 ## 1. Architecture Overview
 
@@ -29,23 +29,19 @@ In a recent refactor, we established a design philosophy centered on "**Separati
 
 The frontend architecture can be broadly divided into four layers:
 
-```
-+---------------------------------------------------+
-| ① Application & Routing Layer (App Router)      | app/
-| (Pages, Layouts, Routing, i18n Middleware)        |
-+---------------------------------------------------+
-| ② UI & Component Layer                          | components/
-| (Coordinator Components, UI Panels, Common       |
-|  Components, Base UI Elements)                    |
-+---------------------------------------------------+
-| ③ Business Logic & State Layer (Hooks)          | hooks/
-| (WebRTC Connection, Room Management, File        |
-|  Transfer, Clipboard Operations, etc.)            |
-+---------------------------------------------------+
-| ④ Core Libraries & Utilities Layer              | lib/
-| (Low-level WebRTC Wrappers, File Handling,        |
-|  Utility Functions, API Client)                   |
-+---------------------------------------------------+
+```mermaid
+graph TD
+    A["<b>① Application & Routing Layer (app/)</b><br/><br/>Pages, Layouts, Routing, i18n Middleware, Data Fetching"]
+    B["<b>② UI & Component Layer (components/)</b><br/><br/>Coordinator Components, UI Panels, Common Components, Base UI Elements"]
+    C["<b>③ Business Logic & State Layer (hooks/)</b><br/><br/>WebRTC Connection, Room Management, File Transfer, Clipboard Operations"]
+    D["<b>④ Core Libraries & Utilities Layer (lib/)</b><br/><br/>Low-level WebRTC Wrappers, File Handling, Utility Functions, API Client"]
+
+    style A fill:#f9f9f9,stroke:#333,stroke-width:1px
+    style B fill:#f9f9f9,stroke:#333,stroke-width:1px
+    style C fill:#f9f9f9,stroke:#333,stroke-width:1px
+    style D fill:#f9f9f9,stroke:#333,stroke-width:1px
+
+    A --> B --> C --> D
 ```
 
 - **① Application & Routing Layer**: Managed by the Next.js App Router, responsible for page rendering, route control, internationalization, and initial data fetching.
