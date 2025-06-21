@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-// 在文件顶部添加这个声明来扩展已有的类型,避免IDE报错
+// Add this declaration at the top of the file to extend existing types and avoid IDE errors
 declare module "@/components/ui/input" {
   interface InputProps {
     webkitdirectory?: string | boolean;
@@ -20,7 +20,7 @@ declare module "@/components/ui/input" {
 import { getDictionary } from '@/lib/dictionary';
 import { useLocale } from '@/hooks/useLocale';
 import type { Messages } from '@/types/messages';
-import { en } from '@/constants/messages/en';  // 导入英文字典作为默认值
+import { en } from '@/constants/messages/en';  // Import English dictionary as default
 
 const traverseFileTree = async (item: FileSystemEntry, path = ''): Promise<CustomFile[]> => {
   return new Promise((resolve) => {
@@ -49,7 +49,7 @@ const traverseFileTree = async (item: FileSystemEntry, path = ''): Promise<Custo
             // console.log('subResults',subResults)
             const files: CustomFile[] = subResults.flat();
             // console.log('files',files)
-            resolve(files); // 移除了条件判断，直接返回处理好的文件
+            resolve(files); // Removed conditional judgment, directly return processed files
           }
         });
       };
@@ -76,17 +76,17 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
   onFilePicked
   }) => {
   const locale = useLocale();
-  const [messages, setMessages] = useState<Messages>(en); // 使用英文字典作为初始值
+  const [messages, setMessages] = useState<Messages>(en); // Use English dictionary as initial value
   
-  const dropZoneRef = useRef<HTMLDivElement>(null);//拖拽文件至附件--支持
+  const dropZoneRef = useRef<HTMLDivElement>(null);// Drag and drop files to attachments -- support
   const folderInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // 文件选择器--消息提示
+  // File selector -- message prompt
   const [fileText, setFileText] = useState<string>(en.text.fileUploadHandler.NoFileChosen_tips);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   useEffect(() => {
-    if (locale !== 'en') {  // 如果不是英文，才需要加载其他语言包
+    if (locale !== 'en') {  // Only load other language packs if not English
       getDictionary(locale)
         .then(dict => {setMessages(dict);setFileText(dict.text.fileUploadHandler.NoFileChosen_tips);})
         .catch(error => console.error('Failed to load messages:', error));
@@ -100,7 +100,6 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
       const fileNum = newFiles.length;
       const folderNum = newFiles.filter(file => file.folderName).length;
       
-      // 使用时
       const choose_dis = formatFileChosen(
         messages!.text.fileUploadHandler.fileChosen_tips_template, fileNum, folderNum
       );
@@ -112,7 +111,7 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
         fileInputRef.current.value = '';
       }
     }, [messages,onFilePicked]);
-  //拖拽上传文件夹 响应处理
+  // Drag and drop folder upload response processing
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       e.stopPropagation();
@@ -132,15 +131,15 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
         });
       }
     }, [handleFileChange]);
-  /*  定义一个处理拖动文件悬停事件的回调函数 handleDragOver。
-      在 handleDragOver 中，阻止默认行为和事件传播，以确保自定义处理。
-      没有依赖项数组，这意味着 handleDragOver 函数只会在组件第一次渲染时创建一次，并且不会在之后的渲染中重新创建
+  /*  Define a callback function handleDragOver to handle the drag-over event.
+      In handleDragOver, prevent default behavior and event propagation to ensure custom handling.
+      There is no dependency array, which means the handleDragOver function will only be created once when the component first renders, and will not be re-created in subsequent renders.
     */
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
   }, []);
-  //点击上传文件 处理
+  // Click to upload file processing
   const handleFileInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
@@ -150,10 +149,10 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
         files2.push(customFile);
       }
       handleFileChange(files2);
-      setIsModalOpen(false);//关闭对话框
+      setIsModalOpen(false);// Close the dialog
     }
   }, [handleFileChange]);
-  //点击上传文件夹 响应处理
+  // Click to upload folder response processing
   const handleFolderInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files_ = Array.from(e.target.files);
@@ -167,20 +166,20 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
       });
 
       handleFileChange(files);
-      setIsModalOpen(false);//关闭对话框
+      setIsModalOpen(false);// Close the dialog
     }
   }, [handleFileChange]);
 
-  // 处理拖放区域的点击
+  // Handle drag and drop area click
   const handleZoneClick = () => {
     setIsModalOpen(true);
   };
-  // 处理选择文件
+  // Handle file selection
   const handleSelectFile = () => {
     fileInputRef.current?.click();
   };
 
-  // 处理选择文件夹
+  // Handle folder selection
   const handleSelectFolder = () => {
     folderInputRef.current?.click();
   };

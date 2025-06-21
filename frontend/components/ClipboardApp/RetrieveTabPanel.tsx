@@ -9,7 +9,7 @@ import {
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import type { Messages } from "@/types/messages";
 import type { FileMeta } from "@/types/webrtc";
-import type { ProgressState } from "@/hooks/useWebRTCConnection"; // 假设此类型已导出
+import type { ProgressState } from "@/hooks/useWebRTCConnection"; // Assuming this type is exported
 import type WebRTC_Recipient from "@/lib/webrtc_Recipient";
 
 interface RetrieveTabPanelProps {

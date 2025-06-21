@@ -98,9 +98,9 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
     <div className="bg-blue-100 p-4 rounded-md">
       <p className="text-blue-700 mb-4">{messages.text.RetrieveMethod.P}</p>
 
-      {/* 使用 flex-col 替代 list，更好控制移动端布局 */}
+      {/* Use flex-col instead of list for better control on mobile layout */}
       <div className="flex flex-col space-y-4">
-        {/* RoomID 部分 */}
+        {/* RoomID section */}
         <div className="flex flex-col space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span>{messages.text.RetrieveMethod.RoomId_tips + RoomID}</span>
@@ -111,7 +111,7 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
           </div>
         </div>
 
-        {/* URL 部分 */}
+        {/* URL section */}
         <div className="flex flex-col space-y-2">
           <div className="break-all">
             {messages.text.RetrieveMethod.url_tips + shareLink}
@@ -124,7 +124,7 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
           </div>
         </div>
 
-        {/* QR Code 部分 */}
+        {/* QR Code section */}
         <div className="flex flex-col space-y-2">
           <div>{messages.text.RetrieveMethod.scanQR_tips}</div>
           <div className="flex flex-wrap gap-2">
@@ -157,7 +157,7 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
         </div>
       </div>
 
-      {/* QR Code 显示区域 */}
+      {/* QR Code display area */}
       <div className="mt-4 flex justify-center">
         <div className="inline-block border-2 p-4 bg-white rounded-lg">
           <div ref={qrRef}>

@@ -37,8 +37,8 @@ interface SendTabPanelProps {
   removeFileToSend: (meta: FileMeta) => void;
   richTextToPlainText: (html: string) => string;
   sendProgress: ProgressState;
-  // shareRoomId: string; // 这个是从 useRoomManager 来的，代表已验证的ID
-  processRoomIdInput: (roomId: string) => void; // 从 useRoomManager 传入
+  // shareRoomId: string; // This comes from useRoomManager and represents the validated ID
+  processRoomIdInput: (roomId: string) => void; // Passed from useRoomManager
   joinRoom: (isSender: boolean, roomId: string) => void;
   generateShareLinkAndBroadcast: () => void;
   sender: WebRTC_Initiator | null;
@@ -67,12 +67,12 @@ export function SendTabPanel({
   currentValidatedShareRoomId,
 }: // initShareRoomId,
 SendTabPanelProps) {
-  // 本地状态，用于输入框的即时响应
+  // Local state for immediate response in the input field
   const [inputFieldValue, setInputFieldValue] = useState<string>(
     currentValidatedShareRoomId
   );
 
-  // 当来自父组件的 validatedShareRoomId 改变时（例如，初始获取后），同步本地输入框的值
+  // When the validatedShareRoomId from the parent component changes (e.g., after initial fetch), synchronize the local input field's value
   useEffect(() => {
     setInputFieldValue(currentValidatedShareRoomId);
   }, [currentValidatedShareRoomId]);
@@ -80,8 +80,8 @@ SendTabPanelProps) {
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value;
-      setInputFieldValue(newValue); // 立即更新输入框显示
-      processRoomIdInput(newValue); // 调用hook中的处理函数，它会进行防抖验证
+      setInputFieldValue(newValue); // Immediately update the input field display
+      processRoomIdInput(newValue); // Call the handler function from the hook, which will perform debounced validation
     },
     [processRoomIdInput]
   );
@@ -129,18 +129,14 @@ SendTabPanelProps) {
         </span>
         <Input
           aria-label="Share Room ID"
-          value={inputFieldValue} // 绑定到本地状态
+          value={inputFieldValue} // Bind to local state
           onChange={handleInputChange}
           onPaste={handlePaste}
           className="flex-grow min-w-0"
-          // placeholder={
-          //   // messages.text.ClipboardApp.html.roomIdInput_placeholder ||
-          //   "输入房间号或粘贴"
-          // }
         />
         <Button
           className="w-full sm:w-auto"
-          onClick={() => joinRoom(true, inputFieldValue.trim())} // 使用当前输入框的值尝试加入
+          onClick={() => joinRoom(true, inputFieldValue.trim())} // Attempt to join using the current input field value
           disabled={!sender || sender.isInRoom || !inputFieldValue.trim()}
         >
           {messages.text.ClipboardApp.html.joinRoom_dis}
@@ -156,7 +152,7 @@ SendTabPanelProps) {
             !sender.isInRoom ||
             (sendFiles.length === 0 && shareContent.trim() === "") ||
             !currentValidatedShareRoomId.trim()
-          } // 确保有已验证的房间ID才可分享
+          } // Ensure there is a validated room ID before allowing sharing
         >
           {messages.text.ClipboardApp.html.startSending_dis}
         </AnimatedButton>

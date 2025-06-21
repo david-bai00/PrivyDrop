@@ -5,7 +5,7 @@ interface TransferProgressProps {
   message: string;
   progress: Progress;
 }
-//'Sending' : 'Receiving'
+// Display 'Sending' or 'Receiving' message
 const TransferProgress: React.FC<TransferProgressProps> = ({ message, progress }) => {
   const speed = isNaN(progress.speed) ? 0 : progress.speed;
 

@@ -9,7 +9,6 @@ interface ArticleListItemProps {
 export function ArticleListItem({ post }: ArticleListItemProps) {
   return (
     <article className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
-      {/* 增大封面图高度 */}
       <div className="relative h-80 w-full">
         <Image
           src={post.frontmatter.cover}
@@ -21,7 +20,7 @@ export function ArticleListItem({ post }: ArticleListItemProps) {
         />
       </div>
       
-      <div className="p-8"> {/* 增大内边距 */}
+      <div className="p-8">
         <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
           <time className="font-medium">
             {new Date(post.frontmatter.date).toLocaleDateString()}

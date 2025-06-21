@@ -12,7 +12,7 @@ interface FileTransferButtonProps {
   isOtherFileTransferring: boolean;
   isSavedToDisk: boolean;
 }
-//针对下载中不同状态的按键进行管理
+// Manage buttons for different download statuses
 const FileTransferButton = ({
   onRequest,
   isCurrentFileTransferring,
@@ -21,7 +21,7 @@ const FileTransferButton = ({
 }: FileTransferButtonProps) => {
   const locale = useLocale();
   const [messages, setMessages] = useState<Messages | null>(null);
-  // 按钮状态判断
+  // Button status judgment
   const isDisabled = isCurrentFileTransferring || isSavedToDisk || isOtherFileTransferring;
 
   useEffect(() => {
@@ -29,7 +29,7 @@ const FileTransferButton = ({
       .then(dict => setMessages(dict))
       .catch(error => console.error('Failed to load messages:', error));
   }, [locale]);
-  // 根据不同状态显示不同的提示信息
+  // Display different tooltips based on status
   const getTooltipContent = () => {
     if (isSavedToDisk) return messages!.text.FileTransferButton.SavedToDisk_tips;
     if (isCurrentFileTransferring) return messages!.text.FileTransferButton.CurrentFileTransferring_tips;
@@ -37,7 +37,7 @@ const FileTransferButton = ({
     return messages!.text.FileTransferButton.download_tips;
   };
 
-  // 根据状态设置不同的按钮样式和类名
+  // Set different button styles and class names based on status
   const getButtonStyles = () => {
     if (isSavedToDisk) {
       return {
@@ -71,7 +71,7 @@ const FileTransferButton = ({
     <TooltipProvider delayDuration={100}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-block"> {/* 包装器确保禁用状态下tooltip仍然工作 */}
+          <span className="inline-block">
             <Button 
                 onClick={onRequest} 
                 variant={buttonStyles.variant}

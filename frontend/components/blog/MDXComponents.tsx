@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import { ComponentProps, DetailedHTMLProps, HTMLAttributes } from 'react'
 import dynamic from 'next/dynamic'
-// 动态导入 Mermaid 组件
+// Dynamically import the Mermaid component
 const Mermaid = dynamic(() => import('@/components/blog/Mermaid'), { ssr: false });
 
 export type MDXComponents = {
@@ -126,6 +126,6 @@ export const mdxComponents: MDXComponents = {
       {children}
     </li>
   ),
-  mermaid: Mermaid, // 使用定义的 Mermaid 组件
+  mermaid: Mermaid, // Use the defined Mermaid component
   
 }

@@ -1,9 +1,9 @@
-'use client' // 标记为客户端组件
+'use client' // Mark as client component
 
 import mermaid from 'mermaid'
 import { useEffect, useRef } from 'react'
 
-// 初始化 Mermaid.js
+// Initialize Mermaid.js
 mermaid.initialize({ startOnLoad: false })
 
 const Mermaid: React.FC<{ children: string }> = ({ children }) => {

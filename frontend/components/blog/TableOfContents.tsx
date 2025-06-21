@@ -16,30 +16,30 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => 
   const [activeId, setActiveId] = useState<string>('');
   const [toc, setToc] = useState<TocItem[]>([]);
 
-  // 生成合法的 ID，保留中文字符
+  // Generate a valid ID, preserving Chinese characters
   const generateValidId = (text: string): string => {
     return encodeURIComponent(text
-      .trim() // 移除首尾空格
-      .replace(/\s+/g, '-') // 将空格替换为连字符
-      .replace(/\-\-+/g, '-')  // 将多个连字符替换为单个
-      .replace(/^-+/, '')      // 移除开头的连字符
-      .replace(/-+$/, '')      // 移除结尾的连字符
+      .trim() // Remove leading/trailing spaces
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/\-\-+/g, '-')  // Replace multiple hyphens with a single one
+      .replace(/^-+/, '')      // Remove leading hyphens
+      .replace(/-+$/, '')      // Remove trailing hyphens
     );
   };
 
   useEffect(() => {
-    // 解析内容生成目录
+    // Parse content to generate table of contents
     const headingRegex = /^(#{1,3})\s+(.+)$/gm;
     const items: TocItem[] = [];
     let match;
-    const usedIds = new Set<string>(); // 用于跟踪已使用的ID
+    const usedIds = new Set<string>(); // Used to track used IDs
 
     while ((match = headingRegex.exec(content)) !== null) {
       const level = match[1].length;
       const text = match[2].trim();
       let id = generateValidId(text);
       
-      // 如果ID已存在，添加数字后缀
+      // If ID already exists, add a numeric suffix
       let counter = 1;
       let uniqueId = id;
       while (usedIds.has(uniqueId)) {
@@ -66,30 +66,30 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => 
       { rootMargin: '-80px 0px -40% 0px' }
     );
 
-    // 确保所有标题都已经渲染
+    // Ensure all headings are rendered
     const setupObserver = () => {
       const headers = document.querySelectorAll('h1[id], h2[id], h3[id]');
       headers.forEach((header) => observer.observe(header));
     };
 
-    // 确保 DOM 已更新
+    // Ensure DOM is updated
     if (toc.length > 0) {
-      // 给 DOM 一点时间来更新
+      // Give the DOM some time to update
     setTimeout(setupObserver, 100);
     }
 
     return () => observer.disconnect();
-  }, [toc]); // 依赖于 toc 而不是 content
+  }, [toc]); // Depends on toc instead of content
 
   const scrollToHeader = (id: string) => {
-    // 不需要解码 ID，因为它已经是正确的格式
+    // No need to decode the ID, as it is already in the correct format
     const element = document.getElementById(id);
     if (element) {
-      // 获取元素位置
+      // Get element position
       const rect = element.getBoundingClientRect();
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       
-      // 计算目标位置（考虑固定导航栏的高度，假设是 80px）
+      // Calculate target position (considering the fixed navigation bar height, assuming 80px)
       const offsetTop = rect.top + scrollTop - 80;
 
       window.scrollTo({
@@ -97,7 +97,7 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => 
         behavior: 'smooth'
       });
 
-      // 设置当前活动项
+      // Set current active item
       setActiveId(id);
     }
   };

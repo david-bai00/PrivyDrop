@@ -18,7 +18,7 @@ const ClipboardApp = () => {
 
   const [retrieveRoomIdInput, setRetrieveRoomIdInput] = useState("");
   const [activeTab, setActiveTab] = useState<"send" | "retrieve">("send");
-  const retrieveJoinRoomBtnRef = useRef<HTMLButtonElement>(null); //接收方--加入房间按钮ref
+  const retrieveJoinRoomBtnRef = useRef<HTMLButtonElement>(null); // Ref for the receiver's "Join Room" button
 
   const { messages, isLoadingMessages } = usePageSetup({
     setRetrieveRoomId: setRetrieveRoomIdInput,
