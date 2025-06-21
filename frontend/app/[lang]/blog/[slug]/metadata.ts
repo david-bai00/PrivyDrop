@@ -11,7 +11,7 @@ export async function generateMetadata({
   const post = await getPostBySlug(params.slug)
   
   if (!post) {//blog not found
-    // 调用博客首页的 generateMetadata 函数并传入参数
+    // Call the generateMetadata function of the blog homepage and pass in the parameters
     return generateBlogMetadata({ params: { lang: params.lang } })
   }
 

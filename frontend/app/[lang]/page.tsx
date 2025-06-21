@@ -21,7 +21,7 @@ export async function generateMetadata({
         supportedLocales.map(lang => [lang, `/${lang}`])
       ),
     },
-    //OpenGraph元数据可以优化社交媒体分享
+    //OpenGraph metadata can optimize social media sharing
     openGraph: {
       title: messages.meta.home.title,
       description: messages.meta.home.description,

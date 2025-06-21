@@ -37,7 +37,7 @@ export default async function RootLayout({
           <>
             <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
-              strategy="afterInteractive" // 脚本在页面加载后执行
+              strategy="afterInteractive" // The script executes after the page is interactive.
             />
             <Script id="google-analytics" strategy="afterInteractive">
               {`

@@ -1,4 +1,4 @@
-//文章详情页
+//Article detail page
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import { getPostBySlug } from '@/lib/blog'
 import * as React from 'react'
@@ -18,9 +18,9 @@ export default async function BlogPost({ params }: { params: { slug: string } })
   
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      {/* 使用 md: 前缀来处理中等屏幕及以上的flex布局 */}
+      {/* Use md: prefix to handle flex layout for medium screens and above */}
       <div className="block md:flex md:gap-8">
-        {/* 文章内容区域 */}
+        {/* Article content area */}
         <article className="w-full md:flex-1 max-w-4xl">
           <header className="mb-8">
             <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900">

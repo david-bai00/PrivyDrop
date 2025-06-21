@@ -28,7 +28,7 @@ export default function HomeClient({ messages,lang }: PageContentProps) {
       {/* App Section */}
       <section id="clipboard-app" className="py-12" aria-label="File Transfer Application">
         <div className="container mx-auto px-4">
-          {/* sr-only--screen-only:视觉不可见 */}
+          {/* sr-only--screen-only: visually hidden */}
           <h2 className={cn("sr-only", "text-3xl font-bold mb-8 text-center")}>
             {messages.text.home.h2_screenOnly}
           </h2>
@@ -82,7 +82,7 @@ export default function HomeClient({ messages,lang }: PageContentProps) {
         <FAQSection 
           messages={messages}
           isMainPage 
-          titleClassName="text-2xl md:text-3xl" // 可选：在首页使用稍小的字号
+          titleClassName="text-2xl md:text-3xl"
         /> 
       </section>
     </main>

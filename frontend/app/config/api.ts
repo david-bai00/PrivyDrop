@@ -9,7 +9,7 @@ export const API_ROUTES = {
   set_track: `${API_URL}/api/set_track`,
   logs_debug: `${API_URL}/api/logs_debug`,
 };
-// 统一的 API 调用处理器
+// Unified API call handler
 async function apiCall<T>(
   url: string,
   options: RequestInit = {}
@@ -18,14 +18,14 @@ async function apiCall<T>(
     const response = await fetch(url, options);
 
     if (!response.ok) {
-      // 如果服务器返回非 2xx 状态码, 抛出错误
-      const errorData = await response.text(); // 尝试获取错误文本
+      // If the server returns a non-2xx status code, throw an error
+      const errorData = await response.text(); // Attempt to get the error text
       throw new Error(
         `API call failed with status ${response.status}: ${errorData}`
       );
     }
 
-    // 某些响应可能没有内容体(例如 204 No Content), 需特殊处理
+    // Some responses may not have a body (e.g., 204 No Content), which needs special handling
     if (
       response.status === 204 ||
       response.headers.get("content-length") === "0"
@@ -36,11 +36,11 @@ async function apiCall<T>(
     return (await response.json()) as T;
   } catch (error) {
     console.error(`Error in apiCall for URL: ${url}`, error);
-    return null; // 在发生任何错误时返回 null, 使调用方可以优雅地处理
+    return null; // Return null on any error, so the caller can handle it gracefully
   }
 }
 
-// 获取一个随机的可用房间ID
+// Get a random available room ID
 export const fetchRoom = async (): Promise<string | null> => {
   const data = await apiCall<{ roomId: string }>(
     API_ROUTES.get_room,
@@ -49,7 +49,7 @@ export const fetchRoom = async (): Promise<string | null> => {
   return data?.roomId ?? null;
 };
 
-// 创建指定ID的房间
+// Create a room with a specified ID
 export const createRoom = async (roomId: string): Promise<boolean> => {
   const options = getFetchOptions({
     method: "POST",
@@ -62,7 +62,7 @@ export const createRoom = async (roomId: string): Promise<boolean> => {
   return data?.success ?? false;
 };
 
-// 检查房间是否可用
+// Check if a room is available
 export const checkRoom = async (roomId: string): Promise<boolean> => {
   const options = getFetchOptions({
     method: "POST",
@@ -75,7 +75,7 @@ export const checkRoom = async (roomId: string): Promise<boolean> => {
   return data?.available ?? false;
 };
 
-// 设置追踪信息
+// Set tracking information
 export const setTrack = async (ref: string, path: string) => {
   const options = getFetchOptions({
     method: "POST",
@@ -84,7 +84,7 @@ export const setTrack = async (ref: string, path: string) => {
   return apiCall<void>(API_ROUTES.set_track, options);
 };
 
-// 记录调试日志
+// Log debug messages
 export const postLogInDebug = async (message: string) => {
   const options = getFetchOptions({
     method: "POST",

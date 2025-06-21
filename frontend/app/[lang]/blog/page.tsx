@@ -14,17 +14,17 @@ export default async function BlogPage({
   const posts = await getAllPosts(lang)
   
   return (
-    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12"> {/* 增大最大宽度和内边距 */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12"> {/* 增大列间距 */}
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
         {/* Main Content */}
         <main className="lg:col-span-8">
-          <div className="mb-12"> {/* 增大标题区域间距 */}
-            <h1 className="text-4xl font-bold mb-4">Blog</h1> {/* 增大标题字号 */}
+          <div className="mb-12">
+            <h1 className="text-4xl font-bold mb-4">Blog</h1>
             <p className="text-gray-600 text-lg">Latest articles and updates</p>
           </div>
       
           {/* Articles List */}
-          <div className="space-y-12"> {/* 增大文章间距 */}
+          <div className="space-y-12">
             {posts.map((post) => (
               <ArticleListItem key={post.slug} post={post} />
             ))}
@@ -35,7 +35,7 @@ export default async function BlogPage({
         <aside className="lg:col-span-4">
           <div className="sticky top-8">
             {/* Recent Posts */}
-            <div className="bg-white rounded-xl shadow-lg p-8 mb-8"> {/* 修改圆角和内边距 */}
+            <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
               <h2 className="text-xl font-bold mb-6">Recent Posts</h2>
               <div className="space-y-4">
                 {posts.slice(0, 5).map((post) => (
@@ -53,11 +53,11 @@ export default async function BlogPage({
             <div className="bg-white rounded-xl shadow-lg p-8">
               <h2 className="text-xl font-bold mb-6">Tags</h2>
               <div className="space-y-3">
-                {/* 获取所有标签并去重 */}
+                {/* Get all tags and deduplicate */}
                 {Array.from(new Set(posts.flatMap(p => p.frontmatter.tags))).map((tag) => (
                   <Link
                     key={tag}
-                    href={`/${lang}/blog/tag/${slugifyTag(tag)}`} // 跳转到标签过滤页面
+                    href={`/${lang}/blog/tag/${slugifyTag(tag)}`} // Jump to the tag filtering page
                     className="flex items-center justify-between hover:text-blue-600"
                   >
                     <span className="text-gray-700 font-medium">{tag}</span>
