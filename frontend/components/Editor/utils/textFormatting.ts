@@ -1,9 +1,9 @@
 import { FormatType, StyledElement } from '../types';
 import { styleMap } from '../constants';
-// 移除样式
+// Remove style
 export const removeStyle = (element: StyledElement, style: FormatType) => {
-  element.style[styleMap[style]] = '';// 移除指定样式
-  // 如果span没有其他样式，则移除span标签
+  element.style[styleMap[style]] = '';// Remove the specified style
+  // If the span has no other styles, remove the span tag
   if (element.tagName === 'SPAN' && !element.getAttribute('style')) {
     const parent = element.parentNode;
     while (element.firstChild) {

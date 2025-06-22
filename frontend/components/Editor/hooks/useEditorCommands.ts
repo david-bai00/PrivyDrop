@@ -12,7 +12,7 @@ export const useEditorCommands = (
   const getSelection = useSelection();
   const { findStyleParent, cleanupSpan } = useStyleManagement(editorRef);
 
-  // Format text (bold, italic, underline)--格式化文本
+  // Format text (bold, italic, underline)
   const formatText = useCallback((format: FormatType) => {
     if (typeof window === 'undefined') return;
     
@@ -24,10 +24,10 @@ export const useEditorCommands = (
     const styleParent = findStyleParent(selection.anchorNode as DOMNodeWithStyle, styleMap[format]);
 
     if (styleParent) {
-      // 移除样式
+      // Remove style
       removeStyle(styleParent, format);
     } else {
-      // 添加样式
+      // Add style
       const span = document.createElement('span');
       
       switch (format) {
@@ -42,7 +42,7 @@ export const useEditorCommands = (
             break;
       }
 
-      // 如果选中的内容在一个span内，且该span没有目标样式，直接添加样式
+      // If the selected content is within a span and that span does not have the target style, add the style directly
       const parentElement = selection.anchorNode?.parentElement;
       if (parentElement && 
           parentElement.tagName === 'SPAN' && 
@@ -52,36 +52,36 @@ export const useEditorCommands = (
         (parentElement as StyledElement).style[styleMap[format]] = span.style[styleMap[format]];
       
       } else {
-        // 否则创建新的span
+        // Otherwise, create a new span
         span.appendChild(range.extractContents());
         range.insertNode(span);
       }
     }
-    // 保持选区
+    // Maintain selection
     const newRange = document.createRange();
     selection.removeAllRanges();
     selection.addRange(newRange);
     
-    // 更新 HTML
+    // Update HTML
     handleChange();
   }, [findStyleParent, getSelection, removeStyle]);
 
-  // Align text--对齐文本
+  // Align text
   const alignText = useCallback((alignment: AlignmentType) => {
     if (!editorRef.current || typeof window === 'undefined') return;
     
     const selectionInfo = getSelection();
     if (!selectionInfo) return;
     
-    // 找到当前文本节点或其容器
+    // Find the current text node or its container
     let textNode = selectionInfo.selection.anchorNode as DOMNodeWithStyle;
     
-    // 如果是文本节点，获取其父元素
+    // If it is a text node, get its parent element
     if (textNode.nodeType === 3) {
       textNode = textNode.parentElement as DOMNodeWithStyle;
     }
 
-    // 向外查找最外层的样式容器（例如带有颜色或大小的span）
+    // Search outwards for the outermost style container (e.g., a span with color or size)
     let outerContainer = textNode;
     while (
       outerContainer.parentElement && 
@@ -91,25 +91,25 @@ export const useEditorCommands = (
       outerContainer = outerContainer.parentElement as DOMNodeWithStyle;
     }
 
-    // 创建或找到div容器来处理对齐
+    // Create or find a div container to handle alignment
     let alignmentContainer: HTMLElement;
     if (
       outerContainer.parentElement === editorRef.current || 
       (outerContainer.parentElement as HTMLElement).tagName !== 'DIV'
     ) {
-      // 需要创建新的对齐容器
+      // A new alignment container needs to be created
       alignmentContainer = document.createElement('div');
       alignmentContainer.style.textAlign = alignment;
-      // 包装现有内容
+      // Wrap existing content
       outerContainer.parentElement?.insertBefore(alignmentContainer, outerContainer);
       alignmentContainer.appendChild(outerContainer);
         } else {
-      // 使用已存在的对齐容器
+      // Use the existing alignment container
       alignmentContainer = outerContainer.parentElement as HTMLElement;
       alignmentContainer.style.textAlign = alignment;
     }
   
-    // 更新 HTML
+    // Update HTML
     handleChange();
   }, [getSelection]);
 
@@ -119,22 +119,22 @@ export const useEditorCommands = (
     const selectionInfo = getSelection();
     if (!selectionInfo || !selectionInfo.selection.toString()) return;
     const { selection, range } = selectionInfo;
-     // 映射样式类型到实际的 CSS 属性名
+     // Map style type to actual CSS property name
     const stylePropertyMap = {
       'family': 'fontFamily',
       'size': 'fontSize',
       'color': 'color'
     };
     const styleProperty = stylePropertyMap[type];
-    // 获取选中内容的范围
+    // Get the range of the selected content
     const rangeContent = range.cloneContents();
-    // 检查选中内容是否包含块级<p> / <div>元素
+    // Check if the selected content contains block-level <p> / <div> elements
     const containsBlock = Array.from(rangeContent.childNodes).some(
       node => node.nodeType === 1 && ['P', 'DIV'].includes((node as HTMLElement).tagName)
     );
 
     if (containsBlock) {
-      // 如果选中内容包含块级元素,遍历处理每个块级元素内的文本
+      // If the selected content includes block-level elements, iterate through and process the text within each block-level element
       const blocks = Array.from(rangeContent.childNodes).filter(
         node => node.nodeType === 1 && ['P', 'DIV'].includes((node as HTMLElement).tagName)
       );
@@ -151,7 +151,7 @@ export const useEditorCommands = (
         }
         
         textNodes.forEach(textNode => {
-          // 检查父元素是否已经是span
+          // Check if the parent element is already a span
           const parent = textNode.parentNode as HTMLElement;
           if (parent.tagName === 'SPAN') {
             (parent as StyledElement).style[styleProperty] = value;
@@ -163,11 +163,11 @@ export const useEditorCommands = (
           }
         });
       });
-      // 清除原有内容并插入新内容
+      // Clear the original content and insert new content
       range.deleteContents();
       range.insertNode(rangeContent);
     } else {
-      // 如果是普通文本,使用原来的逻辑
+      // If it's plain text, use the original logic
       let styleParent = findStyleParent(selection.anchorNode as DOMNodeWithStyle, styleProperty);
       if (styleParent && !['P', 'DIV'].includes(styleParent.tagName)) {
         if (value === 'inherit') {
@@ -177,7 +177,7 @@ export const useEditorCommands = (
           styleParent.style[styleProperty] = value;
         }
       } else {
-        // 否则创建新的 span
+        // Otherwise, create a new span
         const span = document.createElement('span') as StyledElement;
         span.style[styleProperty] = value;
         span.appendChild(range.extractContents());
@@ -185,7 +185,7 @@ export const useEditorCommands = (
       }
     }
     
-    // 保持选区
+    // Maintain selection
     selection.removeAllRanges();
     selection.addRange(range);
     
@@ -197,17 +197,17 @@ export const useEditorCommands = (
     const selection = window.getSelection();
     let text = "test";
     if (selection && !selection.isCollapsed) {
-      // 如果有选中文本，则使用选中的文本作为链接文字
+      // If there is selected text, use the selected text as the link text
       text = selection.toString();
     }
     
-    // 使用一个prompt，用空格分隔链接和文字
+    // Use a prompt to separate the link and text with a space
     const input = prompt('Please enter the link address and text (separated by space):', `https:// ${text}`);
 
     if (input) {
-      // 分割输入得到url和text
+      // Split the input to get the url and text
       const [url, ...textParts] = input.split(' ');
-      const text = textParts.join(' '); // 处理文字中可能包含空格的情况
+      const text = textParts.join(' '); // Handle cases where the text may contain spaces
       
       if (url && text) {
         const selectionInfo = getSelection();

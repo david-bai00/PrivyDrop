@@ -19,10 +19,10 @@ const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = '' }) => {
   useEffect(() => {
     setIsMounted(true);
   }, []);
-  //在挂载后更新编辑区内容,监听外部 value 变化
+  // Update editor content after mounting, listen for external value changes
   useEffect(() => {
     if (isMounted && editorRef.current && !isInternalChange.current) {
-      // 只有当内容真正不同时才更新
+      // Only update when the content is truly different
       if (editorRef.current.innerHTML !== value) {
         editorRef.current.innerHTML = value;
         setHtml(value);
@@ -31,11 +31,11 @@ const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = '' }) => {
     isInternalChange.current = false;
   }, [value, isMounted]);
 
-  // 处理内容变化
+  // Handle content change
   const handleChange = useCallback(() => {
     if (editorRef.current) {
       const content = (editorRef.current as HTMLDivElement).innerHTML;
-      if (content !== html) {// 如果内容没有变化，不触发更新
+      if (content !== html) {// If the content has not changed, do not trigger an update
         isInternalChange.current = true;
         setHtml(content);
         onChange(content);
@@ -54,7 +54,7 @@ const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = '' }) => {
 
   const getSelection = useSelection();
   const { findStyleParent } = useStyleManagement(editorRef);
-  // 检查当前选中文本的样式
+  // Check the style of the currently selected text
   const isStyleActive = useCallback((style: string): boolean => {
     if (typeof window === 'undefined') return false;
     const selectionInfo = getSelection();
@@ -68,7 +68,7 @@ const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = '' }) => {
   }, [findStyleParent, getSelection]);
 
   const handlePaste = useCallback((e: CustomClipboardEvent) => {
-    // 处理图片粘贴
+    // Handle image pasting
     if (Array.from(e.clipboardData.items).some(item => item.type.indexOf('image') !== -1)) {
       const items = Array.from(e.clipboardData.items);
       const imageItem = items.find(item => item.type.indexOf('image') !== -1);
@@ -100,7 +100,7 @@ const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = '' }) => {
       return;
     }
     
-    // 处理普通文本
+    // Handle plain text
     e.preventDefault();
     const text = e.clipboardData.getData('text/plain');
     if (typeof document !== 'undefined') {
@@ -115,16 +115,16 @@ const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = '' }) => {
   return (
     <div className="w-full space-x-2 mb-4">
       <div className="border rounded-lg shadow-sm overflow-hidden">
-        {/* 工具栏 - 添加浅灰色背景和底部边框 */}
+        {/* Toolbar - Add light gray background and bottom border */}
         <div className="flex flex-wrap gap-1 p-2 bg-gray-50 border-b">
-          {/* 基础格式工具组 */}
+          {/* Basic format tool group */}
           <BasicFormatTools 
             isStyleActive={isStyleActive} 
             formatText={formatText} 
           />
           <Divider />
           
-          {/* 字体相关选择器组 */}
+          {/* Font-related selector group */}
           <FontTools 
             fontFamilies={fontFamilies}
             fontSizes={fontSizes}
@@ -133,11 +133,11 @@ const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = '' }) => {
           />
           <Divider />
           
-          {/* 对齐工具组 */}
+          {/* Alignment tool group */}
           <AlignmentTools alignText={alignText} />
           <Divider />
       
-          {/* 插入工具组 */}
+          {/* Insert tool group */}
           <InsertTools 
             insertLink={insertLink}
             insertImage={insertImage}
@@ -145,7 +145,7 @@ const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = '' }) => {
           />
         </div>
 
-      {/* 编辑区域 - 添加纯白背景和内部阴影效果 */}
+      {/* Editor area - Add pure white background and inner shadow effect */}
         <div
           ref={editorRef}
           className="p-4 min-h-[200px] md:min-h-[400px] focus:outline-none bg-white shadow-inner"

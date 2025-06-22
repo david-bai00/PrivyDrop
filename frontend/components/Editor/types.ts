@@ -1,10 +1,10 @@
-// 选项类型定义
+// Option type definition
 export interface StyleOption {
   label: string;
   value: string;
 }
 
-// 选择菜单组件的 props 类型
+// Props type for the SelectMenu component
 export interface SelectMenuProps {
   options: StyleOption[];
   onChange: (value: string) => void;
@@ -13,27 +13,27 @@ export interface SelectMenuProps {
   className: string;
 }
 
-// 编辑器内部使用的类型
+// Types used internally by the editor
 export interface SelectionInfo {
   selection: Selection;
   range: Range;
 }
 
-// 样式格式类型
+// Style format type
 export type FormatType = 'bold' | 'italic' | 'underline';
 
-// 对齐方式类型
+// Alignment type
 export type AlignmentType = 'left' | 'center' | 'right';
 
-// 字体样式类型
+// Font style type
 export type FontStyleType = 'family' | 'size' | 'color';
 
-// 粘贴事件处理函数类型
+// Paste event handler function type
 export interface CustomClipboardEvent extends React.ClipboardEvent<HTMLDivElement> {
   clipboardData: DataTransfer;
 }
 
-// 扩展 HTMLElement 以支持我们需要的样式属性
+// Extend HTMLElement to support the style properties we need
 export interface StyledElement extends HTMLElement {
   style: CSSStyleDeclaration & {
     [key: string]: string;
@@ -44,7 +44,7 @@ export interface StyledElement extends HTMLElement {
   firstChild: ChildNode | null;
 }
 
-// 修改DOM节点类型定义
+// Modify DOM node type definition
 export interface DOMNodeWithStyle extends Node {
   nodeType: number;
   parentElement: HTMLElement & {

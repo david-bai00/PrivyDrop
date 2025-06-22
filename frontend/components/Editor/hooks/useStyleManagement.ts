@@ -2,11 +2,11 @@ import { useCallback } from 'react';
 import { DOMNodeWithStyle, StyledElement } from '../types';
 
 export const useStyleManagement = (editorRef: React.RefObject<HTMLDivElement>) => {
-  // 查找拥有指定样式的最近父元素
+  // Find the nearest parent element with the specified style
   const findStyleParent = useCallback((node: DOMNodeWithStyle, styleType: string): StyledElement | null => {
     if (typeof window === 'undefined') return null;
     let current = node;
-    // 如果当前节点是文本节点，从其父节点开始查找
+    // If the current node is a text node, start searching from its parent node
     if (current.nodeType === 3) {
       current = current.parentElement as DOMNodeWithStyle;
     }
@@ -23,15 +23,15 @@ export const useStyleManagement = (editorRef: React.RefObject<HTMLDivElement>) =
     }
     return null;
   }, [editorRef]);
-  // 清理空的或只有继承值的 span 标签
+  // Clean up empty span tags or those with only inherited values
   const cleanupSpan = useCallback((span: StyledElement | null) => {
-    // 首先检查 span 是否存在
+    // First, check if the span exists
     if (!span) return;
 
-    // 然后检查 editorRef.current 是否存在，并进行比较
-    // 修改比较逻辑，使用 HTMLElement 作为共同基类进行比较
+    // Then check if editorRef.current exists and compare
+    // Modify the comparison logic, using HTMLElement as a common base class for comparison
     if (editorRef.current && span.contains(editorRef.current)) return;
-    // 检查是否只有 inherit 值或没有样式
+    // Check if there are only inherit values or no styles
     const hasOnlyInherit = Array.from(span.style).every(
       style => !span.style[style] || span.style[style] === 'inherit'
     );

@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { SelectionInfo } from '../types';
 
 export const useSelection = () => {
-  // 获取选区
+  // Get selection
   return useCallback((): SelectionInfo | null => {
     if (typeof window === 'undefined') return null;
     const selection = window.getSelection();

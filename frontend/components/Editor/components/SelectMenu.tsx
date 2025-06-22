@@ -1,6 +1,6 @@
 import React from 'react';
 import { SelectMenuProps } from '../types';
-// 下拉选择组件
+// Dropdown selection component
 export const SelectMenu: React.FC<SelectMenuProps> = ({ 
   options, 
   onChange, 
