@@ -1,18 +1,18 @@
 export const slugifyTag = (tag: string): string => {
-  // 使用 encodeURIComponent 来处理中文和特殊字符
+  // Use encodeURIComponent to handle Chinese and special characters
   return encodeURIComponent(tag
     .trim()
-    .replace(/\s+/g, '-')    // 将空格替换为连字符
-    .replace(/\-\-+/g, '-')  // 将多个连字符替换为单个
-    .replace(/^-+/, '')      // 移除开头的连字符
-    .replace(/-+$/, '')      // 移除结尾的连字符
+    .replace(/\s+/g, '-')    // Replace spaces with hyphens
+    .replace(/\-\-+/g, '-')  // Replace multiple hyphens with a single one
+    .replace(/^-+/, '')      // Remove leading hyphens
+    .replace(/-+$/, '')      // Remove trailing hyphens
   );
 };
 
 export const unslugifyTag = (slug: string): string => {
-  // 解码 URL 编码的标签
+  // Decode URL-encoded tags
   return decodeURIComponent(slug
-    .replace(/-/g, ' ')      // 将连字符替换回空格
+    .replace(/-/g, ' ')      // Replace hyphens back with spaces
     .trim()
   );
 };

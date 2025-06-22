@@ -1,23 +1,23 @@
 export interface Progress {
-  //file Progress
+  // File Progress
   progress: number;
   speed: number;
 }
 export interface CustomFile extends File {
-  // CustomFile 扩展了 File 接口,任然是File对象
-  fullName: string; //文件路径，格式:root+...+filename，比如test/test.txt,test/sub/test2.txt，root是拖拽的文件夹名
-  folderName: string; //该文件所属文件夹，如果没有则为空,eg:root or test or ''
+  // CustomFile extends the File interface, it is still a File object
+  fullName: string; // File path, format: root+...+filename, e.g., test/test.txt, test/sub/test2.txt, where root is the dragged folder name
+  folderName: string; // The folder to which the file belongs, empty if none, e.g., root or test or ''
 }
 export interface FileMeta {
-  //单文件和文件夹共用这个接口
-  name: string; //fileName or folderName
-  size: number; //对于文件夹是total size
-  fullName: string; //文件路径，格式:root+...+filename
+  // This interface is shared by single files and folders
+  name: string; // fileName or folderName
+  size: number; // For folders, this is the total size
+  fullName: string; // File path, format: root+...+filename
   folderName: string;
-  fileType: string; //与通信中的type区分开
-  fileId: string; //文件夹暂时 等于 folderName
-  fileCount?: number; //文件夹才有
-  fileNamesDis?: string; //文件夹下所有文件名的展示
+  fileType: string; // Distinguish from the 'type' in communication
+  fileId: string; // For now, folder's fileId is equal to folderName
+  fileCount?: number; // Only for folders
+  fileNamesDis?: string; // Display of all file names under the folder
 }
 export interface fileMetadata extends FileMeta {
   type: string;

@@ -1,20 +1,25 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-*node_modules
-/.pnp
+# Ignore node_modules directories in all subdirectories
+node_modules/
+.pnp
 .pnp.js
 .yarn/install-state.gz
 
 # testing
-/coverage
+# Ignore coverage directories in all subdirectories
+coverage/
 
 # next.js
-/.next/
-/out/
+# Ignore .next/ directories in all subdirectories
+.next/
+# Ignore out/ directories in all subdirectories
+out/
 
 # production
-/build
+# Ignore build/ directories in all subdirectories
+build/
 
 # misc
 .DS_Store
@@ -48,16 +53,16 @@ next-env.d.ts
 *.swp
 *.swo
 
-# 环境文件（所有环境文件，不只是.local）
+# Environment files (all environment files, not just .local)
 .env
 .env.*
 
-# 日志文件
+# Log files
 *.log
 
-# 构建输出
+# Build output
 dist/
 
-# 临时文件
+# Temporary files
 .temp/
 .tmp/
