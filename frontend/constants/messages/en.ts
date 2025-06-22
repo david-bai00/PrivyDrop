@@ -1,223 +1,273 @@
-import { Messages } from '@/types/messages'
+import { Messages } from "@/types/messages";
 
 export const en: Messages = {
   meta: {
     home: {
-      title: "SecureShare: Free P2P File & Clipboard Sharing | Private & No Upload",
-      description: "SecureShare enables instant, secure P2P file sharing without size limits or registration. Share text, images, folders across devices with end-to-end encryption. Perfect for team collaboration and private file transfer.",
-      keywords: 'file sharing, secure file transfer, P2P file transfer, webrtc file sharing, private clipboard, team collaboration, cross-device sharing, encrypted file transfer, no-registration file sharing, unlimited file transfer, folder sync, mobile file transfer, secure messaging, instant file sharing, private data transfer',
+      title:
+        "SecureShare: Free P2P File & Clipboard Sharing | Private & No Upload",
+      description:
+        "SecureShare enables instant, secure P2P file sharing without size limits or registration. Share text, images, folders across devices with end-to-end encryption. Perfect for team collaboration and private file transfer.",
+      keywords:
+        "file sharing, secure file transfer, P2P file transfer, webrtc file sharing, private clipboard, team collaboration, cross-device sharing, encrypted file transfer, no-registration file sharing, unlimited file transfer, folder sync, mobile file transfer, secure messaging, instant file sharing, private data transfer",
     },
     about: {
       title: "About SecureShare",
-      description: "Learn about SecureShare, our mission to provide a secure and private file transfer and clipboard sharing service, and our commitment to user privacy and data protection."
+      description:
+        "Learn about SecureShare, our mission to provide a secure and private file transfer and clipboard sharing service, and our commitment to user privacy and data protection.",
     },
-    faq:{
+    faq: {
       title: "SecureShare FAQ",
-      description: "Find answers to frequently asked questions about SecureShare, including how to send files, share clipboard content, and ensure secure and private data transfers.",
-      keywords: 'SecureShare FAQ,frequently asked questions,secure file sharing FAQ,private data sharing help,end-to-end encrypted file transfer,secure clipboard sharing support,how to use SecureShare,file transfer FAQ,privacy-focused sharing questions,SecureShare troubleshooting',
+      description:
+        "Find answers to frequently asked questions about SecureShare, including how to send files, share clipboard content, and ensure secure and private data transfers.",
+      keywords:
+        "SecureShare FAQ,frequently asked questions,secure file sharing FAQ,private data sharing help,end-to-end encrypted file transfer,secure clipboard sharing support,how to use SecureShare,file transfer FAQ,privacy-focused sharing questions,SecureShare troubleshooting",
     },
     help: {
       title: "SecureShare Help and Support",
-      description: "Find information on how to contact SecureShare support, as well as links to our About, Terms of Use, and Privacy Policy pages for more details about our service."
+      description:
+        "Find information on how to contact SecureShare support, as well as links to our About, Terms of Use, and Privacy Policy pages for more details about our service.",
     },
     privacy: {
       title: "SecureShare Privacy Policy",
-      description: "Understand how SecureShare protects your privacy and data, including details on information collection, data storage and security, and our commitment to not sharing your data with third parties."
+      description:
+        "Understand how SecureShare protects your privacy and data, including details on information collection, data storage and security, and our commitment to not sharing your data with third parties.",
     },
     terms: {
       title: "SecureShare Terms of Use",
-      description: "Review the terms of use for SecureShare, including information about the acceptable use of the service, data privacy and security, and limitations of liability."
+      description:
+        "Review the terms of use for SecureShare, including information about the acceptable use of the service, data privacy and security, and limitations of liability.",
     },
-    
   },
   text: {
-    Header:{
-      Home_dis:"Home",
-      Blog_dis:"blog",
-      About_dis:"About",
-      Help_dis:"Help",
-      FAQ_dis:"FAQ",
-      Terms_dis:"Terms",
-      Privacy_dis:"Privacy",
+    Header: {
+      Home_dis: "Home",
+      Blog_dis: "blog",
+      About_dis: "About",
+      Help_dis: "Help",
+      FAQ_dis: "FAQ",
+      Terms_dis: "Terms",
+      Privacy_dis: "Privacy",
     },
-    Footer:{
-      CopyrightNotice:"SecureShare. All rights reserved.",
-      Terms_dis:"Terms of Use",
-      Privacy_dis:"Privacy Policy",
-      SupportedLanguages: "Supported Languages"
+    Footer: {
+      CopyrightNotice: "SecureShare. All rights reserved.",
+      Terms_dis: "Terms of Use",
+      Privacy_dis: "Privacy Policy",
+      SupportedLanguages: "Supported Languages",
     },
-    
-    privacy:{
-      PrivacyPolicy_dis:"Privacy Policy",
-      h1:"SecureShare Privacy Policy",
-      h1_P:"At SecureShare, we are committed to protecting your privacy and safeguarding your personal information. This privacy policy outlines how we collect, use, and protect the data you provide while using our service.",
-      h2_1:"Information Collection",
-      h2_1_P:"SecureShare does not collect any personally identifiable information from users. We do not require registration or account creation to use our service. The only information we collect is the Room ID and the file/clipboard data you choose to share with other users.",
-      h2_2:"Data Storage and Security",
-      h2_2_P:"We do not store any of your data on our servers. All file transfers and clipboard sharing are handled using end-to-end encryption, ensuring that your information remains secure and accessible only to the intended recipient. Once the transfer is complete, the data is removed from our systems.",
-      h2_3:"Third-Party Services",
-      h2_3_P:"SecureShare does not integrate with any third-party services or platforms. We do not share or sell your data to any third parties.",
-      h2_4:"Amendments to the Privacy Policy",
-      h2_4_P:"We may update this privacy policy from time to time to reflect changes in our practices or applicable laws. Any changes will be effective immediately upon posting the updated policy on our website. It is your responsibility to review the privacy policy periodically for any updates.",
-      h2_5:"Contact Us",
-      h2_5_P:"If you have any questions or concerns about our privacy practices, please feel free to contact us at",
-    },
-    terms:{
-      TermsOfUse_dis:"Terms of Use",
-      h1:"SecureShare Terms of Use",
-      h1_P:"By using the SecureShare service, you agree to be bound by these terms of use. If you do not agree to these terms, please do not use the service.",
-      h2_1:"Use of the Service",
-      h2_1_P:"SecureShare is provided as a free service without any restrictions.",
-      h2_2:"Data Privacy and Security",
-      h2_2_P:"We take the privacy and security of your data very seriously. All file transfers and clipboard sharing are secured with end-to-end encryption, and we do not store any of your data on our servers. However, we cannot guarantee the security of your data during the transfer process, and you use the service at your own risk.",
-      h2_3:"Acceptable Use",
-      h2_3_P:"You agree not to use SecureShare for any unlawful, abusive, or harmful purpose. This includes, but is not limited to, the transfer of illegal, copyrighted, or malicious content, as well as the use of the service to harass or impersonate others.",
-      h2_4:"Limitation of Liability",
-      h2_4_P:"SecureShare is provided \"as is\" without any warranties or guarantees. We shall not be liable for any direct, indirect, or consequential damages arising from the use of our service, including but not limited to data loss, system failures, or interruptions in service.",
-      h2_5:"Changes to the Terms of Use",
-      h2_5_P:"We reserve the right to update these terms of use at any time. Any changes will be effective immediately upon posting the updated terms on our website. It is your responsibility to review the terms of use periodically for any changes.",
 
+    privacy: {
+      PrivacyPolicy_dis: "Privacy Policy",
+      h1: "SecureShare Privacy Policy",
+      h1_P: "At SecureShare, we are committed to protecting your privacy and safeguarding your personal information. This privacy policy outlines how we collect, use, and protect the data you provide while using our service.",
+      h2_1: "Information Collection",
+      h2_1_P:
+        "SecureShare does not collect any personally identifiable information from users. We do not require registration or account creation to use our service. The only information we collect is the Room ID and the file/clipboard data you choose to share with other users.",
+      h2_2: "Data Storage and Security",
+      h2_2_P:
+        "We do not store any of your data on our servers. All file transfers and clipboard sharing are handled using end-to-end encryption, ensuring that your information remains secure and accessible only to the intended recipient. Once the transfer is complete, the data is removed from our systems.",
+      h2_3: "Third-Party Services",
+      h2_3_P:
+        "SecureShare does not integrate with any third-party services or platforms. We do not share or sell your data to any third parties.",
+      h2_4: "Amendments to the Privacy Policy",
+      h2_4_P:
+        "We may update this privacy policy from time to time to reflect changes in our practices or applicable laws. Any changes will be effective immediately upon posting the updated policy on our website. It is your responsibility to review the privacy policy periodically for any updates.",
+      h2_5: "Contact Us",
+      h2_5_P:
+        "If you have any questions or concerns about our privacy practices, please feel free to contact us at",
     },
-    help:{
-      Help_dis:"Help",
-      h1:"SecureShare Help and Support",
-      h1_P:"We're here to help you make the most out of SecureShare. If you have any questions or need assistance, please don't hesitate to reach out to us.",
-      h2_1:"Contact Us",
-      h2_1_P1:"You can send us an email at",
-      h2_1_P2:". We will get back to you within 24 hours.",
-      h2_2:"Social Media",
-      h2_2_P:"You can also find us on social media:",
-      h2_3:"Additional Resources",
-      h2_3_P:"For more information about SecureShare, please check out the following pages:",
+    terms: {
+      TermsOfUse_dis: "Terms of Use",
+      h1: "SecureShare Terms of Use",
+      h1_P: "By using the SecureShare service, you agree to be bound by these terms of use. If you do not agree to these terms, please do not use the service.",
+      h2_1: "Use of the Service",
+      h2_1_P:
+        "SecureShare is provided as a free service without any restrictions.",
+      h2_2: "Data Privacy and Security",
+      h2_2_P:
+        "We take the privacy and security of your data very seriously. All file transfers and clipboard sharing are secured with end-to-end encryption, and we do not store any of your data on our servers. However, we cannot guarantee the security of your data during the transfer process, and you use the service at your own risk.",
+      h2_3: "Acceptable Use",
+      h2_3_P:
+        "You agree not to use SecureShare for any unlawful, abusive, or harmful purpose. This includes, but is not limited to, the transfer of illegal, copyrighted, or malicious content, as well as the use of the service to harass or impersonate others.",
+      h2_4: "Limitation of Liability",
+      h2_4_P:
+        'SecureShare is provided "as is" without any warranties or guarantees. We shall not be liable for any direct, indirect, or consequential damages arising from the use of our service, including but not limited to data loss, system failures, or interruptions in service.',
+      h2_5: "Changes to the Terms of Use",
+      h2_5_P:
+        "We reserve the right to update these terms of use at any time. Any changes will be effective immediately upon posting the updated terms on our website. It is your responsibility to review the terms of use periodically for any changes.",
     },
-    about:{
-      h1:"About SecureShare",
-      P1:"SecureShare is a free and secure file transfer and clipboard sharing tool designed with privacy and ease-of-use in mind. Our mission is to provide a simple, yet powerful solution for transferring files and sharing content across devices without any restrictions.",
-      P2:"At the core of SecureShare is our commitment to security and privacy. We use end-to-end encryption to ensure that your data is protected during the transfer process, and we never store your files or clipboard content on our servers. This means that your data stays local and under your control.",
-      P3:"With SecureShare, you can effortlessly share text, images, and files of any size without the need for registration or logins. Our platform is designed to be fast, efficient, and environmentally friendly, with a focus on providing a seamless and user-friendly experience.",
-      P4:"We believe in empowering users to take control of their digital lives, and SecureShare is our contribution to that vision. We hope that our tool will help you securely share and collaborate with your friends, family, and colleagues, without compromising your privacy or security.",
-      P5:"For more information or questions, please visit the following pages:"
+    help: {
+      Help_dis: "Help",
+      h1: "SecureShare Help and Support",
+      h1_P: "We're here to help you make the most out of SecureShare. If you have any questions or need assistance, please don't hesitate to reach out to us.",
+      h2_1: "Contact Us",
+      h2_1_P1: "You can send us an email at",
+      h2_1_P2: ". We will get back to you within 24 hours.",
+      h2_2: "Social Media",
+      h2_2_P: "You can also find us on social media:",
+      h2_3: "Additional Resources",
+      h2_3_P:
+        "For more information about SecureShare, please check out the following pages:",
     },
-    HowItWorks:{
+    about: {
+      h1: "About SecureShare",
+      P1: "SecureShare is a free and secure file transfer and clipboard sharing tool designed with privacy and ease-of-use in mind. Our mission is to provide a simple, yet powerful solution for transferring files and sharing content across devices without any restrictions.",
+      P2: "At the core of SecureShare is our commitment to security and privacy. We use end-to-end encryption to ensure that your data is protected during the transfer process, and we never store your files or clipboard content on our servers. This means that your data stays local and under your control.",
+      P3: "With SecureShare, you can effortlessly share text, images, and files of any size without the need for registration or logins. Our platform is designed to be fast, efficient, and environmentally friendly, with a focus on providing a seamless and user-friendly experience.",
+      P4: "We believe in empowering users to take control of their digital lives, and SecureShare is our contribution to that vision. We hope that our tool will help you securely share and collaborate with your friends, family, and colleagues, without compromising your privacy or security.",
+      P5: "For more information or questions, please visit the following pages:",
+    },
+    HowItWorks: {
       h2: "How it works",
       h2_P: "Share files and messages instantly in three simple steps",
       btn_try: "Try it now →",
-      step1_title:"Type or Choose Files",
-      step1_description:"Type your message or drag & drop files/folders into the selection area",
-      step2_title:"Join Room",
-      step2_description:"Click the 'Join Room' button to create a sharing session",
-      step3_title:"Receive",
-      step3_description:"Enter the Room ID on the receive page and click 'Join Room' to get the shared content",
+      step1_title: "Type or Choose Files",
+      step1_description:
+        "Type your message or drag & drop files/folders into the selection area",
+      step2_title: "Join Room",
+      step2_description:
+        "Click the 'Join Room' button to create a sharing session",
+      step3_title: "Receive",
+      step3_description:
+        "Enter the Room ID on the receive page and click 'Join Room' to get the shared content",
     },
-    SystemDiagram:{
+    SystemDiagram: {
       h2: "System diagram",
       h2_P: "SecureShare: Your data, your control. Simple, fast, and private.",
     },
-    KeyFeatures:{
+    KeyFeatures: {
       h2: "Key Features",
       h3_1: "Direct and Secure",
-      h3_1_P: "Your files travel straight from your device to the recipient's, like a secret tunnel only you two can access. With end-to-end encryption, it's like your data is speaking a language only the intended recipient can understand. Don't want to share anymore? Simply close your browser tab, and it's like hanging up a phone call - you're in control.",
+      h3_1_P:
+        "Your files travel straight from your device to the recipient's, like a secret tunnel only you two can access. With end-to-end encryption, it's like your data is speaking a language only the intended recipient can understand. Don't want to share anymore? Simply close your browser tab, and it's like hanging up a phone call - you're in control.",
       h3_2: "Team Synergy",
-      h3_2_P: "Share with your entire team as easily as sharing with one person. Like hosting a digital roundtable, everyone gets the files simultaneously. Whether you're collaborating on a creative project or distributing important documents, it's like having everyone in the same room, receiving your shared vision at once. Perfect for brainstorming sessions, team presentations, or any moment when multiple minds need to connect.",
+      h3_2_P:
+        "Share with your entire team as easily as sharing with one person. Like hosting a digital roundtable, everyone gets the files simultaneously. Whether you're collaborating on a creative project or distributing important documents, it's like having everyone in the same room, receiving your shared vision at once. Perfect for brainstorming sessions, team presentations, or any moment when multiple minds need to connect.",
       h3_3: "No Limits, Smart Handling",
-      h3_3_P: "Imagine a magical pipeline that can transport anything, no matter how big! Send files of any size, limited only by your disk space. For those extra-large files, choose where to save them on your device. It's like having a special delivery service that doesn't slow down your computer - files go straight to disk, keeping your device speedy and responsive.",
+      h3_3_P:
+        "Imagine a magical pipeline that can transport anything, no matter how big! Send files of any size, limited only by your disk space. For those extra-large files, choose where to save them on your device. It's like having a special delivery service that doesn't slow down your computer - files go straight to disk, keeping your device speedy and responsive.",
       h3_4: "Swift as a Thought",
-      h3_4_P: "Share text, images, and even entire folders as quickly as you can think of them. It's like teleporting your digital stuff instantly. Need to send a whole photo album or a folder full of documents? No problem! It's as easy as sharing a single file.",
+      h3_4_P:
+        "Share text, images, and even entire folders as quickly as you can think of them. It's like teleporting your digital stuff instantly. Need to send a whole photo album or a folder full of documents? No problem! It's as easy as sharing a single file.",
       h3_5: "Green and Clean",
-      h3_5_P: "We're like a digital version of a face-to-face conversation - nothing gets stored anywhere else. This means we're super environmentally friendly, using minimal resources. It's like leaving no footprint in the digital world, keeping things clean and green for everyone.",
+      h3_5_P:
+        "We're like a digital version of a face-to-face conversation - nothing gets stored anywhere else. This means we're super environmentally friendly, using minimal resources. It's like leaving no footprint in the digital world, keeping things clean and green for everyone.",
     },
-    faqs:{
-      FAQ_dis:"Frequently Asked Questions",
-      question_0: "Is the data truly stored locally and not transferred to other servers?",
-      answer_0: "Yes, all data is handled locally. You can check the YouTube video on our homepage—files can still be transferred within a local network even if the internet is disconnected after establishing a connection. In the future, we plan to open source the code so everyone can review it.",
+    faqs: {
+      FAQ_dis: "Frequently Asked Questions",
+      question_0:
+        "Is the data truly stored locally and not transferred to other servers?",
+      answer_0:
+        "Yes, all data is handled locally. You can check the YouTube video on our homepage—files can still be transferred within a local network even if the internet is disconnected after establishing a connection. In the future, we plan to open source the code so everyone can review it.",
       question_1: "How do I send and receive folders?",
-      answer_1: "Sending a folder is as simple as sending a file. Drag the folder into the file selection area or click the area to select it, then hit \"Start Sending.\" button On the receiving end, users can download directly or choose a save directory before downloading. The former saves to memory, while the latter saves directly to disk.",
+      answer_1:
+        'Sending a folder is as simple as sending a file. Drag the folder into the file selection area or click the area to select it, then hit "Start Sending." button On the receiving end, users can download directly or choose a save directory before downloading. The former saves to memory, while the latter saves directly to disk.',
       question_2: "Can I change the Room ID?",
       answer_2: "Yes, you can change the Room ID to any string you prefer.",
       question_3: "Can I share content continuously?",
-      answer_3: "As long as you remain connected, you can manually click the \"Start Sending\" button to update the shared content whenever it changes.",
+      answer_3:
+        'As long as you remain connected, you can manually click the "Start Sending" button to update the shared content whenever it changes.',
       question_4: "Can I share files with multiple recipients simultaneously?",
-      answer_4: "Of course! There's no difference between one person receiving and multiple people receiving simultaneously.",
+      answer_4:
+        "Of course! There's no difference between one person receiving and multiple people receiving simultaneously.",
       question_5: "Is my data secure when using SecureShare?",
-      answer_5: "Absolutely secure. Your data always stays local, transferring between devices through an encrypted, end-to-end connection. All transmitted data is encrypted, ensuring only you and the recipient can access it.",
+      answer_5:
+        "Absolutely secure. Your data always stays local, transferring between devices through an encrypted, end-to-end connection. All transmitted data is encrypted, ensuring only you and the recipient can access it.",
       question_6: "Do I need to create an account to use SecureShare?",
-      answer_6: "No registration or login required—just open the site and start using it. Convenience and speed are our priorities.",
+      answer_6:
+        "No registration or login required—just open the site and start using it. Convenience and speed are our priorities.",
       question_7: "Are there any file size limits?",
-      answer_7: "No limits on file size or speed. As long as you have enough disk space, you can transfer files of any size by setting a save directory before downloading.",
+      answer_7:
+        "No limits on file size or speed. As long as you have enough disk space, you can transfer files of any size by setting a save directory before downloading.",
       question_8: "Can I share folders or multiple files at once?",
-      answer_8: "Yes, sharing multiple files or folders is as simple as sharing a single file. You can also add files to the transfer—just click \"Start Sending\" to update them for the recipient.",
+      answer_8:
+        'Yes, sharing multiple files or folders is as simple as sharing a single file. You can also add files to the transfer—just click "Start Sending" to update them for the recipient.',
       question_9: "How do I stop sharing if I change my mind?",
-      answer_9: "Stopping a share is as simple as closing the browser tab or window. Once you do this, the connection is terminated, and no further data can be transferred.",
+      answer_9:
+        "Stopping a share is as simple as closing the browser tab or window. Once you do this, the connection is terminated, and no further data can be transferred.",
       question_10: "Does using SecureShare slow down my device?",
-      answer_10: "No, SecureShare is designed to be lightweight and efficient. If you set a save directory, all received data is written directly to disk, bypassing memory, which helps maintain your device's performance.",
+      answer_10:
+        "No, SecureShare is designed to be lightweight and efficient. If you set a save directory, all received data is written directly to disk, bypassing memory, which helps maintain your device's performance.",
       question_11: "Can I use SecureShare offline?",
-      answer_11: "Yes, if the sender and receiver are on the same local network, they can join the same room while connected to the internet and then disconnect from it. File sharing will still work. You can refer to the YouTube video on the homepage for details.",
+      answer_11:
+        "Yes, if the sender and receiver are on the same local network, they can join the same room while connected to the internet and then disconnect from it. File sharing will still work. You can refer to the YouTube video on the homepage for details.",
       question_12: "Does SecureShare use any servers?",
-      answer_12: "Yes, there is indeed a lightweight server, which is used only for signaling to establish an encrypted connection. Once the connection is established, all data is transferred directly between devices through the encrypted connection.",
+      answer_12:
+        "Yes, there is indeed a lightweight server, which is used only for signaling to establish an encrypted connection. Once the connection is established, all data is transferred directly between devices through the encrypted connection.",
       question_13: "What is the expiration period for Room IDs?",
-      answer_13: "The initial validity of a RoomId is 24 hours. If a recipient joins the room, the validity is automatically extended by 24 hours from that moment.",
+      answer_13:
+        "The initial validity of a RoomId is 24 hours. If a recipient joins the room, the validity is automatically extended by 24 hours from that moment.",
     },
-    clipboard_btn:{
-      Pasted_dis:"Pasted",
-      Copied_dis:"Copied",
+    clipboard_btn: {
+      Pasted_dis: "Pasted",
+      Copied_dis: "Copied",
     },
-    fileUploadHandler:{
-      NoFileChosen_tips:"No file chosen",
-      fileChosen_tips_template: "{fileNum} file(s) and {folderNum} folder(s) selected",
-      Drag_tips:"Drag and drop files/folders here or click to choose",
-      chosenDiagTitle:"Choose Upload Type",
-      chosenDiagDescription:"Select whether you want to upload files or a folder",
-      SelectFile_dis:"Select Files",
-      SelectFolder_dis:"Select Folder",
+    fileUploadHandler: {
+      NoFileChosen_tips: "No file chosen",
+      fileChosen_tips_template:
+        "{fileNum} file(s) and {folderNum} folder(s) selected",
+      Drag_tips: "Drag and drop files/folders here or click to choose",
+      chosenDiagTitle: "Choose Upload Type",
+      chosenDiagDescription:
+        "Select whether you want to upload files or a folder",
+      SelectFile_dis: "Select Files",
+      SelectFolder_dis: "Select Folder",
     },
-    FileTransferButton:{
-      SavedToDisk_tips:"File already saved to disk",
-      CurrentFileTransferring_tips:"File is being transferred",
-      OtherFileTransferring_tips:"Please wait for current transfer to complete",
-      download_tips:"Click to download file",
-      Saved_dis:"Saved",
-      Waiting_dis:"Waiting",
-      Download_dis:"Download",
+    FileTransferButton: {
+      SavedToDisk_tips: "File already saved to disk",
+      CurrentFileTransferring_tips: "File is being transferred",
+      OtherFileTransferring_tips:
+        "Please wait for current transfer to complete",
+      download_tips: "Click to download file",
+      Saved_dis: "Saved",
+      Waiting_dis: "Waiting",
+      Download_dis: "Download",
     },
-    FileListDisplay:{
-      sending_dis: 'Sending',
-      receiving_dis: 'Receiving',
-      finish_dis:"finished",
-      delete_dis:"Delete",
-      downloadNum_dis:"Download count",
-      folder_tips_template:"folder name:{name} ({num} files and {size}) in total",
-      folder_dis_template:" ({num} files, {size})",
-      PopupDialog_title:"Recommended: Choose a Save Directory",
-      PopupDialog_description:"We recommend selecting a save directory to directly save files to your disk. This makes it easier to transfer large files and synchronize folders efficiently.",
-      chooseSavePath_tips:"Save large files or folders directly to a selected directory. 👉",
-      chooseSavePath_dis:"Choose save location",
+    FileListDisplay: {
+      sending_dis: "Sending",
+      receiving_dis: "Receiving",
+      finish_dis: "finished",
+      delete_dis: "Delete",
+      downloadNum_dis: "Download count",
+      folder_tips_template:
+        "folder name:{name} ({num} files and {size}) in total",
+      folder_dis_template: " ({num} files, {size})",
+      PopupDialog_title: "Recommended: Choose a Save Directory",
+      PopupDialog_description:
+        "We recommend selecting a save directory to directly save files to your disk. This makes it easier to transfer large files and synchronize folders efficiently.",
+      chooseSavePath_tips:
+        "Save large files or folders directly to a selected directory. 👉",
+      chooseSavePath_dis: "Choose save location",
     },
-    RetrieveMethod:{
-      P:"Congrats 🎉 Share content is waiting to be retrieved:",
-      RoomId_tips:"Retrieve RoomID: ",
-      copyRoomId_tips:"Copy RoomID",
-      url_tips:"Retrieve using URL: ",
-      copyUrl_tips:"Copy share url",
-      scanQR_tips:"Scan the QR code to receive 👇",
-      Copied_dis:"Copied",
-      Copy_QR_dis:"Copy QR code",
-      download_QR_dis:"Download QR code",
+    RetrieveMethod: {
+      P: "Congrats 🎉 Share content is waiting to be retrieved:",
+      RoomId_tips: "Retrieve RoomID: ",
+      copyRoomId_tips: "Copy RoomID",
+      url_tips: "Retrieve using URL: ",
+      copyUrl_tips: "Copy share url",
+      scanQR_tips: "Scan the QR code to receive 👇",
+      Copied_dis: "Copied",
+      Copy_QR_dis: "Copy QR code",
+      download_QR_dis: "Download QR code",
     },
-    ClipboardApp:{
-      fetchRoom_err:"Failed to get a room. Please try again.",
-      roomCheck:{//handleShareRoomCheck
-        empty_msg:"RoomID should not be empty",
-        available_msg: 'Room is available',
-        notAvailable_msg: 'Room is not available, please try another',
+    ClipboardApp: {
+      fetchRoom_err: "Failed to get a room. Please try again.",
+      roomCheck: {
+        //handleShareRoomCheck
+        empty_msg: "RoomID should not be empty",
+        available_msg: "Room is available",
+        notAvailable_msg: "Room is not available, please try another",
       },
-      channelOpen_msg:"'data channel is opened,ready to receive data...'",
-      waitting_tips:"Waiting for receiver to connect. Please keep this page open until the transfer is complete. On desktop, you can minimize the browser or switch tabs. On mobile, please keep the browser in the foreground.",
+      channelOpen_msg: "'data channel is opened,ready to receive data...'",
+      waitting_tips:
+        "Waiting for receiver to connect. Please keep this page open until the transfer is complete. On desktop, you can minimize the browser or switch tabs. On mobile, please keep the browser in the foreground.",
       joinRoom: {
         EmptyMsg: "Warning, the roomID is empty",
         DuplicateMsg: "The room ID you entered is duplicate. Please re-enter.",
-        successMsg: "Successfully joined the room! Do not close this page until the transfer is complete. (On desktop, you can minimize the browser or switch tabs; on mobile, do not move the browser to the background.)",
-        notExist: "The room you are trying to join does not exist. Only the sender can create a room.",
-        failMsg: "Failed to join room:"
+        successMsg:
+          "Successfully joined the room! Do not close this page until the transfer is complete. (On desktop, you can minimize the browser or switch tabs; on mobile, do not move the browser to the background.)",
+        notExist:
+          "The room you are trying to join does not exist. Only the sender can create a room.",
+        failMsg: "Failed to join room:",
       },
       pickSaveMsg: "Save Directly to Disk ?",
       roomStatus: {
@@ -225,41 +275,42 @@ export const en: Messages = {
         receiverEmptyMsg: "You can accept an invitation to join the room",
         onlyOneMsg: "You’re the only one here",
         peopleMsg_template: "{peerCount} People in the room",
-        connected_dis:"Connected",
+        connected_dis: "Connected",
       },
-      html:{//html 部分的消息
+      html: {
         senderTab: "Send",
         retrieveTab: "Retrieve",
-        shareTitle_dis:"Share Content",
-        retrieveTitle_dis:"Retrieve Content",
-        RoomStatus_dis:"Status:",
-        Paste_dis:"Paste",
-        Copy_dis:"Copy",
+        shareTitle_dis: "Share Content",
+        retrieveTitle_dis: "Retrieve Content",
+        RoomStatus_dis: "Status:",
+        Paste_dis: "Paste",
+        Copy_dis: "Copy",
         inputRoomIdprompt: "Your RoomID (Editable):",
         joinRoomBtn: "Join room",
         startSendingBtn: "Start sending",
         readClipboardToRoomId: "Paste RoomID",
         enterRoomID_placeholder: "enter RoomID",
         retrieveMethod: "Retrieve method",
-        inputRoomId_tips:"Your RoomID (Editable):",
-        joinRoom_dis:"Join room",
-        startSending_loadingText:"Sended",
-        startSending_dis:"Start sending",
-        readClipboard_dis:"Paste RoomID",
-        retrieveRoomId_placeholder:"Enter RoomID",
-        RetrieveMethodTitle:"Retrieve method",
-      }
+        inputRoomId_tips: "Your RoomID (Editable):",
+        joinRoom_dis: "Join room",
+        startSending_loadingText: "Sended",
+        startSending_dis: "Start sending",
+        readClipboard_dis: "Paste RoomID",
+        retrieveRoomId_placeholder: "Enter RoomID",
+        RetrieveMethodTitle: "Retrieve method",
+      },
     },
     home: {
       h1: "Free Secure Online Clipboard & File Transfer Tool",
       h1P: "Effortlessly share text, images, files, and folders with unparalleled privacy, completely free and with no registration needed. No restrictions on size or speed. Enjoy secure, end-to-end encrypted transfers directly between devices at zero cost.",
-      h2_screenOnly: 'Try Secure Clipboard & File Transfer Tool Now',
-      
+      h2_screenOnly: "Try Secure Clipboard & File Transfer Tool Now",
+
       h2_demo: "See Secure File Sharing in Action",
-      h2P_demo: "Watch how our local-first, end-to-end encrypted file sharing protects your privacy",
-      watch_tips:"You can also watch the video on these platforms:",
+      h2P_demo:
+        "Watch how our local-first, end-to-end encrypted file sharing protects your privacy",
+      watch_tips: "You can also watch the video on these platforms:",
       youtube_tips: "Watch SecureShare on YouTube",
-      bilibili_tips:"Watch SecureShare on Bilibili",
-    }
+      bilibili_tips: "Watch SecureShare on Bilibili",
+    },
   },
-}
+};
