@@ -1,10 +1,10 @@
 /**
  * Redis Data Structures Used for Rate Limiting:
- * 
+ *
  * 1. IP Request Timestamps:
  *    - Key Pattern: `ratelimit:join:<ipAddress>` (e.g., "ratelimit:join:192.168.1.100")
  *    - Type: Sorted Set
- *    - Members: Unique identifiers for each request, typically `timestamp-randomNumber` 
+ *    - Members: Unique identifiers for each request, typically `timestamp-randomNumber`
  *               (e.g., "1678886400000-0.12345"). Using a random suffix ensures
  *               uniqueness if multiple requests occur in the same millisecond.
  *    - Scores: Timestamp of the request (milliseconds since epoch).
@@ -17,11 +17,11 @@
  *      - `EXPIRE`: Refreshes/sets the TTL for the key.
  *    - All operations are typically performed within a `pipeline` or `MULTI` for efficiency.
  */
-import { redis } from './redis';
+import { redis } from "./redis";
 
-const RATE_LIMIT_PREFIX = 'ratelimit:join:';
+const RATE_LIMIT_PREFIX = "ratelimit:join:";
 const RATE_WINDOW = 5; // 5-second time window
-const RATE_LIMIT = 2;  // Maximum number of requests allowed
+const RATE_LIMIT = 2; // Maximum number of requests allowed
 
 export async function checkRateLimit(ip: string): Promise<{
   allowed: boolean;
@@ -30,11 +30,11 @@ export async function checkRateLimit(ip: string): Promise<{
 }> {
   const key = `${RATE_LIMIT_PREFIX}${ip}`;
   const now = Date.now();
-  const windowStart = now - (RATE_WINDOW * 1000);
+  const windowStart = now - RATE_WINDOW * 1000;
 
   // Use Redis's MULTI command to start a transaction
   const pipeline = redis.pipeline();
-  
+
   // 1. Add current request's timestamp
   pipeline.zadd(key, now, `${now}-${Math.random()}`); // Add a random suffix to member for uniqueness if multiple requests at same ms
   // 2. Remove timestamps older than the current window
@@ -45,10 +45,10 @@ export async function checkRateLimit(ip: string): Promise<{
   pipeline.expire(key, RATE_WINDOW);
 
   const results = await pipeline.exec();
-  
+
   if (!results) {
     // This case means the pipeline itself failed, not individual commands necessarily
-    console.error('Redis pipeline command failed for rate limiting.');
+    console.error("Redis pipeline command failed for rate limiting.");
     // Fallback: be lenient or strict? For safety, let's be strict.
     return { allowed: false, remaining: 0, resetAfter: RATE_WINDOW };
   }

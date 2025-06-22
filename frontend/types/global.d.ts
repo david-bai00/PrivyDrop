@@ -1,4 +1,4 @@
-declare module 'lodash';
+declare module "lodash";
 interface Window {
-    showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle>;
+  showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle>;
 }

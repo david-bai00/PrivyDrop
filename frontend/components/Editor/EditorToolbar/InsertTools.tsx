@@ -1,4 +1,4 @@
-import { Link2, Image, Code } from 'lucide-react';
+import { Link2, Image, Code } from "lucide-react";
 
 interface InsertToolsProps {
   insertLink: () => void;
@@ -6,7 +6,11 @@ interface InsertToolsProps {
   insertCodeBlock: () => void;
 }
 
-export function InsertTools({ insertLink, insertImage, insertCodeBlock }: InsertToolsProps) {
+export function InsertTools({
+  insertLink,
+  insertImage,
+  insertCodeBlock,
+}: InsertToolsProps) {
   return (
     <div className="flex flex-wrap gap-1">
       <button

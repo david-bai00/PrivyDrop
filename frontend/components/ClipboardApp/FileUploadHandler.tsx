@@ -1,14 +1,20 @@
-import React, { useState, useEffect, ChangeEvent, useRef, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  ChangeEvent,
+  useRef,
+  useCallback,
+} from "react";
 import { Input } from "@/components/ui/input";
-import { Upload } from 'lucide-react';
-import {FileMeta,CustomFile } from '@/types/webrtc';
+import { Upload } from "lucide-react";
+import { FileMeta, CustomFile } from "@/types/webrtc";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 // Add this declaration at the top of the file to extend existing types and avoid IDE errors
 declare module "@/components/ui/input" {
   interface InputProps {
@@ -17,19 +23,25 @@ declare module "@/components/ui/input" {
   }
 }
 
-import { getDictionary } from '@/lib/dictionary';
-import { useLocale } from '@/hooks/useLocale';
-import type { Messages } from '@/types/messages';
-import { en } from '@/constants/messages/en';  // Import English dictionary as default
+import { getDictionary } from "@/lib/dictionary";
+import { useLocale } from "@/hooks/useLocale";
+import type { Messages } from "@/types/messages";
+import { en } from "@/constants/messages/en"; // Import English dictionary as default
 
-const traverseFileTree = async (item: FileSystemEntry, path = ''): Promise<CustomFile[]> => {
+const traverseFileTree = async (
+  item: FileSystemEntry,
+  path = ""
+): Promise<CustomFile[]> => {
   return new Promise((resolve) => {
     // console.log('path',path)//path in ['','test/','test/sub/']
     if (item.isFile) {
       (item as FileSystemFileEntry).file((file: File) => {
         // console.log('file.name',file.name)//file.name in ['Gmail-773240713232313363.txt','link.txt','cvat-serverless部署踩坑及部署模型测试 (1).docx','images.jpg']
         // console.log('fullName',path + file.name,'folderName',path.split('/')[0])
-        const customFile: CustomFile = Object.assign(file, { fullName: path + file.name, folderName: path.split('/')[0] });
+        const customFile: CustomFile = Object.assign(file, {
+          fullName: path + file.name,
+          folderName: path.split("/")[0],
+        });
         resolve([customFile]);
       });
     } else if (item.isDirectory) {
@@ -42,7 +54,7 @@ const traverseFileTree = async (item: FileSystemEntry, path = ''): Promise<Custo
             entries = entries.concat(Array.from(results));
             readEntries();
           } else {
-            const newPath = path + item.name + '/';
+            const newPath = path + item.name + "/";
             const subResults = await Promise.all(
               entries.map((entry) => traverseFileTree(entry, newPath))
             );
@@ -60,77 +72,97 @@ const traverseFileTree = async (item: FileSystemEntry, path = ''): Promise<Custo
 };
 
 function formatFileChosen(
-  template: string, 
-  fileNum: number, 
+  template: string,
+  fileNum: number,
   folderNum: number
 ) {
-  return template.replace('{fileNum}', fileNum.toString())
-                .replace('{folderNum}', folderNum.toString());
+  return template
+    .replace("{fileNum}", fileNum.toString())
+    .replace("{folderNum}", folderNum.toString());
 }
 
 interface FileUploadHandlerProps {
   onFilePicked: (files: CustomFile[]) => void;
 }
 
-const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({ 
-  onFilePicked
-  }) => {
+const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
+  onFilePicked,
+}) => {
   const locale = useLocale();
   const [messages, setMessages] = useState<Messages>(en); // Use English dictionary as initial value
-  
-  const dropZoneRef = useRef<HTMLDivElement>(null);// Drag and drop files to attachments -- support
+
+  const dropZoneRef = useRef<HTMLDivElement>(null); // Drag and drop files to attachments -- support
   const folderInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // File selector -- message prompt
-  const [fileText, setFileText] = useState<string>(en.text.fileUploadHandler.NoFileChosen_tips);
+  const [fileText, setFileText] = useState<string>(
+    en.text.fileUploadHandler.NoFileChosen_tips
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   useEffect(() => {
-    if (locale !== 'en') {  // Only load other language packs if not English
+    if (locale !== "en") {
+      // Only load other language packs if not English
       getDictionary(locale)
-        .then(dict => {setMessages(dict);setFileText(dict.text.fileUploadHandler.NoFileChosen_tips);})
-        .catch(error => console.error('Failed to load messages:', error));
+        .then((dict) => {
+          setMessages(dict);
+          setFileText(dict.text.fileUploadHandler.NoFileChosen_tips);
+        })
+        .catch((error) => console.error("Failed to load messages:", error));
     }
   }, [locale]);
 
-  const handleFileChange = useCallback((newFiles: CustomFile[]) => {
+  const handleFileChange = useCallback(
+    (newFiles: CustomFile[]) => {
       // console.log(newFiles);
       onFilePicked(newFiles);
 
       const fileNum = newFiles.length;
-      const folderNum = newFiles.filter(file => file.folderName).length;
-      
+      const folderNum = newFiles.filter((file) => file.folderName).length;
+
       const choose_dis = formatFileChosen(
-        messages!.text.fileUploadHandler.fileChosen_tips_template, fileNum, folderNum
+        messages!.text.fileUploadHandler.fileChosen_tips_template,
+        fileNum,
+        folderNum
       );
-      
+
       setFileText(choose_dis);
-      setTimeout(() => setFileText(messages!.text.fileUploadHandler.NoFileChosen_tips), 2000);
+      setTimeout(
+        () => setFileText(messages!.text.fileUploadHandler.NoFileChosen_tips),
+        2000
+      );
       // Reset the file input
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
-    }, [messages,onFilePicked]);
+    },
+    [messages, onFilePicked]
+  );
   // Drag and drop folder upload response processing
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       e.stopPropagation();
-  
+
       const items = e.dataTransfer.items;
       if (items) {
         const itemsArray = Array.from(items);
-        Promise.all(itemsArray.map(item => {
-          const entry = item.webkitGetAsEntry();
-          if (entry) {
-            return traverseFileTree(entry);
-          }
-          return Promise.resolve([]);
-        })).then(results => {
+        Promise.all(
+          itemsArray.map((item) => {
+            const entry = item.webkitGetAsEntry();
+            if (entry) {
+              return traverseFileTree(entry);
+            }
+            return Promise.resolve([]);
+          })
+        ).then((results) => {
           const allFiles = results.flat();
           handleFileChange(allFiles);
         });
       }
-    }, [handleFileChange]);
+    },
+    [handleFileChange]
+  );
   /*  Define a callback function handleDragOver to handle the drag-over event.
       In handleDragOver, prevent default behavior and event propagation to ensure custom handling.
       There is no dependency array, which means the handleDragOver function will only be created once when the component first renders, and will not be re-created in subsequent renders.
@@ -140,35 +172,47 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
     e.stopPropagation();
   }, []);
   // Click to upload file processing
-  const handleFileInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      let files2 = [];
-      for(let file of files){
-        const customFile: CustomFile = Object.assign(file, { fullName: file.name, folderName: '' });
-        files2.push(customFile);
+  const handleFileInputChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files) {
+        const files = Array.from(e.target.files);
+        let files2 = [];
+        for (let file of files) {
+          const customFile: CustomFile = Object.assign(file, {
+            fullName: file.name,
+            folderName: "",
+          });
+          files2.push(customFile);
+        }
+        handleFileChange(files2);
+        setIsModalOpen(false); // Close the dialog
       }
-      handleFileChange(files2);
-      setIsModalOpen(false);// Close the dialog
-    }
-  }, [handleFileChange]);
+    },
+    [handleFileChange]
+  );
   // Click to upload folder response processing
-  const handleFolderInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files_ = Array.from(e.target.files);
-      let files:CustomFile[] = [];
+  const handleFolderInputChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files) {
+        const files_ = Array.from(e.target.files);
+        let files: CustomFile[] = [];
 
-      files_.forEach(file => {
-        // console.log('file.webkitRelativePath',file.webkitRelativePath)//[test/Gmail-773240713232313363.txt,test/link.txt,test/sub/cvat-serverless部署踩坑及部署模型测试 (1).docx,test/sub/images.jpg]
-        const pathParts = file.webkitRelativePath.split('/');
-        const customFile: CustomFile = Object.assign(file, { fullName: file.webkitRelativePath, folderName: pathParts[0] });
-        files.push(customFile);
-      });
+        files_.forEach((file) => {
+          // console.log('file.webkitRelativePath',file.webkitRelativePath)//[test/Gmail-773240713232313363.txt,test/link.txt,test/sub/cvat-serverless部署踩坑及部署模型测试 (1).docx,test/sub/images.jpg]
+          const pathParts = file.webkitRelativePath.split("/");
+          const customFile: CustomFile = Object.assign(file, {
+            fullName: file.webkitRelativePath,
+            folderName: pathParts[0],
+          });
+          files.push(customFile);
+        });
 
-      handleFileChange(files);
-      setIsModalOpen(false);// Close the dialog
-    }
-  }, [handleFileChange]);
+        handleFileChange(files);
+        setIsModalOpen(false); // Close the dialog
+      }
+    },
+    [handleFileChange]
+  );
 
   // Handle drag and drop area click
   const handleZoneClick = () => {
@@ -194,13 +238,13 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
         onDragOver={handleDragOver}
         className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer"
         onClick={handleZoneClick}
-        >
-          <p className="text-sm text-gray-600 mb-4">
-            {messages.text.fileUploadHandler.Drag_tips}
-          </p>
+      >
+        <p className="text-sm text-gray-600 mb-4">
+          {messages.text.fileUploadHandler.Drag_tips}
+        </p>
         <Upload className="h-12 w-12 mx-auto mb-4 text-blue-500" />
         <p className="text-sm text-gray-600">{fileText}</p>
-          
+
         <Input
           id="file-upload"
           type="file"
@@ -228,7 +272,7 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
               {messages.text.fileUploadHandler.chosenDiagTitle}
             </DialogTitle>
             <DialogDescription className="mt-2 text-muted-foreground">
-            {messages.text.fileUploadHandler.chosenDiagDescription}
+              {messages.text.fileUploadHandler.chosenDiagDescription}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center gap-4 mt-6">

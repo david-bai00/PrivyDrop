@@ -1,12 +1,12 @@
-import React from 'react';
-import { SelectMenuProps } from '../types';
+import React from "react";
+import { SelectMenuProps } from "../types";
 // Dropdown selection component
-export const SelectMenu: React.FC<SelectMenuProps> = ({ 
-  options, 
-  onChange, 
-  icon: Icon, 
-  placeholder, 
-  className 
+export const SelectMenu: React.FC<SelectMenuProps> = ({
+  options,
+  onChange,
+  icon: Icon,
+  placeholder,
+  className,
 }) => (
   <div className="relative inline-block">
     <select

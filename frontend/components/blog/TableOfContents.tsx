@@ -1,6 +1,6 @@
 "use client";
-import React, { useEffect, useState } from 'react';
-import clsx from 'clsx';
+import React, { useEffect, useState } from "react";
+import clsx from "clsx";
 
 interface TocItem {
   id: string;
@@ -12,18 +12,21 @@ interface TableOfContentsProps {
   content: string;
 }
 
-export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => {
-  const [activeId, setActiveId] = useState<string>('');
+export const TableOfContents: React.FC<TableOfContentsProps> = ({
+  content,
+}) => {
+  const [activeId, setActiveId] = useState<string>("");
   const [toc, setToc] = useState<TocItem[]>([]);
 
   // Generate a valid ID, preserving Chinese characters
   const generateValidId = (text: string): string => {
-    return encodeURIComponent(text
-      .trim() // Remove leading/trailing spaces
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/\-\-+/g, '-')  // Replace multiple hyphens with a single one
-      .replace(/^-+/, '')      // Remove leading hyphens
-      .replace(/-+$/, '')      // Remove trailing hyphens
+    return encodeURIComponent(
+      text
+        .trim() // Remove leading/trailing spaces
+        .replace(/\s+/g, "-") // Replace spaces with hyphens
+        .replace(/\-\-+/g, "-") // Replace multiple hyphens with a single one
+        .replace(/^-+/, "") // Remove leading hyphens
+        .replace(/-+$/, "") // Remove trailing hyphens
     );
   };
 
@@ -38,7 +41,7 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => 
       const level = match[1].length;
       const text = match[2].trim();
       let id = generateValidId(text);
-      
+
       // If ID already exists, add a numeric suffix
       let counter = 1;
       let uniqueId = id;
@@ -46,7 +49,7 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => 
         uniqueId = `${id}-${counter}`;
         counter++;
       }
-      
+
       usedIds.add(uniqueId);
       items.push({ id: uniqueId, text, level });
     }
@@ -63,19 +66,19 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => 
           }
         });
       },
-      { rootMargin: '-80px 0px -40% 0px' }
+      { rootMargin: "-80px 0px -40% 0px" }
     );
 
     // Ensure all headings are rendered
     const setupObserver = () => {
-      const headers = document.querySelectorAll('h1[id], h2[id], h3[id]');
+      const headers = document.querySelectorAll("h1[id], h2[id], h3[id]");
       headers.forEach((header) => observer.observe(header));
     };
 
     // Ensure DOM is updated
     if (toc.length > 0) {
       // Give the DOM some time to update
-    setTimeout(setupObserver, 100);
+      setTimeout(setupObserver, 100);
     }
 
     return () => observer.disconnect();
@@ -87,14 +90,15 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => 
     if (element) {
       // Get element position
       const rect = element.getBoundingClientRect();
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      
+      const scrollTop =
+        window.pageYOffset || document.documentElement.scrollTop;
+
       // Calculate target position (considering the fixed navigation bar height, assuming 80px)
       const offsetTop = rect.top + scrollTop - 80;
 
       window.scrollTo({
         top: offsetTop,
-        behavior: 'smooth'
+        behavior: "smooth",
       });
 
       // Set current active item
@@ -112,17 +116,17 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ content }) => 
           <li
             key={item.id}
             className={clsx(
-              'transition-all',
-              item.level === 1 ? 'ml-0' : item.level === 2 ? 'ml-4' : 'ml-8'
+              "transition-all",
+              item.level === 1 ? "ml-0" : item.level === 2 ? "ml-4" : "ml-8"
             )}
           >
             <button
               onClick={() => scrollToHeader(item.id)}
               className={clsx(
-                'block w-full text-left py-1 text-sm hover:text-blue-600 transition-colors',
+                "block w-full text-left py-1 text-sm hover:text-blue-600 transition-colors",
                 activeId === item.id
-                  ? 'text-blue-600 font-medium'
-                  : 'text-gray-600'
+                  ? "text-blue-600 font-medium"
+                  : "text-gray-600"
               )}
             >
               {item.text}

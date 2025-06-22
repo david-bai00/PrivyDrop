@@ -1,23 +1,23 @@
-import React from 'react';
-import { Globe } from 'lucide-react';
+import React from "react";
+import { Globe } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { usePathname, useRouter } from 'next/navigation';
-import { i18n, Locale,languageDisplayNames } from '@/constants/i18n-config';
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { usePathname, useRouter } from "next/navigation";
+import { i18n, Locale, languageDisplayNames } from "@/constants/i18n-config";
 
 const LanguageSwitcher = () => {
   const pathname = usePathname();
   const router = useRouter();
 
   const switchLanguage = (locale: Locale) => {
-    const segments = pathname.split('/');
+    const segments = pathname.split("/");
     segments[1] = locale;
-    router.push(segments.join('/'));
+    router.push(segments.join("/"));
   };
 
   return (
@@ -30,13 +30,13 @@ const LanguageSwitcher = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {i18n.locales.map((locale) => (
-            <DropdownMenuItem
-              key={locale}
-              onClick={() => switchLanguage(locale)}
-              className="cursor-pointer"
-            >
+          <DropdownMenuItem
+            key={locale}
+            onClick={() => switchLanguage(locale)}
+            className="cursor-pointer"
+          >
             {languageDisplayNames[locale]}
-            </DropdownMenuItem>
+          </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>

@@ -1,14 +1,14 @@
 // The pop-up dialog will appear automatically when conditions are met, and ensures it only appears once.
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 
 interface AutoPopupDialogProps {
   // Unique identifier for localStorage
@@ -32,11 +32,11 @@ export function AutoPopupDialog({
   useEffect(() => {
     // Check if it has been shown before using localStorage
     const hasShown = localStorage.getItem(storageKey);
-    
+
     if (!hasShown && condition()) {
       setOpen(true);
       // Mark as shown
-      localStorage.setItem(storageKey, 'true');
+      localStorage.setItem(storageKey, "true");
     }
   }, [storageKey, condition]);
 

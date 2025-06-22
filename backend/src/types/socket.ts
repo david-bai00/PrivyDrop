@@ -16,7 +16,7 @@ declare global {
     usernameFragment?: string | null;
   }
 
-  type RTCSdpType = 'answer' | 'offer' | 'pranswer' | 'rollback';
+  type RTCSdpType = "answer" | "offer" | "pranswer" | "rollback";
 }
 
 export interface SignalingData {

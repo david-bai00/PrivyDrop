@@ -101,7 +101,7 @@ const setTrackHandler: RequestHandler<{}, any, ReferrerTrack> = async (
   }
 
   try {
-    const { ref, timestamp, path } = req.body;
+    const { ref, timestamp } = req.body;
     // Statistics by date
     const date = new Date(timestamp).toISOString().split("T")[0];
     const dailyKey = `referrers:daily:${date}`;

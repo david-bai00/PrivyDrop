@@ -1,39 +1,39 @@
 import type { Metadata } from "next";
-import { getDictionary } from '@/lib/dictionary';
-import PrivacyContent from './PrivacyContent';
-import { supportedLocales } from '@/constants/i18n-config';
+import { getDictionary } from "@/lib/dictionary";
+import PrivacyContent from "./PrivacyContent";
+import { supportedLocales } from "@/constants/i18n-config";
 
-export async function generateMetadata({ 
-  params 
-}: { 
-  params: { lang: string } 
+export async function generateMetadata({
+  params,
+}: {
+  params: { lang: string };
 }): Promise<Metadata> {
   const messages = await getDictionary(params.lang);
-  
+
   return {
     title: messages.meta.privacy.title,
     description: messages.meta.privacy.description,
-    metadataBase: new URL('https://www.securityshare.xyz'),
+    metadataBase: new URL("https://www.securityshare.xyz"),
     alternates: {
       canonical: `/${params.lang}/privacy`,
       languages: Object.fromEntries(
-        supportedLocales.map(lang => [lang, `/${lang}/privacy`])
+        supportedLocales.map((lang) => [lang, `/${lang}/privacy`])
       ),
     },
     openGraph: {
       title: messages.meta.privacy.title,
       description: messages.meta.privacy.description,
       url: `https://www.securityshare.xyz/${params.lang}/privacy`,
-      siteName: 'SecureShare',
+      siteName: "SecureShare",
       locale: params.lang,
-      type: 'website',
+      type: "website",
     },
   };
 }
 export default async function Privacy({
-  params: { lang }
+  params: { lang },
 }: {
-  params: { lang: string }
+  params: { lang: string };
 }) {
   const messages = await getDictionary(lang);
   return <PrivacyContent messages={messages} />;

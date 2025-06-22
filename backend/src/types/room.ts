@@ -1,14 +1,14 @@
 export interface RoomInfo {
-    created_at: number;
+  created_at: number;
 }
-  
+
 export interface ReferrerTrack {
-    ref: string;
-    timestamp: number;
-    path: string;
+  ref: string;
+  timestamp: number;
+  path: string;
 }
 
 export interface LogMessage {
-    message: string;
-    timestamp: number;
+  message: string;
+  timestamp: number;
 }

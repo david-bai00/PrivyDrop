@@ -23,13 +23,13 @@
 //   </Tooltip>
 // </TooltipProvider>
 
-import React from 'react';
+import React from "react";
 import {
   Tooltip as TooltipRoot,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from "@/components/ui/tooltip";
 
 type TooltipProps = {
   children: React.ReactNode;
@@ -37,17 +37,15 @@ type TooltipProps = {
   delayDuration?: number;
 };
 
-export const Tooltip: React.FC<TooltipProps> = ({ 
-  children, 
-  content, 
-  delayDuration = 200 
+export const Tooltip: React.FC<TooltipProps> = ({
+  children,
+  content,
+  delayDuration = 200,
 }) => {
   return (
     <TooltipProvider>
       <TooltipRoot delayDuration={delayDuration}>
-        <TooltipTrigger asChild>
-          {children}
-        </TooltipTrigger>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
         <TooltipContent className="whitespace-pre-line bg-primary text-primary-foreground text-xs">
           {content}
         </TooltipContent>

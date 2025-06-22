@@ -1,16 +1,16 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { EditorProps, CustomClipboardEvent, DOMNodeWithStyle } from './types';
-import { fontFamilies, fontSizes, colors } from './constants';
-import { useEditorCommands } from './hooks/useEditorCommands';
-import { useSelection } from './hooks/useSelection';
-import { useStyleManagement } from './hooks/useStyleManagement';
-import { BasicFormatTools } from './EditorToolbar/BasicFormatTools';
-import { FontTools } from './EditorToolbar/FontTools';
-import { AlignmentTools } from './EditorToolbar/AlignmentTools';
-import { InsertTools } from './EditorToolbar/InsertTools';
-import { Divider } from './Divider';
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { EditorProps, CustomClipboardEvent, DOMNodeWithStyle } from "./types";
+import { fontFamilies, fontSizes, colors } from "./constants";
+import { useEditorCommands } from "./hooks/useEditorCommands";
+import { useSelection } from "./hooks/useSelection";
+import { useStyleManagement } from "./hooks/useStyleManagement";
+import { BasicFormatTools } from "./EditorToolbar/BasicFormatTools";
+import { FontTools } from "./EditorToolbar/FontTools";
+import { AlignmentTools } from "./EditorToolbar/AlignmentTools";
+import { InsertTools } from "./EditorToolbar/InsertTools";
+import { Divider } from "./Divider";
 
-const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = '' }) => {
+const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = "" }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [html, setHtml] = useState(value);
   const [isMounted, setIsMounted] = useState(false);
@@ -35,7 +35,8 @@ const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = '' }) => {
   const handleChange = useCallback(() => {
     if (editorRef.current) {
       const content = (editorRef.current as HTMLDivElement).innerHTML;
-      if (content !== html) {// If the content has not changed, do not trigger an update
+      if (content !== html) {
+        // If the content has not changed, do not trigger an update
         isInternalChange.current = true;
         setHtml(content);
         onChange(content);
@@ -49,64 +50,76 @@ const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = '' }) => {
     setFontStyle,
     insertLink,
     insertImage,
-    insertCodeBlock
+    insertCodeBlock,
   } = useEditorCommands(editorRef, handleChange);
 
   const getSelection = useSelection();
   const { findStyleParent } = useStyleManagement(editorRef);
   // Check the style of the currently selected text
-  const isStyleActive = useCallback((style: string): boolean => {
-    if (typeof window === 'undefined') return false;
-    const selectionInfo = getSelection();
-    if (!selectionInfo || !selectionInfo.selection.toString()) return false;
+  const isStyleActive = useCallback(
+    (style: string): boolean => {
+      if (typeof window === "undefined") return false;
+      const selectionInfo = getSelection();
+      if (!selectionInfo || !selectionInfo.selection.toString()) return false;
 
-    const node = selectionInfo.selection.anchorNode;
-    if (!node) return false;
-    
-    const styleParent = findStyleParent(node as DOMNodeWithStyle, style);
-    return !!styleParent;
-  }, [findStyleParent, getSelection]);
+      const node = selectionInfo.selection.anchorNode;
+      if (!node) return false;
 
-  const handlePaste = useCallback((e: CustomClipboardEvent) => {
-    // Handle image pasting
-    if (Array.from(e.clipboardData.items).some(item => item.type.indexOf('image') !== -1)) {
-      const items = Array.from(e.clipboardData.items);
-      const imageItem = items.find(item => item.type.indexOf('image') !== -1);
-      
-      if (imageItem) {
-        e.preventDefault();
-        const blob = imageItem.getAsFile();
-        if (!blob) return;
-        
-        const reader = new FileReader();
-        reader.onload = (event: ProgressEvent<FileReader>) => {
-          if (!event.target || !event.target.result) return;
-          const img = document.createElement('img');
-          img.src = event.target.result as string;
-          img.style.maxWidth = '100%';
-          img.style.height = 'auto';
-          img.style.margin = '10px 0';
-          
-          const selectionInfo = getSelection();
-          if (!selectionInfo) return;
-          
-          const { range } = selectionInfo;
-          range.deleteContents();
-          range.insertNode(img);
-          handleChange();
-        };
-        reader.readAsDataURL(blob);
+      const styleParent = findStyleParent(node as DOMNodeWithStyle, style);
+      return !!styleParent;
+    },
+    [findStyleParent, getSelection]
+  );
+
+  const handlePaste = useCallback(
+    (e: CustomClipboardEvent) => {
+      // Handle image pasting
+      if (
+        Array.from(e.clipboardData.items).some(
+          (item) => item.type.indexOf("image") !== -1
+        )
+      ) {
+        const items = Array.from(e.clipboardData.items);
+        const imageItem = items.find(
+          (item) => item.type.indexOf("image") !== -1
+        );
+
+        if (imageItem) {
+          e.preventDefault();
+          const blob = imageItem.getAsFile();
+          if (!blob) return;
+
+          const reader = new FileReader();
+          reader.onload = (event: ProgressEvent<FileReader>) => {
+            if (!event.target || !event.target.result) return;
+            const img = document.createElement("img");
+            img.src = event.target.result as string;
+            img.style.maxWidth = "100%";
+            img.style.height = "auto";
+            img.style.margin = "10px 0";
+
+            const selectionInfo = getSelection();
+            if (!selectionInfo) return;
+
+            const { range } = selectionInfo;
+            range.deleteContents();
+            range.insertNode(img);
+            handleChange();
+          };
+          reader.readAsDataURL(blob);
+        }
+        return;
       }
-      return;
-    }
-    
-    // Handle plain text
-    e.preventDefault();
-    const text = e.clipboardData.getData('text/plain');
-    if (typeof document !== 'undefined') {
-      document.execCommand('insertText', false, text);
-    }
-  }, [getSelection, handleChange]);
+
+      // Handle plain text
+      e.preventDefault();
+      const text = e.clipboardData.getData("text/plain");
+      if (typeof document !== "undefined") {
+        document.execCommand("insertText", false, text);
+      }
+    },
+    [getSelection, handleChange]
+  );
 
   if (!isMounted) {
     return <div>Loading...</div>;
@@ -118,34 +131,34 @@ const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = '' }) => {
         {/* Toolbar - Add light gray background and bottom border */}
         <div className="flex flex-wrap gap-1 p-2 bg-gray-50 border-b">
           {/* Basic format tool group */}
-          <BasicFormatTools 
-            isStyleActive={isStyleActive} 
-            formatText={formatText} 
+          <BasicFormatTools
+            isStyleActive={isStyleActive}
+            formatText={formatText}
           />
           <Divider />
-          
+
           {/* Font-related selector group */}
-          <FontTools 
+          <FontTools
             fontFamilies={fontFamilies}
             fontSizes={fontSizes}
             colors={colors}
             setFontStyle={setFontStyle}
           />
           <Divider />
-          
+
           {/* Alignment tool group */}
           <AlignmentTools alignText={alignText} />
           <Divider />
-      
+
           {/* Insert tool group */}
-          <InsertTools 
+          <InsertTools
             insertLink={insertLink}
             insertImage={insertImage}
             insertCodeBlock={insertCodeBlock}
           />
         </div>
 
-      {/* Editor area - Add pure white background and inner shadow effect */}
+        {/* Editor area - Add pure white background and inner shadow effect */}
         <div
           ref={editorRef}
           className="p-4 min-h-[200px] md:min-h-[400px] focus:outline-none bg-white shadow-inner"

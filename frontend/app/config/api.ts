@@ -76,10 +76,10 @@ export const checkRoom = async (roomId: string): Promise<boolean> => {
 };
 
 // Set tracking information
-export const setTrack = async (ref: string, path: string) => {
+export const setTrack = async (ref: string) => {
   const options = getFetchOptions({
     method: "POST",
-    body: JSON.stringify({ ref, path, timestamp: new Date().toISOString() }),
+    body: JSON.stringify({ ref, timestamp: new Date().toISOString() }),
   });
   return apiCall<void>(API_ROUTES.set_track, options);
 };

@@ -1,8 +1,8 @@
-import { Redis } from 'ioredis';
-import { CONFIG } from '../config/env';
+import { Redis } from "ioredis";
+import { CONFIG } from "../config/env";
 // Room prefix and expiration time (seconds)
-export const ROOM_PREFIX = 'room:';
-export const SOCKET_PREFIX = 'socket:';
+export const ROOM_PREFIX = "room:";
+export const SOCKET_PREFIX = "socket:";
 export const ROOM_EXPIRY = 3600 * 24; // 24 hours
 // Redis configuration options
 const redisConfig = {
@@ -16,10 +16,10 @@ const redisConfig = {
 export const redis = new Redis(redisConfig);
 
 // Connection event listeners can be added here
-redis.on('connect', () => {
-  console.log('Redis connected successfully');
+redis.on("connect", () => {
+  console.log("Redis connected successfully");
 });
 
-redis.on('error', (err) => {
-  console.error('Redis connection error:', err);
+redis.on("error", (err) => {
+  console.error("Redis connection error:", err);
 });

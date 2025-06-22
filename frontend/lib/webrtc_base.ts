@@ -363,7 +363,8 @@ export default class BaseWebRTC {
       this.onDataReceived?.(event.data, peerId);
     };
 
-    dataChannel.onclose = () => this.log("log", `Data channel with ${peerId} closed.`);
+    dataChannel.onclose = () =>
+      this.log("log", `Data channel with ${peerId} closed.`);
   }
   // Join a room. sendInitiatorOnline indicates whether to send "initiator online" message after joining.
   public async joinRoom(

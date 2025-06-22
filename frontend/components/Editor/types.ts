@@ -20,16 +20,17 @@ export interface SelectionInfo {
 }
 
 // Style format type
-export type FormatType = 'bold' | 'italic' | 'underline';
+export type FormatType = "bold" | "italic" | "underline";
 
 // Alignment type
-export type AlignmentType = 'left' | 'center' | 'right';
+export type AlignmentType = "left" | "center" | "right";
 
 // Font style type
-export type FontStyleType = 'family' | 'size' | 'color';
+export type FontStyleType = "family" | "size" | "color";
 
 // Paste event handler function type
-export interface CustomClipboardEvent extends React.ClipboardEvent<HTMLDivElement> {
+export interface CustomClipboardEvent
+  extends React.ClipboardEvent<HTMLDivElement> {
   clipboardData: DataTransfer;
 }
 
