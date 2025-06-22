@@ -19,15 +19,15 @@ const generateFAQs = (messages: { text: { faqs: FAQMessage } }): FAQ[] => {
   const faqs: FAQ[] = [];
   const faqsData = messages.text.faqs;
   
-  // 获取所有问题的数量(通过查找 question_ 开头的键)
+  // Get the total number of questions (by finding keys starting with question_)
   const questionKeys = Object.keys(faqsData).filter(key => key.startsWith('question_'));
   
-  // 根据问题数量自动生成FAQ数组
+  // Automatically generate FAQ array based on the number of questions
   questionKeys.forEach(qKey => {
-    const index = qKey.split('_')[1]; // 获取数字索引
+    const index = qKey.split('_')[1]; // Get the numeric index
     const aKey = `answer_${index}`;
     
-    if (faqsData[aKey]) { // 确保对应的答案存在
+    if (faqsData[aKey]) { // Ensure the corresponding answer exists
       faqs.push({
         question: faqsData[qKey],
         answer: faqsData[aKey]
@@ -39,14 +39,14 @@ const generateFAQs = (messages: { text: { faqs: FAQMessage } }): FAQ[] => {
 };
 
 interface FAQSectionProps {
-  isMainPage?: boolean;  // 是否为主页面的FAQ部分
-  className?: string;    // 允许传入自定义className
-  showTitle?: boolean;   // 是否显示标题
-  titleClassName?: string; // 标题样式类
+  isMainPage?: boolean;  // Whether it is the FAQ section of the main page
+  className?: string;    // Allow passing custom className
+  showTitle?: boolean;   // Whether to display the title
+  titleClassName?: string; // Title style class
   lang?: string;
   messages: Messages;
 }
-//通过 props 来控制标题的级别和样式,这样可以用在其他页面也可以用在独立页面
+// Control the level and style of the title through props, so it can be used on other pages as well as on a standalone page
 export default function FAQSection({
   isMainPage = false,
   className = "",
@@ -57,7 +57,7 @@ export default function FAQSection({
   
   const faqs = generateFAQs(messages);
   
-  // 为不同场景设置默认样式
+  // Set default styles for different scenarios
   const containerClasses = `container mx-auto px-4 py-8 ${className}`;
   const defaultTitleClasses = "font-bold mb-8";
   const titleClasses = `${defaultTitleClasses} ${titleClassName}`.trim();
@@ -82,14 +82,14 @@ export default function FAQSection({
     </div>
   )
 }
-// // 在独立的FAQ页面
-// <FAQSection />  // 使用 h1 标签
+// // On the standalone FAQ page
+// <FAQSection />  // Use h1 tag
 
-// // 在首页
+// // On the home page
 // <FAQSection 
 //   isMainPage 
-//   titleClassName="text-2xl md:text-3xl" // 可选：在首页使用稍小的字号
-// />  // 使用 h2 标签
+//   titleClassName="text-2xl md:text-3xl" // Optional: use a slightly smaller font size on the home page
+// />  // Use h2 tag
 
-// // 如果不需要显示标题
+// // If you don't need to display the title
 // <FAQSection showTitle={false} />

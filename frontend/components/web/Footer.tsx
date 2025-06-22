@@ -13,7 +13,7 @@ export function Footer({ messages, lang }: FooterProps) {
     <footer className="bg-background border-t mt-auto">
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-          {/* 左侧Logo和版权信息 */}
+          {/* Left: Logo and copyright information */}
           <div className="flex items-center">
             <Image 
               src="/logo.png" 
@@ -28,10 +28,10 @@ export function Footer({ messages, lang }: FooterProps) {
             </p>
           </div>
 
-          {/* 右侧导航 */}
+          {/* Right: Navigation */}
           <nav>
             <ul className="flex flex-wrap justify-center gap-4">
-              {/* 条款和隐私政策 */}
+              {/* Terms and Privacy Policy */}
               <li>
                 <Link 
                   href={`/${lang}/terms`} 
@@ -49,7 +49,7 @@ export function Footer({ messages, lang }: FooterProps) {
                 </Link>
               </li>
 
-              {/* 支持的语言入口 */}
+              {/* Entry for supported languages */}
               <li>
                 <span className="text-sm text-muted-foreground font-bold">
                   {messages.text.Footer.SupportedLanguages}:

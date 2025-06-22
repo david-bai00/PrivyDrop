@@ -45,7 +45,7 @@ const Header = ({ messages, lang }: HeaderProps) => {
             </span>
           </Link>
 
-          {/* 桌面端导航和语言切换 */}
+          {/* Desktop navigation and language switcher */}
           <div className="hidden md:flex items-center space-x-4">
             <nav>
               <ul className="flex space-x-2">
@@ -69,7 +69,7 @@ const Header = ({ messages, lang }: HeaderProps) => {
             <LanguageSwitcher />
           </div>
 
-          {/* 移动端菜单按钮 */}
+          {/* Mobile menu button */}
           <div className="md:hidden flex items-center space-x-2">
             <LanguageSwitcher />
             <Button asChild variant="ghost" size="icon">
@@ -91,7 +91,7 @@ const Header = ({ messages, lang }: HeaderProps) => {
           </div>
         </div>
 
-        {/* 移动端导航菜单 */}
+        {/* Mobile navigation menu */}
         {isOpen && (
           <nav className="md:hidden mt-4">
             <ul className="flex flex-col space-y-2">

@@ -69,7 +69,7 @@ export default function HowItWorks({ messages }: PageContentProps){
         {/* Right Side - Demo Animation */}
         <div className="w-full md:w-1/2">
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            {/* Next.js 默认的图片优化器不支持 GIF 动画的处理 */}
+            {/* The default Next.js image optimizer does not support handling of GIF animations */}
             <Image src="/HowItWorks.gif" alt="How SecureShare Works" unoptimized width={700} height={921} className="mx-auto mb-6" />
           </div>
         </div>

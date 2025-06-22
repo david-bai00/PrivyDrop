@@ -2,11 +2,11 @@ import { Github } from "lucide-react";
 import Link from "next/link";
 
 const GitHubRibbon = () => {
-  // 定义基础尺寸，便于统一调整
-  const squareSize = "170px"; // 正方形大小
-  const triangleSize = "150px"; // 三角形大小
-  const ribbonWidth = "280px"; // 彩带宽度
-  const ribbonHeight = "34px"; // 彩带高度
+  // Define base dimensions for easy adjustment
+  const squareSize = "170px"; // Square size
+  const triangleSize = "150px"; // Triangle size
+  const ribbonWidth = "280px"; // Ribbon width
+  const ribbonHeight = "34px"; // Ribbon height
 
   return (
     <div
@@ -22,7 +22,7 @@ const GitHubRibbon = () => {
         pointerEvents: "none",
       }}
     >
-      {/* 三角形背景 */}
+      {/* Triangle background */}
       <div
         className="absolute top-0 right-0 bg-black dark:bg-gray-800"
         style={{
@@ -32,7 +32,7 @@ const GitHubRibbon = () => {
         }}
       />
 
-      {/* GitHub 图标 */}
+      {/* GitHub Icon */}
       <Github
         className="absolute text-primary-foreground rotate-45"
         style={{
@@ -42,7 +42,7 @@ const GitHubRibbon = () => {
         size={38}
       />
 
-      {/* Fork me 彩带 */}
+      {/* Fork me Ribbon */}
       <Link
         href="https://github.com/david-bai00/PrivyDrop"
         target="_blank"

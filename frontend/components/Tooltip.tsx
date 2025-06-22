@@ -1,12 +1,12 @@
-//一个自定义封装,便于简单使用
-//简单用法，使用便捷组件 
+// A custom wrapper for simple use
+// Simple usage, use the convenience component
 // import { Tooltip } from '@/components/Tooltip';
 
-// <Tooltip content="这是提示内容">
-//   <button>悬停查看</button>
+// <Tooltip content="This is the tooltip content">
+//   <button>Hover to see</button>
 // </Tooltip>
 
-// // 需要更多自定义时，使用基础组件
+// When more customization is needed, use the base components
 // import {
 //   Tooltip,
 //   TooltipContent,
@@ -16,9 +16,9 @@
 
 // <TooltipProvider>
 //   <Tooltip>
-//     <TooltipTrigger>悬停查看</TooltipTrigger>
+//     <TooltipTrigger>Hover to see</TooltipTrigger>
 //     <TooltipContent>
-//       这是提示内容
+//       This is the tooltip content
 //     </TooltipContent>
 //   </Tooltip>
 // </TooltipProvider>
