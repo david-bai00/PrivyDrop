@@ -1,4 +1,4 @@
-//博客工具函数
+// Blog utility functions
 import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
@@ -13,7 +13,7 @@ export interface BlogPost {
     date: string
     author: string
     cover: string
-    tags: string[] // 直接使用 tags 数组
+    tags: string[] // Use the tags array directly
     status: string
   }
   content: string
@@ -30,14 +30,14 @@ export async function getAllPosts(lang: string): Promise<BlogPost[]> {
         const source = fs.readFileSync(filePath, 'utf8')
         const { data, content } = matter(source)
         
-        // 验证和转换 frontmatter 数据
+        // Validate and transform frontmatter data
         const frontmatter = {
           title: data.title ?? '',
           description: data.description ?? '',
           date: data.date ?? new Date().toISOString(),
           author: data.author ?? '',
           cover: data.cover ?? '',
-          tags: Array.isArray(data.tags) ? data.tags : [], // 直接使用 tags 数组
+          tags: Array.isArray(data.tags) ? data.tags : [], // Use the tags array directly
           status: data.status ?? 'draft'
         }
         
@@ -49,15 +49,15 @@ export async function getAllPosts(lang: string): Promise<BlogPost[]> {
       })
   )
   
-    // 过滤掉 draft 状态的博客
+    // Filter out draft status blogs
     return posts
-      .filter(post => post.frontmatter.status === 'published') // 仅保留 published 状态
+      .filter(post => post.frontmatter.status === 'published') // Only keep published status
       .filter(post => {
-        // 将 slug 按 '-' 分割成数组
+        // Split slug into an array by '-'
         const parts = post.slug.split('-');
-        // 获取最后一部分
+        // Get the last part
         const lastPart = parts[parts.length - 1];
-        // 判断最后一部分是否等于目标语言 && 目标语言如果是中文则返回中文博客否则返回英文
+        // Check if the last part equals the target language && if the target language is Chinese, return Chinese blogs, otherwise return English blogs
         const lang_dst = lang === 'zh' ? 'zh':'en';
         return lastPart === lang_dst;
       })
@@ -72,7 +72,7 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
     const source = fs.readFileSync(filePath, 'utf8')
     const { data, content } = matter(source)
     
-    // 验证和转换 frontmatter 数据
+    // Validate and transform frontmatter data
     const frontmatter = {
       title: data.title ?? '',
       description: data.description ?? '',
@@ -92,7 +92,7 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
     return null
   }
 }
-// 根据标签获取博客文章
+// Get blog posts by tag
 export async function getPostsByTag(tag: string,lang: string): Promise<BlogPost[]> {
   const allPosts = await getAllPosts(lang)
   return allPosts.filter(post => post.frontmatter.tags.includes(tag))

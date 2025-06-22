@@ -1,7 +1,7 @@
-// 发起方 流程: 加入房间; 收到 'ready' 事件（新的接收方进入后socker server就会触发这个事件） -> createPeerConnection + createDataChannel -> createAndSendOffer
+// Initiator flow: Join room; receive 'ready' event (this event is triggered by the socket server after a new recipient enters) -> createPeerConnection + createDataChannel -> createAndSendOffer
 import BaseWebRTC, { WebRTCConfig } from "./webrtc_base";
 import { postLogInDebug } from "@/app/config/api";
-const developmentEnv = process.env.NEXT_PUBLIC_development!; //开发环境
+const developmentEnv = process.env.NEXT_PUBLIC_development!; // Development environment
 
 export default class WebRTC_Initiator extends BaseWebRTC {
   constructor(config: WebRTCConfig) {
@@ -11,24 +11,24 @@ export default class WebRTC_Initiator extends BaseWebRTC {
 
   private setupInitiatorSocketListeners() {
     this.socket.on("ready", ({ peerId }) => {
-      //新进入房间的 接收方 peerId
+      // The peerId of the new recipient who entered the room
       this.handleReady({ peerId });
     });
-    // 添加接收方响应的监听
+    // Add listener for recipient's response
     this.socket.on("recipient-ready", ({ peerId }) => {
       if (developmentEnv === "true")
         postLogInDebug(`[Initiator] Received recipient-ready from: ${peerId}`);
       this.handleReady({ peerId });
     });
-    // 添加answer处理监听器
+    // Add answer handler listener
     this.socket.on("answer", ({ answer, peerId, from }) => {
       this.handleAnswer({ answer, peerId, from });
     });
   }
 
-  //发送方收到接收方加入时创建连接
+  // The sender creates a connection upon receiving the recipient's join
   private async handleReady({ peerId }: { peerId: string }): Promise<void> {
-    //接收方 peerId
+    // Recipient peerId
     // this.log('log',`Received ready signal from peer ${peerId}`);
     if (developmentEnv === "true")
       postLogInDebug(`Received ready signal from peer ${peerId}`);
@@ -60,7 +60,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
       );
       // this.log('log', `Remote description set for peer ${from}`);
 
-      // 在设置远程描述后处理队列中的ICE候选
+      // Process queued ICE candidates after setting the remote description
       await this.addQueuedIceCandidates(from);
     } catch (error) {
       this.fireError("Error handling answer", { error, from });
@@ -89,7 +89,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
       });
     }
   }
-  // 如果是发起方，创建并发送offer给信令服务器，以便与接收方协商建立连接。
+  // If it is the initiator, create and send an offer to the signaling server to negotiate a connection with the recipient.
   private async createAndSendOffer(peerId: string): Promise<void> {
     // this.log('log', `Creating and sending offer to ${peerId}`);
     if (developmentEnv === "true")

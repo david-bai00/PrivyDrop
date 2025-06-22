@@ -1,9 +1,8 @@
 // BaseWebRTC.js
 import io, { Socket, ManagerOptions, SocketOptions } from "socket.io-client";
-import { getIceServers, getSocketOptions } from "@/app/config/environment";
 import { WakeLockManager } from "./wakeLockManager";
 import { postLogInDebug } from "@/app/config/api";
-const developmentEnv = process.env.NEXT_PUBLIC_development!; //开发环境
+const developmentEnv = process.env.NEXT_PUBLIC_development!; // Development environment
 
 export class WebRTCError extends Error {
   constructor(message: string, public context?: Record<string, any>) {
@@ -33,11 +32,11 @@ interface CallbackTypes {
 export interface WebRTCConfig {
   iceServers: RTCIceServer[];
   socketOptions: Partial<ManagerOptions & SocketOptions>;
-  signalingServer: string; // signalingServer: 信令服务器的URL，用于初始化Socket.IO连接。
+  signalingServer: string; // The URL of the signaling server for initializing the Socket.IO connection.
 }
 
 export default class BaseWebRTC {
-  //类型申明
+  // Type declarations
   protected iceServers: RTCIceServer[];
   protected socket: Socket;
   public peerConnections: Map<string, RTCPeerConnection>;
@@ -57,11 +56,11 @@ export default class BaseWebRTC {
   protected roomId: string | null;
   protected peerId: string | undefined | null;
   public isInRoom: boolean;
-  protected isInitiator: boolean; //标记发起方
-  //重连相关
-  protected isSocketDisconnected: boolean; //跟踪 socket 连接状态
-  protected isPeerDisconnected: boolean; //跟踪 P2P 连接状态
-  protected reconnectionInProgress: boolean; //防止重复重连
+  protected isInitiator: boolean; // Flag for the initiator
+  // Reconnection related
+  protected isSocketDisconnected: boolean; // Tracks socket connection status
+  protected isPeerDisconnected: boolean; // Tracks P2P connection status
+  protected reconnectionInProgress: boolean; // Prevents duplicate reconnections
   protected wakeLockManager: WakeLockManager;
 
   constructor(config: WebRTCConfig) {
@@ -71,16 +70,16 @@ export default class BaseWebRTC {
     this.dataChannels = new Map(); // Map<targetPeerId, RTCDataChannel>
 
     // Callbacks
-    this.onDataChannelOpen = null; //当数据通道建立时的回调
-    this.onDataReceived = null; //接收数据--响应
-    this.onConnectionEstablished = null; //当WebRTC连接建立时触发。
-    this.onConnectionStateChange = null; //监控和响应连接状态的变化
+    this.onDataChannelOpen = null; // Callback for when the data channel is established
+    this.onDataReceived = null; // Callback for receiving data
+    this.onConnectionEstablished = null; // Triggered when the WebRTC connection is established
+    this.onConnectionStateChange = null; // Monitors and responds to connection state changes
     this.onError = null;
 
-    this.iceCandidatesQueue = new Map(); // 为每个peer存储ice候选项
+    this.iceCandidatesQueue = new Map(); // Stores ICE candidates for each peer
     this.roomId = null;
-    this.peerId = null; //自己的 ID
-    this.isInRoom = false; //是否已经加入过房间
+    this.peerId = null; // Own ID
+    this.isInRoom = false; // Whether the user has already joined a room
     this.setupCommonSocketListeners();
 
     this.isInitiator = false;
@@ -106,10 +105,10 @@ export default class BaseWebRTC {
     this.onError?.(error);
   }
   // endregion
-  // 设置信令服务器的事件监听器，用于处理各种信令消息（连接、ICE候选者、offer、answer等）。
+  // Sets up event listeners for the signaling server to handle various signaling messages (connection, ICE candidates, offer, answer, etc.).
   setupCommonSocketListeners() {
     this.socket.on("connect", () => {
-      this.peerId = this.socket.id; //保存自己的 ID
+      this.peerId = this.socket.id; // Save own ID
       this.log("log", `Connected to signaling server, peerId: ${this.peerId}`);
     });
 
@@ -118,11 +117,11 @@ export default class BaseWebRTC {
     });
 
     this.socket.on("ice-candidate", ({ candidate, peerId, from }) => {
-      //接受方 peerId
+      // Recipient's peerId
       // console.log(`Received ICE candidate from ${from} for ${peerId}`);
       this.handleIceCandidate({ candidate, peerId, from });
     });
-    // 添加 socket 断开连接的监听
+    // Add listener for socket disconnection
     this.socket.on("disconnect", () => {
       this.isInRoom = false;
       this.isSocketDisconnected = true;
@@ -130,7 +129,8 @@ export default class BaseWebRTC {
         postLogInDebug(
           `${this.peerId} disconnect on socket,isInitiator:${this.isInitiator},isInRoom:${this.isInRoom}`
         );
-      // 尝试重连.//移动端切换到后台之后，P2P连接和socket连接都会断开.在切回来时，才会执行断开的代码，直接在这里重连;发送重连开始新号
+      // Attempt to reconnect. On mobile, switching to the background disconnects both P2P and socket connections.
+      // The disconnect code executes upon returning, so reconnect directly here; send a new signal to start reconnection.
       this.attemptReconnection();
     });
   }
@@ -138,7 +138,7 @@ export default class BaseWebRTC {
     if (this.reconnectionInProgress) return;
 
     if (this.isSocketDisconnected && this.isPeerDisconnected && this.roomId) {
-      //等socket和P2P连接都断开之后再开始重连
+      // Start reconnection only after both socket and P2P connections are disconnected
       this.reconnectionInProgress = true;
       if (developmentEnv === "true") {
         postLogInDebug(
@@ -150,7 +150,7 @@ export default class BaseWebRTC {
         const sendInitiatorOnline = this.isInitiator;
         await this.joinRoom(this.roomId, this.isInitiator, sendInitiatorOnline);
 
-        // 重置状态
+        // Reset states
         this.isSocketDisconnected = false;
         this.isPeerDisconnected = false;
       } catch (error) {
@@ -181,7 +181,7 @@ export default class BaseWebRTC {
       return;
     }
     try {
-      // 只有在远程描述设置完成且连接未关闭的情况下才添加ICE候选项
+      // Only add ICE candidates if the remote description is set and the connection is not closed
       if (
         peerConnection.remoteDescription &&
         peerConnection.signalingState !== "closed" &&
@@ -199,7 +199,7 @@ export default class BaseWebRTC {
       }
     } catch (e) {
       this.fireError(`Error adding ICE candidate for ${from}`, { error: e });
-      // 如果添加失败，也将其加入队列
+      // If adding fails, also add it to the queue
       if (!this.iceCandidatesQueue.has(from)) {
         this.iceCandidatesQueue.set(from, []);
       }
@@ -237,7 +237,7 @@ export default class BaseWebRTC {
           });
         }
       }
-      // 只有在成功添加所有候选项后才清空队列
+      // Only clear the queue after successfully adding all candidates
       this.iceCandidatesQueue.delete(peerId);
     } else {
       this.log(
@@ -257,12 +257,12 @@ export default class BaseWebRTC {
       // this.log('log','Reusing existing peer connection for:', peerId);
       return Promise.resolve(peerConnection);
     }
-    // WebRTC默认提供了强大的加密功能，上线后要改为https协议
+    // WebRTC provides strong encryption by default. It's necessary to switch to the HTTPS protocol upon deployment.
     const newPeerConnection = new RTCPeerConnection({
       iceServers: this.iceServers,
     });
 
-    // // 增加更详细的连接状态监控
+    // // Add more detailed connection state monitoring
     // newPeerConnection.oniceconnectionstatechange = () => {
     //   this.log('log',`ICE Connection State (${peerId}):`, newPeerConnection.iceConnectionState);
     // };
@@ -276,19 +276,19 @@ export default class BaseWebRTC {
       // this.log('log',`Connection State (${peerId}):`, state);
       this.handleConnectionStateChange(peerId, newPeerConnection);
     };
-    // 改进ICE候选项处理
+    // Improve ICE candidate handling
     newPeerConnection.onicecandidate = (event) => {
       if (event.candidate) {
         // this.log('log',`Sending ICE candidate to ${peerId}:`, event.candidate);
         this.socket.emit("ice-candidate", {
           candidate: event.candidate,
           peerId: peerId,
-          from: this.socket.id, // 添加发送方ID
+          from: this.socket.id, // Add sender ID
         });
       }
     };
 
-    // // 添加ICE收集状态监控
+    // // Add ICE gathering state monitoring
     // newPeerConnection.onicegatheringstatechange = () => {
     //   this.log('log',`ICE Gathering State (${peerId}):`, newPeerConnection.iceGatheringState);
     // };
@@ -313,7 +313,7 @@ export default class BaseWebRTC {
           this.createDataChannel(peerId);
         }
         this.onConnectionEstablished?.(peerId);
-        // 在连接建立时请求 wake lock
+        // Request wake lock when connection is established
         await this.wakeLockManager.requestWakeLock();
       },
       disconnected: async () => {
@@ -321,7 +321,7 @@ export default class BaseWebRTC {
         this.isPeerDisconnected = true;
         if (developmentEnv === "true")
           postLogInDebug(`p2p disconnected, isInitiator:${this.isInitiator}`);
-        // 尝试重连
+        // Attempt to reconnect
         this.attemptReconnection();
         await this.wakeLockManager.releaseWakeLock();
       },
@@ -335,7 +335,7 @@ export default class BaseWebRTC {
         this.isPeerDisconnected = true;
         await this.wakeLockManager.releaseWakeLock();
       },
-      // 以下必须添加，防止报错
+      // The following must be added to prevent errors
       connecting: () => {
         this.log("log", "Peer is connecting");
       },
@@ -362,20 +362,22 @@ export default class BaseWebRTC {
     dataChannel.onmessage = (event) => {
       this.onDataReceived?.(event.data, peerId);
     };
+
+    dataChannel.onclose = () => this.log("log", `Data channel with ${peerId} closed.`);
   }
-  // 加入房间,sendInitiatorOnline表示加入房间之后，是否要发送“发起方重新在线”消息
+  // Join a room. sendInitiatorOnline indicates whether to send "initiator online" message after joining.
   public async joinRoom(
     roomId: string,
     isInitiator: boolean,
     sendInitiatorOnline: boolean = false
   ): Promise<void> {
-    // 如果已经在房间里，直接返回
+    // If already in the room, return directly
     if (this.isInRoom) {
       return;
     }
     this.isInitiator = isInitiator;
     return new Promise<void>((resolve, reject) => {
-      // 设置超时时间（5秒）
+      // Set timeout (5 seconds)
       const timeout = setTimeout(() => {
         this.socket.off("joinResponse");
         reject(new Error("Join room timeout"));
@@ -383,9 +385,9 @@ export default class BaseWebRTC {
         this.roomId = null;
       }, 5000);
 
-      // 监听加入房间响应--一次
+      // Listen for join room response -- once
       this.socket.once("joinResponse", (response: JoinRoomResponse) => {
-        clearTimeout(timeout); // 清除超时定时器
+        clearTimeout(timeout); // Clear timeout timer
 
         if (response.success) {
           this.roomId = roomId;
@@ -410,7 +412,7 @@ export default class BaseWebRTC {
         }
       });
 
-      // 发送加入房间请求
+      // Send join room request
       try {
         this.socket.emit("join", { roomId });
       } catch (error) {
@@ -421,7 +423,7 @@ export default class BaseWebRTC {
       }
     });
   }
-  //如果指定peerId，则发送给特定接收方，否则广播
+  // If peerId is specified, send to a specific recipient, otherwise broadcast
   public sendData(data: any, peerId?: string | null): boolean {
     if (peerId) {
       return this.sendToPeer(data, peerId);
@@ -435,7 +437,7 @@ export default class BaseWebRTC {
       return success;
     }
   }
-  //发送给特定对象
+  // Send to a specific peer
   protected sendToPeer(data: any, peerId: string): boolean {
     const dataChannel = this.dataChannels.get(peerId);
     if (dataChannel?.readyState === "open") {
@@ -502,7 +504,7 @@ export default class BaseWebRTC {
     }
     this.isInRoom = false;
   }
-  // 抽象方法声明
+  // Abstract method declaration
   protected createDataChannel(peerId: string) {
     throw new Error("createDataChannel must be implemented by subclass");
   }

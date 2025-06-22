@@ -1,6 +1,6 @@
 import { CustomFile } from '@/types/webrtc';
 
-//对文件大小自适应单位并格式化输出
+// Adaptively format the file size with units
 export const formatFileSize = (sizeInBytes: number): string => {
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   let size = sizeInBytes;

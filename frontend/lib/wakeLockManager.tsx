@@ -1,10 +1,11 @@
-//当 Android 设备切换到其他应用时，屏幕会保持唤醒状态，WebRTC 连接也就不会断开了。需要注意的是，这会增加设备的电量消耗，所以在连接断开时及时释放 wake lock 很重要。
+// When an Android device switches to another app, the screen remains awake, and the WebRTC connection will not be disconnected. 
+// Note that this will increase the device's power consumption, so it is important to release the wake lock in time when the connection is disconnected.
 export class WakeLockManager {
     private wakeLock: WakeLockSentinel | null = null;
     private isSupported: boolean = false;
 
     constructor() {
-      // 检查浏览器是否支持 Wake Lock API
+      // Check if the browser supports the Wake Lock API
       this.isSupported = 'wakeLock' in navigator;
     }
   
@@ -13,15 +14,15 @@ export class WakeLockManager {
         console.warn('Wake Lock API is not supported in this browser');
         return;
       }
-      if (document.visibilityState !== 'visible') {//只在页面可见时请求
+      if (document.visibilityState !== 'visible') {// Only request when the page is visible
         console.warn('Wake Lock API should request in visible state');
         return;
       }
       try {
-        // 请求screen wake lock
+        // Request screen wake lock
         this.wakeLock = await navigator.wakeLock.request('screen');
         
-        // 监听visibility change事件，在页面重新可见时重新请求wake lock
+        // Listen for the visibilitychange event and re-request the wake lock when the page becomes visible again
         document.addEventListener('visibilitychange', this.handleVisibilityChange);
 
         console.log('Wake Lock is active');
@@ -32,7 +33,7 @@ export class WakeLockManager {
   
     private handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible' && this.wakeLock === null) {
-        // 页面重新可见时，重新请求wake lock
+        // When the page becomes visible again, re-request the wake lock
         await this.requestWakeLock();
       }
     };

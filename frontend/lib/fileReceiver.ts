@@ -1,5 +1,6 @@
-//接收文件(夹)的流程：先批量接收文件 meta 信息，【判断是否需要让用户选择保存目录】，然后点击请求，再接收文件内容，接收到endMeta之后，发送ack，结束
-//发送文件夹的流程（同上）：接收批量文件请求
+// Flow for receiving file(s)/folder(s): First, receive file metadata in batch, [decide if the user needs to select a save directory],
+// then click to request, receive the file content, and after receiving endMeta, send an ack to finish.
+// Flow for receiving a folder (same as above): Receive a batch file request.
 import { SpeedCalculator } from "@/lib/speedCalculator";
 import WebRTC_Recipient from "./webrtc_Recipient";
 import {
@@ -19,11 +20,11 @@ import {
  * Manages the state of an active file reception.
  */
 interface ActiveFileReception {
-  meta: fileMetadata; //有meta信息--表示当前正在接收该文件，为null--当前没有接收文件
-  chunks: (ArrayBuffer | null)[]; //接收的（存放内存的）文件块
+  meta: fileMetadata; // If meta is present, it means this file is currently being received; null means no file is being received.
+  chunks: (ArrayBuffer | null)[]; // Received file chunks (stored in memory).
   receivedSize: number;
-  fileHandle: FileSystemFileHandle | null; //写入磁盘相关对象--当前文件
-  writeStream: FileSystemWritableFileStream | null; //写入磁盘相关对象
+  fileHandle: FileSystemFileHandle | null; // Object related to writing to disk -- current file.
+  writeStream: FileSystemWritableFileStream | null; // Object related to writing to disk.
   completionNotifier: {
     resolve: () => void;
     reject: (reason?: any) => void;
@@ -33,7 +34,7 @@ interface ActiveFileReception {
 class FileReceiver {
   // region Private Properties
   private readonly webrtcConnection: WebRTC_Recipient;
-  private readonly largeFileThreshold: number = 1 * 1024 * 1024 * 1024; // 1 GB,如果大于这个阈值，则需要用户选择保存目录直接储存在磁盘
+  private readonly largeFileThreshold: number = 1 * 1024 * 1024 * 1024; // 1 GB, larger files will prompt the user to select a directory for direct disk saving.
   private readonly speedCalculator: SpeedCalculator;
   private fileHandlers: FileHandlers;
 
@@ -41,14 +42,14 @@ class FileReceiver {
   private saveDirectory: FileSystemDirectoryHandle | null = null;
 
   // State Management
-  private pendingFilesMeta = new Map<string, fileMetadata>(); // 存储文件元信息,fileId:meta
-  private folderProgresses: Record<string, FolderProgress> = {}; // 文件夹 进度信息, fileId:{totalSize:0,receivedSize:0,fileIds:[]};
+  private pendingFilesMeta = new Map<string, fileMetadata>(); // Stores file metadata, fileId: meta
+  private folderProgresses: Record<string, FolderProgress> = {}; // Folder progress information, fileId: {totalSize: 0, receivedSize: 0, fileIds: []};
   public saveType: Record<string, boolean> = {}; // fileId or folderName -> isSavedToDisk
 
   // Active transfer state
   private activeFileReception: ActiveFileReception | null = null;
   private activeStringReception: CurrentString | null = null;
-  private currentFolderName: string | null = null; //有name--表示当前正在接收文件夹，为null--当前没有接收文件夹
+  private currentFolderName: string | null = null; // The name of the folder currently being received, or null if not receiving a folder.
 
   // Callbacks
   public onFileMetaReceived: ((meta: fileMetadata) => void) | null = null;
@@ -236,12 +237,12 @@ class FileReceiver {
   }
 
   private handleFileMetadata(metadata: fileMetadata): void {
-    if (this.pendingFilesMeta.has(metadata.fileId)) return; //如果已经接收过，则忽略
+    if (this.pendingFilesMeta.has(metadata.fileId)) return; // Ignore if already received.
 
     this.log("log", "Received file metadata", { metadata });
     this.pendingFilesMeta.set(metadata.fileId, metadata);
     this.onFileMetaReceived?.(metadata);
-    //把属于folder的部分关于文件大小的记录下来，用于计算进度
+    // Record the file size for folder progress calculation.
     if (metadata.folderName) {
       const folderId = metadata.folderName;
       if (!(folderId in this.folderProgresses)) {
@@ -253,7 +254,7 @@ class FileReceiver {
       }
       const folderProgress = this.folderProgresses[folderId];
       if (!folderProgress.fileIds.includes(metadata.fileId)) {
-        //防止重复计算
+        // Prevent duplicate calculation
         folderProgress.totalSize += metadata.size;
         folderProgress.fileIds.push(metadata.fileId);
       }

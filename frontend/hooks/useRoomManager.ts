@@ -5,11 +5,8 @@ import type { Messages } from "@/types/messages";
 import type WebRTC_Initiator from "@/lib/webrtc_Initiator";
 import type WebRTC_Recipient from "@/lib/webrtc_Recipient";
 
-function format_peopleMsg(
-  template: string, 
-  peerCount: number
-) {
-  return template.replace('{peerCount}', peerCount.toString());
+function format_peopleMsg(template: string, peerCount: number) {
+  return template.replace("{peerCount}", peerCount.toString());
 }
 
 interface UseRoomManagerProps {
@@ -37,8 +34,8 @@ export function useRoomManager({
   retrievePeerCount,
   broadcastDataToPeers,
 }: UseRoomManagerProps) {
-  const [shareRoomId, setShareRoomId] = useState(""); // 代表已验证或初始获取的房间ID
-  const [initShareRoomId, setInitShareRoomId] = useState(""); // 存储初始获取的房间ID，用于比较
+  const [shareRoomId, setShareRoomId] = useState(""); // Represents the validated or initially fetched room ID
+  const [initShareRoomId, setInitShareRoomId] = useState(""); // Stores the initially fetched room ID for comparison
   const [shareLink, setShareLink] = useState("");
   const [shareRoomStatusText, setShareRoomStatusText] = useState("");
   const [retrieveRoomStatusText, setRetrieveRoomStatusText] = useState("");
@@ -51,12 +48,12 @@ export function useRoomManager({
       !initShareRoomId &&
       activeTab === "send"
     ) {
-      // 确保只在发送端初次加载时获取
+      // Ensure this only runs on the sender's side on initial load
       const initNewRoom = async () => {
         try {
           const newRoomId = await fetchRoom();
-          setShareRoomId(newRoomId);
-          setInitShareRoomId(newRoomId);
+          setShareRoomId(newRoomId || "");
+          setInitShareRoomId(newRoomId || "");
         } catch (err) {
           console.error("Error fetching initial room:", err);
           const errorMsg =
@@ -69,16 +66,16 @@ export function useRoomManager({
     }
   }, [messages, initShareRoomId]);
 
-  // 防抖函数，用于实际检查房间ID并更新状态
+  // Debounced function to actually check the room ID and update the state
   const performDebouncedRoomCheck = useMemo(
     () =>
       debounce(async (roomIdToCheck: string) => {
         if (!messages || !putMessageInMs) return;
 
         if (!roomIdToCheck.trim()) {
-          // 如果清空了输入，不进行检查，但可以清除提示或做其他处理
+          // If the input is cleared, don't perform a check, but you can clear the message or handle it otherwise
           // putMessageInMs(messages.text.ClipboardApp.roomCheck.empty_msg, true);
-          // 考虑是否要重置 shareRoomId 为 initShareRoomId，如果希望清空输入时恢复默认
+          // Consider resetting shareRoomId to initShareRoomId if you want to restore the default when input is cleared
           // setShareRoomId(initShareRoomId);
           return;
         }
@@ -86,14 +83,14 @@ export function useRoomManager({
         try {
           const available = await checkRoom(roomIdToCheck);
           if (available) {
-            setShareRoomId(roomIdToCheck); // 更新已验证的 shareRoomId
+            setShareRoomId(roomIdToCheck); // Update the validated shareRoomId
             putMessageInMs(
               messages.text.ClipboardApp.roomCheck.available_msg,
               true
             );
           } else {
-            // 房间不可用，不更新 shareRoomId，它将保持上一个有效值或初始值
-            // 用户输入框中的值由 SendTabPanel 的本地状态管理，不会因此回滚
+            // Room is not available, do not update shareRoomId; it will retain the last valid or initial value
+            // The value in the user's input box is managed by SendTabPanel's local state and will not roll back because of this
             putMessageInMs(
               messages.text.ClipboardApp.roomCheck.notAvailable_msg,
               true
@@ -107,25 +104,25 @@ export function useRoomManager({
             true
           );
         }
-      }, 750), // 防抖延迟增加到 750ms
+      }, 750), // Increased debounce delay to 750ms
     [messages, putMessageInMs, setShareRoomId]
   );
 
-  // UI调用此函数来处理输入框ID的变化
+  // UI calls this function to handle changes in the room ID input
   const processRoomIdInput = useCallback(
     (inputRoomId: string) => {
       if (!inputRoomId.trim() && messages && putMessageInMs) {
-        // 如果用户清空了输入框
+        // If the user clears the input box
         putMessageInMs(messages.text.ClipboardApp.roomCheck.empty_msg, true);
         performDebouncedRoomCheck.cancel();
-        // 并且，如果希望清空时，让 validated shareRoomId 回到初始状态：
-        // setShareRoomId(initShareRoomId); // 这会让二维码等内容更新为初始ID
-        return; // 不再继续执行防抖检查空字符串
+        // And if you want the validated shareRoomId to revert to the initial state upon clearing:
+        // setShareRoomId(initShareRoomId); // This would update the QR code, etc., to the initial ID
+        return; // Don't proceed with debounced check for an empty string
       }
       performDebouncedRoomCheck(inputRoomId);
     },
     [performDebouncedRoomCheck, messages, putMessageInMs]
-  ); // initShareRoomId从依赖中移除
+  );
 
   const joinRoom = useCallback(
     async (isSenderSide: boolean, currentRoomIdToJoin: string) => {
@@ -162,7 +159,7 @@ export function useRoomManager({
               );
               return;
             }
-            // 如果创建成功，WebRTC的joinRoom会使用这个ID，同时我们应该更新shareRoomId为这个新创建的ID
+            // If creation is successful, WebRTC's joinRoom will use this ID, and we should update shareRoomId to this newly created ID
             setShareRoomId(currentRoomIdToJoin);
           } catch (error) {
             putMessageInMs(
@@ -176,9 +173,9 @@ export function useRoomManager({
       }
 
       try {
-        // WebRTC joinRoom 使用用户提供的ID（对接收方）或已验证/新创建的ID（对发送方）
-        // 对于发送方，如果上面 createRoom 成功并设置了 shareRoomId, peer.joinRoom 应使用它
-        // 但如果 currentRoomIdToJoin 是 initShareRoomId，则直接用它
+        // WebRTC joinRoom uses the ID provided by the user (for the receiver) or the validated/newly created ID (for the sender)
+        // For the sender, if createRoom above was successful and set shareRoomId, peer.joinRoom should use it
+        // But if currentRoomIdToJoin is initShareRoomId, use it directly
         const actualRoomIdForSenderJoin =
           isSenderSide && currentRoomIdToJoin !== initShareRoomId
             ? currentRoomIdToJoin
@@ -197,7 +194,7 @@ export function useRoomManager({
           const link = `${window.location.origin}${window.location.pathname}?roomId=${actualRoomIdForSenderJoin}`;
           setShareLink(link);
           if (actualRoomIdForSenderJoin !== shareRoomId) {
-            // 如果是通过输入新ID并加入成功的，更新shareRoomId
+            // If joining was successful by entering a new ID, update shareRoomId
             setShareRoomId(actualRoomIdForSenderJoin);
           }
         }
@@ -226,7 +223,7 @@ export function useRoomManager({
   );
 
   const generateShareLinkAndBroadcast = useCallback(async () => {
-    if (!sender || !messages || !putMessageInMs || !shareRoomId) return; // 确保 shareRoomId 有效
+    if (!sender || !messages || !putMessageInMs || !shareRoomId) return; // Ensure shareRoomId is valid
 
     if (sender.peerConnections.size === 0) {
       putMessageInMs(messages.text.ClipboardApp.waitting_tips, true);
@@ -284,12 +281,12 @@ export function useRoomManager({
   ]);
 
   return {
-    shareRoomId, // 这是已验证的或初始的房间ID
-    initShareRoomId, // 暴露以便UI可以比较或用于重置逻辑
+    shareRoomId, // This is the validated or initial room ID
+    initShareRoomId, // Exposed for UI comparison or reset logic
     shareLink,
     shareRoomStatusText,
     retrieveRoomStatusText,
-    processRoomIdInput, // 新的处理输入函数
+    processRoomIdInput, // New input processing function
     joinRoom,
     generateShareLinkAndBroadcast,
   };

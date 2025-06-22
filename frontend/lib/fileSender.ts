@@ -1,6 +1,8 @@
-// 发送文件（夹）的流程：先发送文件 meta 信息，等待接收端请求，再发送文件内容，文件发送完再发送endMeta，等待接收端ack，结束
-// 发送文件夹的流程（同上）：接收批量文件请求
-// 循环发送所有文件的meta，然后把属于folder的部分关于文件大小的记录下来，用于计算进度。接收展示端来区分单文件和文件夹
+// Flow for sending file(s)/folder(s): First, send file metadata, wait for the receiver's request, then send the file content.
+// After the file is sent, send an endMeta, wait for the receiver's ack, and finish.
+// Flow for sending a folder (same as above): Receive a batch file request.
+// Loop through and send the metadata for all files, then record the file size information for the folder part to calculate progress.
+// The receiving display end distinguishes between single files and folders.
 import { generateFileId } from "@/lib/fileUtils";
 import { SpeedCalculator } from "@/lib/speedCalculator";
 import WebRTC_Initiator from "./webrtc_Initiator";
@@ -25,16 +27,16 @@ class FileSender {
   constructor(WebRTC_initiator: WebRTC_Initiator) {
     this.webrtcConnection = WebRTC_initiator;
 
-    // 为每个接收方维护独立的发送状态
+    // Maintain independent sending states for each receiver
     this.peerStates = new Map(); // Map<peerId, PeerState>
 
     this.chunkSize = 65536; // 64 KB chunks
-    this.maxBufferSize = 10; // 预读取的块数
-    this.pendingFiles = new Map(); //所有待发送的文件（引用）{fileId:CustomFile}
+    this.maxBufferSize = 10; // Number of chunks to pre-read
+    this.pendingFiles = new Map(); // All files pending to be sent (by reference) {fileId: CustomFile}
 
-    this.pendingFolerMeta = {}; //文件夹对应的meta属性(总大小、文件总个数)，用于记录传输进度,fileId:{totalSize:0 , fileIds:[]}
+    this.pendingFolerMeta = {}; // Metadata for folders (total size, total file count), used for tracking transfer progress
 
-    // 创建 SpeedCalculator 实例
+    // Create a SpeedCalculator instance
     this.speedCalculator = new SpeedCalculator();
     this.setupDataHandler();
   }
@@ -56,21 +58,21 @@ class FileSender {
     });
   }
   // endregion
-  // 初始化新接收方的状态
+  // Initialize state for a new receiver
   private getPeerState(peerId: string): PeerState {
     if (!this.peerStates.has(peerId)) {
       this.peerStates.set(peerId, {
-        isSending: false, //用来判断文件是否发送成功，发送前是 true， 发送完接收到ack是 false
-        bufferQueue: [], //预读取buffer，提高发送效率
-        readOffset: 0, //读取位置，发送函数用
-        isReading: false, //是否正在读取，发送函数用，避免重复读取
+        isSending: false, // Used to determine if a file is successfully sent. True before sending, false after receiving ack.
+        bufferQueue: [], // Pre-read buffer to improve sending efficiency.
+        readOffset: 0, // Read position, used by the sending function.
+        isReading: false, // Whether reading is in progress, used by the sending function to avoid duplicate reads.
 
-        currentFolderName: "", //如果当前发送的文件属于文件夹，则赋 文件夹名
-        totalBytesSent: {}, //文件(夹)已发送字节数，用于计算进度;{fileId:0}
-        progressCallback: null, //进度回调
+        currentFolderName: "", // If the current file belongs to a folder, assign the folder name here.
+        totalBytesSent: {}, // Bytes sent for a file/folder, used for progress calculation; {fileId: 0}
+        progressCallback: null, // Progress callback.
       });
     }
-    return this.peerStates.get(peerId)!; //! 非空断言（Non-Null Assertion Operator）
+    return this.peerStates.get(peerId)!; // ! Non-Null Assertion Operator
   }
 
   private setupDataHandler(): void {
@@ -112,7 +114,7 @@ class FileSender {
   ): void {
     this.getPeerState(peerId).progressCallback = callback;
   }
-  //响应 文件请求，发送文件
+  // Respond to a file request by sending the file
   private async handleFileRequest(
     request: FileRequest,
     peerId: string
@@ -131,14 +133,14 @@ class FileSender {
       });
     }
   }
-  // 修改发送字符串的方法为异步方法
+  // Modify the sendString method to be asynchronous
   public async sendString(content: string, peerId: string): Promise<void> {
     const chunks: string[] = [];
     for (let i = 0; i < content.length; i += this.chunkSize) {
       chunks.push(content.slice(i, i + this.chunkSize));
     }
 
-    // 先发送元数据
+    // First, send the metadata
     await this.sendWithBackpressure(
       JSON.stringify({
         type: "stringMetadata",
@@ -147,7 +149,7 @@ class FileSender {
       peerId
     );
 
-    // 依次发送每个分片，使用背压控制
+    // Send each chunk sequentially, using backpressure control
     for (let i = 0; i < chunks.length; i++) {
       const data = JSON.stringify({
         type: "string",
@@ -160,24 +162,24 @@ class FileSender {
   }
 
   public sendFileMeta(files: CustomFile[], peerId?: string): void {
-    //把属于folder的部分关于文件大小的记录下来，用于计算进度
+    // Record the size of files belonging to a folder for progress calculation
     files.forEach((file) => {
       if (file.folderName) {
         const folderId = file.folderName;
-        //folderName:{totalSize:0 , fileIds:[]}
+        // folderName: {totalSize: 0, fileIds: []}
         if (!this.pendingFolerMeta[folderId]) {
           this.pendingFolerMeta[folderId] = { totalSize: 0, fileIds: [] };
         }
         const folderMeta = this.pendingFolerMeta[folderId];
         const fileId = generateFileId(file);
         if (!folderMeta.fileIds.includes(fileId)) {
-          //如果文件没被添加过
+          // If the file has not been added yet
           folderMeta.fileIds.push(fileId);
           folderMeta.totalSize += file.size;
         }
       }
     });
-    //循环发送所有文件的meta
+    // Loop through and send the metadata for all files
     const peers = peerId
       ? [peerId]
       : Array.from(this.webrtcConnection.peerConnections.keys());
@@ -197,7 +199,7 @@ class FileSender {
     });
   }
 
-  //发送单个文件
+  // Send a single file
   private async sendSingleFile(
     file: CustomFile,
     peerId: string
@@ -227,7 +229,7 @@ class FileSender {
       await this.processSendQueue(file, peerId);
       this.finalizeSendFile(fileId, peerId);
 
-      await this.waitForTransferComplete(peerId); // 等待传输完成--接收方确认
+      await this.waitForTransferComplete(peerId); // Wait for transfer completion -- receiver confirmation
     } catch (error: any) {
       this.fireError(`Error sending file ${file.name}`, {
         error: error.message,
@@ -313,7 +315,7 @@ class FileSender {
       throw new Error("sendData failed");
     }
   }
-  //开始发送文件内容
+  //start sending file content
   private async processSendQueue(
     file: CustomFile,
     peerId: string
@@ -373,7 +375,7 @@ class FileSender {
   ): Promise<ArrayBuffer> {
     return new Promise((resolve, reject) => {
       fileReader.onload = (e) => {
-        // 确保 e.target.result 是 ArrayBuffer
+        // Ensure e.target.result is an ArrayBuffer
         if (e.target?.result instanceof ArrayBuffer) {
           resolve(e.target.result);
         } else {
@@ -386,7 +388,7 @@ class FileSender {
       fileReader.readAsArrayBuffer(blob);
     });
   }
-  //发送 fileEnd 信号
+  //send fileEnd signal
   private finalizeSendFile(fileId: string, peerId: string): void {
     // this.log("log", `Finalizing file send for ${fileId} to ${peerId}`);
     const endMessage = JSON.stringify({ type: "fileEnd", fileId });

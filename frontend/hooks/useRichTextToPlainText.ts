@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 
-// 我们将函数转换为一个自定义 Hook useRichTextToPlainText。这允许我们使用 React 的生命周期方法来检测是否在浏览器环境中。
-// 使用 useState 和 useEffect 来检测是否在浏览器环境中。useEffect 只在客户端运行，所以我们可以安全地在其中设置 isBrowser 为 true。
-
+// We convert the function into a custom Hook useRichTextToPlainText. 
+// This allows us to use React's lifecycle methods to detect if we are in a browser environment.
+// Use useState and useEffect to detect if we are in a browser environment. 
+// useEffect only runs on the client side, so we can safely set isBrowser to true in it.
 function useRichTextToPlainText() {
   const [isBrowser, setIsBrowser] = useState(false);
 
@@ -12,16 +13,16 @@ function useRichTextToPlainText() {
 
   const richTextToPlainText = (richText: string): string => {
     if (!isBrowser) {
-      return richText; // 在服务器端，直接返回原文本
+      return richText; // On the server side, return the original text directly
     }
-    // 创建一个临时的DOM元素
+    // Create a temporary DOM element
     const tempElement = document.createElement("div");
     
-    // 将富文本内容设置为临时元素的innerHTML
+    // Set the rich text content as the innerHTML of the temporary element
     tempElement.innerHTML = richText;
     
-    // 处理直接的文本节点（不在任何块级元素内的文本）
-    // 将它们包装在 div 中以保持一致的处理
+    // Process direct text nodes (text not inside any block-level elements)
+    // Wrap them in a div for consistent processing
     const wrapTextNodes = (element: HTMLElement) => {
       const childNodes = Array.from(element.childNodes);
       childNodes.forEach(node => {
@@ -35,34 +36,34 @@ function useRichTextToPlainText() {
 
     wrapTextNodes(tempElement);
 
-    // 处理所有块级元素
+    // Process all block-level elements
     const blockElements = ['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre'];
     blockElements.forEach(tag => {
       tempElement.querySelectorAll(tag).forEach(element => {
-        // 如果元素内容为空或只包含 <br>，则替换为双换行
+        // If the element content is empty or only contains <br>, replace it with a double newline
         if (!element.textContent?.trim() || element.innerHTML === '<br>') {
           element.replaceWith('\n\n');
         } else {
-          // 否则在内容后添加换行
+          // Otherwise, add a newline after the content
           element.replaceWith(element.textContent + '\n');
         }
       });
     });
 
-    // 处理 <br> 标签
+    // Process <br> tags
     tempElement.querySelectorAll('br').forEach(br => {
       br.replaceWith('\n');
     });
 
-    // 获取并处理纯文本
+    // Get and process the plain text
     let plainText = tempElement.textContent || tempElement.innerText || '';
 
-    // 处理连续的换行符
+    // Process consecutive newline characters
     plainText = plainText
-      .replace(/\n{3,}/g, '\n\n')  // 将3个以上连续换行符替换为2个
-      .replace(/^\n+/, '')         // 删除开头的换行符
-      .replace(/\n+$/, '')         // 删除结尾的换行符
-      .trim();                     // 删除首尾空格
+      .replace(/\n{3,}/g, '\n\n')  // Replace 3 or more consecutive newline characters with 2
+      .replace(/^\n+/, '')         // Remove leading newline characters
+      .replace(/\n+$/, '')         // Remove trailing newline characters
+      .trim();                     // Trim leading/trailing whitespace
 
     return plainText;
   };

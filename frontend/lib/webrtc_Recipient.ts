@@ -1,7 +1,7 @@
-// 接收方 流程: 加入房间; 收到 'offer' 事件 -> createPeerConnection + createDataChannel -> 发送 answer
+// Recipient flow: Join room; receive 'offer' event -> createPeerConnection + createDataChannel -> send answer
 import BaseWebRTC, { WebRTCConfig } from "./webrtc_base";
 import { postLogInDebug } from "@/app/config/api";
-const developmentEnv = process.env.NEXT_PUBLIC_development!; //开发环境
+const developmentEnv = process.env.NEXT_PUBLIC_development!; // Development environment
 
 interface AnswerPayload {
   answer: RTCSessionDescriptionInit;
@@ -22,23 +22,23 @@ export default class WebRTC_Recipient extends BaseWebRTC {
       this.handleAnswer({ answer, peerId });
     });
 
-    // 添加发起方重新上线的监听
+    // Add listener for initiator re-online
     this.socket.on("initiator-online", ({ roomId }) => {
       this.log("log", `Received initiator-online for room: ${roomId}`);
-      // 发送准备就绪的响应
+      // Send a ready response
       this.log(
         "log",
         `Sending recipient-ready, my peerId: ${this.socket.id}`,
         this.peerId
       );
-      // 发送准备就绪的响应
+      // Send a ready response
       this.socket.emit("recipient-ready", {
         roomId: this.roomId,
         peerId: this.socket.id,
       });
     });
   }
-  // 接收方 收到 offer 时创建连接
+  // Recipient creates a connection upon receiving an offer
   private async handleOffer({
     peerId,
     offer,
@@ -50,34 +50,34 @@ export default class WebRTC_Recipient extends BaseWebRTC {
   }): Promise<void> {
     this.log("log", `Handling offer from peer ${from}`);
     try {
-      // 1. 清理已存在的连接
+      // 1. Clean up existing connections
       await this.cleanupExistingConnection(from);
-      // 2. 创建新的连接
+      // 2. Create a new connection
       const peerConnection = await this.createPeerConnection(from);
-      // 再创建数据通道
+      // Then create a data channel
       await this.createDataChannel(from);
 
-      // 4. 设置远程描述
+      // 4. Set the remote description
       // console.log(`Setting remote description for peer ${from}`);
       await peerConnection.setRemoteDescription(
         new RTCSessionDescription(offer)
       );
-      // 创建并设置本地描述（answer）
+      // Create and set the local description (answer)
       // console.log(`Creating answer for peer ${from}`);
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
-      // 发送 answer
+      // Send the answer
       this.log("log", `Sending answer to peer ${from}`);
       this.socket.emit("answer", {
         answer,
         peerId: from,
         from: this.socket.id,
       });
-      // 最后处理已缓存的 ICE candidates
+      // Finally, process the cached ICE candidates
       await this.addQueuedIceCandidates(from);
     } catch (error) {
       this.fireError("Error handling offer", { error, from });
-      // 清理失败的连接
+      // Clean up the failed connection
       await this.cleanupExistingConnection(from);
     }
   }

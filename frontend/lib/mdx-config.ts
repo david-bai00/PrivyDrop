@@ -5,36 +5,36 @@ import type { Plugin } from 'unified';
 import type { Root as MdastRoot, Code, Text } from 'mdast';
 import type { BuildVisitor } from 'unist-util-visit';
 
-// MDX AST 节点类型定义
+// MDX AST Node Type Definition
 interface MdxJsxFlowElement {
   type: 'mdxJsxFlowElement';
   name: string;
   children: Text[];
 }
 
-// 扩展的属性类型
+// Extended Properties Type
 interface ExtendedProperties extends Properties {
     className?: string;
     id?: string;
 }
 
-// 扩展的元素类型
+// Extended Element Type
 interface ExtendedElement extends Omit<Element, 'properties'> {
   properties: ExtendedProperties;
 }
 
-// 生成合法的 ID，保留中文字符
+// Generate a valid ID, preserving Chinese characters
 const generateValidId = (text: string): string => {
   return encodeURIComponent(text
-  .trim() // 移除首尾空格
-  .replace(/\s+/g, '-') // 将空格替换为连字符
-  .replace(/\-\-+/g, '-') // 将多个连字符替换为单个
-  .replace(/^-+/, '') // 移除开头的连字符
-  .replace(/-+$/, '') // 移除结尾的连字符
+  .trim() // Trim leading/trailing whitespace
+  .replace(/\s+/g, '-') // Replace spaces with hyphens
+  .replace(/\-\-+/g, '-') // Replace multiple hyphens with a single one
+  .replace(/^-+/, '') // Remove leading hyphens
+  .replace(/-+$/, '') // Remove trailing hyphens
   );
 };
 
-// 获取唯一 ID
+// Get a unique ID
 const getUniqueId = (baseId: string, usedIds: Set<string>): string => {
   let uniqueId = baseId;
   let counter = 1;
@@ -49,7 +49,7 @@ export const mdxOptions = {
   mdxOptions: {
     remarkPlugins: [
       remarkGfm,
-      // mermaid 代码块处理插件
+      // Mermaid code block processing plugin
       (() => {
         return (tree: MdastRoot) => {
           visit(tree, 'code', (node: Code) => {
@@ -65,7 +65,7 @@ export const mdxOptions = {
       }) as Plugin<[], MdastRoot>,
     ],
     rehypePlugins: [
-      // 处理图片和表格的插件
+      // Plugin to handle images and tables
       (() => {
         return (tree: Root) => {
           visit(tree, 'element', ((node: Element, index: number | null, parent: Element | Root | null) => {
@@ -89,10 +89,10 @@ export const mdxOptions = {
         };
       }) as Plugin<[], Root>,
       
-      // 处理标题 ID 的插件
+      // Plugin to handle heading IDs
       (() => {
         return (tree: Root) => {
-        const usedIds = new Set<string>();//记录使用的ID，避免重复
+        const usedIds = new Set<string>();// Keep track of used IDs to avoid duplicates
           visit(tree, 'element', ((node: Element, index: number | null, parent: Element | Root | null) => {
             if (['h1', 'h2', 'h3'].includes(node.tagName)) {
               let titleText = '';
@@ -102,7 +102,7 @@ export const mdxOptions = {
               
               if (titleText) {
                 let id = generateValidId(titleText);
-                let uniqueId = getUniqueId(id, usedIds);// 处理重复 ID,加数字后缀
+                let uniqueId = getUniqueId(id, usedIds);// Handle duplicate IDs by adding a numeric suffix
                 usedIds.add(uniqueId);
                 
                 (node as ExtendedElement).properties = {

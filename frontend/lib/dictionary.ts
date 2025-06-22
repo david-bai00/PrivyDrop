@@ -1,4 +1,4 @@
-//语言字典加载器
+// Language dictionary loader
 import { supportedLocales, i18n } from '@/constants/i18n-config';
 
 export async function getDictionary(locale: string) {
@@ -8,7 +8,7 @@ export async function getDictionary(locale: string) {
       locale = i18n.defaultLocale;
     }
     const messagesModule  = await import(`@/constants/messages/${locale}`);
-    const messages = messagesModule[locale]; // 根据语言代码获取导出的对象
+    const messages = messagesModule[locale]; // Get the exported object based on the language code
     return messages;
   } catch (error) {
     console.error(`Failed to load dictionary for locale: ${locale}`, error);
