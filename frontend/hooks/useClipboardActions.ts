@@ -13,7 +13,7 @@ interface ClipboardMessages {
 
 interface ClipboardActions {
   copyText: (text: string) => Promise<void>;
-  readClipboard: () => Promise<string | null>;
+  readClipboard: () => Promise<string>;
   isCopied: boolean;
   isPasted: boolean;
   isLoadingMessages: boolean;
@@ -83,12 +83,12 @@ export const useClipboardActions = (): ClipboardActions => {
     [clipboardMessages.copyError]
   );
 
-  const readClipboard = useCallback(async (): Promise<string | null> => {
+  const readClipboard = useCallback(async (): Promise<string> => {
     setError(null);
     setIsPasted(false);
     if (!navigator.clipboard) {
       setError(clipboardMessages.readError || "Clipboard API not available.");
-      return null;
+      return "";
     }
     try {
       const clipboardItems = await navigator.clipboard.read();
@@ -113,7 +113,7 @@ export const useClipboardActions = (): ClipboardActions => {
       setError(
         clipboardMessages.readError || "No suitable content type found."
       );
-      return null;
+      return "";
     } catch (err) {
       try {
         const text = await navigator.clipboard.readText();
@@ -124,7 +124,7 @@ export const useClipboardActions = (): ClipboardActions => {
       } catch (fallbackErr) {
         console.error("Failed to read clipboard: ", fallbackErr);
         setError(clipboardMessages.readError || "Failed to read clipboard.");
-        return null;
+        return "";
       }
     }
   }, [clipboardMessages.readError]);
