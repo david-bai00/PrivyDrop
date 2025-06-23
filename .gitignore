@@ -41,11 +41,11 @@ yarn-error.log*
 next-env.d.ts
 
 # image
-*.svg
-*.ico
-*.png
-*.jpg
-*.jpeg
+# *.svg
+# *.ico
+# *.png
+# *.jpg
+# *.jpeg
 
 # IDE/Editor
 .idea/
