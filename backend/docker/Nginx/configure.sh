@@ -90,7 +90,7 @@ configure_nginx() {
     done < "$NGINX_TEMPLATE" > "$TEMP_NGINX"
 
     # Copy the configuration file to the target location
-    cp "$TEMP_NGINX" /etc/nginx/sites-available/
+    cp "$TEMP_NGINX" /etc/nginx/sites-available/default
     # cp "$TEMP_NGINX" default_temp
     rm "$TEMP_NGINX"
 }
