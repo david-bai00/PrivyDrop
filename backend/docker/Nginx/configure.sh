@@ -99,7 +99,7 @@ configure_nginx() {
 configure_nginx
 
 # Test Nginx configuration
-cp nginx.conf /etc/nginx
+cp docker/Nginx/nginx.conf /etc/nginx
 nginx -t
 
 /etc/init.d/nginx restart
