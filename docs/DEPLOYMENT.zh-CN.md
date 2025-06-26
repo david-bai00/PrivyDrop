@@ -152,57 +152,16 @@ cd backend && npm install && cd ..
 cd frontend && pnpm install && cd ..
 ```
 
-### 4.2. 配置环境变量
-
-- **后端:**
-  - 在 `backend/` 目录下创建 `.env.production.local` 或 `.env.development.local` 文件
-  - 在 `.env.development.local` 文件中填入环境变量 (BACKEND_PORT, REDIS_HOST, REDIS_PORT, CORS_ORIGIN)。
-  - 在 `.env.production.local` 文件中除了上述变量外，还要加入 (NGINX_SERVER_NAME, NGINX_SSL_CERT, NGINX_SSL_KEY, NGINX_FRONTEND_ROOT)。
-- **前端:** 在 `frontend/` 目录下创建 `.env.production` 或 `.env.development` 文件,并填入环境变量 (NEXT_PUBLIC_API_URL)。
-
-### 4.3. 构建前端应用
+### 4.2. 构建应用
 
 ```bash
-cd frontend
-pnpm build
+cd frontend && pnpm build && cd ..
+cd backend && npm build && cd ..
 ```
 
-这将在 `frontend/.next` 目录生成优化后的生产版本。
+这将分别在 `frontend/.next` 和 `backend/dist` 目录生成优化后的生产版本。
 
-### 4.4. 使用 PM2 运行应用
-
-PM2 是一个强大的 Node.js 进程管理器，我们将用它来分别运行后端服务和前端服务。
-
-1.  **全局安装 PM2：**
-
-    ```bash
-    sudo npm install -g pm2
-    ```
-
-2.  **启动后端服务：**
-    项目后端目录提供了一个 `ecosystem.config.js` 文件用于 PM2。
-
-    ```bash
-    cd backend
-    # 确保 .env.production.local 已配置完毕
-    pm2 start ecosystem.config.js
-    ```
-
-3.  **启动前端服务：**
-
-    ```bash
-    cd frontend
-    pm2 start npm --name "privydrop-frontend" -- run start
-    ```
-
-    `npm start` 会启动 Next.js 的生产服务器，默认监听 3000 端口。
-
-4.  **管理应用**
-    - 查看状态: `pm2 list`
-    - 查看日志: `pm2 logs <app_name>`
-    - 设置开机自启: `pm2 startup` 然后 `pm2 save`
-
-### 4.5. 配置 Nginx 作为反向代理
+### 4.3. 配置 Nginx 作为反向代理
 
 在生产中，Nginx 将作为所有流量的入口，负责 SSL 终止，并将请求路由到正确的前端或后端服务。
 
@@ -234,6 +193,47 @@ PM2 是一个强大的 Node.js 进程管理器，我们将用它来分别运行�
     # 此脚本会使用 .env.production.local 中的 NGINX_* 变量来生成 Nginx 配置文件
     sudo bash docker/Nginx/configure.sh .env.production.local
     ```
+
+### 4.4. 配置环境变量
+
+- **后端:**
+  - 在 `backend/` 目录下创建 `.env.production.local` 或 `.env.development.local` 文件
+  - 在 `.env.development.local` 文件中填入环境变量 (BACKEND_PORT, REDIS_HOST, REDIS_PORT, CORS_ORIGIN)。
+  - 在 `.env.production.local` 文件中除了上述变量外，还要加入 (NGINX_SERVER_NAME, NGINX_SSL_CERT, NGINX_SSL_KEY, NGINX_FRONTEND_ROOT)。
+- **前端:** 在 `frontend/` 目录下创建 `.env.production` 或 `.env.development` 文件,并填入环境变量 (NEXT_PUBLIC_API_URL)。
+
+### 4.5. 使用 PM2 运行应用
+
+PM2 是一个强大的 Node.js 进程管理器，我们将用它来分别运行后端服务和前端服务。
+
+1.  **全局安装 PM2：**
+
+    ```bash
+    sudo npm install -g pm2
+    ```
+
+2.  **启动后端服务：**
+    项目后端目录提供了一个 `ecosystem.config.js` 文件用于 PM2。
+
+    ```bash
+    cd backend
+    # 确保 .env.production.local 已配置完毕
+    pm2 start ecosystem.config.js
+    ```
+
+3.  **启动前端服务：**
+
+    ```bash
+    cd frontend
+    pm2 start npm --name "privydrop-frontend" -- run start
+    ```
+
+    `npm start` 会启动 Next.js 的生产服务器，默认监听 3000 端口。
+
+4.  **管理应用**
+    - 查看状态: `pm2 list`
+    - 查看日志: `pm2 logs <app_name>`
+    - 设置开机自启: `pm2 startup` 然后 `pm2 save`
 
 ## 5. 故障排除
 

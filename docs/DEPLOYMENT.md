@@ -152,59 +152,16 @@ cd backend && npm install && cd ..
 cd frontend && pnpm install && cd ..
 ```
 
-### 4.2. Configure Environment Variables
-
-- **Backend:**
-  - Create a `.env.production.local` file in the `backend/` directory.
-  - Fill in the necessary environment variables (e.g., `PORT`, `REDIS_HOST`, `REDIS_PORT`, `CORS_ORIGIN`).
-  - For Nginx integration, also add `NGINX_SERVER_NAME`, `NGINX_SSL_CERT`, `NGINX_SSL_KEY`, and `NGINX_FRONTEND_ROOT`.
-- **Frontend:**
-  - Create a `.env.production.local` file in the `frontend/` directory.
-  - Fill in the `NEXT_PUBLIC_API_URL` variable.
-
-### 4.3. Build the Frontend Application
+### 4.2. Build the Frontend Application
 
 ```bash
-cd frontend
-pnpm build
+cd frontend && pnpm build && cd ..
+cd backend && npm build && cd ..
 ```
 
-This will generate an optimized production build in the `frontend/.next` directory.
+This will generate an optimized production build in the `frontend/.next` and `backend/dist` directory.
 
-### 4.4. Run the Application with PM2
-
-PM2 is a powerful process manager for Node.js. We will use it to run the backend and frontend services separately.
-
-1.  **Install PM2 globally:**
-
-    ```bash
-    sudo npm install -g pm2
-    ```
-
-2.  **Start the Backend Service:**
-    The backend directory provides an `ecosystem.config.js` file for PM2.
-
-    ```bash
-    cd backend
-    # Ensure .env.production.local is fully configured
-    pm2 start ecosystem.config.js
-    ```
-
-3.  **Start the Frontend Service:**
-
-    ```bash
-    cd frontend
-    pm2 start npm --name "privydrop-frontend" -- run start
-    ```
-
-    The `npm start` command starts the Next.js production server, which listens on port 3000 by default.
-
-4.  **Manage Applications:**
-    - View status: `pm2 list`
-    - View logs: `pm2 logs <app_name>`
-    - Set up startup script: `pm2 startup` followed by `pm2 save`
-
-### 4.5. Configure Nginx as a Reverse Proxy
+### 4.3. Configure Nginx as a Reverse Proxy
 
 In production, Nginx will act as the entry point for all traffic, handling SSL termination and routing requests to the correct frontend or backend service.
 
@@ -236,6 +193,49 @@ In production, Nginx will act as the entry point for all traffic, handling SSL t
     # This script uses NGINX_* variables from your .env file to generate the Nginx config
     sudo bash backend/docker/Nginx/configure.sh backend/.env.production.local
     ```
+
+### 4.4. Configure Environment Variables
+
+- **Backend:**
+  - Create a `.env.production.local` file in the `backend/` directory.
+  - Fill in the necessary environment variables (e.g., `PORT`, `REDIS_HOST`, `REDIS_PORT`, `CORS_ORIGIN`).
+  - For Nginx integration, also add `NGINX_SERVER_NAME`, `NGINX_SSL_CERT`, `NGINX_SSL_KEY`, and `NGINX_FRONTEND_ROOT`.
+- **Frontend:**
+  - Create a `.env.production.local` file in the `frontend/` directory.
+  - Fill in the `NEXT_PUBLIC_API_URL` variable.
+
+### 4.5. Run the Application with PM2
+
+PM2 is a powerful process manager for Node.js. We will use it to run the backend and frontend services separately.
+
+1.  **Install PM2 globally:**
+
+    ```bash
+    sudo npm install -g pm2
+    ```
+
+2.  **Start the Backend Service:**
+    The backend directory provides an `ecosystem.config.js` file for PM2.
+
+    ```bash
+    cd backend
+    # Ensure .env.production.local is fully configured
+    pm2 start ecosystem.config.js
+    ```
+
+3.  **Start the Frontend Service:**
+
+    ```bash
+    cd frontend
+    pm2 start npm --name "privydrop-frontend" -- run start
+    ```
+
+    The `npm start` command starts the Next.js production server, which listens on port 3000 by default.
+
+4.  **Manage Applications:**
+    - View status: `pm2 list`
+    - View logs: `pm2 logs <app_name>`
+    - Set up startup script: `pm2 startup` followed by `pm2 save`
 
 ## 5. Troubleshooting
 
