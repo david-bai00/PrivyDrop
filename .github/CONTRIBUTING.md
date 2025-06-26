@@ -2,9 +2,17 @@
 
 We warmly welcome contributions from the community. Every bit of your effort helps make this project better. Before you start, please take a few moments to read the following guidelines.
 
+## Where to Start? The Roadmap!
+
+Before you dive in, the best place to start is our project roadmap. It outlines our future plans and current priorities, giving you a clear picture of where the project is headed and where your help is most needed.
+
+➡️ **[Check out our Project Roadmap](../ROADMAP.md)**
+
+After checking the roadmap, you can find a suitable task in the [GitHub Issues](https://github.com/david-bai00/PrivyDrop/issues), especially those tagged with `help wanted` or `good first issue`.
+
 ## Code of Conduct
 
-We are committed to providing a friendly, safe, and welcoming environment for all. Please ensure your conduct aligns with our [Code of Conduct](./.github/CODE_OF_CONDUCT.md). All participants are expected to uphold this code.
+We are committed to providing a friendly, safe, and welcoming environment for all. Please ensure your conduct aligns with our [Code of Conduct](./CODE_OF_CONDUCT.md). All participants are expected to uphold this code.
 
 ## How to Contribute
 

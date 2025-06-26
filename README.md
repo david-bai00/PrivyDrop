@@ -66,6 +66,12 @@ Before you begin, ensure your development environment has [Node.js](https://node
 4.  **Start Sharing**
     Open `http://localhost:3000` in your browser to access the application.
 
+## 🗺️ Roadmap
+
+We have a public roadmap that outlines our vision for the future and our current priorities. It's a great place to see what we're working on or to find areas where you can contribute.
+
+➡️ **[Check out the Project Roadmap](./ROADMAP.md)**
+
 ## 📚 Documentation
 
 We provide detailed documentation to help you dive deeper into the project's design and deployment details:
