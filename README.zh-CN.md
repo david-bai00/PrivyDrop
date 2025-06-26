@@ -77,7 +77,9 @@ PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）�
 
 ## 🤝 参与贡献
 
-我们热烈欢迎任何形式的贡献！无论是报告 Bug、提出功能建议、提交代码还是加星，都对 PrivyDrop 的成长帮助巨大。请阅读我们的 [**贡献指南**](./.github/CONTRIBUTING.md) 来开始你的贡献之旅。
+我们热烈欢迎任何形式的贡献！无论是报告 Bug、提出功能建议、提交代码还是加星，都对 PrivyDrop 的成长帮助巨大。请阅读我们的 [**贡献指南**](./.github/CONTRIBUTING.zh-CN.md) 来开始你的贡献之旅。
+
+我们制定了所有贡献者都应遵守的 [**行为准则**](./.github/CODE_OF_CONDUCT.zh-CN.md)，请在参与前仔细阅读。
 
 ## 📄 开源协议
 

@@ -79,6 +79,9 @@ We provide detailed documentation to help you dive deeper into the project's des
 
 We warmly welcome contributions of all forms! Whether it's reporting a bug, suggesting a feature, submitting code or adding a star, your help is invaluable to PrivyDrop's growth. Please read our [**Contribution Guidelines**](./.github/CONTRIBUTING.md) to start your journey.
 
+We have a [**Code of Conduct**](./.github/CODE_OF_CONDUCT.md) that all contributors are expected to follow. Please be sure to review it before participating.
+
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
