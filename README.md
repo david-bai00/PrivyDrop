@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="frontend/public/logo.png" alt="PrivyDrop Logo" width="180" />
+</div>
+
 # PrivyDrop - A Privacy-Focused, WebRTC-Based File Sharing Tool
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)

@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="frontend/public/logo.png" alt="PrivyDrop Logo" width="180" />
+</div>
+
 # PrivyDrop - 基于 WebRTC 的隐私安全文件分享工具
 
 [![开源协议](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
