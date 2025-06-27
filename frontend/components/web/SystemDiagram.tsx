@@ -14,7 +14,7 @@ export default function SystemDiagram({ messages }: PageContentProps) {
         </h2>
         <Image
           src="/SystemDiagram.png"
-          alt="SecureShare system diagram: Peer-to-peer file and clipboard sharing"
+          alt="PrivyDrop system diagram: Peer-to-peer file and clipboard sharing"
           width={1226}
           height={745}
           className="mx-auto mb-6"

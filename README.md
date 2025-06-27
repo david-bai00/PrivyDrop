@@ -6,7 +6,7 @@ PrivyDrop(formerly SecureShare) is an open-source, peer-to-peer (P2P) file and t
 
 We believe everyone should have control over their own data. PrivyDrop was created to fulfill this vision: a simple, fast, and private sharing solution.
 
-[**Try it Live »**](https://www.securityshare.xyz/) | [**GitHub Repository »**](https://github.com/david-bai00/PrivyDrop)
+[**Try it Live »**](https://www.privydrop.app/) | [**GitHub Repository »**](https://github.com/david-bai00/PrivyDrop)
 
 ---
 
@@ -86,7 +86,6 @@ We provide detailed documentation to help you dive deeper into the project's des
 We warmly welcome contributions of all forms! Whether it's reporting a bug, suggesting a feature, submitting code or adding a star, your help is invaluable to PrivyDrop's growth. Please read our [**Contribution Guidelines**](./.github/CONTRIBUTING.md) to start your journey.
 
 We have a [**Code of Conduct**](./.github/CODE_OF_CONDUCT.md) that all contributors are expected to follow. Please be sure to review it before participating.
-
 
 ## 📄 License
 

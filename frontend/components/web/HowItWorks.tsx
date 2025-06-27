@@ -73,7 +73,7 @@ export default function HowItWorks({ messages }: PageContentProps) {
             {/* The default Next.js image optimizer does not support handling of GIF animations */}
             <Image
               src="/HowItWorks.gif"
-              alt="How SecureShare Works"
+              alt="How PrivyDrop Works"
               unoptimized
               width={700}
               height={921}

@@ -85,7 +85,7 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
 
         # Modify CORS configuration, only set one Origin
-        add_header Access-Control-Allow-Origin "https://www.securityshare.xyz" always;
+        add_header Access-Control-Allow-Origin "https://www.privydrop.app" always;
         add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
         add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range" always;
         add_header Access-Control-Allow-Credentials "true" always;

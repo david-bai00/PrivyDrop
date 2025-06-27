@@ -13,7 +13,7 @@ export async function generateMetadata({
   return {
     title: messages.meta.help.title,
     description: messages.meta.help.description,
-    metadataBase: new URL("https://www.securityshare.xyz"),
+    metadataBase: new URL("https://www.privydrop.app"),
     alternates: {
       canonical: `/${params.lang}/help`,
       languages: Object.fromEntries(
@@ -23,8 +23,8 @@ export async function generateMetadata({
     openGraph: {
       title: messages.meta.help.title,
       description: messages.meta.help.description,
-      url: `https://www.securityshare.xyz/${params.lang}/help`,
-      siteName: "SecureShare",
+      url: `https://www.privydrop.app/${params.lang}/help`,
+      siteName: "PrivyDrop",
       locale: params.lang,
       type: "website",
     },

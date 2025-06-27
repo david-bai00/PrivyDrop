@@ -6,7 +6,7 @@ PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）�
 
 我们相信，每个人都应掌控自己的数据。PrivyDrop 的诞生就是为了实现这一愿景：一个简单、快速、私密的分享解决方案。
 
-[**在线体验 (原 SecureShare) »**](https://www.securityshare.xyz/) | [**GitHub 仓库 »**](https://github.com/david-bai00/PrivyDrop)
+[**在线体验 »**](https://www.privydrop.app/) | [**GitHub 仓库 »**](https://github.com/david-bai00/PrivyDrop)
 
 ---
 

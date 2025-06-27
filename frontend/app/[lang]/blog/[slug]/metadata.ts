@@ -17,12 +17,12 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${post.frontmatter.title} | SecureShare Blog`,
+    title: `${post.frontmatter.title} | PrivyDrop Blog`,
     description: post.frontmatter.description,
     keywords: `${post.frontmatter.tags.join(
       ", "
     )}, secure file sharing, p2p transfer, privacy`,
-    metadataBase: new URL("https://www.securityshare.xyz"),
+    metadataBase: new URL("https://www.privydrop.app"),
     alternates: {
       canonical: `/${params.lang}/blog/${params.slug}`,
       languages: {
@@ -33,8 +33,8 @@ export async function generateMetadata({
     openGraph: {
       title: post.frontmatter.title,
       description: post.frontmatter.description,
-      url: `https://www.securityshare.xyz/${params.lang}/blog/${params.slug}`,
-      siteName: "SecureShare",
+      url: `https://www.privydrop.app/${params.lang}/blog/${params.slug}`,
+      siteName: "PrivyDrop",
       locale: params.lang,
       type: "article",
       publishedTime: post.frontmatter.date,

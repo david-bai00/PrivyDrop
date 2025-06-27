@@ -32,8 +32,8 @@ export default function HelpContent({ messages, lang }: HelpContentProps) {
             Twitter
           </a>
         </li>
-        {/* <li><a href="https://www.facebook.com/secureshare" className="text-blue-500 hover:underline">Facebook</a></li>
-            <li><a href="https://www.linkedin.com/company/secureshare" className="text-blue-500 hover:underline">LinkedIn</a></li> */}
+        {/* <li><a href="https://www.facebook.com/PrivyDrop" className="text-blue-500 hover:underline">Facebook</a></li>
+            <li><a href="https://www.linkedin.com/company/PrivyDrop" className="text-blue-500 hover:underline">LinkedIn</a></li> */}
       </ul>
 
       <h2 className="text-2xl font-bold mb-4">{messages.text.help.h2_3}</h2>

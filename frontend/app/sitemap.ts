@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 import { supportedLocales } from "@/constants/i18n-config";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://www.securityshare.xyz";
+  const baseUrl = "https://www.privydrop.app";
   const languages = supportedLocales;
   const routes = ["", "/about", "/help", "/faq", "/terms", "/privacy"];
 

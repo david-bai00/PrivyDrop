@@ -4,38 +4,38 @@ export const de: Messages = {
   meta: {
     home: {
       title:
-        "SecureShare: Kostenloser P2P-Datei- & Clipboard-Sharing | Privat & Ohne Upload",
+        "PrivyDrop: Kostenloser P2P-Datei- & Clipboard-Sharing | Privat & Ohne Upload",
       description:
-        "SecureShare ermöglicht sofortiges, sicheres P2P-Datei-Sharing ohne Größenbeschränkungen oder Registrierung. Teilen Sie Text, Bilder, Ordner geräteübergreifend mit Ende-zu-Ende-Verschlüsselung. Perfekt für Teamarbeit und private Dateiübertragungen.",
+        "PrivyDrop ermöglicht sofortiges, sicheres P2P-Datei-Sharing ohne Größenbeschränkungen oder Registrierung. Teilen Sie Text, Bilder, Ordner geräteübergreifend mit Ende-zu-Ende-Verschlüsselung. Perfekt für Teamarbeit und private Dateiübertragungen.",
       keywords:
         "Dateifreigabe, sichere Dateiübertragung, P2P-Dateiübertragung, WebRTC-Dateifreigabe, privater Clipboard, Teamarbeit, geräteübergreifende Freigabe, verschlüsselte Dateiübertragung, Dateifreigabe ohne Registrierung, unbegrenzte Dateiübertragung, Ordnersynchronisation, mobile Dateiübertragung, sichere Nachrichtenübermittlung, sofortige Dateifreigabe, private Datenübertragung",
     },
     about: {
-      title: "Über SecureShare",
+      title: "Über PrivyDrop",
       description:
-        "Erfahren Sie mehr über SecureShare, unsere Mission, einen sicheren und privaten Dateiübertragungs- und Clipboard-Sharing-Dienst bereitzustellen, und unser Engagement für den Datenschutz und den Schutz der Benutzerdaten.",
+        "Erfahren Sie mehr über PrivyDrop, unsere Mission, einen sicheren und privaten Dateiübertragungs- und Clipboard-Sharing-Dienst bereitzustellen, und unser Engagement für den Datenschutz und den Schutz der Benutzerdaten.",
     },
     faq: {
-      title: "SecureShare FAQ",
+      title: "PrivyDrop FAQ",
       description:
-        "Finden Sie Antworten auf häufig gestellte Fragen zu SecureShare, einschließlich der Frage, wie Sie Dateien senden, Clipboard-Inhalte teilen und sichere und private Datenübertragungen gewährleisten können.",
+        "Finden Sie Antworten auf häufig gestellte Fragen zu PrivyDrop, einschließlich der Frage, wie Sie Dateien senden, Clipboard-Inhalte teilen und sichere und private Datenübertragungen gewährleisten können.",
       keywords:
-        "SecureShare FAQ, häufig gestellte Fragen, sichere Dateifreigabe FAQ, Hilfe zur privaten Datenfreigabe, Ende-zu-Ende-verschlüsselte Dateiübertragung, Support für sicheres Clipboard-Sharing, wie man SecureShare verwendet, Dateiübertragungs-FAQ, Fragen zur datenschutzorientierten Freigabe, SecureShare-Problembehandlung",
+        "PrivyDrop FAQ, häufig gestellte Fragen, sichere Dateifreigabe FAQ, Hilfe zur privaten Datenfreigabe, Ende-zu-Ende-verschlüsselte Dateiübertragung, Support für sicheres Clipboard-Sharing, wie man PrivyDrop verwendet, Dateiübertragungs-FAQ, Fragen zur datenschutzorientierten Freigabe, PrivyDrop-Problembehandlung",
     },
     help: {
-      title: "SecureShare Hilfe und Support",
+      title: "PrivyDrop Hilfe und Support",
       description:
-        "Finden Sie Informationen darüber, wie Sie den SecureShare-Support kontaktieren können, sowie Links zu unseren Seiten Über uns, Nutzungsbedingungen und Datenschutzrichtlinien für weitere Details zu unserem Dienst.",
+        "Finden Sie Informationen darüber, wie Sie den PrivyDrop-Support kontaktieren können, sowie Links zu unseren Seiten Über uns, Nutzungsbedingungen und Datenschutzrichtlinien für weitere Details zu unserem Dienst.",
     },
     privacy: {
-      title: "SecureShare Datenschutzrichtlinie",
+      title: "PrivyDrop Datenschutzrichtlinie",
       description:
-        "Verstehen Sie, wie SecureShare Ihre Privatsphäre und Daten schützt, einschließlich Details zur Informationssammlung, Datenspeicherung und -sicherheit sowie unserem Engagement, Ihre Daten nicht an Dritte weiterzugeben.",
+        "Verstehen Sie, wie PrivyDrop Ihre Privatsphäre und Daten schützt, einschließlich Details zur Informationssammlung, Datenspeicherung und -sicherheit sowie unserem Engagement, Ihre Daten nicht an Dritte weiterzugeben.",
     },
     terms: {
-      title: "SecureShare Nutzungsbedingungen",
+      title: "PrivyDrop Nutzungsbedingungen",
       description:
-        "Überprüfen Sie die Nutzungsbedingungen für SecureShare, einschließlich Informationen zur akzeptablen Nutzung des Dienstes, Datenschutz und -sicherheit sowie Haftungsbeschränkungen.",
+        "Überprüfen Sie die Nutzungsbedingungen für PrivyDrop, einschließlich Informationen zur akzeptablen Nutzung des Dienstes, Datenschutz und -sicherheit sowie Haftungsbeschränkungen.",
     },
   },
   text: {
@@ -49,7 +49,7 @@ export const de: Messages = {
       Privacy_dis: "Datenschutz",
     },
     Footer: {
-      CopyrightNotice: "SecureShare. Alle Rechte vorbehalten.",
+      CopyrightNotice: "PrivyDrop. Alle Rechte vorbehalten.",
       Terms_dis: "Nutzungsbedingungen",
       Privacy_dis: "Datenschutzrichtlinie",
       SupportedLanguages: "Unterstützte Sprachen",
@@ -57,17 +57,17 @@ export const de: Messages = {
 
     privacy: {
       PrivacyPolicy_dis: "Datenschutzrichtlinie",
-      h1: "SecureShare Datenschutzrichtlinie",
-      h1_P: "Bei SecureShare sind wir bestrebt, Ihre Privatsphäre zu schützen und Ihre persönlichen Daten zu sichern. Diese Datenschutzrichtlinie beschreibt, wie wir die Daten, die Sie bei der Nutzung unseres Dienstes bereitstellen, sammeln, verwenden und schützen.",
+      h1: "PrivyDrop Datenschutzrichtlinie",
+      h1_P: "Bei PrivyDrop sind wir bestrebt, Ihre Privatsphäre zu schützen und Ihre persönlichen Daten zu sichern. Diese Datenschutzrichtlinie beschreibt, wie wir die Daten, die Sie bei der Nutzung unseres Dienstes bereitstellen, sammeln, verwenden und schützen.",
       h2_1: "Informationssammlung",
       h2_1_P:
-        "SecureShare sammelt keine personenbezogenen Daten von Benutzern. Wir verlangen keine Registrierung oder Kontoerstellung, um unseren Dienst zu nutzen. Die einzigen Informationen, die wir sammeln, sind die Raum-ID und die Datei-/Clipboard-Daten, die Sie mit anderen Benutzern teilen möchten.",
+        "PrivyDrop sammelt keine personenbezogenen Daten von Benutzern. Wir verlangen keine Registrierung oder Kontoerstellung, um unseren Dienst zu nutzen. Die einzigen Informationen, die wir sammeln, sind die Raum-ID und die Datei-/Clipboard-Daten, die Sie mit anderen Benutzern teilen möchten.",
       h2_2: "Datenspeicherung und -sicherheit",
       h2_2_P:
         "Wir speichern keine Ihrer Daten auf unseren Servern. Alle Dateiübertragungen und Clipboard-Freigaben werden mit Ende-zu-Ende-Verschlüsselung verarbeitet, um sicherzustellen, dass Ihre Informationen sicher und nur für den vorgesehenen Empfänger zugänglich bleiben. Sobald die Übertragung abgeschlossen ist, werden die Daten aus unseren Systemen entfernt.",
       h2_3: "Drittanbieterdienste",
       h2_3_P:
-        "SecureShare integriert keine Drittanbieterdienste oder -plattformen. Wir geben oder verkaufen Ihre Daten nicht an Dritte weiter.",
+        "PrivyDrop integriert keine Drittanbieterdienste oder -plattformen. Wir geben oder verkaufen Ihre Daten nicht an Dritte weiter.",
       h2_4: "Änderungen der Datenschutzrichtlinie",
       h2_4_P:
         "Wir können diese Datenschutzrichtlinie von Zeit zu Zeit aktualisieren, um Änderungen in unseren Praktiken oder geltenden Gesetzen widerzuspiegeln. Alle Änderungen werden wirksam, sobald die aktualisierte Richtlinie auf unserer Website veröffentlicht wird. Es liegt in Ihrer Verantwortung, die Datenschutzrichtlinie regelmäßig auf Aktualisierungen zu überprüfen.",
@@ -77,28 +77,28 @@ export const de: Messages = {
     },
     terms: {
       TermsOfUse_dis: "Nutzungsbedingungen",
-      h1: "SecureShare Nutzungsbedingungen",
-      h1_P: "Durch die Nutzung des SecureShare-Dienstes erklären Sie sich mit diesen Nutzungsbedingungen einverstanden. Wenn Sie diesen Bedingungen nicht zustimmen, nutzen Sie den Dienst bitte nicht.",
+      h1: "PrivyDrop Nutzungsbedingungen",
+      h1_P: "Durch die Nutzung des PrivyDrop-Dienstes erklären Sie sich mit diesen Nutzungsbedingungen einverstanden. Wenn Sie diesen Bedingungen nicht zustimmen, nutzen Sie den Dienst bitte nicht.",
       h2_1: "Nutzung des Dienstes",
       h2_1_P:
-        "SecureShare wird als kostenloser Dienst ohne Einschränkungen bereitgestellt.",
+        "PrivyDrop wird als kostenloser Dienst ohne Einschränkungen bereitgestellt.",
       h2_2: "Datenschutz und -sicherheit",
       h2_2_P:
         "Wir nehmen den Schutz und die Sicherheit Ihrer Daten sehr ernst. Alle Dateiübertragungen und Clipboard-Freigaben werden mit Ende-zu-Ende-Verschlüsselung gesichert, und wir speichern keine Ihrer Daten auf unseren Servern. Wir können jedoch die Sicherheit Ihrer Daten während des Übertragungsprozesses nicht garantieren, und Sie nutzen den Dienst auf eigenes Risiko.",
       h2_3: "Akzeptable Nutzung",
       h2_3_P:
-        "Sie erklären sich damit einverstanden, SecureShare nicht für unlautere, missbräuchliche oder schädliche Zwecke zu verwenden. Dies umfasst, ist aber nicht beschränkt auf die Übertragung von illegalen, urheberrechtlich geschützten oder bösartigen Inhalten sowie die Nutzung des Dienstes, um andere zu belästigen oder zu imitieren.",
+        "Sie erklären sich damit einverstanden, PrivyDrop nicht für unlautere, missbräuchliche oder schädliche Zwecke zu verwenden. Dies umfasst, ist aber nicht beschränkt auf die Übertragung von illegalen, urheberrechtlich geschützten oder bösartigen Inhalten sowie die Nutzung des Dienstes, um andere zu belästigen oder zu imitieren.",
       h2_4: "Haftungsbeschränkung",
       h2_4_P:
-        "SecureShare wird „wie besehen“ ohne jegliche Gewährleistungen oder Garantien bereitgestellt. Wir haften nicht für direkte, indirekte oder Folgeschäden, die aus der Nutzung unseres Dienstes entstehen, einschließlich, aber nicht beschränkt auf Datenverlust, Systemausfälle oder Dienstunterbrechungen.",
+        "PrivyDrop wird „wie besehen“ ohne jegliche Gewährleistungen oder Garantien bereitgestellt. Wir haften nicht für direkte, indirekte oder Folgeschäden, die aus der Nutzung unseres Dienstes entstehen, einschließlich, aber nicht beschränkt auf Datenverlust, Systemausfälle oder Dienstunterbrechungen.",
       h2_5: "Änderungen der Nutzungsbedingungen",
       h2_5_P:
         "Wir behalten uns das Recht vor, diese Nutzungsbedingungen jederzeit zu aktualisieren. Alle Änderungen werden wirksam, sobald die aktualisierten Bedingungen auf unserer Website veröffentlicht werden. Es liegt in Ihrer Verantwortung, die Nutzungsbedingungen regelmäßig auf Änderungen zu überprüfen.",
     },
     help: {
       Help_dis: "Hilfe",
-      h1: "SecureShare Hilfe und Support",
-      h1_P: "Wir sind hier, um Ihnen zu helfen, das Beste aus SecureShare herauszuholen. Wenn Sie Fragen haben oder Unterstützung benötigen, zögern Sie bitte nicht, uns zu kontaktieren.",
+      h1: "PrivyDrop Hilfe und Support",
+      h1_P: "Wir sind hier, um Ihnen zu helfen, das Beste aus PrivyDrop herauszuholen. Wenn Sie Fragen haben oder Unterstützung benötigen, zögern Sie bitte nicht, uns zu kontaktieren.",
       h2_1: "Kontaktieren Sie uns",
       h2_1_P1: "Sie können uns eine E-Mail senden an",
       h2_1_P2: ". Wir werden uns innerhalb von 24 Stunden bei Ihnen melden.",
@@ -106,14 +106,14 @@ export const de: Messages = {
       h2_2_P: "Sie können uns auch in sozialen Medien finden:",
       h2_3: "Zusätzliche Ressourcen",
       h2_3_P:
-        "Weitere Informationen zu SecureShare finden Sie auf den folgenden Seiten:",
+        "Weitere Informationen zu PrivyDrop finden Sie auf den folgenden Seiten:",
     },
     about: {
-      h1: "Über SecureShare",
-      P1: "SecureShare ist ein kostenloses und sicheres Dateiübertragungs- und Clipboard-Sharing-Tool, das mit Fokus auf Privatsphäre und Benutzerfreundlichkeit entwickelt wurde. Unsere Mission ist es, eine einfache, aber leistungsstarke Lösung für die Übertragung von Dateien und die Freigabe von Inhalten geräteübergreifend ohne Einschränkungen bereitzustellen.",
-      P2: "Im Kern von SecureShare steht unser Engagement für Sicherheit und Privatsphäre. Wir verwenden Ende-zu-Ende-Verschlüsselung, um sicherzustellen, dass Ihre Daten während des Übertragungsprozesses geschützt sind, und wir speichern Ihre Dateien oder Clipboard-Inhalte niemals auf unseren Servern. Dies bedeutet, dass Ihre Daten lokal und unter Ihrer Kontrolle bleiben.",
-      P3: "Mit SecureShare können Sie mühelos Text, Bilder und Dateien jeder Größe teilen, ohne Registrierung oder Anmeldung. Unsere Plattform ist darauf ausgelegt, schnell, effizient und umweltfreundlich zu sein, mit einem Fokus auf ein nahtloses und benutzerfreundliches Erlebnis.",
-      P4: "Wir glauben daran, Benutzern die Kontrolle über ihr digitales Leben zu geben, und SecureShare ist unser Beitrag zu dieser Vision. Wir hoffen, dass unser Tool Ihnen hilft, sicher mit Freunden, Familie und Kollegen zu teilen und zusammenzuarbeiten, ohne Ihre Privatsphäre oder Sicherheit zu gefährden.",
+      h1: "Über PrivyDrop",
+      P1: "PrivyDrop ist ein kostenloses und sicheres Dateiübertragungs- und Clipboard-Sharing-Tool, das mit Fokus auf Privatsphäre und Benutzerfreundlichkeit entwickelt wurde. Unsere Mission ist es, eine einfache, aber leistungsstarke Lösung für die Übertragung von Dateien und die Freigabe von Inhalten geräteübergreifend ohne Einschränkungen bereitzustellen.",
+      P2: "Im Kern von PrivyDrop steht unser Engagement für Sicherheit und Privatsphäre. Wir verwenden Ende-zu-Ende-Verschlüsselung, um sicherzustellen, dass Ihre Daten während des Übertragungsprozesses geschützt sind, und wir speichern Ihre Dateien oder Clipboard-Inhalte niemals auf unseren Servern. Dies bedeutet, dass Ihre Daten lokal und unter Ihrer Kontrolle bleiben.",
+      P3: "Mit PrivyDrop können Sie mühelos Text, Bilder und Dateien jeder Größe teilen, ohne Registrierung oder Anmeldung. Unsere Plattform ist darauf ausgelegt, schnell, effizient und umweltfreundlich zu sein, mit einem Fokus auf ein nahtloses und benutzerfreundliches Erlebnis.",
+      P4: "Wir glauben daran, Benutzern die Kontrolle über ihr digitales Leben zu geben, und PrivyDrop ist unser Beitrag zu dieser Vision. Wir hoffen, dass unser Tool Ihnen hilft, sicher mit Freunden, Familie und Kollegen zu teilen und zusammenzuarbeiten, ohne Ihre Privatsphäre oder Sicherheit zu gefährden.",
       P5: "Weitere Informationen oder Fragen finden Sie auf den folgenden Seiten:",
     },
     HowItWorks: {
@@ -132,7 +132,7 @@ export const de: Messages = {
     },
     SystemDiagram: {
       h2: "Systemdiagramm",
-      h2_P: "SecureShare: Ihre Daten, Ihre Kontrolle. Einfach, schnell und privat.",
+      h2_P: "PrivyDrop: Ihre Daten, Ihre Kontrolle. Einfach, schnell und privat.",
     },
     KeyFeatures: {
       h2: "Hauptmerkmale",
@@ -171,10 +171,10 @@ export const de: Messages = {
         "Kann ich Dateien gleichzeitig mit mehreren Empfängern teilen?",
       answer_4:
         "Natürlich! Es gibt keinen Unterschied zwischen einem Empfänger und mehreren Empfängern, die gleichzeitig empfangen.",
-      question_5: "Sind meine Daten sicher, wenn ich SecureShare verwende?",
+      question_5: "Sind meine Daten sicher, wenn ich PrivyDrop verwende?",
       answer_5:
         "Absolut sicher. Ihre Daten bleiben immer lokal und werden zwischen Geräten über eine verschlüsselte Ende-zu-Ende-Verbindung übertragen. Alle übertragenen Daten sind verschlüsselt, sodass nur Sie und der Empfänger darauf zugreifen können.",
-      question_6: "Muss ich ein Konto erstellen, um SecureShare zu verwenden?",
+      question_6: "Muss ich ein Konto erstellen, um PrivyDrop zu verwenden?",
       answer_6:
         "Keine Registrierung oder Anmeldung erforderlich – öffnen Sie einfach die Website und beginnen Sie mit der Nutzung. Bequemlichkeit und Geschwindigkeit haben für uns Priorität.",
       question_7: "Gibt es Einschränkungen bei der Dateigröße?",
@@ -187,13 +187,13 @@ export const de: Messages = {
         "Wie kann ich das Teilen beenden, wenn ich es mir anders überlege?",
       answer_9:
         "Das Beenden einer Freigabe ist so einfach wie das Schließen des Browser-Tabs oder -Fensters. Sobald Sie dies tun, wird die Verbindung beendet, und es können keine weiteren Daten übertragen werden.",
-      question_10: "Verlangsamt SecureShare mein Gerät?",
+      question_10: "Verlangsamt PrivyDrop mein Gerät?",
       answer_10:
-        "Nein, SecureShare ist darauf ausgelegt, leichtgewichtig und effizient zu sein. Wenn Sie ein Speicherverzeichnis festlegen, werden alle empfangenen Daten direkt auf die Festplatte geschrieben, wodurch der Speicher umgangen wird. Dies hilft, die Leistung Ihres Geräts aufrechtzuerhalten.",
-      question_11: "Kann ich SecureShare offline verwenden?",
+        "Nein, PrivyDrop ist darauf ausgelegt, leichtgewichtig und effizient zu sein. Wenn Sie ein Speicherverzeichnis festlegen, werden alle empfangenen Daten direkt auf die Festplatte geschrieben, wodurch der Speicher umgangen wird. Dies hilft, die Leistung Ihres Geräts aufrechtzuerhalten.",
+      question_11: "Kann ich PrivyDrop offline verwenden?",
       answer_11:
         "Ja, wenn sich Sender und Empfänger im selben lokalen Netzwerk befinden, können sie sich bei bestehender Internetverbindung demselben Raum anschließen und dann die Verbindung trennen. Die Dateifreigabe funktioniert weiterhin. Einzelheiten finden Sie im YouTube-Video auf der Startseite.",
-      question_12: "Verwendet SecureShare Server?",
+      question_12: "Verwendet PrivyDrop Server?",
       answer_12:
         "Ja, es gibt tatsächlich einen leichtgewichtigen Server, der nur für die Signalisierung verwendet wird, um eine verschlüsselte Verbindung herzustellen. Sobald die Verbindung hergestellt ist, werden alle Daten direkt zwischen den Geräten über die verschlüsselte Verbindung übertragen.",
       question_13: "Wie lange ist eine Raum-ID gültig?",
@@ -319,8 +319,8 @@ export const de: Messages = {
       h2P_demo:
         "Sehen Sie, wie unsere lokale, Ende-zu-Ende-verschlüsselte Dateifreigabe Ihre Privatsphäre schützt",
       watch_tips: "Sie können das Video auch auf diesen Plattformen ansehen:",
-      youtube_tips: "SecureShare auf YouTube ansehen",
-      bilibili_tips: "SecureShare auf Bilibili ansehen",
+      youtube_tips: "PrivyDrop auf YouTube ansehen",
+      bilibili_tips: "PrivyDrop auf Bilibili ansehen",
     },
   },
 };

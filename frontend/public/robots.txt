@@ -2,4 +2,4 @@ User-agent: *
 Disallow: /api/
 Disallow: /*?roomId=
 Allow: /
-Sitemap: https://www.securityshare.xyz/sitemap.xml
+Sitemap: https://www.privydrop.app/sitemap.xml

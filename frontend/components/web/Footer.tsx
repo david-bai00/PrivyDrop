@@ -17,7 +17,7 @@ export function Footer({ messages, lang }: FooterProps) {
           <div className="flex items-center">
             <Image
               src="/logo.png"
-              alt="SecureShare Logo"
+              alt="PrivyDrop Logo"
               width={30}
               height={30}
               className="mr-2"

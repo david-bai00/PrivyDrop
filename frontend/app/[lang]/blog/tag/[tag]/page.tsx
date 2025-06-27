@@ -12,10 +12,10 @@ export async function generateMetadata({
   const decodedTag = unslugifyTag(tag);
 
   return {
-    title: `${decodedTag} - SecureShare Blog Articles`,
+    title: `${decodedTag} - PrivyDrop Blog Articles`,
     description: `Explore articles about ${decodedTag} - Learn about secure file sharing, private collaboration, and data privacy solutions related to ${decodedTag}`,
     keywords: `${decodedTag}, secure file sharing, p2p file transfer, privacy, collaboration, webrtc`,
-    metadataBase: new URL("https://www.securityshare.xyz"),
+    metadataBase: new URL("https://www.privydrop.app"),
     alternates: {
       canonical: `/${lang}/blog/tag/${encodeURIComponent(tag)}`,
       languages: {
@@ -24,12 +24,12 @@ export async function generateMetadata({
       },
     },
     openGraph: {
-      title: `${decodedTag} - SecureShare Blog Articles`,
+      title: `${decodedTag} - PrivyDrop Blog Articles`,
       description: `Discover articles about ${decodedTag} - Expert insights on secure file sharing and private collaboration solutions`,
-      url: `https://www.securityshare.xyz/${lang}/blog/tag/${encodeURIComponent(
+      url: `https://www.privydrop.app/${lang}/blog/tag/${encodeURIComponent(
         tag
       )}`,
-      siteName: "SecureShare",
+      siteName: "PrivyDrop",
       locale: lang,
       type: "website",
     },

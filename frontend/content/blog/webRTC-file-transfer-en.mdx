@@ -14,7 +14,7 @@ status: "published"
 
 Traditional file transfer methods largely rely on cloud storage or centralized servers, raising concerns about data privacy while facing limitations on upload sizes and speed bottlenecks. Our tool leverages WebRTC technology to enable direct device-to-device transfers, effectively addressing these challenges.
 
-Our developed tool([<u>**SecureShare**</u>](https://www.securityshare.xyz)) features several notable characteristics:
+Our developed tool([<u>**PrivyDrop**</u>](https://www.privydrop.app)) features several notable characteristics:
 
 - Device-to-device direct transfer using WebRTC technology, eliminating the need for intermediate servers
 - End-to-end encryption (E2EE) ensuring secure data transmission
@@ -34,14 +34,15 @@ WebRTC (Web Real-Time Communication) is an open standard supporting real-time co
 
 ### 1.1 Traditional vs WebRTC Approach
 
-| Feature | Traditional HTTP Transfer | WebRTC P2P Transfer |
-|---------|-------------------------|-------------------|
-| Transfer Path | Client → Server → Client | Direct Device-to-Device |
-| Latency | Limited by central server bandwidth | Limited only by physical network bandwidth |
-| File Size Limit | Usually restricted | Limited only by disk space |
-| Privacy Protection | Depends on service provider security | Mandatory encryption via DTLS protocol |
+| Feature            | Traditional HTTP Transfer            | WebRTC P2P Transfer                        |
+| ------------------ | ------------------------------------ | ------------------------------------------ |
+| Transfer Path      | Client → Server → Client             | Direct Device-to-Device                    |
+| Latency            | Limited by central server bandwidth  | Limited only by physical network bandwidth |
+| File Size Limit    | Usually restricted                   | Limited only by disk space                 |
+| Privacy Protection | Depends on service provider security | Mandatory encryption via DTLS protocol     |
 
 ### 1.2 P2P Connection Establishment Process
+
 ```mermaid
 sequenceDiagram
   participant UserA as User A (Sender)
@@ -86,6 +87,7 @@ WebRTC's **DataChannel** is based on the **Stream Control Transmission Protocol 
 - **Flexible Reliability**: While UDP itself is unreliable, SCTP implements reliable transmission mechanisms on top of it, combining UDP's flexibility with TCP's reliability.
 
 **SCTP Multi-Stream Transfer Diagram**
+
 ```mermaid
 graph TD
 A[Sender] --> B[DataChannel 1]
@@ -99,6 +101,7 @@ D --> E
 ## II. Browser Direct Transfer Engine: Core Technology Decoded
 
 ### 2.1 Precise Control of Chunk Transfer
+
 ```typescript
 // lib/fileSender.ts - 64KB Fixed-Size Chunks
 
@@ -110,15 +113,15 @@ private readonly CHUNK_SIZE = 65536;
 // Each generator call returns an ArrayBuffer type chunk data.
 private async *createChunkGenerator(file: File) {
   let offset = 0; // Initialize offset to mark current file reading position
-  
+
   // Loop through file until all data is processed
   while (offset < file.size) {
     // Use File.slice method to extract data segment from [offset, offset + CHUNK_SIZE)
     const chunk = file.slice(offset, offset + this.CHUNK_SIZE);
-    
+
     // Convert extracted data to ArrayBuffer and return via yield
     yield await chunk.arrayBuffer();
-    
+
     // Update offset for next chunk
     offset += this.CHUNK_SIZE;
   }
@@ -132,14 +135,16 @@ private async sendWithBackpressure(chunk: ArrayBuffer) {
     // Use Promise to wait for bufferedamountlow event indicating buffer space freed
     await new Promise(r => this.dataChannel.bufferedamountlow = r);
   }
-  
+
   // Send current chunk when buffer has sufficient space
   this.dataChannel.send(chunk);
 }
 ```
 
 ### 2.2 Zero-Copy Memory Writing
+
 Implemented through File System Access API:
+
 ```typescript
 // lib/fileReceiver.ts
 
@@ -149,11 +154,11 @@ private async writeToDisk(chunk: ArrayBuffer) {
   if (!this.writer) {
     // Show save file picker dialog for user to choose save location
     this.currentFileHandle = await window.showSaveFilePicker();
-    
+
     // Create writable stream through file handle for subsequent writes
     this.writer = await this.currentFileHandle.createWritable();
   }
-  
+
   // Convert received ArrayBuffer to Uint8Array and write directly to disk
   // This bypasses memory buffer, achieving zero-copy writing for improved performance
   await this.writer.write(new Uint8Array(chunk));
@@ -163,28 +168,33 @@ private async writeToDisk(chunk: ArrayBuffer) {
 ## III. Distributed Room Management System
 
 ### 3.1 Four-Digit Collision Detection:
+
 ```typescript
 // server.ts
 async function getAvailableRoomId() {
   let roomId;
   do {
     roomId = Math.floor(1000 + Math.random() * 9000); // Generate four-digit random number
-  } while (await redis.hexists(`room:${roomId}`, 'created_at')); // Check if exists
+  } while (await redis.hexists(`room:${roomId}`, "created_at")); // Check if exists
   return roomId;
 }
 ```
+
 Note: The 4-digit number is a system-generated random room ID. You can specify any room ID you prefer.
 
 ### 3.2 Graceful Expiration Strategy:
+
 ```typescript
 // server.ts
 await refreshRoom(roomId, 3600 * 24); // Active rooms retained for 24 hours
-if (await isRoomEmpty(roomId)) { // Release room if idle (both sender and receiver left)
+if (await isRoomEmpty(roomId)) {
+  // Release room if idle (both sender and receiver left)
   await deleteRoom(roomId);
 }
 ```
 
 ### 3.3 Signaling-Driven Recovery Protocol
+
 Mobile Disconnection Recovery Flow:
 
 ```mermaid
@@ -192,7 +202,7 @@ sequenceDiagram
   participant Sender
   participant Signaling
   participant Recipient
-  
+
   Sender->>Signaling: Send initiator-online when frontend visible
   Signaling->>Recipient: Forward online notification
   Recipient->>Signaling: Reply recipient-ready
@@ -217,49 +227,51 @@ Through this mechanism, the system can quickly restore connections even when use
 **Explanation:**
 
 1. **DTLS (Datagram Transport Layer Security)**:
-    - DTLS is a UDP-based secure transport protocol providing TLS-like encryption.
-    - In WebRTC, all data channels are end-to-end encrypted via DTLS, preventing eavesdropping or tampering during transmission.
-    - Uses encryption suite **`TLS_ECDHE_RSA_AES_128_GCM_SHA256`** for high-strength security.
+   - DTLS is a UDP-based secure transport protocol providing TLS-like encryption.
+   - In WebRTC, all data channels are end-to-end encrypted via DTLS, preventing eavesdropping or tampering during transmission.
+   - Uses encryption suite **`TLS_ECDHE_RSA_AES_128_GCM_SHA256`** for high-strength security.
 2. **OS-Level Encryption**:
-    - Modern browsers provide additional protection for sensitive data in memory at the OS level, preventing malicious software access.
+   - Modern browsers provide additional protection for sensitive data in memory at the OS level, preventing malicious software access.
 
 **Summary:**
 Through dual protection of DTLS and OS-level encryption, WebRTC provides robust privacy protection ensuring data security during file transfer.
 
 ### 4.2 Attack Surface Defense Matrix
 
-| **Attack Type** | **Defense Measure** | **Explanation** |
-| --- | --- | --- |
-| **MITM** | **SDP Fingerprint Verification** | **Generates unique fingerprint from DTLS public key hash to ensure communication party identity, preventing middleman data stream forgery or tampering.** |
-| **RoomID Traversal Attack** | **Room Entry Rate Limiting** | **Limits room entry frequency per IP address (e.g., max 2 joins per 5 seconds) to prevent malicious users from traversing room numbers to access content.** |
+| **Attack Type**             | **Defense Measure**              | **Explanation**                                                                                                                                             |
+| --------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **MITM**                    | **SDP Fingerprint Verification** | **Generates unique fingerprint from DTLS public key hash to ensure communication party identity, preventing middleman data stream forgery or tampering.**   |
+| **RoomID Traversal Attack** | **Room Entry Rate Limiting**     | **Limits room entry frequency per IP address (e.g., max 2 joins per 5 seconds) to prevent malicious users from traversing room numbers to access content.** |
 
 **Explanation:**
+
 1. **MITM (Man-in-the-Middle Attack)**
-    - **Principle**: WebRTC uses SDP fingerprints (based on DTLS public key hash) to verify communication party identity during handshake. Attackers cannot forge valid fingerprints, thus cannot impersonate legitimate parties.
-    - **Effect**: Ensures P2P connection security and data integrity, preventing eavesdropping or tampering.
+   - **Principle**: WebRTC uses SDP fingerprints (based on DTLS public key hash) to verify communication party identity during handshake. Attackers cannot forge valid fingerprints, thus cannot impersonate legitimate parties.
+   - **Effect**: Ensures P2P connection security and data integrity, preventing eavesdropping or tampering.
 2. **RoomID Traversal Attack**
-    - **Definition**: Malicious users might attempt different room numbers (e.g., four-digit IDs) to enter unauthorized rooms and access shared content.
-    - **Defense Measures**:
-      - **Rate Limiting**: Restrict room entry frequency per IP address, e.g., max 2 room joins per 5 seconds.
-      - **Implementation**: Use Redis to cache IP request records for quick detection and blocking of abnormal behavior.
-    - **Effect**: Effectively prevents malicious users from accessing sensitive content through room number traversal, protecting user privacy.
+   - **Definition**: Malicious users might attempt different room numbers (e.g., four-digit IDs) to enter unauthorized rooms and access shared content.
+   - **Defense Measures**:
+     - **Rate Limiting**: Restrict room entry frequency per IP address, e.g., max 2 room joins per 5 seconds.
+     - **Implementation**: Use Redis to cache IP request records for quick detection and blocking of abnormal behavior.
+   - **Effect**: Effectively prevents malicious users from accessing sensitive content through room number traversal, protecting user privacy.
 
 ## Conclusion: Building Trustworthy Transfer Infrastructure
 
-We believe technology should serve essential human needs rather than create new surveillance dependencies. Experience this privacy-secure file transfer tool now and feel the revolutionary changes brought by P2P technology! Click [<u>**SecureShare Portal**</u>](https://www.securityshare.xyz) to begin.
+We believe technology should serve essential human needs rather than create new surveillance dependencies. Experience this privacy-secure file transfer tool now and feel the revolutionary changes brought by P2P technology! Click [<u>**PrivyDrop Portal**</u>](https://www.privydrop.app) to begin.
 
 **Code Transparency Commitment**: Code will be open-sourced in the future. We are committed to establishing truly trustworthy privacy tools through community co-governance.
 
 ## FAQ
 
-  - **Will large file transfers be prone to interruption?**
-    - Haven't observed such cases yet. P2P (device-to-device) connections are generally stable. We may add resume-from-breakpoint capability based on future feedback.
-  - **Would adding room passwords be more secure?**
-    - Theoretically yes. Considering password addition would slightly impact usability, it's not implemented yet. For enhanced security, you can use any custom string as RoomID and share via links and QR codes. Additionally, the system limits receiver room entry frequency, further improving security.
-  - **Can senders close the SecureShare page anytime?**
-    - Yes, preferably after content is received. Since it's direct device connection, sharing isn't possible if sender is offline. If you want to stop sharing, you can close the page immediately.
+- **Will large file transfers be prone to interruption?**
+  - Haven't observed such cases yet. P2P (device-to-device) connections are generally stable. We may add resume-from-breakpoint capability based on future feedback.
+- **Would adding room passwords be more secure?**
+  - Theoretically yes. Considering password addition would slightly impact usability, it's not implemented yet. For enhanced security, you can use any custom string as RoomID and share via links and QR codes. Additionally, the system limits receiver room entry frequency, further improving security.
+- **Can senders close the PrivyDrop page anytime?**
+  - Yes, preferably after content is received. Since it's direct device connection, sharing isn't possible if sender is offline. If you want to stop sharing, you can close the page immediately.
 
-  More questions? Click [<u>**SecureShare FAQ**</u>](https://www.securityshare.xyz/faq) or [<u>**SecureShare Help**</u>](https://www.securityshare.xyz/help) sections for more answers and help.
+More questions? Click [<u>**PrivyDrop FAQ**</u>](https://www.privydrop.app/faq) or [<u>**PrivyDrop Help**</u>](https://www.privydrop.app/help) sections for more answers and help.
 
 **Developer Resources**
+
 - [<u>**WebRTC Official Documentation**</u>](https://webrtc.org/)
