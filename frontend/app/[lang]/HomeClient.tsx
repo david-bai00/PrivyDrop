@@ -7,6 +7,7 @@ import HowItWorks from "@/components/web/HowItWorks";
 import YouTubePlayer from "@/components/common/YouTubePlayer";
 import KeyFeatures from "@/components/web/KeyFeatures";
 import type { Messages } from "@/types/messages";
+import LazyLoadWrapper from "@/components/common/LazyLoadWrapper";
 
 interface PageContentProps {
   messages: Messages;
@@ -39,53 +40,65 @@ export default function HomeClient({ messages, lang }: PageContentProps) {
       </section>
       {/* Demo Video Section */}
       <section className="mb-12" aria-label="Product Demo">
-        <h2 className="text-3xl font-bold mb-6 text-center">
-          {messages.text.home.h2_demo}
-        </h2>
-        <p className="text-center mb-6 text-gray-600">
-          {messages.text.home.h2P_demo}
-        </p>
-        <YouTubePlayer videoId={youtube_videoId} />
+        <LazyLoadWrapper>
+          <h2 className="text-3xl font-bold mb-6 text-center">
+            {messages.text.home.h2_demo}
+          </h2>
+          <p className="text-center mb-6 text-gray-600">
+            {messages.text.home.h2P_demo}
+          </p>
+          <YouTubePlayer videoId={youtube_videoId} />
 
-        <div className="mt-4 text-center">
-          <p className="mb-3 text-gray-700">{messages.text.home.watch_tips}</p>
-          <a
-            className="flex justify-center gap-4 text-blue-500 hover:underline transition-colors"
-            href={`https://www.youtube.com/watch?v=${youtube_videoId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {messages.text.home.youtube_tips}
-          </a>
-          <a
-            className="flex justify-center gap-4 text-blue-500 hover:underline transition-colors"
-            href={`https://www.bilibili.com/video/${bilibili_videoId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {messages.text.home.bilibili_tips}
-          </a>
-        </div>
+          <div className="mt-4 text-center">
+            <p className="mb-3 text-gray-700">
+              {messages.text.home.watch_tips}
+            </p>
+            <a
+              className="flex justify-center gap-4 text-blue-500 hover:underline transition-colors"
+              href={`https://www.youtube.com/watch?v=${youtube_videoId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {messages.text.home.youtube_tips}
+            </a>
+            <a
+              className="flex justify-center gap-4 text-blue-500 hover:underline transition-colors"
+              href={`https://www.bilibili.com/video/${bilibili_videoId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {messages.text.home.bilibili_tips}
+            </a>
+          </div>
+        </LazyLoadWrapper>
       </section>
       {/* How It Works Section */}
       <section aria-label="How It Works">
-        <HowItWorks messages={messages} />
+        <LazyLoadWrapper>
+          <HowItWorks messages={messages} />
+        </LazyLoadWrapper>
       </section>
       {/* System Architecture Section */}
       <section aria-label="System Architecture">
-        <SystemDiagram messages={messages} />
+        <LazyLoadWrapper>
+          <SystemDiagram messages={messages} />
+        </LazyLoadWrapper>
       </section>
       {/* Key Features */}
       <section aria-label="Key Features">
-        <KeyFeatures messages={messages} />
+        <LazyLoadWrapper>
+          <KeyFeatures messages={messages} />
+        </LazyLoadWrapper>
       </section>
       {/* FAQ Section */}
       <section aria-label="Frequently Asked Questions">
-        <FAQSection
-          messages={messages}
-          isMainPage
-          titleClassName="text-2xl md:text-3xl"
-        />
+        <LazyLoadWrapper>
+          <FAQSection
+            messages={messages}
+            isMainPage
+            titleClassName="text-2xl md:text-3xl"
+          />
+        </LazyLoadWrapper>
       </section>
     </main>
   );

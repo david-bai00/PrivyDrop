@@ -41,6 +41,7 @@
     "qrcode.react": "^4.0.1",
     "react": "^18",
     "react-dom": "^18",
+    "react-intersection-observer": "^9.16.0",
     "remark-gfm": "^4.0.0",
     "sharp": "^0.33.5",
     "socket.io-client": "^4.7.5",
