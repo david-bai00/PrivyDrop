@@ -64,11 +64,11 @@ Before you begin, ensure your development environment has [Node.js](https://node
 
     # Create and configure .env.development.local according to the instructions in frontend/README.md
 
-    pnpm dev # Starts by default at http://localhost:3000
+    pnpm dev # Starts by default at http://localhost:3002
     ```
 
 4.  **Start Sharing**
-    Open `http://localhost:3000` in your browser to access the application.
+    Open `http://localhost:3002` in your browser to access the application.
 
 ## 🗺️ Roadmap
 

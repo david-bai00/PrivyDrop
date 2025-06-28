@@ -33,7 +33,7 @@ Before you start, please ensure you have **installed and started the backend ser
     ```bash
     pnpm dev
     ```
-5.  Open `http://localhost:3000` in your browser to see the application.
+5.  Open `http://localhost:3002` in your browser to see the application.
 
 ## 📚 Detailed Documentation
 

@@ -37,8 +37,8 @@
 
     ```ini
     # 服务器配置
-    PORT=3001
-    CORS_ORIGIN=http://localhost:3000 # 前端开发服务器的 URL
+    BACKEND_PORT=3001
+    CORS_ORIGIN=http://localhost:3002 # 前端开发服务器的 URL
 
     # Redis 配置
     REDIS_HOST=127.0.0.1
@@ -50,7 +50,7 @@
     ```bash
     npm run dev
     ```
-    服务器将在 `PORT` 环境变量指定的端口上启动（默认为 3001）。
+    服务器将在 `BACKEND_PORT` 环境变量指定的端口上启动（默认为 3001）。
 
 ## 📖 API 与事件摘要
 

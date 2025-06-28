@@ -3,7 +3,7 @@ import path from "path";
 
 // Define the type for the configuration object
 interface AppConfig {
-  PORT: number;
+  BACKEND_PORT: number;
   CORS_ORIGIN: string;
   NODE_ENV: "development" | "production";
   REDIS: {
@@ -30,7 +30,7 @@ if (!process.env.REDIS_PORT) {
 }
 // Export the type-safe configuration object
 export const CONFIG: AppConfig = {
-  PORT: parseInt(process.env.BACKEND_PORT || "3001", 10),
+  BACKEND_PORT: parseInt(process.env.BACKEND_PORT || "3001", 10),
   CORS_ORIGIN: process.env.CORS_ORIGIN!,
   NODE_ENV:
     (process.env.NODE_ENV as "development" | "production") || "development",

@@ -17,8 +17,8 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: corsWSOptions });
 setupSocketHandlers(io);
 
-server.listen(CONFIG.PORT, () => {
+server.listen(CONFIG.BACKEND_PORT, () => {
   console.log(
-    `Signaling server running in ${CONFIG.NODE_ENV} mode on port ${CONFIG.PORT}`
+    `Signaling server running in ${CONFIG.NODE_ENV} mode on port ${CONFIG.BACKEND_PORT}`
   );
 });

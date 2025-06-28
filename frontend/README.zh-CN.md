@@ -33,7 +33,7 @@
     ```bash
     pnpm dev
     ```
-5.  在浏览器中打开 `http://localhost:3000` 即可看到应用界面。
+5.  在浏览器中打开 `http://localhost:3002` 即可看到应用界面。
 
 ## 📚 详细文档
 

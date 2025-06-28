@@ -37,8 +37,8 @@ This is the backend server for PrivyDrop. It is built with Node.js, Express, and
 
     ```ini
     # Server Configuration
-    PORT=3001
-    CORS_ORIGIN=http://localhost:3000 # URL of the frontend development server
+    BACKEND_PORT=3001
+    CORS_ORIGIN=http://localhost:3002 # URL of the frontend development server
 
     # Redis Configuration
     REDIS_HOST=127.0.0.1
@@ -50,7 +50,7 @@ This is the backend server for PrivyDrop. It is built with Node.js, Express, and
     ```bash
     npm run dev
     ```
-    The server will start on the port specified by the `PORT` environment variable (defaults to 3001).
+    The server will start on the port specified by the `BACKEND_PORT` environment variable (defaults to 3001).
 
 ## 📖 API & Event Summary
 

@@ -64,11 +64,11 @@ PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）�
 
     # 根据 frontend/README.zh-CN.md 指引创建并配置 .env.development.local
 
-    pnpm dev # 默认启动于 http://localhost:3000
+    pnpm dev # 默认启动于 http://localhost:3002
     ```
 
 4.  **开始使用**
-    在浏览器中打开 `http://localhost:3000` 即可访问应用。
+    在浏览器中打开 `http://localhost:3002` 即可访问应用。
 
 ## 🗺️ 路线图
 

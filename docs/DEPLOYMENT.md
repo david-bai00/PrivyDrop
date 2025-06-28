@@ -198,7 +198,7 @@ In production, Nginx will act as the entry point for all traffic, handling SSL t
 
 - **Backend:**
   - Create a `.env.production.local` file in the `backend/` directory.
-  - Fill in the necessary environment variables (e.g., `PORT`, `REDIS_HOST`, `REDIS_PORT`, `CORS_ORIGIN`).
+  - Fill in the necessary environment variables (e.g., `BACKEND_PORT`, `REDIS_HOST`, `REDIS_PORT`, `CORS_ORIGIN`).
   - For Nginx integration, also add `NGINX_SERVER_NAME`, `NGINX_SSL_CERT`, `NGINX_SSL_KEY`, and `NGINX_FRONTEND_ROOT`.
 - **Frontend:**
   - Create a `.env.production.local` file in the `frontend/` directory.
