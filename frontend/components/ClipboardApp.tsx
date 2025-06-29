@@ -90,7 +90,17 @@ const ClipboardApp = () => {
   });
 
   if (isLoadingMessages || !messages) {
-    return <div className="p-4 text-center">Loading messages...</div>;
+    // Use a skeleton screen placeholder to replace the simple text loading prompt.
+    // The height of this placeholder is similar to the height of the component that is finally loaded,
+    // This prevents layout displacement and ensures that the lazy loading component below will not be triggered prematurely.
+    return (
+      <div className="container mx-auto px-4 py-8 w-full md:max-w-4xl">
+        <div className="min-h-[1000px] w-full bg-gray-200/50 dark:bg-gray-800/50 rounded-lg animate-pulse">
+          {" "}
+          Loading Editor...{" "}
+        </div>
+      </div>
+    );
   }
 
   return (

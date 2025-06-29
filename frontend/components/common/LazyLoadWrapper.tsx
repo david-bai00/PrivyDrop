@@ -5,8 +5,7 @@ import { ReactNode, useEffect, useState } from "react";
 
 interface LazyLoadWrapperProps {
   children: ReactNode;
-  // 可以设置一个延迟，让组件在进入视口后稍微等一下再渲染，避免滚动过快时频繁渲染
-  // rootMargin 可以让组件在距离视口还有 N 像素时就开始加载
+  // rootMargin: start loading components when they are N pixels away from the viewport.
   options?: {
     triggerOnce?: boolean;
     rootMargin?: string;
@@ -15,7 +14,7 @@ interface LazyLoadWrapperProps {
 
 export default function LazyLoadWrapper({
   children,
-  options = { triggerOnce: true, rootMargin: "200px" },
+  options = { triggerOnce: true, rootMargin: "100px" },
 }: LazyLoadWrapperProps) {
   const { ref, inView } = useInView(options);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -26,7 +25,7 @@ export default function LazyLoadWrapper({
     }
   }, [inView, isLoaded]);
 
-  // 使用一个 div 包裹并附加 ref，同时可以设置最小高度，防止懒加载时页面布局跳动
+  // Wrap the component with a div and attach the ref, and set a minimum height to prevent layout jumps when lazy loading
   return (
     <div ref={ref} className="min-h-[200px]">
       {isLoaded ? children : null}
