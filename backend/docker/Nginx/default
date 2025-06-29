@@ -25,6 +25,11 @@ server {
 
     server_name YourDomain www.YourDomain;
     
+    # SSL Configuration (using placeholder certs for Certbot)
+    # Certbot will find this block and replace these with the real certificates.
+    ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
+    ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+    
     # SSL Optimization
     ssl_session_timeout 1d;
     ssl_session_cache shared:SSL:50m;
