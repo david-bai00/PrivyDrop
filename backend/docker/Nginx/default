@@ -24,10 +24,6 @@ server {
     ssl_early_data on;
 
     server_name YourDomain www.YourDomain;
-
-    # SSL Configuration
-    ssl_certificate path/to/your/certFile;
-    ssl_certificate_key path/to/your/privkeyFile;
     
     # SSL Optimization
     ssl_session_timeout 1d;

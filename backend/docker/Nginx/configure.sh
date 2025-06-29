@@ -3,8 +3,6 @@
 # Define required environment variables
 declare -A required_vars=(
     ["NGINX_SERVER_NAME"]="Nginx server domain"
-    ["NGINX_SSL_CERT"]="SSL certificate path"
-    ["NGINX_SSL_KEY"]="SSL key path"
     ["NGINX_FRONTEND_ROOT"]="Frontend build file path"
     ["BACKEND_PORT"]="Backend service port"
 )
@@ -72,12 +70,6 @@ configure_nginx() {
         # Replace server_name
         if [[ $line =~ ^[[:space:]]*server_name[[:space:]]+ ]]; then
             echo "    server_name $NGINX_SERVER_NAME www.$NGINX_SERVER_NAME;"
-        # Replace SSL certificate path
-        elif [[ $line =~ ^[[:space:]]*ssl_certificate[[:space:]]+ ]]; then
-            echo "    ssl_certificate $NGINX_SSL_CERT;"
-        # Replace SSL key path
-        elif [[ $line =~ ^[[:space:]]*ssl_certificate_key[[:space:]]+ ]]; then
-            echo "    ssl_certificate_key $NGINX_SSL_KEY;"
         # Exactly match the frontend build path setting line
         elif [[ $line =~ ^[[:space:]]*set[[:space:]]+\$frontend_build_root[[:space:]]+ ]]; then
             echo "    set \$frontend_build_root $NGINX_FRONTEND_ROOT;"
@@ -97,11 +89,10 @@ configure_nginx() {
 
 # Execute configuration
 configure_nginx
-
-# Test Nginx configuration
 cp docker/Nginx/nginx.conf /etc/nginx
-nginx -t
 
-/etc/init.d/nginx restart
-
-echo "Nginx configuration completed."
+echo "Nginx base configuration generated successfully at /etc/nginx/sites-available/default."
+echo "The script no longer restarts Nginx automatically."
+echo ""
+echo "NEXT STEP: Run Certbot to install the SSL certificate and automatically configure Nginx:"
+echo "sudo certbot --nginx -d your_domain.com -d www.your_domain.com"
