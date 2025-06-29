@@ -111,9 +111,8 @@ server {
 
         # Try to find files in order:
         # 1. $uri: as a file in the public directory (e.g., /image.png -> $frontend_build_root/public/image.png)
-        # 2. $uri/: as a directory in the public directory (not typically used for Next.js public files)
-        # 3. @nextjs: If none of the above are found, pass the request to the Next.js application for processing
-        try_files $uri $uri/ @nextjs_app;
+        # 2. @nextjs: If none of the above are found, pass the request to the Next.js application for processing
+        try_files $uri @nextjs_app;
     }
     # Named location, used to proxy requests to the Next.js application
     location @nextjs_app {
