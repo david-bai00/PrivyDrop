@@ -1,5 +1,14 @@
 import { CorsOptions } from "cors";
 import { CONFIG } from "./env";
+
+// Define the sources allowed in the development environment
+const DEV_ORIGINS = [
+  CONFIG.CORS_ORIGIN,                         // http://localhost:3002
+  'http://localhost:3000',                    // alternate port
+  /^http:\/\/192\.168\.\d+\.\d+:3000$/,      // LAN addresses
+  /^http:\/\/192\.168\.\d+\.\d+:3002$/       // LAN addresses with new port
+];
+
 // Configure CORS
 export const corsOptions: CorsOptions =
   CONFIG.NODE_ENV === "production"
@@ -10,7 +19,7 @@ export const corsOptions: CorsOptions =
         allowedHeaders: ["Content-Type", "Authorization"],
       }
     : {
-        origin: true, // Allow all origins in development environment
+        origin: DEV_ORIGINS,
         credentials: true,
         methods: ["GET", "POST", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
@@ -25,10 +34,7 @@ export const corsWSOptions =
       }
     : {
         // Allow multiple origins in development environment
-        origin: [
-          CONFIG.CORS_ORIGIN,
-          /^http:\/\/192\.168\.\d+\.\d+:3000$/, // Match all LAN addresses in the format 192.168.x.x:3000
-        ],
+        origin: DEV_ORIGINS,
         methods: ["GET", "POST"],
         credentials: true,
       };
