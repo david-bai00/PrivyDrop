@@ -112,8 +112,8 @@ sudo apt install coturn
 
     ```bash
     # 位于 backend/ 目录
-    sudo bash ./docker/TURN/configure.sh path/to/your/.env.production.local
-    # 开发环境使用 .env.development.local
+    sudo bash ./docker/TURN/configure.sh path/to/your/.env.production
+    # 开发环境使用 .env.development
     sudo systemctl status coturn
     ```
 
@@ -179,7 +179,7 @@ cd backend && npm build && cd ..
 4.  **Nginx 配置文件:**
     后端项目 `backend/docker/Nginx/` 目录中提供了配置脚本和模板。
 
-    - 在后端的 `.env.production.local` 文件中添加 `NGINX_*` 相关变量，包括域名、证书路径和**前端构建产物的根目录**,示例为：
+    - 在后端的 `.env.production` 文件中添加 `NGINX_*` 相关变量，包括域名、证书路径和**前端构建产物的根目录**,示例为：
 
     ```
     NGINX_SERVER_NAME=yourdomain # 不带 www 前缀,yourdomain包含了后缀
@@ -190,16 +190,16 @@ cd backend && npm build && cd ..
 
 5.  **应用配置:** 创建软链接并重启 Nginx。
     ```bash
-    # 此脚本会使用 .env.production.local 中的 NGINX_* 变量来生成 Nginx 配置文件
-    sudo bash docker/Nginx/configure.sh .env.production.local
+    # 此脚本会使用 .env.production 中的 NGINX_* 变量来生成 Nginx 配置文件
+    sudo bash docker/Nginx/configure.sh .env.production
     ```
 
 ### 4.4. 配置环境变量
 
 - **后端:**
-  - 在 `backend/` 目录下创建 `.env.production.local` 或 `.env.development.local` 文件
-  - 在 `.env.development.local` 文件中填入环境变量 (BACKEND_PORT, REDIS_HOST, REDIS_PORT, CORS_ORIGIN)。
-  - 在 `.env.production.local` 文件中除了上述变量外，还要加入 (NGINX_SERVER_NAME, NGINX_SSL_CERT, NGINX_SSL_KEY, NGINX_FRONTEND_ROOT)。
+  - 在 `backend/` 目录下创建 `.env.production` 或 `.env.development` 文件
+  - 在 `.env.development` 文件中填入环境变量 (BACKEND_PORT, REDIS_HOST, REDIS_PORT, CORS_ORIGIN)。
+  - 在 `.env.production` 文件中除了上述变量外，还要加入 (NGINX_SERVER_NAME, NGINX_SSL_CERT, NGINX_SSL_KEY, NGINX_FRONTEND_ROOT)。
 - **前端:** 在 `frontend/` 目录下创建 `.env.production` 或 `.env.development` 文件,并填入环境变量 (NEXT_PUBLIC_API_URL)。
 
 ### 4.5. 使用 PM2 运行应用
@@ -217,7 +217,7 @@ PM2 是一个强大的 Node.js 进程管理器，我们将用它来分别运行�
 
     ```bash
     cd backend
-    # 确保 .env.production.local 已配置完毕
+    # 确保 .env.production 已配置完毕
     pm2 start ecosystem.config.js
     ```
 

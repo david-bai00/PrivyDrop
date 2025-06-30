@@ -16,8 +16,8 @@ interface AppConfig {
 dotenv.config({
   path:
     process.env.NODE_ENV === "production"
-      ? path.resolve(process.cwd(), ".env.production.local")
-      : path.resolve(process.cwd(), ".env.development.local"),
+      ? path.resolve(process.cwd(), ".env.production")
+      : path.resolve(process.cwd(), ".env.development"),
 });
 // Check for necessary Redis environment variables
 if (!process.env.REDIS_HOST) {

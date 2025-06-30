@@ -112,8 +112,8 @@ sudo apt install coturn
 
     ```bash
     # Located in the backend/ directory
-    sudo bash ./docker/TURN/configure.sh path/to/your/.env.production.local
-    # For a development environment, use .env.development.local
+    sudo bash ./docker/TURN/configure.sh path/to/your/.env.production
+    # For a development environment, use .env.development
     sudo systemctl status coturn
     ```
 
@@ -179,7 +179,7 @@ In production, Nginx will act as the entry point for all traffic, handling SSL t
 4.  **Nginx Configuration File:**
     The `backend/docker/Nginx/` directory in the project provides a configuration script and template.
 
-    - Add the `NGINX_*` related variables to your backend's `.env.production.local` file, including the domain, certificate paths, and the **root directory of the frontend build artifacts**. Example:
+    - Add the `NGINX_*` related variables to your backend's `.env.production` file, including the domain, certificate paths, and the **root directory of the frontend build artifacts**. Example:
 
     ```
     NGINX_SERVER_NAME=yourdomain.com # The full domain name
@@ -191,17 +191,17 @@ In production, Nginx will act as the entry point for all traffic, handling SSL t
 5.  **Apply Configuration:** Generate the Nginx config, create a symbolic link, and restart Nginx.
     ```bash
     # This script uses NGINX_* variables from your .env file to generate the Nginx config
-    sudo bash backend/docker/Nginx/configure.sh backend/.env.production.local
+    sudo bash backend/docker/Nginx/configure.sh backend/.env.production
     ```
 
 ### 4.4. Configure Environment Variables
 
 - **Backend:**
-  - Create a `.env.production.local` file in the `backend/` directory.
+  - Create a `.env.production` file in the `backend/` directory.
   - Fill in the necessary environment variables (e.g., `BACKEND_PORT`, `REDIS_HOST`, `REDIS_PORT`, `CORS_ORIGIN`).
   - For Nginx integration, also add `NGINX_SERVER_NAME`, `NGINX_SSL_CERT`, `NGINX_SSL_KEY`, and `NGINX_FRONTEND_ROOT`.
 - **Frontend:**
-  - Create a `.env.production.local` file in the `frontend/` directory.
+  - Create a `.env.production` file in the `frontend/` directory.
   - Fill in the `NEXT_PUBLIC_API_URL` variable.
 
 ### 4.5. Run the Application with PM2
@@ -219,7 +219,7 @@ PM2 is a powerful process manager for Node.js. We will use it to run the backend
 
     ```bash
     cd backend
-    # Ensure .env.production.local is fully configured
+    # Ensure .env.production is fully configured
     pm2 start ecosystem.config.js
     ```
 

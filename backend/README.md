@@ -33,7 +33,7 @@ This is the backend server for PrivyDrop. It is built with Node.js, Express, and
     ```
 
 3.  **Configure Environment Variables**
-    Create a `.env.development.local` file in the `backend/` directory and populate it with the following variables:
+    Create a `.env.development` file in the `backend/` directory and populate it with the following variables:
 
     ```ini
     # Server Configuration

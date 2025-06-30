@@ -39,6 +39,6 @@ for CERT_PATH in "$CERTBOT_DIR"/*/fullchain.pem; do
             echo "Failed to renew certificate for $DOMAIN"
         fi
         # Start nginx
-        sudo bash configure.sh ../../.env.production.local
+        sudo bash configure.sh ../../.env.production
     fi
 done

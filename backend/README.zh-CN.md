@@ -33,7 +33,7 @@
     ```
 
 3.  **配置环境变量**
-    在 `backend/` 目录中创建一个 `.env.development.local` 文件，并填充以下变量：
+    在 `backend/` 目录中创建一个 `.env.development` 文件，并填充以下变量：
 
     ```ini
     # 服务器配置

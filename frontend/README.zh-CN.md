@@ -25,7 +25,7 @@
     pnpm install
     ```
 3.  **配置环境变量**
-    在 `frontend/` 目录下创建 `.env.development.local` 文件，并填入开发所需的环境变量，至少需要指定后端 API 的地址：
+    在 `frontend/` 目录下创建 `.env.development` 文件，并填入开发所需的环境变量，至少需要指定后端 API 的地址：
     ```ini
     NEXT_PUBLIC_API_URL=http://localhost:3001
     ```
