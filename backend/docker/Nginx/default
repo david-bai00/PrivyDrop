@@ -44,7 +44,7 @@ server {
     
     # Define the root path of the frontend build artifacts inside the container
     # !!! Important: Please modify this path to the actual path of your frontend project build inside the Nginx container !!!
-    set $frontend_build_root path/to/your/frontend_build_root;
+    set $frontend_build_root path/to/PrivyDrop/frontend;
 
     # 1. Prioritize handling of Next.js core static resources (_next/static)
     location /_next/static/ {

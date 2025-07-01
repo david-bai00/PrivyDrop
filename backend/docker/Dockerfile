@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y tzdata
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 # Install certbot nginx
-RUN apt install -y certbot python3-certbot-nginx
+RUN apt install -y certbot python3-certbot-nginx ssl-cert
 
 # TURN server
 RUN apt-get install -y vim coturn
