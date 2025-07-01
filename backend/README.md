@@ -33,18 +33,11 @@ This is the backend server for PrivyDrop. It is built with Node.js, Express, and
     ```
 
 3.  **Configure Environment Variables**
-    Create a `.env.development` file in the `backend/` directory and populate it with the following variables:
-
-    ```ini
-    # Server Configuration
-    BACKEND_PORT=3001
-    CORS_ORIGIN=http://localhost:3002 # URL of the frontend development server
-
-    # Redis Configuration
-    REDIS_HOST=127.0.0.1
-    REDIS_PORT=6379
-    # REDIS_PASSWORD=your_redis_password
+    First, copy the environment variable configuration from the template file:
+    ```bash
+    cp .env_development_example .env.development
     ```
+    Then, open and edit the `.env.development` file to match your local Redis and frontend configuration.
 
 4.  **Run the Development Server**
     ```bash

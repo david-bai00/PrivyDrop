@@ -33,18 +33,11 @@
     ```
 
 3.  **配置环境变量**
-    在 `backend/` 目录中创建一个 `.env.development` 文件，并填充以下变量：
-
-    ```ini
-    # 服务器配置
-    BACKEND_PORT=3001
-    CORS_ORIGIN=http://localhost:3002 # 前端开发服务器的 URL
-
-    # Redis 配置
-    REDIS_HOST=127.0.0.1
-    REDIS_PORT=6379
-    # REDIS_PASSWORD=your_redis_password
+    首先，从模板文件复制一份开发环境变量配置：
+    ```bash
+    cp .env_development_example .env.development
     ```
+    然后，打开并编辑 `.env.development` 文件，根据你的本地 Redis 和前端配置进行调整。
 
 4.  **运行开发服务器**
     ```bash

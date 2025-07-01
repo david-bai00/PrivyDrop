@@ -97,14 +97,31 @@ cd backend && npm run build && cd ..
 
 在生产中，Nginx 将作为所有流量的入口，负责 SSL 终止，并将请求路由到正确的前端或后端服务。
 
-1.  **安装 Nginx:** 推荐安装支持 HTTP/3 的较新版本。
+1.  **为后端和前端准备生产环境变量**
+    在部署之前，请确保后端和前端的生产环境变量文件已准备就绪。您需要从示例文件复制并根据您的服务器信息进行修改。
 
-2.  **防火墙:** 确保 `TCP:80 (HTTP)` 和 `TCP/UDP:443 (HTTPS/HTTP3)` 端口已打开。
+    -   **后端配置:**
+        ```bash
+        # 位于项目根目录
+        cp backend/.env_production_example backend/.env.production
+        ```
+        然后编辑 `backend/.env.production`，至少配置 `CORS_ORIGIN` 为您的主域名 (例如 `https://privydrop.app`) 以及 `REDIS` 相关信息。
 
-3.  **生成 Nginx 基础配置:**
-    后端项目 `backend/docker/Nginx/` 目录中提供了配置脚本和模板。此模板使用一个临时的“占位符”证书，以确保 Nginx 配置在申请真实证书前是有效的。
+    -   **前端配置:**
+        ```bash
+        # 位于项目根目录
+        cp frontend/.env_production_example frontend/.env.production
+        ```
+        然后编辑 `frontend/.env.production`，配置 `NEXT_PUBLIC_API_URL` 为您的后端服务域名 (例如 `https://privydrop.app`)。
 
-    -   在后端的 `.env.production` 文件中添加 `NGINX_*` 相关变量，**无需 SSL 证书路径**。示例为：
+2.  **安装 Nginx:** 推荐安装支持 HTTP/3 的较新版本。
+
+3.  **防火墙:** 确保 `TCP:80 (HTTP)` 和 `TCP/UDP:443 (HTTPS/HTTP3)` 端口已打开。
+
+4.  **生成 Nginx 基础配置:**
+    后端项目 `backend/docker/Nginx/` 目录中提供了配置脚本和模板。此模板使用一个临时的"占位符"证书，以确保 Nginx 配置在申请真实证书前是有效的。
+
+    -   现在，编辑 `backend/.env.production` 文件，添加 `NGINX_*` 相关变量。**无需 SSL 证书路径**。示例为：
         ```
         NGINX_SERVER_NAME=privydrop.app # 你的主域名
         NGINX_FRONTEND_ROOT=/path/to/your/PrivyDrop/frontend # 前端项目根目录
@@ -158,7 +175,7 @@ cd backend && npm run build && cd ..
 获取到统一的 SSL 证书后，我们现在来完成 Coturn 服务的生产环境配置。
 
 1.  **配置环境变量**:
-    在后端的 `.env.production` 文件中，配置所有 `TURN_*` 相关变量。
+    打开后端的 `.env.production` 文件，配置所有 `TURN_*` 相关变量。
     ```ini
     # .env.production
 

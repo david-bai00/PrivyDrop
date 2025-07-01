@@ -25,10 +25,12 @@
     pnpm install
     ```
 3.  **配置环境变量**
-    在 `frontend/` 目录下创建 `.env.development` 文件，并填入开发所需的环境变量，至少需要指定后端 API 的地址：
-    ```ini
-    NEXT_PUBLIC_API_URL=http://localhost:3001
+    首先，从模板文件复制一份开发环境变量配置：
+    ```bash
+    cp .env_development_example .env.development
     ```
+    然后，打开并编辑 `.env.development` 文件，确保 `NEXT_PUBLIC_API_URL` 指向你本地正在运行的后端服务地址。
+
 4.  **启动开发服务器**
     ```bash
     pnpm dev

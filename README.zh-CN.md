@@ -51,7 +51,8 @@ PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）�
     cd backend
     npm install
 
-    # 根据 backend/README.zh-CN.md 指引创建并配置 .env.development
+    # 复制开发环境变量文件，然后根据需要修改 .env.development
+    cp .env_development_example .env.development
 
     npm run dev # 默认启动于 http://localhost:3001
     ```
@@ -62,7 +63,8 @@ PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）�
     cd frontend
     pnpm install
 
-    # 根据 frontend/README.zh-CN.md 指引创建并配置 .env.development
+    # 复制开发环境变量文件，然后根据需要修改 .env.development
+    cp .env_development_example .env.development
 
     pnpm dev # 默认启动于 http://localhost:3002
     ```

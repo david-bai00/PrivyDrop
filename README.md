@@ -51,7 +51,8 @@ Before you begin, ensure your development environment has [Node.js](https://node
     cd backend
     npm install
 
-    # Create and configure .env.development according to the instructions in backend/README.md
+    # Copy the development environment file, then modify .env.development as needed
+    cp .env_development_example .env.development
 
     npm run dev # Starts by default at http://localhost:3001
     ```
@@ -62,7 +63,8 @@ Before you begin, ensure your development environment has [Node.js](https://node
     cd frontend
     pnpm install
 
-    # Create and configure .env.development according to the instructions in frontend/README.md
+    # Copy the development environment file, then modify .env.development as needed
+    cp .env_development_example .env.development
 
     pnpm dev # Starts by default at http://localhost:3002
     ```

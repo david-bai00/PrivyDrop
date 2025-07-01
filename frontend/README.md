@@ -25,10 +25,12 @@ Before you start, please ensure you have **installed and started the backend ser
     pnpm install
     ```
 3.  **Configure Environment Variables**
-    Create a `.env.development` file in the `frontend/` directory and add the necessary environment variables for development. At a minimum, you need to specify the backend API address:
-    ```ini
-    NEXT_PUBLIC_API_URL=http://localhost:3001
+    First, copy the environment variable configuration from the template file:
+    ```bash
+    cp .env_development_example .env.development
     ```
+    Then, open and edit the `.env.development` file, ensuring that `NEXT_PUBLIC_API_URL` points to your locally running backend service.
+
 4.  **Start the Development Server**
     ```bash
     pnpm dev
