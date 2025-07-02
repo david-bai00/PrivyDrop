@@ -35,3 +35,43 @@ export const downloadAs = async (
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 };
+
+export const traverseFileTree = async (
+  item: FileSystemEntry,
+  path = ""
+): Promise<CustomFile[]> => {
+  return new Promise((resolve) => {
+    if (item.isFile) {
+      (item as FileSystemFileEntry).file((file: File) => {
+        const customFile: CustomFile = Object.assign(file, {
+          fullName: path + file.name,
+          folderName: path.split("/")[0],
+        });
+        resolve([customFile]);
+      });
+    } else if (item.isDirectory) {
+      const dirReader = (item as FileSystemDirectoryEntry).createReader();
+      let entries: FileSystemEntry[] = [];
+
+      const readEntries = () => {
+        dirReader.readEntries(async (results) => {
+          if (results.length) {
+            entries = entries.concat(Array.from(results));
+            readEntries();
+          } else {
+            const newPath = path + item.name + "/";
+            const subResults = await Promise.all(
+              entries.map((entry) => traverseFileTree(entry, newPath))
+            );
+            const files: CustomFile[] = subResults.flat();
+            resolve(files);
+          }
+        });
+      };
+
+      readEntries();
+    } else {
+      resolve([]);
+    }
+  });
+};

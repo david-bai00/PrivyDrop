@@ -28,49 +28,6 @@ import { useLocale } from "@/hooks/useLocale";
 import type { Messages } from "@/types/messages";
 import { en } from "@/constants/messages/en"; // Import English dictionary as default
 
-const traverseFileTree = async (
-  item: FileSystemEntry,
-  path = ""
-): Promise<CustomFile[]> => {
-  return new Promise((resolve) => {
-    // console.log('path',path)//path in ['','test/','test/sub/']
-    if (item.isFile) {
-      (item as FileSystemFileEntry).file((file: File) => {
-        // console.log('file.name',file.name)//file.name in ['Gmail-773240713232313363.txt','link.txt','cvat-serverless部署踩坑及部署模型测试 (1).docx','images.jpg']
-        // console.log('fullName',path + file.name,'folderName',path.split('/')[0])
-        const customFile: CustomFile = Object.assign(file, {
-          fullName: path + file.name,
-          folderName: path.split("/")[0],
-        });
-        resolve([customFile]);
-      });
-    } else if (item.isDirectory) {
-      const dirReader = (item as FileSystemDirectoryEntry).createReader();
-      let entries: FileSystemEntry[] = [];
-
-      const readEntries = () => {
-        dirReader.readEntries(async (results) => {
-          if (results.length) {
-            entries = entries.concat(Array.from(results));
-            readEntries();
-          } else {
-            const newPath = path + item.name + "/";
-            const subResults = await Promise.all(
-              entries.map((entry) => traverseFileTree(entry, newPath))
-            );
-            // console.log('subResults',subResults)
-            const files: CustomFile[] = subResults.flat();
-            // console.log('files',files)
-            resolve(files); // Removed conditional judgment, directly return processed files
-          }
-        });
-      };
-
-      readEntries();
-    }
-  });
-};
-
 function formatFileChosen(
   template: string,
   fileNum: number,
@@ -91,7 +48,6 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
   const locale = useLocale();
   const [messages, setMessages] = useState<Messages>(en); // Use English dictionary as initial value
 
-  const dropZoneRef = useRef<HTMLDivElement>(null); // Drag and drop files to attachments -- support
   const folderInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // File selector -- message prompt
@@ -135,42 +91,13 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+      if (folderInputRef.current) {
+        folderInputRef.current.value = "";
+      }
     },
     [messages, onFilePicked]
   );
-  // Drag and drop folder upload response processing
-  const handleDrop = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
 
-      const items = e.dataTransfer.items;
-      if (items) {
-        const itemsArray = Array.from(items);
-        Promise.all(
-          itemsArray.map((item) => {
-            const entry = item.webkitGetAsEntry();
-            if (entry) {
-              return traverseFileTree(entry);
-            }
-            return Promise.resolve([]);
-          })
-        ).then((results) => {
-          const allFiles = results.flat();
-          handleFileChange(allFiles);
-        });
-      }
-    },
-    [handleFileChange]
-  );
-  /*  Define a callback function handleDragOver to handle the drag-over event.
-      In handleDragOver, prevent default behavior and event propagation to ensure custom handling.
-      There is no dependency array, which means the handleDragOver function will only be created once when the component first renders, and will not be re-created in subsequent renders.
-    */
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
   // Click to upload file processing
   const handleFileInputChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
@@ -233,9 +160,6 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
   return (
     <>
       <div
-        ref={dropZoneRef}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
         className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer"
         onClick={handleZoneClick}
       >

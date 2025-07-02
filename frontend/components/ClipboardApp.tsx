@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import useRichTextToPlainText from "../hooks/useRichTextToPlainText";
 import QRCodeComponent from "./ClipboardApp/ShareCard";
@@ -11,6 +11,8 @@ import { useWebRTCConnection } from "@/hooks/useWebRTCConnection";
 import { useFileTransferHandler } from "@/hooks/useFileTransferHandler";
 import { SendTabPanel } from "./ClipboardApp/SendTabPanel";
 import { RetrieveTabPanel } from "./ClipboardApp/RetrieveTabPanel";
+import FullScreenDropZone from "./ClipboardApp/FullScreenDropZone";
+import { traverseFileTree } from "@/lib/fileUtils";
 
 const ClipboardApp = () => {
   const { shareMessage, retrieveMessage, putMessageInMs } =
@@ -18,6 +20,8 @@ const ClipboardApp = () => {
 
   const [retrieveRoomIdInput, setRetrieveRoomIdInput] = useState("");
   const [activeTab, setActiveTab] = useState<"send" | "retrieve">("send");
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
   const retrieveJoinRoomBtnRef = useRef<HTMLButtonElement>(null); // Ref for the receiver's "Join Room" button
 
   const { messages, isLoadingMessages } = usePageSetup({
@@ -89,6 +93,78 @@ const ClipboardApp = () => {
       broadcastDataToAllPeers(shareContent, sendFiles),
   });
 
+  const handleFileDrop = useCallback(
+    (items: DataTransferItemList) => {
+      if (activeTab !== "send") return;
+      const itemsArray = Array.from(items);
+      Promise.all(
+        itemsArray.map((item) => {
+          const entry = item.webkitGetAsEntry();
+          if (entry) {
+            return traverseFileTree(entry);
+          }
+          return Promise.resolve([]);
+        })
+      ).then((results) => {
+        const allFiles = results.flat();
+        if (allFiles.length > 0) {
+          addFilesToSend(allFiles);
+        }
+      });
+    },
+    [activeTab, addFilesToSend]
+  );
+
+  useEffect(() => {
+    const handleDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (activeTab !== "send") return;
+      dragCounter.current++;
+      if (e.dataTransfer?.items && e.dataTransfer.items.length > 0) {
+        setIsDragging(true);
+      }
+    };
+
+    const handleDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (activeTab !== "send") return;
+      dragCounter.current--;
+      if (dragCounter.current === 0) {
+        setIsDragging(false);
+      }
+    };
+
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const handleDrop = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (activeTab !== "send") return;
+      if (e.dataTransfer?.items) {
+        handleFileDrop(e.dataTransfer.items);
+      }
+      dragCounter.current = 0;
+      setIsDragging(false);
+    };
+
+    window.addEventListener("dragenter", handleDragEnter);
+    window.addEventListener("dragleave", handleDragLeave);
+    window.addEventListener("dragover", handleDragOver);
+    window.addEventListener("drop", handleDrop);
+
+    return () => {
+      window.removeEventListener("dragenter", handleDragEnter);
+      window.removeEventListener("dragleave", handleDragLeave);
+      window.removeEventListener("dragover", handleDragOver);
+      window.removeEventListener("drop", handleDrop);
+    };
+  }, [activeTab, handleFileDrop]);
+
   if (isLoadingMessages || !messages) {
     // Use a skeleton screen placeholder to replace the simple text loading prompt.
     // The height of this placeholder is similar to the height of the component that is finally loaded,
@@ -105,6 +181,7 @@ const ClipboardApp = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 w-full md:max-w-4xl">
+      <FullScreenDropZone isDragging={isDragging} messages={messages} />
       <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
         <Button
           variant={activeTab === "send" ? "default" : "outline"}
