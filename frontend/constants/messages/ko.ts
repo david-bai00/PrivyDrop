@@ -202,7 +202,9 @@ export const ko: Messages = {
       NoFileChosen_tips: "선택된 파일 없음",
       fileChosen_tips_template:
         "{fileNum}개의 파일 및 {folderNum}개의 폴더 선택됨",
-      Drag_tips: "파일/폴더를 여기로 드래그 앤 드롭하거나 클릭하여 선택하세요",
+      chooseFileTips:
+        "파일/폴더를 이 페이지의 아무 곳이나 드래그 앤 드롭하거나, 여기서 선택하세요.",
+      dragTips: "이 페이지의 아무 곳이나 드래그하세요.",
       chosenDiagTitle: "업로드 유형 선택",
       chosenDiagDescription: "파일 또는 폴더 업로드를 선택하세요",
       SelectFile_dis: "파일 선택",

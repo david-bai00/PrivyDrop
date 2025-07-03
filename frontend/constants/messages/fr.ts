@@ -209,8 +209,9 @@ export const fr: Messages = {
       NoFileChosen_tips: "Aucun fichier sélectionné",
       fileChosen_tips_template:
         "{fileNum} fichier(s) et {folderNum} dossier(s) sélectionné(s)",
-      Drag_tips:
-        "Glissez-déposez des fichiers/dossiers ici ou cliquez pour choisir",
+      chooseFileTips:
+        "Faites glisser des fichiers/dossiers n'importe où sur cette page, ou cliquez ici pour choisir.",
+      dragTips: "Faites glisser ici sur la page.",
       chosenDiagTitle: "Choisir le type de téléversement",
       chosenDiagDescription:
         "Sélectionnez si vous souhaitez téléverser des fichiers ou un dossier",

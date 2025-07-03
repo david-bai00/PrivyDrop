@@ -157,7 +157,8 @@ export type ClipboardBtn = {
 export type FileUploadHandler = {
   NoFileChosen_tips: string;
   fileChosen_tips_template: string;
-  Drag_tips: string;
+  chooseFileTips: string;
+  dragTips: string;
   chosenDiagTitle: string;
   chosenDiagDescription: string;
   SelectFile_dis: string;

@@ -164,7 +164,7 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
         onClick={handleZoneClick}
       >
         <p className="text-sm text-gray-600 mb-4">
-          {messages.text.fileUploadHandler.Drag_tips}
+          {messages.text.fileUploadHandler.chooseFileTips}
         </p>
         <Upload className="h-12 w-12 mx-auto mb-4 text-blue-500" />
         <p className="text-sm text-gray-600">{fileText}</p>

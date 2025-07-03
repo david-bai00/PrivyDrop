@@ -208,8 +208,9 @@ export const de: Messages = {
       NoFileChosen_tips: "Keine Datei ausgewählt",
       fileChosen_tips_template:
         "{fileNum} Datei(en) und {folderNum} Ordner ausgewählt",
-      Drag_tips:
-        "Ziehen Sie Dateien/Ordner hierher oder klicken Sie, um sie auszuwählen",
+      chooseFileTips:
+        "Ziehen Sie Dateien/Ordner an eine beliebige Stelle auf dieser Seite, oder klicken Sie hier, um auszuwählen.",
+      dragTips: "Ziehen Sie hierhin auf die Seite.",
       chosenDiagTitle: "Upload-Typ auswählen",
       chosenDiagDescription:
         "Wählen Sie aus, ob Sie Dateien oder einen Ordner hochladen möchten",

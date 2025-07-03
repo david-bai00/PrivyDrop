@@ -203,8 +203,9 @@ export const ja: Messages = {
       NoFileChosen_tips: "ファイルが選択されていません",
       fileChosen_tips_template:
         "{fileNum} ファイルと {folderNum} フォルダが選択されました",
-      Drag_tips:
-        "ファイル/フォルダをここにドラッグ＆ドロップするか、クリックして選択",
+      chooseFileTips:
+        "このページ上のどこかにファイル/フォルダをドラッグ＆ドロップするか、ここをクリックして選択してください。",
+      dragTips: "このページ上のどこかにドラッグしてください。",
       chosenDiagTitle: "アップロードタイプを選択",
       chosenDiagDescription:
         "ファイルまたはフォルダをアップロードするか選択してください",

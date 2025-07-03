@@ -193,7 +193,8 @@ export const zh: Messages = {
     fileUploadHandler: {
       NoFileChosen_tips: "未选择文件",
       fileChosen_tips_template: "已选择{fileNum}个文件和{folderNum}个文件夹",
-      Drag_tips: "拖放文件/文件夹至此，或点击选择",
+      chooseFileTips: "将文件/文件夹拖拽到此页面的任意位置，或点击此处选择。",
+      dragTips: "拖拽到此页面的任意位置",
       chosenDiagTitle: "选择上传类型",
       chosenDiagDescription: "选择是要上传文件还是文件夹",
       SelectFile_dis: "选择文件",

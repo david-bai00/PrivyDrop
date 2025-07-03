@@ -205,7 +205,9 @@ export const en: Messages = {
       NoFileChosen_tips: "No file chosen",
       fileChosen_tips_template:
         "{fileNum} file(s) and {folderNum} folder(s) selected",
-      Drag_tips: "Drag and drop files/folders here or click to choose",
+      chooseFileTips:
+        "Drag and drop files/folders anywhere on this page, or click here to choose.",
+      dragTips: "Drag to anywhere on this page.",
       chosenDiagTitle: "Choose Upload Type",
       chosenDiagDescription:
         "Select whether you want to upload files or a folder",

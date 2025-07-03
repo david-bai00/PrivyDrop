@@ -206,8 +206,9 @@ export const es: Messages = {
       NoFileChosen_tips: "Ningún archivo seleccionado",
       fileChosen_tips_template:
         "{fileNum} archivo(s) y {folderNum} carpeta(s) seleccionados",
-      Drag_tips:
-        "Arrastra y suelta archivos/carpetas aquí o haz clic para elegir",
+      chooseFileTips:
+        "Arrastra y suelta archivos/carpetas en cualquier lugar de esta página, o haz clic aquí para seleccionar.",
+      dragTips: "Arrastra a cualquier parte de esta página.",
       chosenDiagTitle: "Elegir Tipo de Carga",
       chosenDiagDescription:
         "Selecciona si deseas cargar archivos o una carpeta",
