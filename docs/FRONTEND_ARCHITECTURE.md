@@ -77,9 +77,10 @@ This section details how the application's most critical P2P transfer feature is
   - `useFileTransferHandler.ts`: **The transfer's "data center"**. It manages the text and files to be sent or received, handles user actions like adding/removing/downloading files, and provides callbacks to `useWebRTCConnection` for processing received data.
 
 - **UI Coordination & Display (`components/`)**:
-  - `ClipboardApp.tsx`: **The core application's "main coordinator"**. It contains no business logic itself. Its sole responsibility is to integrate all the core Hooks mentioned above and then distribute the state and callbacks obtained from these Hooks as props to specific UI sub-components.
+  - `ClipboardApp.tsx`: **The core application's "main coordinator"**. It contains no business logic itself. Its sole responsibility is to integrate all the core Hooks mentioned above and then distribute the state and callbacks obtained from these Hooks as props to specific UI sub-components. Furthermore, it is responsible for listening to global drag-and-drop events and rendering a full-screen drop zone when the user drags files anywhere into the window, significantly improving the file upload experience.
   - `SendTabPanel.tsx` / `RetrieveTabPanel.tsx`: Purely presentational components responsible for rendering the send and receive panels and responding to user input.
   - `FileListDisplay.tsx`: Used to display the file list and transfer status.
+  - `FullScreenDropZone.tsx`: A simple UI component that displays a full-screen, semi-transparent overlay when files are being dragged globally, providing clear visual feedback to the user.
 
 ## 3. Application Layer Detailed Architecture
 
@@ -109,7 +110,7 @@ This section details how the application's most critical P2P transfer feature is
 
   - `webrtc_*.ts`, `fileSender.ts`, `fileReceiver.ts`: WebRTC core.
   - `dictionary.ts`: Internationalization dictionary loading.
-  - `utils.ts`, `fileUtils.ts`: General utility functions.
+  - `utils.ts`, `fileUtils.ts`: General utility functions. `fileUtils.ts` contains core logic for handling files and directories, such as `traverseFileTree`.
 
 - **`frontend/types/`**: Global TypeScript type definitions.
 

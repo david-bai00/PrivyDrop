@@ -8,9 +8,9 @@ Privydrop 是一个基于 WebRTC 的 P2P 文件/文本分享工具，旨在提�
 
 ### 1.2 设计理念
 
-在最近的重构中，我们确立了以“**关注点分离**”和“**逻辑内聚**”为核心的设计理念：
+在最近的重构中，我们确立了以"**关注点分离**"和"**逻辑内聚**"为核心的设计理念：
 
-- **UI 与逻辑分离**: 视图（Components）应尽可能保持“纯粹”，仅负责渲染 UI 和响应用户交互。所有复杂的业务逻辑、状态管理和副作用都应从组件中剥离。
+- **UI 与逻辑分离**: 视图（Components）应尽可能保持"纯粹"，仅负责渲染 UI 和响应用户交互。所有复杂的业务逻辑、状态管理和副作用都应从组件中剥离。
 - **Hooks 作为业务逻辑核心**: 自定义 React Hooks 是我们组织业务逻辑和状态的第一公民。每个 Hook 封装一个独立的、高内聚的功能模块（如 WebRTC 连接、房间管理），使得逻辑单元可复用、可测试，并极大地简化了组件树。
 - **分层架构**: 代码库遵循清晰的分层结构，确保不同层次的职责单一，降低模块间的耦合度。
 
@@ -46,7 +46,7 @@ graph TD
 
 - **① 应用与路由层**: 由 Next.js App Router 管理，负责页面渲染、路由控制、国际化和初始数据获取。
 - **② UI 与组件层**: 负责所有用户界面的展示。它消费来自下一层 (Hooks) 的状态和方法，并将用户交互事件向上传递。
-- **③ 业务逻辑与状态层**: **这是应用的“大脑”**。通过一系列自定义 Hooks，封装了所有核心功能的业务逻辑和状态。
+- **③ 业务逻辑与状态层**: **这是应用的"大脑"**。通过一系列自定义 Hooks，封装了所有核心功能的业务逻辑和状态。
 - **④ 核心库与工具层**: 提供最底层的、与框架无关的纯粹功能，如 WebRTC 的底层封装、API 请求等。
 
 ---
@@ -72,14 +72,15 @@ graph TD
 
 - **WebRTC 业务逻辑封装 (`hooks/`)**:
 
-  - `useWebRTCConnection.ts`: **连接的“中枢管理员”**。它初始化和管理 `sender` 和 `receiver` 实例，处理连接生命周期，并向上层提供一个简洁的 API（如 `broadcastDataToAllPeers`）和状态（如 `peerCount`, `sendProgress`）。
-  - `useRoomManager.ts`: **房间的“状态机”**。负责房间 ID 的创建、验证（带防抖）、加入逻辑，并管理房间相关的 UI 状态文本。
-  - `useFileTransferHandler.ts`: **传输内容的“数据中心”**。管理待发送/已接收的文本和文件，处理文件添加/移除/下载等用户操作，并为 `useWebRTCConnection` 提供处理接收数据的回调函数。
+  - `useWebRTCConnection.ts`: **连接的"中枢管理员"**。它初始化和管理 `sender` 和 `receiver` 实例，处理连接生命周期，并向上层提供一个简洁的 API（如 `broadcastDataToAllPeers`）和状态（如 `peerCount`, `sendProgress`）。
+  - `useRoomManager.ts`: **房间的"状态机"**。负责房间 ID 的创建、验证（带防抖）、加入逻辑，并管理房间相关的 UI 状态文本。
+  - `useFileTransferHandler.ts`: **传输内容的"数据中心"**。管理待发送/已接收的文本和文件，处理文件添加/移除/下载等用户操作，并为 `useWebRTCConnection` 提供处理接收数据的回调函数。
 
 - **UI 协调与展示 (`components/`)**:
-  - `ClipboardApp.tsx`: **核心应用的“总协调员”**。它不包含任何业务逻辑，其唯一职责是集成上述所有核心 Hooks，然后将从 Hooks 中获取的状态和回调函数作为 props 分发给具体的 UI 子组件。
+  - `ClipboardApp.tsx`: **核心应用的"总协调员"**。它不包含任何业务逻辑，其唯一职责是集成上述所有核心 Hooks，然后将从 Hooks 中获取的状态和回调函数作为 props 分发给具体的 UI 子组件。此外，它还负责监听全局的拖放（Drag and Drop）事件，并在用户拖动文件至窗口任意位置时，渲染一个全屏的拖放区域，极大地提升了文件上传的体验。
   - `SendTabPanel.tsx` / `RetrieveTabPanel.tsx`: 纯粹的 UI 展示组件，负责渲染发送和接收面板，并响应用户的输入。
   - `FileListDisplay.tsx`: 用于展示文件列表和传输状态。
+  - `FullScreenDropZone.tsx`: 一个简单的 UI 组件，用于在全局拖拽文件时显示一个全屏的、半透明的覆盖层，为用户提供清晰的视觉反馈。
 
 ## 三、 应用层详细架构
 
@@ -109,7 +110,7 @@ graph TD
 
   - `webrtc_*.ts`, `fileSender.ts`, `fileReceiver.ts`: WebRTC 核心。
   - `dictionary.ts`: 国际化字典加载。
-  - `utils.ts`, `fileUtils.ts`: 通用工具函数。
+  - `utils.ts`, `fileUtils.ts`: 通用工具函数。其中 `fileUtils.ts` 包含了如 `traverseFileTree` 等用于处理文件和文件夹的核心逻辑。
 
 - **`frontend/types/`**: 全局 TypeScript 类型定义。
 
