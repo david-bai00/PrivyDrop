@@ -14,7 +14,6 @@ export default async function RootLayout({
   params: { lang: string };
 }>) {
   const messages = await getDictionary(lang);
-  const googleAnalyticsId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS;
 
   return (
     <html lang={lang} className="h-full" suppressHydrationWarning>
@@ -32,23 +31,6 @@ export default async function RootLayout({
           <div className="flex-1">{children}</div>
           <Footer messages={messages} lang={lang} />
         </ThemeProvider>
-
-        {googleAnalyticsId && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
-              strategy="afterInteractive" // The script executes after the page is interactive.
-            />
-            <Script id="google-analytics" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${googleAnalyticsId}');
-              `}
-            </Script>
-          </>
-        )}
       </body>
     </html>
   );
