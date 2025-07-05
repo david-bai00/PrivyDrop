@@ -13,7 +13,7 @@ export default function SystemDiagram({ messages }: PageContentProps) {
           {messages.text.SystemDiagram.h2}
         </h2>
         <Image
-          src="/SystemDiagram.png"
+          src="/SystemDiagram.webp"
           alt="PrivyDrop system diagram: Peer-to-peer file and clipboard sharing"
           width={1226}
           height={745}
