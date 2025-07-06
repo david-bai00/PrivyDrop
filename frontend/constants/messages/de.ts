@@ -3,12 +3,9 @@ import { Messages } from "@/types/messages";
 export const de: Messages = {
   meta: {
     home: {
-      title:
-        "PrivyDrop: Kostenloser P2P-Datei- & Clipboard-Sharing | Privat & Ohne Upload",
-      description:
-        "PrivyDrop ermöglicht sofortiges, sicheres P2P-Datei-Sharing ohne Größenbeschränkungen oder Registrierung. Teilen Sie Text, Bilder, Ordner geräteübergreifend mit Ende-zu-Ende-Verschlüsselung. Perfekt für Teamarbeit und private Dateiübertragungen.",
-      keywords:
-        "Dateifreigabe, sichere Dateiübertragung, P2P-Dateiübertragung, WebRTC-Dateifreigabe, privater Clipboard, Teamarbeit, geräteübergreifende Freigabe, verschlüsselte Dateiübertragung, Dateifreigabe ohne Registrierung, unbegrenzte Dateiübertragung, Ordnersynchronisation, mobile Dateiübertragung, sichere Nachrichtenübermittlung, sofortige Dateifreigabe, private Datenübertragung",
+      title: "PrivyDrop: Open-Source & kostenlose P2P-Datei- & Clipboard-Freigabe | Datenschutz-fokussiert",
+      description: "PrivyDrop ist ein Open-Source, kostenloses und sicheres P2P-Dateiübertragungstool ohne Größenbeschränkungen und ohne Registrierung. Basiert auf WebRTC für Ende-zu-Ende-Verschlüsselung, sein Code ist transparent und vertrauenswürdig. Teilen Sie Text, Bilder und Ordner geräteübergreifend, perfekt für Teamarbeit und private Dateiübertragungen.",
+      keywords: "open source dateifreigabe,P2P-Dateiübertragung,sichere Dateiübertragung,WebRTC-Dateifreigabe,privater Clipboard,Quellcode-Transparenz,GitHub-Projekt,Teamarbeit,geräteübergreifende Freigabe,verschlüsselte Dateiübertragung,Dateifreigabe ohne Registrierung,unbegrenzte Dateiübertragung,Ordnersynchronisation,mobile Dateiübertragung,sichere Nachrichtenübermittlung,sofortige Dateifreigabe,private Datenübertragung",
     },
     about: {
       title: "Über PrivyDrop",

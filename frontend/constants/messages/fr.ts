@@ -3,12 +3,9 @@ import { Messages } from "@/types/messages";
 export const fr: Messages = {
   meta: {
     home: {
-      title:
-        "PrivyDrop : Partage de fichiers et de presse-papiers P2P gratuit | Privé et sans téléchargement",
-      description:
-        "PrivyDrop permet un partage de fichiers P2P instantané et sécurisé sans limites de taille ni inscription. Partagez du texte, des images, des dossiers entre appareils avec un chiffrement de bout en bout. Parfait pour la collaboration d'équipe et le transfert de fichiers privés.",
-      keywords:
-        "partage de fichiers, transfert de fichiers sécurisé, transfert de fichiers P2P, partage de fichiers WebRTC, presse-papiers privé, collaboration d'équipe, partage entre appareils, transfert de fichiers chiffré, partage de fichiers sans inscription, transfert de fichiers illimité, synchronisation de dossiers, transfert de fichiers mobile, messagerie sécurisée, partage de fichiers instantané, transfert de données privé",
+      title: "PrivyDrop : Transfert de Fichiers et Partage de Presse-papiers P2P Open-Source & Gratuit | Axé sur la Confidentialité",
+      description: "PrivyDrop est un outil de transfert de fichiers P2P open-source, gratuit et sécurisé, sans limite de taille et sans inscription. Basé sur WebRTC pour un chiffrement de bout en bout, son code est transparent et digne de confiance. Partagez du texte, des images et des dossiers entre appareils, parfait pour la collaboration d'équipe et le transfert de fichiers privés.",
+      keywords: "partage de fichiers open-source,transfert de fichiers P2P,transfert de fichiers sécurisé,partage de fichiers webrtc,presse-papiers privé,transparence du code source,projet GitHub,collaboration d'équipe,partage entre appareils,transfert de fichiers chiffré,partage de fichiers sans inscription,transfert de fichiers illimité,synchronisation de dossiers,transfert de fichiers mobile,messagerie sécurisée,partage de fichiers instantané,transfert de données privé",
     },
     about: {
       title: "À propos de PrivyDrop",

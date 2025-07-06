@@ -3,12 +3,9 @@ import { Messages } from "@/types/messages";
 export const es: Messages = {
   meta: {
     home: {
-      title:
-        "PrivyDrop: Compartición Gratuita de Archivos y Portapapeles P2P | Privado y Sin Subidas",
-      description:
-        "PrivyDrop permite compartir archivos P2P de forma instantánea y segura sin límites de tamaño ni registro. Comparta texto, imágenes y carpetas entre dispositivos con cifrado de extremo a extremo. Perfecto para colaboración en equipo y transferencia privada de archivos.",
-      keywords:
-        "compartir archivos, transferencia segura de archivos, transferencia P2P, compartir archivos webrtc, portapapeles privado, colaboración en equipo, compartir entre dispositivos, transferencia cifrada, compartir sin registro, transferencia ilimitada, sincronización de carpetas, transferencia móvil, mensajería segura, compartir instantáneo, transferencia privada de datos",
+      title: "PrivyDrop: Transferencia de Archivos y Portapapeles P2P de Código Abierto y Gratuito | Prioridad en la Privacidad",
+      description: "PrivyDrop es una herramienta de transferencia de archivos P2P de código abierto, gratuita y segura, sin límites de tamaño y sin necesidad de registro. Basado en WebRTC para cifrado de extremo a extremo, su código es transparente y confiable. Comparta texto, imágenes y carpetas entre dispositivos, perfecto para la colaboración en equipo y la transferencia de archivos privados.",
+      keywords: "compartir archivos de código abierto,transferencia de archivos P2P,transferencia segura de archivos,compartir archivos webrtc,portapapeles privado,transparencia del código fuente,proyecto de GitHub,colaboración en equipo,compartir entre dispositivos,transferencia de archivos cifrada,compartir archivos sin registro,transferencia de archivos ilimitada,sincronización de carpetas,transferencia de archivos móvil,mensajería segura,compartir archivos instantáneo,transferencia de datos privada",
     },
     about: {
       title: "Acerca de PrivyDrop",

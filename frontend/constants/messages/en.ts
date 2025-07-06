@@ -3,12 +3,9 @@ import { Messages } from "@/types/messages";
 export const en: Messages = {
   meta: {
     home: {
-      title:
-        "PrivyDrop: Free P2P File & Clipboard Sharing | Private & No Upload",
-      description:
-        "PrivyDrop enables instant, secure P2P file sharing without size limits or registration. Share text, images, folders across devices with end-to-end encryption. Perfect for team collaboration and private file transfer.",
-      keywords:
-        "file sharing, secure file transfer, P2P file transfer, webrtc file sharing, private clipboard, team collaboration, cross-device sharing, encrypted file transfer, no-registration file sharing, unlimited file transfer, folder sync, mobile file transfer, secure messaging, instant file sharing, private data transfer",
+      title: "PrivyDrop: Open-Source & Free P2P File Transfer & Clipboard Sharing | Privacy-First",
+      description: "PrivyDrop is an open-source, free, and secure P2P file transfer tool with no size limits and no registration. Based on WebRTC for end-to-end encryption, its code is transparent and trustworthy. Share text, images, and folders across devices, perfect for team collaboration and private file transfer.",
+      keywords: "open source file sharing,P2P file transfer,secure file transfer,webrtc file sharing,private clipboard,source code transparency,GitHub project,team collaboration,cross-device sharing,encrypted file transfer,no-registration file sharing,unlimited file transfer,folder sync,mobile file transfer,secure messaging,instant file sharing,private data transfer",
     },
     about: {
       title: "About PrivyDrop",
