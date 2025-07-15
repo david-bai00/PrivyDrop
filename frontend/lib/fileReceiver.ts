@@ -141,6 +141,15 @@ class FileReceiver {
       return;
     }
 
+    const shouldSaveToDisk =
+      !!this.saveDirectory || fileInfo.size >= this.largeFileThreshold;
+
+    // Set saveType at the beginning of the request to prevent race conditions in the UI
+    this.saveType[fileInfo.fileId] = shouldSaveToDisk;
+    if (this.currentFolderName) {
+      this.saveType[this.currentFolderName] = shouldSaveToDisk;
+    }
+
     const receptionPromise = new Promise<void>((resolve, reject) => {
       this.activeFileReception = {
         meta: fileInfo,
@@ -151,11 +160,6 @@ class FileReceiver {
         completionNotifier: { resolve, reject },
       };
     });
-
-    const shouldSaveToDisk =
-      !!this.saveDirectory ||
-      fileInfo.size >= this.largeFileThreshold ||
-      !!this.currentFolderName;
 
     if (shouldSaveToDisk) {
       await this.createDiskWriteStream(fileInfo);
@@ -435,12 +439,7 @@ class FileReceiver {
       folderName: this.currentFolderName,
     }) as CustomFile;
 
-    this.saveType[reception.meta.fileId] = true;
-    if (this.currentFolderName) {
-      this.saveType[this.currentFolderName] = true;
-      // For files in a folder saved to disk, we don't call onFileReceived
-      // as the user experience is typically to "open folder" after download.
-    } else {
+    if (!this.currentFolderName) {
       await this.onFileReceived?.(customFile);
     }
   }
@@ -463,11 +462,7 @@ class FileReceiver {
       folderName: this.currentFolderName,
     }) as CustomFile;
 
-    this.saveType[reception.meta.fileId] = false;
-    if (this.currentFolderName) {
-      this.saveType[this.currentFolderName] = false;
-    }
-
+    // saveType is now set in requestFile.
     await this.onFileReceived?.(customFile);
   }
   // endregion
