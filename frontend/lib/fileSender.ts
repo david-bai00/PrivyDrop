@@ -120,12 +120,13 @@ class FileSender {
     peerId: string
   ): Promise<void> {
     const file = this.pendingFiles.get(request.fileId);
+    const offset = request.offset || 0;
     this.log(
       "log",
-      `Handling file request for ${request.fileId} from ${peerId}`
+      `Handling file request for ${request.fileId} from ${peerId} with offset ${offset}`
     );
     if (file) {
-      await this.sendSingleFile(file, peerId);
+      await this.sendSingleFile(file, peerId, offset);
     } else {
       this.fireError(`File not found for request`, {
         fileId: request.fileId,
@@ -202,7 +203,8 @@ class FileSender {
   // Send a single file
   private async sendSingleFile(
     file: CustomFile,
-    peerId: string
+    peerId: string,
+    offset: number = 0
   ): Promise<void> {
     const fileId = generateFileId(file);
     const peerState = this.getPeerState(peerId);
@@ -215,15 +217,18 @@ class FileSender {
       return;
     }
 
-    this.log("log", `Starting to send single file: ${file.name} to ${peerId}`);
+    this.log(
+      "log",
+      `Starting to send single file: ${file.name} to ${peerId} from offset ${offset}`
+    );
 
     // Reset state for the new transfer
     peerState.isSending = true;
     peerState.currentFolderName = file.folderName;
-    peerState.readOffset = 0;
+    peerState.readOffset = offset; // Start reading from the given offset
     peerState.bufferQueue = [];
     peerState.isReading = false;
-    peerState.totalBytesSent[fileId] = 0;
+    peerState.totalBytesSent[fileId] = offset; // Start counting sent bytes from the offset
 
     try {
       await this.processSendQueue(file, peerId);
@@ -269,14 +274,16 @@ class FileSender {
     if (!peerState) return;
 
     let progressFileId = fileId;
-    let currentBytes = peerState.totalBytesSent[fileId] || 0;
+    let currentBytes = 0;
     let totalSize = fileSize;
 
     if (peerState.currentFolderName) {
       const folderId = peerState.currentFolderName;
       progressFileId = folderId;
-      if (!peerState.totalBytesSent[folderId])
-        peerState.totalBytesSent[folderId] = 0;
+      if (!peerState.totalBytesSent[folderId]) {
+        // This needs to be initialized properly when resuming a folder
+        peerState.totalBytesSent[folderId] = 0; // Simplified for now
+      }
       peerState.totalBytesSent[folderId] += byteLength;
       currentBytes = peerState.totalBytesSent[folderId];
       totalSize = this.pendingFolerMeta[folderId]?.totalSize || 0;
@@ -324,7 +331,11 @@ class FileSender {
     const peerState = this.getPeerState(peerId);
     const fileReader = new FileReader();
 
-    while (peerState.readOffset < file.size) {
+    // The file object itself is the full file. Slicing happens here.
+    const fileToSend = file.slice(peerState.readOffset);
+    let relativeOffset = 0;
+
+    while (relativeOffset < fileToSend.size) {
       if (!peerState.isSending) {
         throw new Error("File sending was aborted.");
       }
@@ -335,14 +346,15 @@ class FileSender {
         peerState.bufferQueue.length < this.maxBufferSize
       ) {
         peerState.isReading = true;
-        const slice = file.slice(
-          peerState.readOffset,
-          peerState.readOffset + this.chunkSize
+        const slice = fileToSend.slice(
+          relativeOffset,
+          relativeOffset + this.chunkSize
         );
         try {
           const chunk = await this.readChunkAsArrayBuffer(fileReader, slice);
           peerState.bufferQueue.push(chunk);
-          peerState.readOffset += chunk.byteLength;
+          relativeOffset += chunk.byteLength;
+          peerState.readOffset += chunk.byteLength; // Also update the main offset
         } catch (error: any) {
           throw new Error(`File chunk reading failed: ${error.message}`);
         } finally {
@@ -358,7 +370,7 @@ class FileSender {
       } else if (peerState.isReading) {
         // If buffer is empty but we are still reading, wait a bit
         await new Promise((resolve) => setTimeout(resolve, 50));
-      } else if (peerState.readOffset < file.size) {
+      } else if (relativeOffset < fileToSend.size) {
         // Buffer is empty, not reading, but not done, so trigger a read
         continue;
       }

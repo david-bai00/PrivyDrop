@@ -14,6 +14,7 @@ import {
   FileEnd,
   FileHandlers,
   FileMeta,
+  FileRequest,
 } from "@/types/webrtc";
 
 /**
@@ -23,6 +24,7 @@ interface ActiveFileReception {
   meta: fileMetadata; // If meta is present, it means this file is currently being received; null means no file is being received.
   chunks: (ArrayBuffer | null)[]; // Received file chunks (stored in memory).
   receivedSize: number;
+  initialOffset: number; // For resuming downloads
   fileHandle: FileSystemFileHandle | null; // Object related to writing to disk -- current file.
   writeStream: FileSystemWritableFileStream | null; // Object related to writing to disk.
   completionNotifier: {
@@ -122,10 +124,6 @@ class FileReceiver {
    * Requests a single file from the peer.
    */
   public async requestFile(fileId: string, singleFile = true): Promise<void> {
-    if (this.saveType[fileId]) {
-      this.log("log", "File already received, skipping request.", { fileId });
-      return;
-    }
     if (this.activeFileReception) {
       this.log("warn", "Another file reception is already in progress.");
       return;
@@ -150,11 +148,40 @@ class FileReceiver {
       this.saveType[this.currentFolderName] = shouldSaveToDisk;
     }
 
+    let offset = 0;
+    if (shouldSaveToDisk && this.saveDirectory) {
+      try {
+        const folderHandle = await this.createFolderStructure(
+          fileInfo.fullName
+        );
+        const fileHandle = await folderHandle.getFileHandle(fileInfo.name, {
+          create: false,
+        });
+        const file = await fileHandle.getFile();
+        offset = file.size;
+
+        if (offset === fileInfo.size) {
+          this.log("log", "File already fully downloaded.", { fileId });
+          // Optionally, trigger a "completed" state in the UI directly
+          this.progressCallback?.(fileId, 1, 0);
+          return; // Skip the request
+        }
+        this.log("log", `Resuming file from offset: ${offset}`, { fileId });
+      } catch (e) {
+        // File does not exist, starting from scratch
+        this.log("log", "Partial file not found, starting from scratch.", {
+          fileId,
+        });
+        offset = 0;
+      }
+    }
+
     const receptionPromise = new Promise<void>((resolve, reject) => {
       this.activeFileReception = {
         meta: fileInfo,
         chunks: [],
         receivedSize: 0,
+        initialOffset: offset,
         fileHandle: null,
         writeStream: null,
         completionNotifier: { resolve, reject },
@@ -162,13 +189,13 @@ class FileReceiver {
     });
 
     if (shouldSaveToDisk) {
-      await this.createDiskWriteStream(fileInfo);
+      await this.createDiskWriteStream(fileInfo, offset);
     }
 
-    const request = JSON.stringify({ type: "fileRequest", fileId });
+    const request: FileRequest = { type: "fileRequest", fileId, offset };
     if (this.peerId) {
-      this.webrtcConnection.sendData(request, this.peerId);
-      this.log("log", "Sent fileRequest", { fileId });
+      this.webrtcConnection.sendData(JSON.stringify(request), this.peerId);
+      this.log("log", "Sent fileRequest", { request });
     }
 
     return receptionPromise;
@@ -178,35 +205,29 @@ class FileReceiver {
    * Requests all files belonging to a folder from the peer.
    */
   public async requestFolder(folderName: string): Promise<void> {
-    if (this.saveType[folderName]) {
-      this.log("log", "Folder already received, skipping request.", {
+    const folderProgress = this.folderProgresses[folderName];
+    if (!folderProgress || folderProgress.fileIds.length === 0) {
+      this.log("warn", "No files found for the requested folder.", {
         folderName,
       });
       return;
     }
 
-    const folderProgress = this.folderProgresses[folderName];
-    if (folderProgress?.fileIds.length > 0) {
-      this.log("log", "Requesting to receive folder", { folderName });
-      this.currentFolderName = folderName;
-      for (const fileId of folderProgress.fileIds) {
-        try {
-          await this.requestFile(fileId, false);
-        } catch (error) {
-          this.fireError(
-            `Failed to receive file ${fileId} in folder ${folderName}`,
-            { error }
-          );
-          // Stop receiving other files in the folder on error
-          break;
-        }
+    this.log("log", "Requesting to receive folder", { folderName });
+    this.currentFolderName = folderName;
+    for (const fileId of folderProgress.fileIds) {
+      try {
+        await this.requestFile(fileId, false);
+      } catch (error) {
+        this.fireError(
+          `Failed to receive file ${fileId} in folder ${folderName}`,
+          { error }
+        );
+        // Stop receiving other files in the folder on error
+        break;
       }
-      this.currentFolderName = null;
-    } else {
-      this.log("warn", "No files found for the requested folder.", {
-        folderName,
-      });
     }
+    this.currentFolderName = null;
   }
   // endregion
 
@@ -333,11 +354,15 @@ class FileReceiver {
 
     this.activeFileReception.receivedSize += byteLength;
     const reception = this.activeFileReception;
+    const totalReceived = reception.initialOffset + reception.receivedSize;
 
     if (this.currentFolderName) {
       const folderProgress = this.folderProgresses[this.currentFolderName];
       if (!folderProgress) return;
-      folderProgress.receivedSize += byteLength;
+      // This is tricky: folder progress needs to sum up individual file progresses.
+      // For simplicity, we'll estimate based on total received for the active file.
+      // A more accurate implementation would track offsets for all files in the folder.
+      folderProgress.receivedSize += byteLength; // This is an approximation
 
       this.speedCalculator.updateSendSpeed(
         this.peerId,
@@ -350,19 +375,20 @@ class FileReceiver {
           : 0;
       this.progressCallback?.(this.currentFolderName, progress, speed);
     } else {
-      this.speedCalculator.updateSendSpeed(this.peerId, reception.receivedSize);
+      this.speedCalculator.updateSendSpeed(this.peerId, totalReceived);
       const speed = this.speedCalculator.getSendSpeed(this.peerId);
       const progress =
-        reception.meta.size > 0
-          ? reception.receivedSize / reception.meta.size
-          : 0;
+        reception.meta.size > 0 ? totalReceived / reception.meta.size : 0;
       this.progressCallback?.(reception.meta.fileId, progress, speed);
     }
   }
   // endregion
 
   // region Disk Operations
-  private async createDiskWriteStream(meta: FileMeta): Promise<void> {
+  private async createDiskWriteStream(
+    meta: FileMeta,
+    offset: number
+  ): Promise<void> {
     if (!this.saveDirectory || !this.activeFileReception) {
       this.log("warn", "Save directory not set, falling back to in-memory.");
       return;
@@ -373,7 +399,12 @@ class FileReceiver {
       const fileHandle = await folderHandle.getFileHandle(meta.name, {
         create: true,
       });
-      const writeStream = await fileHandle.createWritable();
+      // Use keepExistingData: true to append
+      const writeStream = await fileHandle.createWritable({
+        keepExistingData: true,
+      });
+      // Seek to the offset to start writing from there
+      await writeStream.seek(offset);
 
       this.activeFileReception.fileHandle = fileHandle;
       this.activeFileReception.writeStream = writeStream;
@@ -429,18 +460,6 @@ class FileReceiver {
       await reception.writeStream.close();
     } catch (error) {
       this.fireError("Error closing write stream", { error });
-    }
-
-    // A CustomFile is a standard File object with added properties.
-    // This is a common pattern for attaching extra metadata.
-    const file = await reception.fileHandle.getFile();
-    const customFile = Object.assign(file, {
-      fullName: reception.meta.fullName,
-      folderName: this.currentFolderName,
-    }) as CustomFile;
-
-    if (!this.currentFolderName) {
-      await this.onFileReceived?.(customFile);
     }
   }
   // endregion

@@ -26,6 +26,7 @@ export interface fileMetadata extends FileMeta {
 export interface FileRequest {
   type: "fileRequest";
   fileId: string;
+  offset?: number; // Optional: byte offset to resume from
 }
 
 export interface FileAck {
