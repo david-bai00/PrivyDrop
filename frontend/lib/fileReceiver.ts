@@ -493,6 +493,23 @@ class FileReceiver {
     this.webrtcConnection.sendData(confirmation, this.peerId);
   }
   // endregion
+
+  public gracefulShutdown(): void {
+    if (this.activeFileReception?.writeStream) {
+      this.log(
+        "log",
+        "Attempting to gracefully close write stream on page unload."
+      );
+      // We don't await this, as beforeunload does not wait for promises.
+      // This is a "best effort" attempt to flush the buffer to disk.
+      this.activeFileReception.writeStream.close().catch((err) => {
+        this.log("error", "Error closing stream during graceful shutdown", {
+          err,
+        });
+      });
+      this.activeFileReception = null;
+    }
+  }
 }
 
 export default FileReceiver;

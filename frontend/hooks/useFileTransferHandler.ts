@@ -1,18 +1,8 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { CustomFile, FileMeta, fileMetadata } from "@/types/webrtc";
 import { Messages } from "@/types/messages";
 import JSZip from "jszip";
 import { downloadAs } from "@/lib/fileUtils";
-
-// Helper functions for beforeunload (can be kept local to this hook if not used elsewhere)
-const handleWindowBeforeUnload = (event: BeforeUnloadEvent) => {
-  event.preventDefault();
-  event.returnValue = ""; // Required for Chrome
-};
-
-const allowWindowUnload = () => {
-  window.removeEventListener("beforeunload", handleWindowBeforeUnload);
-};
 
 interface UseFileTransferHandlerProps {
   messages: Messages | null;
@@ -32,23 +22,6 @@ export function useFileTransferHandler({
   const [retrievedContent, setRetrievedContent] = useState("");
   const [retrievedFiles, setRetrievedFiles] = useState<CustomFile[]>([]);
   const [retrievedFileMetas, setRetrievedFileMetas] = useState<FileMeta[]>([]);
-
-  // Manage beforeunload event based on content
-  useEffect(() => {
-    if (
-      sendFiles.length === 0 &&
-      shareContent === "" &&
-      retrievedFiles.length === 0 &&
-      retrievedContent === ""
-    ) {
-      allowWindowUnload();
-    } else {
-      window.addEventListener("beforeunload", handleWindowBeforeUnload);
-    }
-    return () => {
-      allowWindowUnload(); // Clean up listener when hook unmounts or dependencies change if any
-    };
-  }, [sendFiles, shareContent, retrievedFiles, retrievedContent]);
 
   const updateShareContent = useCallback((content: string) => {
     setShareContent(content);

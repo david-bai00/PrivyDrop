@@ -1,5 +1,11 @@
 "use client";
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  useMemo,
+} from "react";
 import { Button } from "@/components/ui/button";
 import useRichTextToPlainText from "../hooks/useRichTextToPlainText";
 import QRCodeComponent from "./ClipboardApp/ShareCard";
@@ -46,7 +52,12 @@ const ClipboardApp = () => {
     onFileFullyReceived,
     handleDownloadFile,
   } = useFileTransferHandler({ messages, putMessageInMs });
-
+  // Calculate the derived states for unload protection
+  const isContentPresent = useMemo(() => {
+    return (
+      shareContent !== "" || retrievedContent !== "" || sendFiles.length > 0
+    );
+  }, [shareContent, retrievedContent, sendFiles]);
   // Initialize WebRTC Connection Hook
   const {
     sender,
@@ -55,6 +66,7 @@ const ClipboardApp = () => {
     retrievePeerCount,
     sendProgress,
     receiveProgress,
+    isAnyFileTransferring,
     broadcastDataToAllPeers,
     requestFile,
     requestFolder,
@@ -63,6 +75,7 @@ const ClipboardApp = () => {
   } = useWebRTCConnection({
     shareContent,
     sendFiles,
+    isContentPresent,
     messages,
     putMessageInMs,
     onStringReceived: onStringDataReceived,
@@ -224,6 +237,7 @@ const ClipboardApp = () => {
               removeFileToSend={removeFileToSend}
               richTextToPlainText={richTextToPlainText}
               sendProgress={sendProgress}
+              isAnyFileTransferring={isAnyFileTransferring}
               processRoomIdInput={processRoomIdInput}
               joinRoom={joinRoom}
               generateShareLinkAndBroadcast={generateShareLinkAndBroadcast}
@@ -245,6 +259,7 @@ const ClipboardApp = () => {
               richTextToPlainText={richTextToPlainText}
               retrievedFileMetas={retrievedFileMetas}
               receiveProgress={receiveProgress}
+              isAnyFileTransferring={isAnyFileTransferring}
               handleDownloadFile={handleDownloadFile}
               // Pass WebRTC interaction methods
               requestFile={requestFile}

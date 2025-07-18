@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import WebRTC_Initiator from "@/lib/webrtc_Initiator";
 import WebRTC_Recipient from "@/lib/webrtc_Recipient";
 import FileSender from "@/lib/fileSender";
@@ -21,6 +21,7 @@ export type ProgressState = { [fileId: string]: FileProgressPeers };
 interface UseWebRTCConnectionProps {
   shareContent: string;
   sendFiles: CustomFile[];
+  isContentPresent: boolean; // To know if there is any content (text or files)
   // Callbacks for data received from peers
   onStringReceived: (data: string, peerId: string) => void;
   onFileMetaReceived: (meta: fileMetadata, peerId: string) => void;
@@ -38,6 +39,7 @@ interface UseWebRTCConnectionProps {
 export function useWebRTCConnection({
   shareContent,
   sendFiles,
+  isContentPresent,
   onStringReceived,
   onFileMetaReceived,
   onFileReceived,
@@ -56,6 +58,19 @@ export function useWebRTCConnection({
 
   const [sendProgress, setSendProgress] = useState<ProgressState>({});
   const [receiveProgress, setReceiveProgress] = useState<ProgressState>({});
+
+  // Calculate isAnyFileTransferring internally based on progress states
+  const isAnyFileTransferring = useMemo(() => {
+    const allProgress = [
+      ...Object.values(sendProgress),
+      ...Object.values(receiveProgress),
+    ];
+    return allProgress.some((fileProgress) =>
+      Object.values(fileProgress).some(
+        (progress) => progress.progress > 0 && progress.progress < 1
+      )
+    );
+  }, [sendProgress, receiveProgress]);
 
   // Initialize WebRTC objects and their cleanup
   useEffect(() => {
@@ -103,6 +118,40 @@ export function useWebRTCConnection({
     [senderFileTransfer]
   );
 
+  // Exposed function to broadcast data to all connected sender peers
+  const broadcastDataToAllPeers = useCallback(
+    async (textContent: string, filesToSend: CustomFile[]) => {
+      if (!sender || sender.peerConnections.size === 0) {
+        // The caller (useRoomManager) will handle user message like "waiting for peers"
+        if (developmentEnv)
+          console.warn(
+            "No sender peers to broadcast to, or sender not initialized."
+          );
+        return false; // Indicate failure or no action
+      }
+      if (!senderFileTransfer) {
+        console.error("senderFileTransfer is not initialized for broadcast.");
+        return false;
+      }
+      const peerIds = Array.from(sender.peerConnections.keys());
+      if (developmentEnv)
+        console.log(`Broadcasting to peers: ${peerIds.join(", ")}`);
+      try {
+        await Promise.all(
+          peerIds.map((peerId) =>
+            sendStringAndMetasToPeer(peerId, textContent, filesToSend)
+          )
+        );
+        return true; // Indicate success
+      } catch (error) {
+        console.error("Error broadcasting data to peers:", error);
+        // Optionally use putMessageInMs here for a generic broadcast error
+        return false; // Indicate failure
+      }
+    },
+    [sender, senderFileTransfer, sendStringAndMetasToPeer]
+  );
+
   // Setup sender and receiver event handlers
   useEffect(() => {
     if (sender && senderFileTransfer) {
@@ -146,6 +195,10 @@ export function useWebRTCConnection({
             }
           );
           // Example: putMessageInMs(`Connected to a new peer (receiver side). Total: ${receiver.peerConnections.size}`, false);
+        } else if (state === "failed" || state === "disconnected") {
+          if (isAnyFileTransferring) {
+            receiverFileTransfer.gracefulShutdown();
+          }
         }
       };
 
@@ -182,42 +235,32 @@ export function useWebRTCConnection({
     onStringReceived,
     onFileMetaReceived,
     onFileReceived,
-    // messages, putMessageInMs // Removed messages/putMessageInMs if only for console logs for now
+    putMessageInMs,
+    broadcastDataToAllPeers,
+    shareContent,
+    sendFiles,
+    isAnyFileTransferring,
   ]);
 
-  // Exposed function to broadcast data to all connected sender peers
-  const broadcastDataToAllPeers = useCallback(
-    async (textContent: string, filesToSend: CustomFile[]) => {
-      if (!sender || sender.peerConnections.size === 0) {
-        // The caller (useRoomManager) will handle user message like "waiting for peers"
-        if (developmentEnv)
-          console.warn(
-            "No sender peers to broadcast to, or sender not initialized."
-          );
-        return false; // Indicate failure or no action
+  // Effect to handle graceful shutdown on page unload
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isContentPresent || isAnyFileTransferring) {
+        if (isAnyFileTransferring) {
+          receiverFileTransfer?.gracefulShutdown();
+        }
+        // Show the browser's confirmation dialog
+        e.preventDefault();
+        e.returnValue = "";
       }
-      if (!senderFileTransfer) {
-        console.error("senderFileTransfer is not initialized for broadcast.");
-        return false;
-      }
-      const peerIds = Array.from(sender.peerConnections.keys());
-      if (developmentEnv)
-        console.log(`Broadcasting to peers: ${peerIds.join(", ")}`);
-      try {
-        await Promise.all(
-          peerIds.map((peerId) =>
-            sendStringAndMetasToPeer(peerId, textContent, filesToSend)
-          )
-        );
-        return true; // Indicate success
-      } catch (error) {
-        console.error("Error broadcasting data to peers:", error);
-        // Optionally use putMessageInMs here for a generic broadcast error
-        return false; // Indicate failure
-      }
-    },
-    [sender, senderFileTransfer, sendStringAndMetasToPeer]
-  );
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isContentPresent, isAnyFileTransferring, receiverFileTransfer]);
 
   const requestFile = useCallback(
     (fileId: string, peerId?: string) => {
@@ -268,6 +311,7 @@ export function useWebRTCConnection({
     retrievePeerCount,
     sendProgress,
     receiveProgress,
+    isAnyFileTransferring, // Export the calculated state
     broadcastDataToAllPeers,
     requestFile,
     requestFolder,

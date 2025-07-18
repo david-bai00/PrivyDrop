@@ -35,6 +35,7 @@ interface FileListDisplayProps {
       [peerId: string]: Progress;
     };
   };
+  isAnyFileTransferring: boolean; // State lifted up
   onDownload?: (item: FileMeta) => void;
   onRequest?: (item: FileMeta) => void; // Request file
   onDelete?: (item: FileMeta) => void;
@@ -55,6 +56,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
   mode,
   files,
   fileProgresses,
+  isAnyFileTransferring,
   onDownload,
   onRequest,
   onDelete,
@@ -79,8 +81,6 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
   const [activeTransfers, setActiveTransfers] = useState<{
     [fileId: string]: string;
   }>({});
-  // Track if any file transfer is in progress
-  const [isAnyFileTransferring, setIsAnyFileTransferring] = useState(false);
   // Add state for download counts
   const [downloadCounts, setDownloadCounts] = useState<{
     [fileId: string]: number;
@@ -90,16 +90,6 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
       .then((dict) => setMessages(dict))
       .catch((error) => console.error("Failed to load messages:", error));
   }, [locale]);
-  // Monitor file transfer status
-  useEffect(() => {
-    const hasActiveTransfer = Object.values(fileProgresses).some(
-      (fileProgress) =>
-        Object.values(fileProgress).some(
-          (progress) => progress.progress > 0 && progress.progress < 1
-        )
-    );
-    setIsAnyFileTransferring(hasActiveTransfer);
-  }, [fileProgresses]);
 
   useEffect(() => {
     // Separate single files and folders

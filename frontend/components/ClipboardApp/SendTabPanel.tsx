@@ -37,6 +37,7 @@ interface SendTabPanelProps {
   removeFileToSend: (meta: FileMeta) => void;
   richTextToPlainText: (html: string) => string;
   sendProgress: ProgressState;
+  isAnyFileTransferring: boolean;
   // shareRoomId: string; // This comes from useRoomManager and represents the validated ID
   processRoomIdInput: (roomId: string) => void; // Passed from useRoomManager
   joinRoom: (isSender: boolean, roomId: string) => void;
@@ -59,6 +60,7 @@ export function SendTabPanel({
   removeFileToSend,
   richTextToPlainText,
   sendProgress,
+  isAnyFileTransferring,
   processRoomIdInput,
   joinRoom,
   generateShareLinkAndBroadcast,
@@ -120,6 +122,7 @@ SendTabPanelProps) {
           mode="sender"
           files={sendFiles}
           fileProgresses={sendProgress}
+          isAnyFileTransferring={isAnyFileTransferring}
           onDelete={removeFileToSend}
         />
       </div>

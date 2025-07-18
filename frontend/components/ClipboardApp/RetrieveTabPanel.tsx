@@ -30,6 +30,7 @@ interface RetrieveTabPanelProps {
   richTextToPlainText: (html: string) => string;
   retrievedFileMetas: FileMeta[];
   receiveProgress: ProgressState;
+  isAnyFileTransferring: boolean;
   handleDownloadFile: (meta: FileMeta) => void;
   // Functions for WebRTC interaction, passed from parent via useWebRTCConnection
   requestFile: (fileId: string, peerId?: string) => void;
@@ -54,6 +55,7 @@ export function RetrieveTabPanel({
   richTextToPlainText,
   retrievedFileMetas,
   receiveProgress,
+  isAnyFileTransferring,
   handleDownloadFile,
   requestFile,
   requestFolder,
@@ -163,6 +165,7 @@ export function RetrieveTabPanel({
         mode="receiver"
         files={retrievedFileMetas}
         fileProgresses={receiveProgress}
+        isAnyFileTransferring={isAnyFileTransferring}
         onDownload={handleDownloadFile}
         onRequest={handleFileRequestFromPanel} // Use the panel's own handler
         onLocationPick={onLocationPick} // Use the panel's own handler
