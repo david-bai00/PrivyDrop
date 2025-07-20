@@ -273,23 +273,33 @@ class FileSender {
     const peerState = this.getPeerState(peerId);
     if (!peerState) return;
 
+    // Always update the individual file's progress first.
+    if (!peerState.totalBytesSent[fileId]) {
+      // This case should be handled by sendSingleFile's initialization
+      peerState.totalBytesSent[fileId] = 0;
+    }
+    peerState.totalBytesSent[fileId] += byteLength;
+
     let progressFileId = fileId;
-    let currentBytes = 0;
+    let currentBytes = peerState.totalBytesSent[fileId];
     let totalSize = fileSize;
 
+    // If the file is part of a folder, recalculate the folder's progress.
     if (peerState.currentFolderName) {
       const folderId = peerState.currentFolderName;
+      const folderMeta = this.pendingFolerMeta[folderId];
       progressFileId = folderId;
-      if (!peerState.totalBytesSent[folderId]) {
-        // This needs to be initialized properly when resuming a folder
-        peerState.totalBytesSent[folderId] = 0; // Simplified for now
+      totalSize = folderMeta?.totalSize || 0;
+
+      // Recalculate folder progress from the sum of its files' progresses.
+      // This is more robust and correct for resumed transfers.
+      let folderTotalSent = 0;
+      if (folderMeta) {
+        folderMeta.fileIds.forEach(fId => {
+          folderTotalSent += peerState.totalBytesSent[fId] || 0;
+        });
       }
-      peerState.totalBytesSent[folderId] += byteLength;
-      currentBytes = peerState.totalBytesSent[folderId];
-      totalSize = this.pendingFolerMeta[folderId]?.totalSize || 0;
-    } else {
-      peerState.totalBytesSent[fileId] += byteLength;
-      currentBytes = peerState.totalBytesSent[fileId];
+      currentBytes = folderTotalSent;
     }
 
     this.speedCalculator.updateSendSpeed(peerId, currentBytes);

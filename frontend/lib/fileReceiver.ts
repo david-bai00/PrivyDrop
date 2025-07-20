@@ -213,7 +213,34 @@ class FileReceiver {
       return;
     }
 
-    this.log("log", "Requesting to receive folder", { folderName });
+    // Pre-calculate total size of already downloaded parts of the folder
+    let initialFolderReceivedSize = 0;
+    if (this.saveDirectory) {
+      for (const fileId of folderProgress.fileIds) {
+        const fileInfo = this.pendingFilesMeta.get(fileId);
+        if (fileInfo) {
+          try {
+            const folderHandle = await this.createFolderStructure(
+              fileInfo.fullName
+            );
+            const fileHandle = await folderHandle.getFileHandle(fileInfo.name, {
+              create: false,
+            });
+            const file = await fileHandle.getFile();
+            initialFolderReceivedSize += file.size;
+          } catch (e) {
+            // File doesn't exist, so its size is 0.
+          }
+        }
+      }
+    }
+    folderProgress.receivedSize = initialFolderReceivedSize;
+    this.log(
+      "log",
+      `Requesting to receive folder, initial received size: ${initialFolderReceivedSize}`,
+      { folderName }
+    );
+
     this.currentFolderName = folderName;
     for (const fileId of folderProgress.fileIds) {
       try {
