@@ -115,6 +115,8 @@ export type KeyFeatures = {
   h3_4_P: string;
   h3_5: string;
   h3_5_P: string;
+  h3_6: string;
+  h3_6_P: string;
 };
 
 export type FAQ = {

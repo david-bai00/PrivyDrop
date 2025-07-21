@@ -3,9 +3,12 @@ import { Messages } from "@/types/messages";
 export const fr: Messages = {
   meta: {
     home: {
-      title: "PrivyDrop : Transfert de Fichiers et Partage de Presse-papiers P2P Open-Source & Gratuit | Axé sur la Confidentialité",
-      description: "PrivyDrop est un outil de transfert de fichiers P2P open-source, gratuit et sécurisé, sans limite de taille et sans inscription. Basé sur WebRTC pour un chiffrement de bout en bout, son code est transparent et digne de confiance. Partagez du texte, des images et des dossiers entre appareils, parfait pour la collaboration d'équipe et le transfert de fichiers privés.",
-      keywords: "partage de fichiers open-source,transfert de fichiers P2P,transfert de fichiers sécurisé,partage de fichiers webrtc,presse-papiers privé,transparence du code source,projet GitHub,collaboration d'équipe,partage entre appareils,transfert de fichiers chiffré,partage de fichiers sans inscription,transfert de fichiers illimité,synchronisation de dossiers,transfert de fichiers mobile,messagerie sécurisée,partage de fichiers instantané,transfert de données privé",
+      title:
+        "PrivyDrop : Transfert de Fichiers et Partage de Presse-papiers P2P Open-Source & Gratuit | Axé sur la Confidentialité",
+      description:
+        "PrivyDrop est un outil de transfert de fichiers P2P open source, gratuit et sécurisé, sans limite de taille, sans inscription et prenant en charge la reprise des transferts. Basé sur WebRTC pour un chiffrement de bout en bout, son code est transparent et digne de confiance. Il prend en charge le partage de texte, d'images et de dossiers entre appareils, idéal pour la collaboration en équipe et le transfert de fichiers privés.",
+      keywords:
+        "reprise de transfert de fichiers,partage de fichiers fiable,récupération de transfert interrompu,reprise de fichier P2P,transfert P2P avec reprise WebRTC,partage de fichiers open source,transfert de fichiers P2P,transfert de fichiers sécurisé,partage de fichiers webrtc,presse-papiers privé,code source transparent,projet GitHub,collaboration d'équipe,partage entre appareils,transfert de fichiers chiffré,partage de fichiers sans inscription,transfert de fichiers illimité,synchronisation de dossiers,transfert de fichiers mobile,communication sécurisée,partage de fichiers instantané,transfert de données privé",
     },
     about: {
       title: "À propos de PrivyDrop",
@@ -148,6 +151,9 @@ export const fr: Messages = {
       h3_5: "Écologique et propre",
       h3_5_P:
         "Nous sommes comme une version numérique d'une conversation en face à face – rien n'est stocké ailleurs. Cela signifie que nous sommes très respectueux de l'environnement, utilisant un minimum de ressources. C'est comme ne laisser aucune empreinte dans le monde numérique, en gardant les choses propres et vertes pour tout le monde.",
+      h3_6: "Reprise des Transferts",
+      h3_6_P:
+        "Définissez un répertoire de sauvegarde pour activer automatiquement la reprise des transferts. Ne vous souciez plus des interruptions réseau ; votre partage de fichiers reprendra là où il s'est arrêté.",
     },
     faqs: {
       FAQ_dis: "Questions fréquemment posées",
@@ -309,7 +315,7 @@ export const fr: Messages = {
     },
     home: {
       h1: "Outil gratuit de transfert de fichiers et de presse-papiers en ligne sécurisé",
-      h1P: "Partagez facilement du texte, des images, des fichiers et des dossiers avec une confidentialité inégalée, entièrement gratuit et sans inscription nécessaire. Aucune restriction de taille ou de vitesse. Profitez de transferts sécurisés et chiffrés de bout en bout directement entre appareils sans aucun coût.",
+      h1P: "Les transferts P2P reprennent là où ils ont été interrompus. Découvrez un partage de fichiers et de texte vraiment fiable, privé et inarrêtable — sans inscription, sans limite de taille ou de vitesse de fichier, et entièrement gratuit.",
       h2_screenOnly:
         "Essayez maintenant l'outil de transfert de fichiers et de presse-papiers sécurisé",
 

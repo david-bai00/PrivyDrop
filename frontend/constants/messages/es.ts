@@ -3,9 +3,12 @@ import { Messages } from "@/types/messages";
 export const es: Messages = {
   meta: {
     home: {
-      title: "PrivyDrop: Transferencia de Archivos y Portapapeles P2P de Código Abierto y Gratuito | Prioridad en la Privacidad",
-      description: "PrivyDrop es una herramienta de transferencia de archivos P2P de código abierto, gratuita y segura, sin límites de tamaño y sin necesidad de registro. Basado en WebRTC para cifrado de extremo a extremo, su código es transparente y confiable. Comparta texto, imágenes y carpetas entre dispositivos, perfecto para la colaboración en equipo y la transferencia de archivos privados.",
-      keywords: "compartir archivos de código abierto,transferencia de archivos P2P,transferencia segura de archivos,compartir archivos webrtc,portapapeles privado,transparencia del código fuente,proyecto de GitHub,colaboración en equipo,compartir entre dispositivos,transferencia de archivos cifrada,compartir archivos sin registro,transferencia de archivos ilimitada,sincronización de carpetas,transferencia de archivos móvil,mensajería segura,compartir archivos instantáneo,transferencia de datos privada",
+      title:
+        "PrivyDrop: Transferencia de Archivos y Portapapeles P2P de Código Abierto y Gratuito | Prioridad en la Privacidad",
+      description:
+        "PrivyDrop es una herramienta de transferencia de archivos P2P de código abierto, gratuita y segura, sin límites de tamaño, sin necesidad de registro y con soporte para transferencias reanudables. Basado en WebRTC para un cifrado de extremo a extremo, su código es transparente y fiable. Admite el intercambio de texto, imágenes y carpetas entre dispositivos, ideal para la colaboración en equipo y la transferencia de archivos privados.",
+      keywords:
+        "transferencia de archivos reanudable,intercambio de archivos fiable,recuperación de transferencias interrumpidas,reanudación de archivos P2P,transferencia reanudable WebRTC,intercambio de archivos de código abierto,transferencia de archivos P2P,transferencia de archivos segura,intercambio de archivos webrtc,portapapeles privado,código fuente transparente,proyecto de GitHub,colaboración en equipo,intercambio entre dispositivos,transferencia de archivos cifrada,intercambio de archivos sin registro,transferencia de archivos ilimitada,sincronización de carpetas,transferencia de archivos móvil,comunicación segura,intercambio de archivos instantáneo,transferencia de datos privada",
     },
     about: {
       title: "Acerca de PrivyDrop",
@@ -147,6 +150,9 @@ export const es: Messages = {
       h3_5: "Verde y Limpio",
       h3_5_P:
         "Somos como una versión digital de una conversación cara a cara - nada se almacena en ningún otro lugar. Esto significa que somos super amigables con el medio ambiente, usando recursos mínimos. Es como no dejar huella en el mundo digital, manteniendo las cosas limpias y verdes para todos.",
+      h3_6: "Transferencias Reanudables",
+      h3_6_P:
+        "Establece un directorio de guardado para habilitar automáticamente las transferencias reanudables. No más preocupaciones por interrupciones de red; tu intercambio de archivos continuará justo donde lo dejaste.",
     },
     faqs: {
       FAQ_dis: "Preguntas Frecuentes",
@@ -302,7 +308,7 @@ export const es: Messages = {
     },
     home: {
       h1: "Herramienta Gratuita de Portapapeles y Transferencia de Archivos en Línea Segura",
-      h1P: "Comparte sin esfuerzo texto, imágenes, archivos y carpetas con privacidad sin igual, completamente gratis y sin necesidad de registro. Sin restricciones de tamaño o velocidad. Disfruta de transferencias seguras y cifradas de extremo a extremo directamente entre dispositivos sin costo.",
+      h1P: "Las transferencias P2P se reanudan desde donde se interrumpieron. Experimente un intercambio de archivos y texto verdaderamente fiable, privado e imparable: sin registro, sin límites de tamaño o velocidad de archivo, y completamente gratis.",
       h2_screenOnly:
         "Prueba la Herramienta Segura de Portapapeles y Transferencia de Archivos Ahora",
       h2_demo: "Ve la Compartición Segura de Archivos en Acción",

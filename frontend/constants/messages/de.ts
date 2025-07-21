@@ -3,9 +3,12 @@ import { Messages } from "@/types/messages";
 export const de: Messages = {
   meta: {
     home: {
-      title: "PrivyDrop: Open-Source & kostenlose P2P-Datei- & Clipboard-Freigabe | Datenschutz-fokussiert",
-      description: "PrivyDrop ist ein Open-Source, kostenloses und sicheres P2P-Dateiübertragungstool ohne Größenbeschränkungen und ohne Registrierung. Basiert auf WebRTC für Ende-zu-Ende-Verschlüsselung, sein Code ist transparent und vertrauenswürdig. Teilen Sie Text, Bilder und Ordner geräteübergreifend, perfekt für Teamarbeit und private Dateiübertragungen.",
-      keywords: "open source dateifreigabe,P2P-Dateiübertragung,sichere Dateiübertragung,WebRTC-Dateifreigabe,privater Clipboard,Quellcode-Transparenz,GitHub-Projekt,Teamarbeit,geräteübergreifende Freigabe,verschlüsselte Dateiübertragung,Dateifreigabe ohne Registrierung,unbegrenzte Dateiübertragung,Ordnersynchronisation,mobile Dateiübertragung,sichere Nachrichtenübermittlung,sofortige Dateifreigabe,private Datenübertragung",
+      title:
+        "PrivyDrop: Open-Source & kostenlose P2P-Datei- & Clipboard-Freigabe | Datenschutz-fokussiert",
+      description:
+        "PrivyDrop ist ein quelloffenes, kostenloses und sicheres P2P-Dateiübertragungstool ohne Größenbeschränkungen, ohne Registrierung und mit Unterstützung für fortsetzbare Übertragungen. Basierend auf WebRTC für eine Ende-zu-Ende-Verschlüsselung ist der Code transparent und vertrauenswürdig. Unterstützt den Austausch von Text, Bildern und Ordnern über Geräte hinweg, perfekt für Teamkollaboration und private Dateiübertragungen.",
+      keywords:
+        "fortsetzbare Dateiübertragung,zuverlässiger Dateiaustausch,Wiederherstellung unterbrochener Übertragungen,P2P-Datei-Fortsetzung,WebRTC fortsetzbare Übertragung,Open-Source-Dateiaustausch,P2P-Dateiübertragung,sichere Dateiübertragung,WebRTC-Dateiaustausch,private Zwischenablage,transparenter Quellcode,GitHub-Projekt,Teamkollaboration,geräteübergreifender Austausch,verschlüsselte Dateiübertragung,Dateiaustausch ohne Registrierung,unbegrenzte Dateiübertragung,Ordnersynchronisierung,mobile Dateiübertragung,sichere Kommunikation,sofortiger Dateiaustausch,private Datenübertragung",
     },
     about: {
       title: "Über PrivyDrop",
@@ -148,6 +151,9 @@ export const de: Messages = {
       h3_5: "Grün und sauber",
       h3_5_P:
         "Wir sind wie eine digitale Version eines persönlichen Gesprächs – nichts wird woanders gespeichert. Das bedeutet, dass wir sehr umweltfreundlich sind und minimale Ressourcen verwenden. Es ist, als ob wir keine Spuren in der digitalen Welt hinterlassen und alles sauber und grün für alle halten.",
+      h3_6: "Fortsetzbare Übertragungen",
+      h3_6_P:
+        "Legen Sie ein Speicherverzeichnis fest, um fortsetzbare Übertragungen automatisch zu aktivieren. Machen Sie sich keine Sorgen mehr über Netzwerkunterbrechungen; Ihr Dateiaustausch wird genau dort fortgesetzt, wo er unterbrochen wurde.",
     },
     faqs: {
       FAQ_dis: "Häufig gestellte Fragen",
@@ -309,7 +315,7 @@ export const de: Messages = {
     },
     home: {
       h1: "Kostenloses sicheres Online-Clipboard & Dateiübertragungstool",
-      h1P: "Teilen Sie mühelos Text, Bilder, Dateien und Ordner mit beispielloser Privatsphäre, komplett kostenlos und ohne Registrierung. Keine Einschränkungen bei Größe oder Geschwindigkeit. Genießen Sie sichere, Ende-zu-Ende-verschlüsselte Übertragungen direkt zwischen Geräten ohne Kosten.",
+      h1P: "P2P-Übertragungen werden dort fortgesetzt, wo sie unterbrochen wurden. Erleben Sie einen wirklich zuverlässigen, privaten und unaufhaltsamen Datei- und Textaustausch – keine Registrierung, keine Beschränkungen bei Dateigröße oder Geschwindigkeit, völlig kostenlos.",
       h2_screenOnly:
         "Jetzt sicheres Clipboard & Dateiübertragungstool ausprobieren",
 

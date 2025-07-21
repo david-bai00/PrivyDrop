@@ -4,8 +4,8 @@ export const en: Messages = {
   meta: {
     home: {
       title: "PrivyDrop: Open-Source & Free P2P File Transfer & Clipboard Sharing | Privacy-First",
-      description: "PrivyDrop is an open-source, free, and secure P2P file transfer tool with no size limits and no registration. Based on WebRTC for end-to-end encryption, its code is transparent and trustworthy. Share text, images, and folders across devices, perfect for team collaboration and private file transfer.",
-      keywords: "open source file sharing,P2P file transfer,secure file transfer,webrtc file sharing,private clipboard,source code transparency,GitHub project,team collaboration,cross-device sharing,encrypted file transfer,no-registration file sharing,unlimited file transfer,folder sync,mobile file transfer,secure messaging,instant file sharing,private data transfer",
+      description: "PrivyDrop is an open-source, free, and secure P2P file transfer tool with no size limits, no registration, and support for resumable transfers. Based on WebRTC for end-to-end encryption, its code is transparent and trustworthy. Share text, images, and folders across devices, perfect for team collaboration and private file transfer.",
+      keywords: "resumable file transfer,reliable file sharing,interrupted transfer recovery,P2P file resume,WebRTC resumable transfer,open source file sharing,P2P file transfer,secure file transfer,webrtc file sharing,private clipboard,source code transparency,GitHub project,team collaboration,cross-device sharing,encrypted file transfer,no-registration file sharing,unlimited file transfer,folder sync,mobile file transfer,secure messaging,instant file sharing,private data transfer",
     },
     about: {
       title: "About PrivyDrop",
@@ -148,6 +148,9 @@ export const en: Messages = {
       h3_5: "Green and Clean",
       h3_5_P:
         "We're like a digital version of a face-to-face conversation - nothing gets stored anywhere else. This means we're super environmentally friendly, using minimal resources. It's like leaving no footprint in the digital world, keeping things clean and green for everyone.",
+      h3_6: "Resumable Transfers",
+      h3_6_P:
+        "Set a save directory to automatically enable resumable transfers. No more worrying about network interruptions; your file sharing will pick up right where it left off.",
     },
     faqs: {
       FAQ_dis: "Frequently Asked Questions",
@@ -301,7 +304,7 @@ export const en: Messages = {
     },
     home: {
       h1: "Free Secure Online Clipboard & File Transfer Tool",
-      h1P: "Effortlessly share text, images, files, and folders with unparalleled privacy, completely free and with no registration needed. No restrictions on size or speed. Enjoy secure, end-to-end encrypted transfers directly between devices at zero cost.",
+      h1P: "P2P transfers that pick up where you left off. Experience truly reliable, private, and unstoppable file and text sharing—no registration, no file size or speed limits, completely free.",
       h2_screenOnly: "Try Secure Clipboard & File Transfer Tool Now",
 
       h2_demo: "See Secure File Sharing in Action",

@@ -47,6 +47,18 @@ export default function KeyFeatures({ messages }: PageContentProps) {
           </h3>
           <p>{messages.text.KeyFeatures.h3_5_P}</p>
         </div>
+        <div>
+          <h3 className="text-xl font-semibold mb-2 flex items-center">
+            <Image
+              src="/ResumableTransfers.png"
+              alt="Icon"
+              width={100}
+              height={83}
+            />
+            <span className="ml-6">{messages.text.KeyFeatures.h3_6}</span>
+          </h3>
+          <p>{messages.text.KeyFeatures.h3_6_P}</p>
+        </div>
       </div>
     </section>
   );

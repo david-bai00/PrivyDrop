@@ -20,6 +20,7 @@ We believe everyone should have control over their own data. PrivyDrop was creat
 
 - 🔒 **End-to-End Encryption**: Leverages P2P direct connections via WebRTC. All files and text are transferred directly between browsers without passing through any central server.
 - 📂 **File & Folder Transfer**: Supports transferring multiple files and entire folders.
+- ⏸️ **Resume Transfer**: Resume file transfer from the point of interruption. Simply set the save directory to enable this feature, ensuring your large files are delivered safely even with unstable networks. If interrupted, you currently need to refresh both the sender and receiver web pages to restart the transfer.
 - ⚡ **Real-time & Efficient**: Displays real-time transfer progress and automatically calculates transfer speed.
 - 📝 **Rich Text Clipboard**: Supports editing and sending formatted text, not just files.
 - 🔗 **Convenient Sharing**: Easily share a room and establish a connection via a link or QR code.
