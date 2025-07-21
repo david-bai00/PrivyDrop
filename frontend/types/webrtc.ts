@@ -51,13 +51,19 @@ export interface FileEnd {
   fileId: string;
 }
 
+export interface FolderComplete {
+  type: "FolderComplete";
+  folderName: string;
+}
+
 export type WebRTCMessage =
   | fileMetadata
   | FileRequest
   | FileAck
   | StringMetadata
   | StringChunk
-  | FileEnd;
+  | FileEnd
+  | FolderComplete;
 
 export interface FolderMeta {
   totalSize: number;

@@ -15,6 +15,7 @@ import {
   FileHandlers,
   FileMeta,
   FileRequest,
+  FolderComplete,
 } from "@/types/webrtc";
 
 /**
@@ -255,6 +256,24 @@ class FileReceiver {
       }
     }
     this.currentFolderName = null;
+
+    // After the loop, the receiver has requested all necessary files.
+    // Send a completion message to the sender to sync the final state.
+    const folderComplete: FolderComplete = {
+      type: "FolderComplete",
+      folderName: folderName,
+    };
+
+    if (this.peerId) {
+      this.webrtcConnection.sendData(
+        JSON.stringify(folderComplete),
+        this.peerId
+      );
+      this.log(
+        "log",
+        `Sent folderComplete message for ${folderName} to peer ${this.peerId}`
+      );
+    }
   }
   // endregion
 

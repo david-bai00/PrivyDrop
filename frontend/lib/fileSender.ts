@@ -12,7 +12,9 @@ import {
   WebRTCMessage,
   PeerState,
   FolderMeta,
+  FileAck,
   FileRequest,
+  FolderComplete,
 } from "@/types/webrtc";
 
 class FileSender {
@@ -97,8 +99,20 @@ class FileSender {
       case "fileAck":
         peerState.isSending = false;
         this.log("log", `Received file-finish ack from peer ${peerId}`, {
-          fileId: (message as any).fileId,
+          fileId: (message as FileAck).fileId,
         });
+        break;
+      case "folderComplete":
+        const folderName = (message as FolderComplete).folderName;
+        this.log(
+          "log",
+          `Received folderComplete message for ${folderName} from peer ${peerId}`
+        );
+        // The receiver has confirmed the folder is complete.
+        // Force the progress to 100% for the sender's UI.
+        if (this.pendingFolerMeta[folderName]) {
+          peerState.progressCallback?.(folderName, 1, 0);
+        }
         break;
       default:
         this.log("warn", `Unknown signaling message type received`, {
@@ -295,7 +309,7 @@ class FileSender {
       // This is more robust and correct for resumed transfers.
       let folderTotalSent = 0;
       if (folderMeta) {
-        folderMeta.fileIds.forEach(fId => {
+        folderMeta.fileIds.forEach((fId) => {
           folderTotalSent += peerState.totalBytesSent[fId] || 0;
         });
       }
