@@ -82,7 +82,7 @@ configure_nginx() {
     done < "$NGINX_TEMPLATE" > "$TEMP_NGINX"
 
     # Copy the configuration file to the target location
-    cp "$TEMP_NGINX" /etc/nginx/sites-available/default
+    cp "$TEMP_NGINX" /etc/nginx/sites-enabled/default
     # cp "$TEMP_NGINX" default_temp
     rm "$TEMP_NGINX"
 }
@@ -91,7 +91,7 @@ configure_nginx() {
 configure_nginx
 cp backend/docker/Nginx/nginx.conf /etc/nginx
 
-echo "Nginx base configuration generated successfully at /etc/nginx/sites-available/default."
+echo "Nginx base configuration generated successfully at /etc/nginx/sites-enabled/default."
 echo "The script no longer restarts Nginx automatically."
 echo ""
 echo "NEXT STEP: Run Certbot to install the SSL certificate and automatically configure Nginx:"

@@ -164,26 +164,22 @@ cd backend && npm run build && cd ..
 
     按照 Certbot 的提示操作（例如输入邮箱、同意服务条款等）。
 
+    运行如下命令，查看证书路径是否已替换：
+
+    ```bash
+    sudo grep ssl_certificate /etc/nginx/sites-enabled/default
+    ```
+
+    应该能看到指向 `/etc/letsencrypt/live/privydrop.app/` 的路径
+
 3.  **删除由 Certbot 产生的多余配置:**
 
     ```bash
     sudo bash backend/docker/Nginx/del_redundant_cfg.sh
     ```
 
-4.  **验证与排错 (重要):**
-    首先，验证 Nginx 配置文件中的证书路径是否已自动更新。
-
+4.  **启动 nginx 服务:**
     ```bash
-    sudo grep ssl_certificate /etc/nginx/sites-available/default
-    ```
-
-    正常情况下，您应该能看到指向 `/etc/letsencrypt/live/privydrop.app/` 的路径。
-
-    如果 `certbot --nginx` 执行后，上述路径依然是旧的占位符路径，请运行以下命令强制更新证书：
-
-    ```bash
-    sudo certbot install --cert-name privydrop.app -d privydrop.app -d www.privydrop.app -d turn.privydrop.app
-    # 然后重载 Nginx 使之生效
     sudo systemctl reload nginx
     ```
 
