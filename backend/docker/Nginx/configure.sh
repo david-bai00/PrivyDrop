@@ -89,7 +89,7 @@ configure_nginx() {
 
 # Execute configuration
 configure_nginx
-cp docker/Nginx/nginx.conf /etc/nginx
+cp backend/docker/Nginx/nginx.conf /etc/nginx
 
 echo "Nginx base configuration generated successfully at /etc/nginx/sites-available/default."
 echo "The script no longer restarts Nginx automatically."

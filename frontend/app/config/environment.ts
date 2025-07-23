@@ -21,7 +21,7 @@ export const getIceServers = () => {
   // Add self-hosted TURN/STUN server if configured through environment variables
   if (config.TURN_HOST && config.TURN_USERNAME && config.TURN_CREDENTIAL) {
     const turnUrls = config.USE_HTTPS
-      ? [`turns:${config.TURN_HOST}:5349`, `turn:${config.TURN_HOST}:3478`]
+      ? [`turns:${config.TURN_HOST}:443`, `turn:${config.TURN_HOST}:3478`]
       : [`turn:${config.TURN_HOST}:3478`];
 
     // Add STUN from the self-hosted server

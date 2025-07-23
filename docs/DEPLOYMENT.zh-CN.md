@@ -56,15 +56,18 @@ sudo apt install coturn
 
 2.  **防火墙配置：**
     在服务器的防火墙上打开必要的端口 (例如，使用 `ufw`)：
-    -   TCP & UDP `3478`: 用于 STUN 和 TURN。
-    -   TCP & UDP `5349`: 用于 TURNS (TURN over TLS/DTLS)。
-    -   UDP `49152-65535`: Coturn 的默认中继端口范围。
+
+    - TCP & UDP `3478`: 用于 STUN 和 TURN。
+    - TCP & UDP `5349`: 用于 TURNS (TURN over TLS/DTLS)。
+    - UDP `49152-65535`: Coturn 的默认中继端口范围。
+
     ```bash
-    sudo ufw allow 3478
-    sudo ufw allow 5349
-    sudo ufw allow 49152:65535/udp
-    sudo ufw reload # 或 ufw enable
+        sudo ufw allow 3478
+        sudo ufw allow 5349
+        sudo ufw allow 49152:65535/udp
+        sudo ufw reload # 或 ufw enable
     ```
+
 **工程师提示**：关于 Coturn 在生产环境中的详细配置（如 SSL 证书、用户名、密码等），将在 `第 4 节：应用部署` 中与 Nginx 和主应用一同进行，以确保流程的统一和简化。
 
 ## 4. 应用部署 (生产环境)
@@ -100,19 +103,21 @@ cd backend && npm run build && cd ..
 1.  **为后端和前端准备生产环境变量**
     在部署之前，请确保后端和前端的生产环境变量文件已准备就绪。您需要从示例文件复制并根据您的服务器信息进行修改。
 
-    -   **后端配置:**
-        ```bash
-        # 位于项目根目录
-        cp backend/.env_production_example backend/.env.production
-        ```
-        然后编辑 `backend/.env.production`，至少配置 `CORS_ORIGIN` 为您的主域名 (例如 `https://privydrop.app`) 以及 `REDIS` 相关信息。
+    - **后端配置:**
 
-    -   **前端配置:**
-        ```bash
-        # 位于项目根目录
-        cp frontend/.env_production_example frontend/.env.production
-        ```
-        然后编辑 `frontend/.env.production`，配置 `NEXT_PUBLIC_API_URL` 为您的后端服务域名 (例如 `https://privydrop.app`)。
+      ```bash
+      # 位于项目根目录
+      cp backend/.env_production_example backend/.env.production
+      ```
+
+      然后编辑 `backend/.env.production`，至少配置 `CORS_ORIGIN` 为您的主域名 (例如 `https://privydrop.app`) 以及 `REDIS` 相关信息。
+
+    - **前端配置:**
+      ```bash
+      # 位于项目根目录
+      cp frontend/.env_production_example frontend/.env.production
+      ```
+      然后编辑 `frontend/.env.production`，配置 `NEXT_PUBLIC_API_URL` 为您的后端服务域名 (例如 `https://privydrop.app`)。
 
 2.  **安装 Nginx:** 推荐安装支持 HTTP/3 的较新版本。
 
@@ -121,16 +126,17 @@ cd backend && npm run build && cd ..
 4.  **生成 Nginx 基础配置:**
     后端项目 `backend/docker/Nginx/` 目录中提供了配置脚本和模板。此模板使用一个临时的"占位符"证书，以确保 Nginx 配置在申请真实证书前是有效的。
 
-    -   现在，编辑 `backend/.env.production` 文件，添加 `NGINX_*` 相关变量。**无需 SSL 证书路径**。示例为：
-        ```
-        NGINX_SERVER_NAME=privydrop.app # 你的主域名
-        NGINX_FRONTEND_ROOT=/path/to/your/PrivyDrop/frontend # 前端项目根目录
-        ```
-    -   执行脚本生成 Nginx 配置文件：
-        ```bash
-        # 此脚本会使用 .env 文件中的变量来生成 Nginx 配置文件
-        sudo bash backend/docker/Nginx/configure.sh backend/.env.production
-        ```
+    - 现在，编辑 `backend/.env.production` 文件，添加 `NGINX_*` 相关变量。**无需 SSL 证书路径**。示例为：
+      ```
+      NGINX_SERVER_NAME=privydrop.app # 你的主域名
+      NGINX_FRONTEND_ROOT=/path/to/your/PrivyDrop/frontend # 前端项目根目录
+      ```
+    - 执行脚本生成 Nginx 配置文件：
+      ```bash
+      # 此脚本会使用 .env 文件中的变量来生成 Nginx 配置文件
+      sudo bash backend/docker/Nginx/configure.sh backend/.env.production
+      ```
+
 ### 4.4. 使用 Certbot 安装统一 SSL 证书
 
 现在 Nginx 有了基础配置，我们可以使用 Certbot 来获取并安装真实的 SSL 证书。我们将为所有服务（主域名、www 和 TURN）申请一张统一的证书，并让 Certbot 自动更新 Nginx 配置。
@@ -142,9 +148,10 @@ cd backend && npm run build && cd ..
     ```
 
 2.  **运行 Certbot 申请证书：**
-    -   此命令会自动检测您的 Nginx 配置并为其安装证书。
-    -   `-d` 参数指定所有需要包含在此证书中的域名。请确保您的域名 DNS 已正确解析到服务器 IP。
-    -   `--deploy-hook` 是一个关键参数：它会在证书成功续期后，自动重启 Coturn 服务，以加载新证书。这实现了完全自动化的证书维护。
+
+    - 此命令会自动检测您的 Nginx 配置并为其安装证书。
+    - `-d` 参数指定所有需要包含在此证书中的域名。请确保您的域名 DNS 已正确解析到服务器 IP。
+    - `--deploy-hook` 是一个关键参数：它会在证书成功续期后，自动重启 Coturn 服务，以加载新证书。这实现了完全自动化的证书维护。
 
     ```bash
     # 将 privydrop.app 替换为你的主域名
@@ -154,16 +161,26 @@ cd backend && npm run build && cd ..
         -d turn.privydrop.app \
         --deploy-hook "sudo systemctl restart coturn"
     ```
+
     按照 Certbot 的提示操作（例如输入邮箱、同意服务条款等）。
 
-3.  **验证与排错 (重要):**
+3.  **删除由 Certbot 产生的多余配置:**
+
+    ```bash
+    sudo bash backend/docker/Nginx/del_redundant_cfg.sh
+    ```
+
+4.  **验证与排错 (重要):**
     首先，验证 Nginx 配置文件中的证书路径是否已自动更新。
+
     ```bash
     sudo grep ssl_certificate /etc/nginx/sites-available/default
     ```
+
     正常情况下，您应该能看到指向 `/etc/letsencrypt/live/privydrop.app/` 的路径。
 
     如果 `certbot --nginx` 执行后，上述路径依然是旧的占位符路径，请运行以下命令强制更新证书：
+
     ```bash
     sudo certbot install --cert-name privydrop.app -d privydrop.app -d www.privydrop.app -d turn.privydrop.app
     # 然后重载 Nginx 使之生效
@@ -176,6 +193,7 @@ cd backend && npm run build && cd ..
 
 1.  **配置环境变量**:
     打开后端的 `.env.production` 文件，配置所有 `TURN_*` 相关变量。
+
     ```ini
     # .env.production
 
@@ -206,6 +224,7 @@ cd backend && npm run build && cd ..
     sudo chown -R root:ssl-cert /etc/letsencrypt/
     sudo chmod -R 750 /etc/letsencrypt/
     ```
+
 3.  **生成配置文件并启动服务**:
     运行项目提供的脚本，它会根据 `.env.production` 文件生成 `/etc/turnserver.conf` 并重启 Coturn。
     ```bash
@@ -213,19 +232,21 @@ cd backend && npm run build && cd ..
     sudo bash backend/docker/TURN/configure.sh backend/.env.production
     ```
 4.  **检查服务状态与在线测试**:
-    -   检查服务状态：
-        ```bash
-        sudo systemctl status coturn
-        # 同时检查日志确保没有权限错误
-        # sudo journalctl -u coturn -f
-        ```
-    -   **在线测试 (推荐)**:
-        服务启动后，使用在线工具，如 [Metered TURN Server Tester](https://www.metered.ca/turn-server-testing)，验证 TURNS 服务是否正常工作：
-        -   **TURNS URL**: `turns:turn.privydrop.app:5349` (将域名替换为你的)
-        -   **Username**: `你在 .env 中设置的用户名`
-        -   **Password**: `你在 .env 中设置的密码`
 
-        如果所有检查点都显示绿色 "Success" 或 "Reachable"，则表示您的 TURN 服务器已成功配置。
+    - 检查服务状态：
+      ```bash
+      sudo systemctl status coturn
+      # 同时检查日志确保没有权限错误
+      # sudo journalctl -u coturn -f
+      ```
+    - **在线测试 (推荐)**:
+      服务启动后，使用在线工具，如 [Metered TURN Server Tester](https://www.metered.ca/turn-server-testing)，验证 TURNS 服务是否正常工作：
+
+      - **TURNS URL**: `turn:turn.privydrop.app:3478` (将域名替换为你的)
+      - **Username**: `你在 .env 中设置的用户名`
+      - **Password**: `你在 .env 中设置的密码`
+
+      如果所有检查点都显示绿色 "Success" 或 "Reachable"，则表示您的 TURN 服务器已成功配置。
 
 ### 4.6. 使用 PM2 运行应用
 
@@ -270,8 +291,7 @@ PM2 是一个强大的 Node.js 进程管理器，我们将用它来分别运行�
 - **连接问题：** 检查防火墙、Nginx 代理设置、CORS_ORIGIN 配置，确保所有 PM2 进程都在运行。
 - **Nginx 错误:** `sudo nginx -t` 检查语法，查看 `/var/log/nginx/error.log`。
 - **PM2 问题:** `pm2 logs <app_name>` 查看应用日志。
--   **证书权限 (生产环境)：** 如果 Coturn 或 Nginx 无法读取 SSL 证书，请仔细检查 `第 4.5 节` 中的文件权限和用户/组设置。
-
+- **证书权限 (生产环境)：** 如果 Coturn 或 Nginx 无法读取 SSL 证书，请仔细检查 `第 4.5 节` 中的文件权限和用户/组设置。
 
 ## 7. 安全与维护
 

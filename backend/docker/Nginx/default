@@ -1,14 +1,14 @@
-server {
-    # Redirect HTTP to HTTPS
-    listen 80;
-    server_name YourDomain www.YourDomain;
-    return 301 https://$server_name$request_uri;
+server { # Redirect HTTP to HTTPS
+listen 80;
+server_name YourDomain www.YourDomain;
+return 301 https://$server_name$request_uri;
 }
 
 server {
-    listen 443 ssl http2;      # Listen on TCP port 443, supporting HTTP/2 and SSL
-    listen 443 quic reuseport; # Listen on UDP port 443 for QUIC and HTTP/3
-    # 'reuseport' allows multiple worker processes to share the same port, recommended for QUIC
+# No longer listening on public 443/TCP, change to listening on internal port
+listen 127.0.0.1:4443 ssl http2; # Listen on TCP port 443, supporting HTTP/2 and SSL
+# QUIC/HTTP3 continues to listen on public UDP 443
+listen 443 quic reuseport; # Listen on UDP port 443 for QUIC and HTTP/3 # 'reuseport' allows multiple worker processes to share the same port, recommended for QUIC
 
     # Ensure that the SSL protocol includes at least TLSv1.3, as HTTP/3 requires TLSv1.3
     ssl_protocols TLSv1.3 TLSv1.2; # Make sure TLSv1.3 is at the front
@@ -24,12 +24,12 @@ server {
     ssl_early_data on;
 
     server_name YourDomain www.YourDomain;
-    
+
     # SSL Configuration (using placeholder certs for Certbot)
     # Certbot will find this block and replace these with the real certificates.
     ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
     ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
-    
+
     # SSL Optimization
     ssl_session_timeout 1d;
     ssl_session_cache shared:SSL:50m;
@@ -41,7 +41,7 @@ server {
 
     # HSTS (Enable with caution)
     # add_header Strict-Transport-Security "max-age=63072000" always;
-    
+
     # Define the root path of the frontend build artifacts inside the container
     # !!! Important: Please modify this path to the actual path of your frontend project build inside the Nginx container !!!
     set $frontend_build_root path/to/PrivyDrop/frontend;
@@ -64,7 +64,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        
+
         # CORS Configuration
         add_header 'Access-Control-Allow-Origin' '*' always;
         add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
@@ -90,7 +90,7 @@ server {
         add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
         add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range" always;
         add_header Access-Control-Allow-Credentials "true" always;
-        
+
     }
     # Next.js Image Optimization Service (usually handled by the Next.js application)
     location /_next/image {
@@ -123,4 +123,16 @@ server {
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
     }
+
+}
+
+server { # Add a server block for Certbot to install certificates for turn.privydrop.app
+listen 80;
+server_name turn.privydrop.app;
+
+    # Only process Let's Encrypt validation requests
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
 }
