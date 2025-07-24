@@ -246,7 +246,7 @@ cd backend && npm run build && cd ..
 
 ### 4.6. 使用 PM2 运行应用
 
-PM2 是一个强大的 Node.js 进程管理器，我们将用它来分别运行后端服务和前端服务。
+PM2 是一个强大的 Node.js 进程管理器，我们将用它来运行后端和前端服务。
 
 1.  **全局安装 PM2：**
 
@@ -254,33 +254,24 @@ PM2 是一个强大的 Node.js 进程管理器，我们将用它来分别运行�
     sudo npm install -g pm2
     ```
 
-2.  **启动后端服务：**
-    项目后端目录提供了一个 `ecosystem.config.js` 文件用于 PM2。
+2.  **使用统一配置文件启动服务：**
+
+    项目根目录提供了一个统一的 `ecosystem.config.js` 配置文件，可以一次性启动所有服务：
 
     ```bash
-    cd backend
-    # 如果之前运行过，则先执行
-    sudo pm2 stop signaling-server && sudo pm2 delete signaling-server
-    # 确保 .env.production 已配置完毕
+    # 如果之前运行过服务，先停止并删除
+    sudo pm2 stop all && sudo pm2 delete all
+
+    # 使用统一配置文件启动所有服务
     sudo pm2 start ecosystem.config.js
     ```
 
-3.  **启动前端服务：**
-
-    ```bash
-    cd frontend
-    # 如果之前运行过，则先执行
-    sudo pm2 stop privydrop-frontend && sudo pm2 delete privydrop-frontend
-
-    sudo pm2 start npm --name "privydrop-frontend" -- run start
-    ```
-
-    `npm start` 会启动 Next.js 的生产服务器，默认监听 3000 端口。
-
-4.  **管理应用**
+3.  **管理应用：**
     - 查看状态: `pm2 list`
-    - 查看日志: `pm2 logs <app_name>`
+    - 查看日志: `pm2 logs <app_name>` (例如：`pm2 logs signaling-server` 或 `pm2 logs privydrop-frontend`)
     - 设置开机自启: `pm2 startup` 然后 `pm2 save`
+    - 重启服务: `pm2 restart all` 或指定服务 `pm2 restart signaling-server`
+    - 停止服务: `pm2 stop all` 或指定服务 `pm2 stop privydrop-frontend`
 
 ## 5. 故障排除
 

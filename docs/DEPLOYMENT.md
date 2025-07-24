@@ -247,7 +247,7 @@ With the unified SSL certificate obtained, we can now complete the production co
 
 ### 4.6. Run the Application with PM2
 
-PM2 is a powerful process manager for Node.js. We will use it to run the backend and frontend services separately.
+PM2 is a powerful process manager for Node.js. We will use it to run both backend and frontend services.
 
 1.  **Install PM2 globally:**
 
@@ -255,33 +255,24 @@ PM2 is a powerful process manager for Node.js. We will use it to run the backend
     sudo npm install -g pm2
     ```
 
-2.  **Start the Backend Service:**
-    The backend directory provides an `ecosystem.config.js` file for PM2.
+2.  **Start Services Using Unified Configuration:**
+
+    The project root directory provides a unified `ecosystem.config.js` configuration file that can start all services at once:
 
     ```bash
-    cd backend
-    # If previously run, execute this first
-    sudo pm2 stop signaling-server && sudo pm2 delete signaling-server
-    # Ensure .env.production is fully configured
+    # If services were previously running, stop and delete them first
+    sudo pm2 stop all && sudo pm2 delete all
+
+    # Start all services using the unified configuration file
     sudo pm2 start ecosystem.config.js
     ```
 
-3.  **Start the Frontend Service:**
-
-    ```bash
-    cd frontend
-    # If previously run, execute this first
-    sudo pm2 stop privydrop-frontend && sudo pm2 delete privydrop-frontend
-
-    sudo pm2 start npm --name "privydrop-frontend" -- run start
-    ```
-
-    The `npm start` command starts the Next.js production server, which listens on port 3000 by default.
-
-4.  **Manage Applications:**
+3.  **Manage Applications:**
     - View status: `pm2 list`
-    - View logs: `pm2 logs <app_name>`
+    - View logs: `pm2 logs <app_name>` (e.g., `pm2 logs signaling-server` or `pm2 logs privydrop-frontend`)
     - Set up startup script: `pm2 startup` followed by `pm2 save`
+    - Restart services: `pm2 restart all` or specific service `pm2 restart signaling-server`
+    - Stop services: `pm2 stop all` or specific service `pm2 stop privydrop-frontend`
 
 ## 5. Troubleshooting
 
