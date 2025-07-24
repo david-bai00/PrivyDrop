@@ -16,16 +16,21 @@ export const es: Messages = {
         "Conozca PrivyDrop, nuestra misión de proporcionar un servicio seguro y privado de transferencia de archivos y compartición de portapapeles, y nuestro compromiso con la privacidad y protección de datos.",
     },
     faq: {
-      title: "Preguntas Frecuentes de PrivyDrop",
+      title: "PrivyDrop FAQ",
       description:
-        "Encuentre respuestas a preguntas frecuentes sobre PrivyDrop, incluyendo cómo enviar archivos, compartir contenido del portapapeles y asegurar transferencias seguras y privadas.",
+        "Encuentra respuestas a las preguntas frecuentes sobre PrivyDrop, incluyendo cómo enviar archivos, compartir contenido del portapapeles y asegurar transferencias de datos seguras y privadas.",
       keywords:
-        "FAQ PrivyDrop,preguntas frecuentes,FAQ compartir archivos seguros,ayuda compartir datos privados,transferencia cifrada extremo a extremo,soporte compartir portapapeles seguro,cómo usar PrivyDrop,FAQ transferencia archivos,preguntas compartir privado,solución problemas PrivyDrop",
+        "PrivyDrop FAQ,preguntas frecuentes,FAQ de compartir archivos seguros,ayuda de compartir datos privados,transferencia de archivos cifrada de extremo a extremo,soporte de compartir portapapeles seguro,cómo usar PrivyDrop,FAQ de transferencia de archivos,preguntas de compartir centrado en privacidad,solución de problemas de PrivyDrop",
+    },
+    features: {
+      title: "Características Principales de PrivyDrop: 6 Ventajas Clave de la Transferencia P2P | Seguro e Ilimitado",
+      description: "Descubre las características principales de PrivyDrop: transferencia directa P2P cifrada de extremo a extremo, tamaño de archivo ilimitado, transferencias reanudables, colaboración en equipo, diseño ecológico y transparencia de código abierto. Experimenta el intercambio de archivos verdaderamente seguro y privado.",
+      keywords: "características de transferencia de archivos P2P,transferencia cifrada de extremo a extremo,transferencia de archivos reanudable,compartir archivos ilimitado,herramienta de colaboración en equipo,transferencia de archivos ecológica,compartir archivos de código abierto,transferencia de datos privados,compartir archivos WebRTC,sincronización de archivos segura,transferencia de archivos entre dispositivos,procesamiento de archivos local",
     },
     help: {
       title: "Ayuda y Soporte de PrivyDrop",
       description:
-        "Encuentre información sobre cómo contactar con el soporte de PrivyDrop, así como enlaces a nuestras páginas Acerca de, Términos de Uso y Política de Privacidad para más detalles sobre nuestro servicio.",
+        "Encuentra información sobre cómo contactar al soporte de PrivyDrop, así como enlaces a nuestras páginas de Acerca de, Términos de Uso y Política de Privacidad para más detalles sobre nuestro servicio.",
     },
     privacy: {
       title: "Política de Privacidad de PrivyDrop",
@@ -47,6 +52,7 @@ export const es: Messages = {
       FAQ_dis: "FAQ",
       Terms_dis: "Términos",
       Privacy_dis: "Privacidad",
+      Features_dis: "Características",
     },
     Footer: {
       CopyrightNotice: "PrivyDrop. Todos los derechos reservados.",

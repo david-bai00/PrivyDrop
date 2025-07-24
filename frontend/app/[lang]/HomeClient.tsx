@@ -87,7 +87,11 @@ export default function HomeClient({ messages, lang }: PageContentProps) {
       {/* Key Features */}
       <section aria-label="Key Features">
         <LazyLoadWrapper>
-          <KeyFeatures messages={messages} />
+          <KeyFeatures 
+            messages={messages} 
+            isInToolPage
+            titleClassName="text-2xl md:text-3xl"
+          />
         </LazyLoadWrapper>
       </section>
       {/* FAQ Section */}
@@ -95,7 +99,7 @@ export default function HomeClient({ messages, lang }: PageContentProps) {
         <LazyLoadWrapper>
           <FAQSection
             messages={messages}
-            isMainPage
+            isInToolPage
             titleClassName="text-2xl md:text-3xl"
           />
         </LazyLoadWrapper>

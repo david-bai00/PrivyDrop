@@ -4,7 +4,16 @@ import { supportedLocales } from "@/constants/i18n-config";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://www.privydrop.app";
   const languages = supportedLocales;
-  const routes = ["", "/about", "/help", "/faq", "/terms", "/privacy"];
+  const routes = [
+    "",
+    "/features",
+    "/blog",
+    "/about",
+    "/help",
+    "/faq",
+    "/terms",
+    "/privacy",
+  ];
 
   const urls: MetadataRoute.Sitemap = [];
 

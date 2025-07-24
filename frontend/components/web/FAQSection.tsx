@@ -42,7 +42,7 @@ const generateFAQs = (messages: { text: { faqs: FAQMessage } }): FAQ[] => {
 };
 
 interface FAQSectionProps {
-  isMainPage?: boolean; // Whether it is the FAQ section of the main page
+  isInToolPage?: boolean; // Whether it is in the tool page (e.g. homepage)
   className?: string; // Allow passing custom className
   showTitle?: boolean; // Whether to display the title
   titleClassName?: string; // Title style class
@@ -51,7 +51,7 @@ interface FAQSectionProps {
 }
 // Control the level and style of the title through props, so it can be used on other pages as well as on a standalone page
 export default function FAQSection({
-  isMainPage = false,
+  isInToolPage = false,
   className = "",
   showTitle = true,
   titleClassName = "",
@@ -67,7 +67,7 @@ export default function FAQSection({
   return (
     <div className={containerClasses}>
       {showTitle &&
-        (isMainPage ? (
+        (isInToolPage ? (
           <h2 className={`text-3xl ${titleClasses}`}>
             {messages.text.faqs.FAQ_dis}
           </h2>
@@ -92,7 +92,7 @@ export default function FAQSection({
 
 // // On the home page
 // <FAQSection
-//   isMainPage
+//   isInToolPage
 //   titleClassName="text-2xl md:text-3xl" // Optional: use a slightly smaller font size on the home page
 // />  // Use h2 tag
 

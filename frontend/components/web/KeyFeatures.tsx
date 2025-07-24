@@ -1,16 +1,38 @@
 import Image from "next/image";
 import type { Messages } from "@/types/messages";
 
-interface PageContentProps {
+interface KeyFeaturesProps {
+  isInToolPage?: boolean; // Whether it is in the tool page (e.g. homepage)
+  className?: string; // Custom style class
+  showTitle?: boolean; // Whether to display the title
+  titleClassName?: string; // Title style class
   messages: Messages;
 }
 
-export default function KeyFeatures({ messages }: PageContentProps) {
+export default function KeyFeatures({ 
+  isInToolPage = false,
+  className = "",
+  showTitle = true,
+  titleClassName = "",
+  messages 
+}: KeyFeaturesProps) {
+  // Set container styles
+  const containerClasses = `container mx-auto px-4 py-8 ${className}`;
+  const defaultTitleClasses = "font-semibold mb-6";
+  const titleClasses = `${defaultTitleClasses} ${titleClassName}`.trim();
+
   return (
-    <section className="mb-12">
-      <h2 className="text-3xl font-semibold mb-6">
-        {messages.text.KeyFeatures.h2}
-      </h2>
+    <section className={containerClasses}>
+      {showTitle &&
+        (isInToolPage ? (
+          <h2 className={`text-3xl ${titleClasses}`}>
+            {messages.text.KeyFeatures.h2}
+          </h2>
+        ) : (
+          <h1 className={`text-4xl ${titleClasses}`}>
+            {messages.text.KeyFeatures.h2}
+          </h1>
+        ))}
       <div className="space-y-6">
         <div>
           <h3 className="text-xl font-semibold mb-2 flex items-center">

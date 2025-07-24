@@ -28,6 +28,7 @@ const Header = ({ messages, lang }: HeaderProps) => {
   // Configuration for navigation items
   const navItems = [
     { href: `/${lang}`, label: messages.text.Header.Home_dis },
+    { href: `/${lang}/features`, label: messages.text.Header.Features_dis },
     { href: `/${lang}/blog`, label: messages.text.Header.Blog_dis },
     { href: `/${lang}/about`, label: messages.text.Header.About_dis },
     { href: `/${lang}/help`, label: messages.text.Header.Help_dis },

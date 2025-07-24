@@ -19,6 +19,11 @@ export const en: Messages = {
       keywords:
         "PrivyDrop FAQ,frequently asked questions,secure file sharing FAQ,private data sharing help,end-to-end encrypted file transfer,secure clipboard sharing support,how to use PrivyDrop,file transfer FAQ,privacy-focused sharing questions,PrivyDrop troubleshooting",
     },
+    features: {
+      title: "PrivyDrop Core Features: 6 Key Advantages of P2P File Transfer | Secure & Unlimited",
+      description: "Discover PrivyDrop's core features: end-to-end encrypted P2P direct transfer, unlimited file size, resumable transfers, team collaboration, eco-friendly design, and open-source transparency. Experience truly secure and private file sharing.",
+      keywords: "P2P file transfer features,end-to-end encrypted transfer,resumable file transfer,unlimited file sharing,team collaboration tool,eco-friendly file transfer,open source file sharing,private data transfer,WebRTC file sharing,secure file sync,cross-device file transfer,local file processing",
+    },
     help: {
       title: "PrivyDrop Help and Support",
       description:
@@ -42,6 +47,7 @@ export const en: Messages = {
       About_dis: "About",
       Help_dis: "Help",
       FAQ_dis: "FAQ",
+      Features_dis: "Features",
       Terms_dis: "Terms",
       Privacy_dis: "Privacy",
     },

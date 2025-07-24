@@ -18,14 +18,19 @@ export const ko: Messages = {
     faq: {
       title: "PrivyDrop FAQ",
       description:
-        "PrivyDrop에 대해 자주 묻는 질문에 대한 답변을 찾아보세요. 파일을 보내는 방법, 클립보드 콘텐츠를 공유하는 방법, 안전하고 개인적인 데이터 전송을 보장하는 방법 등을 포함합니다.",
+        "파일 전송 방법, 클립보드 콘텐츠 공유 방법, 안전하고 개인적인 데이터 전송 보장 방법을 포함하여 PrivyDrop에 대한 자주 묻는 질문의 답변을 찾아보세요.",
       keywords:
-        "PrivyDrop FAQ, 자주 묻는 질문, 안전한 파일 공유 FAQ, 개인 데이터 공유 도움말, 엔드투엔드 암호화 파일 전송, 안전한 클립보드 공유 지원, PrivyDrop 사용 방법, 파일 전송 FAQ, 개인 정보 보호 중심 공유 질문, PrivyDrop 문제 해결",
+        "PrivyDrop FAQ,자주 묻는 질문,안전한 파일 공유 FAQ,개인 데이터 공유 도움말,종단간 암호화 파일 전송,안전한 클립보드 공유 지원,PrivyDrop 사용 방법,파일 전송 FAQ,개인정보 중심 공유 질문,PrivyDrop 문제 해결",
+    },
+    features: {
+      title: "PrivyDrop 핵심 기능: P2P 파일 전송의 6가지 주요 장점 | 안전하고 무제한",
+      description: "PrivyDrop의 핵심 기능을 발견하세요: 종단간 암호화 P2P 직접 전송, 무제한 파일 크기, 재개 가능한 전송, 팀 협업, 친환경 설계, 오픈 소스 투명성. 진정으로 안전하고 개인적인 파일 공유를 경험하세요.",
+      keywords: "P2P 파일 전송 기능,종단간 암호화 전송,재개 가능한 파일 전송,무제한 파일 공유,팀 협업 도구,친환경 파일 전송,오픈 소스 파일 공유,개인 데이터 전송,WebRTC 파일 공유,안전한 파일 동기화,교차 장치 파일 전송,로컬 파일 처리",
     },
     help: {
       title: "PrivyDrop 도움말 및 지원",
       description:
-        "PrivyDrop 지원팀에 문의하는 방법에 대한 정보와 서비스에 대한 자세한 내용을 확인할 수 있는 소개, 이용 약관 및 개인정보 보호정책 페이지 링크를 찾아보세요.",
+        "PrivyDrop 지원팀에 연락하는 방법에 대한 정보와 우리 서비스에 대한 자세한 내용을 제공하는 소개, 이용약관, 개인정보처리방침 페이지로의 링크를 찾아보세요.",
     },
     privacy: {
       title: "PrivyDrop 개인정보 보호정책",
@@ -47,6 +52,7 @@ export const ko: Messages = {
       FAQ_dis: "FAQ",
       Terms_dis: "이용 약관",
       Privacy_dis: "개인정보 보호",
+      Features_dis: "기능",
     },
     Footer: {
       CopyrightNotice: "PrivyDrop. 모든 권리 보유.",

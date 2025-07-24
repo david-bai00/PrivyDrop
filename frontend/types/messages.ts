@@ -10,6 +10,7 @@ export type Meta = {
   home: MetaData;
   about: MetaData;
   faq: MetaData;
+  features: MetaData;
   help: MetaData;
   privacy: MetaData;
   terms: MetaData;
@@ -21,6 +22,7 @@ export type Header = {
   About_dis: string;
   Help_dis: string;
   FAQ_dis: string;
+  Features_dis: string;
   Terms_dis: string;
   Privacy_dis: string;
 };

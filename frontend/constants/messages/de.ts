@@ -18,14 +18,19 @@ export const de: Messages = {
     faq: {
       title: "PrivyDrop FAQ",
       description:
-        "Finden Sie Antworten auf häufig gestellte Fragen zu PrivyDrop, einschließlich der Frage, wie Sie Dateien senden, Clipboard-Inhalte teilen und sichere und private Datenübertragungen gewährleisten können.",
+        "Finden Sie Antworten auf häufig gestellte Fragen zu PrivyDrop, einschließlich wie man Dateien sendet, Zwischenablage-Inhalte teilt und sichere und private Datenübertragungen gewährleistet.",
       keywords:
-        "PrivyDrop FAQ, häufig gestellte Fragen, sichere Dateifreigabe FAQ, Hilfe zur privaten Datenfreigabe, Ende-zu-Ende-verschlüsselte Dateiübertragung, Support für sicheres Clipboard-Sharing, wie man PrivyDrop verwendet, Dateiübertragungs-FAQ, Fragen zur datenschutzorientierten Freigabe, PrivyDrop-Problembehandlung",
+        "PrivyDrop FAQ,häufig gestellte Fragen,sichere Dateifreigabe FAQ,private Datenfreigabe Hilfe,Ende-zu-Ende verschlüsselte Dateiübertragung,sichere Zwischenablage-Freigabe Unterstützung,wie man PrivyDrop verwendet,Dateiübertragung FAQ,datenschutzorientierte Freigabe Fragen,PrivyDrop Fehlerbehebung",
+    },
+    features: {
+      title: "PrivyDrop Kernfunktionen: 6 Hauptvorteile der P2P-Dateiübertragung | Sicher & Unbegrenzt",
+      description: "Entdecken Sie PrivyDrops Kernfunktionen: Ende-zu-Ende verschlüsselte P2P-Direktübertragung, unbegrenzte Dateigröße, fortsetzbare Übertragungen, Teamzusammenarbeit, umweltfreundliches Design und Open-Source-Transparenz. Erleben Sie wirklich sichere und private Dateifreigabe.",
+      keywords: "P2P-Dateiübertragungsfunktionen,Ende-zu-Ende verschlüsselte Übertragung,fortsetzbare Dateiübertragung,unbegrenzte Dateifreigabe,Teamzusammenarbeit Tool,umweltfreundliche Dateiübertragung,Open-Source-Dateifreigabe,private Datenübertragung,WebRTC-Dateifreigabe,sichere Dateisynchronisation,geräteübergreifende Dateiübertragung,lokale Dateiverarbeitung",
     },
     help: {
       title: "PrivyDrop Hilfe und Support",
       description:
-        "Finden Sie Informationen darüber, wie Sie den PrivyDrop-Support kontaktieren können, sowie Links zu unseren Seiten Über uns, Nutzungsbedingungen und Datenschutzrichtlinien für weitere Details zu unserem Dienst.",
+        "Finden Sie Informationen darüber, wie Sie den PrivyDrop-Support kontaktieren können, sowie Links zu unseren Seiten Über uns, Nutzungsbedingungen und Datenschutzrichtlinie für weitere Details über unseren Service.",
     },
     privacy: {
       title: "PrivyDrop Datenschutzrichtlinie",
@@ -45,6 +50,7 @@ export const de: Messages = {
       About_dis: "Über uns",
       Help_dis: "Hilfe",
       FAQ_dis: "FAQ",
+      Features_dis: "Kernfunktionen",
       Terms_dis: "Nutzungsbedingungen",
       Privacy_dis: "Datenschutz",
     },

@@ -20,6 +20,11 @@ export const zh: Messages = {
       keywords:
         "PrivyDrop常见问题,文件共享FAQ,私密数据共享帮助,端到端加密文件传输,安全剪贴板共享支持,如何使用PrivyDrop,文件传输问题,隐私共享问题,PrivyDrop故障排除",
     },
+    features: {
+      title: "PrivyDrop核心特性：P2P文件传输的6大优势 | 安全快速无限制",
+      description: "探索PrivyDrop的核心特性：端到端加密的P2P直连传输、无文件大小限制、断点续传、团队协作、环保节能、开源透明。体验真正安全私密的文件共享解决方案。",
+      keywords: "P2P文件传输特性,端到端加密传输,断点续传功能,无限制文件共享,团队协作工具,环保文件传输,开源文件共享,私密数据传输,WebRTC文件共享,安全文件同步,跨设备文件传输,本地文件处理",
+    },
     help: {
       title: "PrivyDrop帮助与支持",
       description:
@@ -43,6 +48,7 @@ export const zh: Messages = {
       About_dis: "关于",
       Help_dis: "帮助",
       FAQ_dis: "常见问题",
+      Features_dis: "核心特性",
       Terms_dis: "条款",
       Privacy_dis: "隐私",
     },

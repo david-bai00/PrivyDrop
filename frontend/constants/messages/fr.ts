@@ -16,16 +16,21 @@ export const fr: Messages = {
         "Découvrez PrivyDrop, notre mission de fournir un service de transfert de fichiers et de partage de presse-papiers sécurisé et privé, ainsi que notre engagement envers la protection de la vie privée et des données des utilisateurs.",
     },
     faq: {
-      title: "FAQ de PrivyDrop",
+      title: "PrivyDrop FAQ",
       description:
-        "Trouvez des réponses aux questions fréquemment posées sur PrivyDrop, y compris comment envoyer des fichiers, partager du contenu de presse-papiers et assurer des transferts de données sécurisés et privés.",
+        "Trouvez des réponses aux questions fréquemment posées sur PrivyDrop, y compris comment envoyer des fichiers, partager le contenu du presse-papiers et assurer des transferts de données sécurisés et privés.",
       keywords:
-        "FAQ PrivyDrop, questions fréquemment posées, FAQ partage de fichiers sécurisé, aide au partage de données privées, transfert de fichiers chiffré de bout en bout, support de partage de presse-papiers sécurisé, comment utiliser PrivyDrop, FAQ transfert de fichiers, questions sur le partage axé sur la confidentialité, dépannage PrivyDrop",
+        "PrivyDrop FAQ,questions fréquemment posées,FAQ de partage de fichiers sécurisé,aide au partage de données privées,transfert de fichiers chiffré de bout en bout,support de partage de presse-papiers sécurisé,comment utiliser PrivyDrop,FAQ de transfert de fichiers,questions de partage axées sur la confidentialité,dépannage PrivyDrop",
+    },
+    features: {
+      title: "Fonctionnalités Principales de PrivyDrop : 6 Avantages Clés du Transfert P2P | Sécurisé et Illimité",
+      description: "Découvrez les fonctionnalités principales de PrivyDrop : transfert direct P2P chiffré de bout en bout, taille de fichier illimitée, transferts reprenables, collaboration d'équipe, conception écologique et transparence open source. Vivez un partage de fichiers vraiment sécurisé et privé.",
+      keywords: "fonctionnalités de transfert de fichiers P2P,transfert chiffré de bout en bout,transfert de fichiers reprendre,partage de fichiers illimité,outil de collaboration d'équipe,transfert de fichiers écologique,partage de fichiers open source,transfert de données privées,partage de fichiers WebRTC,synchronisation de fichiers sécurisée,transfert de fichiers inter-appareils,traitement de fichiers local",
     },
     help: {
-      title: "Aide et support de PrivyDrop",
+      title: "Aide et Support PrivyDrop",
       description:
-        "Trouvez des informations sur la façon de contacter le support de PrivyDrop, ainsi que des liens vers nos pages À propos, Conditions d'utilisation et Politique de confidentialité pour plus de détails sur notre service.",
+        "Trouvez des informations sur comment contacter le support PrivyDrop, ainsi que des liens vers nos pages À propos, Conditions d'utilisation et Politique de confidentialité pour plus de détails sur notre service.",
     },
     privacy: {
       title: "Politique de confidentialité de PrivyDrop",
@@ -47,6 +52,7 @@ export const fr: Messages = {
       FAQ_dis: "FAQ",
       Terms_dis: "Conditions",
       Privacy_dis: "Confidentialité",
+      Features_dis: "Fonctionnalités",
     },
     Footer: {
       CopyrightNotice: "PrivyDrop. Tous droits réservés.",

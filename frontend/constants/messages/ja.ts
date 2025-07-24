@@ -22,6 +22,11 @@ export const ja: Messages = {
       keywords:
         "PrivyDrop FAQ,よくある質問,安全なファイル共有FAQ,プライベートデータ共有ヘルプ,エンドツーエンド暗号化ファイル転送,安全なクリップボード共有サポート,PrivyDropの使用方法,ファイル転送FAQ,プライバシー重視の共有質問,PrivyDropトラブルシューティング",
     },
+    features: {
+      title: "PrivyDropコア機能：P2Pファイル転送の6つの主要な利点 | 安全で無制限",
+      description: "PrivyDropのコア機能を発見しましょう：エンドツーエンド暗号化P2P直接転送、無制限のファイルサイズ、再開可能な転送、チームコラボレーション、エコフレンドリーなデザイン、オープンソースの透明性。真に安全でプライベートなファイル共有を体験してください。",
+      keywords: "P2Pファイル転送機能,エンドツーエンド暗号化転送,再開可能なファイル転送,無制限ファイル共有,チームコラボレーションツール,エコフレンドリーファイル転送,オープンソースファイル共有,プライベートデータ転送,WebRTCファイル共有,安全なファイル同期,クロスデバイスファイル転送,ローカルファイル処理",
+    },
     help: {
       title: "PrivyDropヘルプとサポート",
       description:
@@ -45,6 +50,7 @@ export const ja: Messages = {
       About_dis: "について",
       Help_dis: "ヘルプ",
       FAQ_dis: "FAQ",
+      Features_dis: "機能",
       Terms_dis: "利用規約",
       Privacy_dis: "プライバシー",
     },
