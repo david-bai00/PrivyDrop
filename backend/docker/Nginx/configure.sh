@@ -67,8 +67,8 @@ configure_nginx() {
 
     # Read the template and replace variables
     while IFS= read -r line || [ -n "$line" ]; do
-        # Replace server_name
-        if [[ $line =~ ^[[:space:]]*server_name[[:space:]]+ ]]; then
+        # Replace server_name only if it contains YourDomain placeholder
+        if [[ $line =~ ^[[:space:]]*server_name[[:space:]]+.*YourDomain ]]; then
             echo "    server_name $NGINX_SERVER_NAME www.$NGINX_SERVER_NAME;"
         # Exactly match the frontend build path setting line
         elif [[ $line =~ ^[[:space:]]*set[[:space:]]+\$frontend_build_root[[:space:]]+ ]]; then
