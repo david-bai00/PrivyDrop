@@ -4,6 +4,8 @@
 
 # PrivyDrop - A Privacy-Focused, WebRTC-Based File Sharing Tool
 
+[简体中文](./README.zh-CN.md)
+
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 PrivyDrop(formerly SecureShare) is an open-source, peer-to-peer (P2P) file and text sharing tool built on WebRTC. It requires no server-side data relay; all data is transmitted directly between browsers, ensuring end-to-end encryption for maximum privacy and security.

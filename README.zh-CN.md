@@ -4,6 +4,8 @@
 
 # PrivyDrop - 基于 WebRTC 的隐私安全文件分享工具
 
+[English](./README.md)
+
 [![开源协议](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）文件和文本分享工具。它无需服务器中转，所有数据在浏览器之间直接传输，确保端到端加密，为你提供极致的隐私安全保障。
