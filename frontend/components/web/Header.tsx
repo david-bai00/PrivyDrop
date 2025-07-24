@@ -9,15 +9,23 @@ import { Menu, X, Github } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Messages } from "@/types/messages";
 
+/**
+ * Props interface for the Header component
+ */
 interface HeaderProps {
   messages: Messages;
   lang: string;
 }
 
+/**
+ * Header component providing navigation, language switching, and GitHub link
+ * Features responsive design with mobile menu support
+ */
 const Header = ({ messages, lang }: HeaderProps) => {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
+  // Configuration for navigation items
   const navItems = [
     { href: `/${lang}`, label: messages.text.Header.Home_dis },
     { href: `/${lang}/blog`, label: messages.text.Header.Blog_dis },
@@ -28,10 +36,14 @@ const Header = ({ messages, lang }: HeaderProps) => {
     { href: `/${lang}/privacy`, label: messages.text.Header.Privacy_dis },
   ];
 
+  // GitHub repository URL
+  const githubUrl = "https://github.com/david-bai00/PrivyDrop";
+
   return (
     <header className="bg-background border-b sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
+          {/* Logo and site name */}
           <Link href={`/${lang}`} className="flex items-center space-x-2">
             <Image
               src="/logo.png"
@@ -45,7 +57,7 @@ const Header = ({ messages, lang }: HeaderProps) => {
             </span>
           </Link>
 
-          {/* Desktop navigation and language switcher */}
+          {/* Desktop navigation and controls */}
           <div className="hidden md:flex items-center space-x-4">
             <nav>
               <ul className="flex space-x-2">
@@ -66,17 +78,31 @@ const Header = ({ messages, lang }: HeaderProps) => {
                 ))}
               </ul>
             </nav>
-            <LanguageSwitcher />
+            {/* Desktop GitHub link and language switcher */}
+            <div className="flex items-center space-x-2">
+              <Button asChild variant="ghost" size="icon">
+                <Link
+                  href={githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="GitHub Repository"
+                >
+                  <Github className="h-5 w-5" />
+                </Link>
+              </Button>
+              <LanguageSwitcher />
+            </div>
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile menu controls */}
           <div className="md:hidden flex items-center space-x-2">
             <LanguageSwitcher />
             <Button asChild variant="ghost" size="icon">
               <Link
-                href="https://github.com/david-bai00/PrivyDrop"
+                href={githubUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="GitHub Repository"
               >
                 <Github className="h-5 w-5" />
               </Link>
