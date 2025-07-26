@@ -83,6 +83,7 @@ const checkRoomHandler: RequestHandler<{}, any, CheckRoomRequest> = async (
 
   try {
     const exists = await roomService.isRoomExist(roomId);
+    console.log(`debug,roomId:${roomId},exists:${exists}`);
     res.json({ available: !exists });
   } catch (error) {
     console.error("Error checking room:", error);

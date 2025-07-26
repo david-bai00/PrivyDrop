@@ -4,7 +4,7 @@ import { debounce } from "lodash";
 import type { Messages } from "@/types/messages";
 import type WebRTC_Initiator from "@/lib/webrtc_Initiator";
 import type WebRTC_Recipient from "@/lib/webrtc_Recipient";
-
+import { postLogInDebug } from "@/app/config/api";
 function format_peopleMsg(template: string, peerCount: number) {
   return template.replace("{peerCount}", peerCount.toString());
 }
@@ -60,6 +60,7 @@ export function useRoomManager({
             messages.text?.ClipboardApp?.fetchRoom_err ||
             "Error fetching room ID.";
           putMessageInMs(errorMsg, true);
+          postLogInDebug(`Error fetching initial room::${err}`);
         }
       };
       initNewRoom();
