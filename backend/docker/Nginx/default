@@ -5,9 +5,13 @@ return 301 https://$server_name$request_uri;
 }
 
 server {
+
 # No longer listening on public 443/TCP, change to listening on internal port
+
 listen 127.0.0.1:4443 ssl http2; # Listen on TCP port 443, supporting HTTP/2 and SSL
+
 # QUIC/HTTP3 continues to listen on public UDP 443
+
 listen 443 quic reuseport; # Listen on UDP port 443 for QUIC and HTTP/3 # 'reuseport' allows multiple worker processes to share the same port, recommended for QUIC
 
     # Ensure that the SSL protocol includes at least TLSv1.3, as HTTP/3 requires TLSv1.3
@@ -24,6 +28,11 @@ listen 443 quic reuseport; # Listen on UDP port 443 for QUIC and HTTP/3 # 'reuse
     ssl_early_data on;
 
     server_name YourDomain www.YourDomain;
+
+    # Redirect bare domain to www
+    if ($host = 'YourDomain') {
+        return 301 https://www.YourDomain$request_uri;
+    }
 
     # SSL Configuration (using placeholder certs for Certbot)
     # Certbot will find this block and replace these with the real certificates.

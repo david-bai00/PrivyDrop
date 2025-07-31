@@ -65,21 +65,12 @@ configure_nginx() {
     echo "reading $NGINX_TEMPLATE ..."
     TEMP_NGINX=$(mktemp)
 
-    # Read the template and replace variables
-    while IFS= read -r line || [ -n "$line" ]; do
-        # Replace server_name only if it contains YourDomain placeholder
-        if [[ $line =~ ^[[:space:]]*server_name[[:space:]]+.*YourDomain ]]; then
-            echo "    server_name $NGINX_SERVER_NAME www.$NGINX_SERVER_NAME;"
-        # Exactly match the frontend build path setting line
-        elif [[ $line =~ ^[[:space:]]*set[[:space:]]+\$frontend_build_root[[:space:]]+ ]]; then
-            echo "    set \$frontend_build_root $NGINX_FRONTEND_ROOT;"
-        # Simple port number replacement
-        elif [[ $line =~ localhost:3001 ]]; then
-            echo "${line/localhost:3001/localhost:$BACKEND_PORT}"
-        else
-            echo "$line"
-        fi
-    done < "$NGINX_TEMPLATE" > "$TEMP_NGINX"
+    # Use sed for more robust replacement
+    sed -e "s/www\.YourDomain/www.$NGINX_SERVER_NAME/g" \
+        -e "s/YourDomain/$NGINX_SERVER_NAME/g" \
+        -e "s|path/to/PrivyDrop/frontend|$NGINX_FRONTEND_ROOT|g" \
+        -e "s/localhost:3001/localhost:$BACKEND_PORT/g" \
+        "$NGINX_TEMPLATE" > "$TEMP_NGINX"
 
     # Copy the configuration file to the target location
     cp "$TEMP_NGINX" /etc/nginx/sites-enabled/default
