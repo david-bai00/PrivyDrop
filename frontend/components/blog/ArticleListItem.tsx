@@ -4,9 +4,10 @@ import { type BlogPost } from "@/lib/blog";
 
 interface ArticleListItemProps {
   post: BlogPost;
+  lang: string;
 }
 
-export function ArticleListItem({ post }: ArticleListItemProps) {
+export function ArticleListItem({ post, lang }: ArticleListItemProps) {
   return (
     <article className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
       <div className="relative h-80 w-full">
@@ -37,7 +38,7 @@ export function ArticleListItem({ post }: ArticleListItemProps) {
             ))}
           </div>
         </div>
-        <Link href={`/blog/${post.slug}`}>
+        <Link href={`/${lang}/blog/${post.slug}`}>
           <h2 className="text-3xl font-bold mb-4 hover:text-blue-600 transition-colors leading-tight">
             {post.frontmatter.title}
           </h2>
@@ -49,7 +50,7 @@ export function ArticleListItem({ post }: ArticleListItemProps) {
 
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <Link
-            href={`/blog/${post.slug}`}
+            href={`/${lang}/blog/${post.slug}`}
             className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center text-lg"
           >
             Read more

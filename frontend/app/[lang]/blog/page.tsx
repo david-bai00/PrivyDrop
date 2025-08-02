@@ -26,7 +26,7 @@ export default async function BlogPage({
           {/* Articles List */}
           <div className="space-y-12">
             {posts.map((post) => (
-              <ArticleListItem key={post.slug} post={post} />
+              <ArticleListItem key={post.slug} post={post} lang={lang} />
             ))}
           </div>
         </main>
@@ -41,7 +41,7 @@ export default async function BlogPage({
                 {posts.slice(0, 5).map((post) => (
                   <Link
                     key={post.slug}
-                    href={`/en/blog/${post.slug}`}
+                    href={`/${lang}/blog/${post.slug}`}
                     className="block hover:text-blue-600 text-base font-medium"
                   >
                     {post.frontmatter.title}

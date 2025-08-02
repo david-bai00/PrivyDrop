@@ -8,7 +8,7 @@ export async function generateMetadata({
 }: {
   params: { slug: string; lang: string };
 }): Promise<Metadata> {
-  const post = await getPostBySlug(params.slug);
+  const post = await getPostBySlug(params.slug, params.lang);
 
   if (!post) {
     //blog not found

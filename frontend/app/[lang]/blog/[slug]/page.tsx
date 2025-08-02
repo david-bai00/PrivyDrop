@@ -12,9 +12,9 @@ export { generateMetadata };
 export default async function BlogPost({
   params,
 }: {
-  params: { slug: string };
+  params: { slug: string; lang: string };
 }) {
-  const post = await getPostBySlug(params.slug);
+  const post = await getPostBySlug(params.slug, params.lang);
 
   if (!post) {
     return <div>Post not found</div>;

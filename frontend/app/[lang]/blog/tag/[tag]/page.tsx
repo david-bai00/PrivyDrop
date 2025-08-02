@@ -59,7 +59,7 @@ export default async function TagPage({
           <div className="space-y-12">
             {posts.length > 0 ? (
               posts.map((post) => (
-                <ArticleListItem key={post.slug} post={post} />
+                <ArticleListItem key={post.slug} post={post} lang={lang} />
               ))
             ) : (
               <p>No articles found for this decodedTag.</p>
