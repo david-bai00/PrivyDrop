@@ -22,8 +22,10 @@ export const zh: Messages = {
     },
     features: {
       title: "PrivyDrop核心特性：P2P文件传输的6大优势 | 安全快速无限制",
-      description: "探索PrivyDrop的核心特性：端到端加密的P2P直连传输、无文件大小限制、断点续传、团队协作、环保节能、开源透明。体验真正安全私密的文件共享解决方案。",
-      keywords: "P2P文件传输特性,端到端加密传输,断点续传功能,无限制文件共享,团队协作工具,环保文件传输,开源文件共享,私密数据传输,WebRTC文件共享,安全文件同步,跨设备文件传输,本地文件处理",
+      description:
+        "探索PrivyDrop的核心特性：端到端加密的P2P直连传输、无文件大小限制、断点续传、团队协作、环保节能、开源透明。体验真正安全私密的文件共享解决方案。",
+      keywords:
+        "P2P文件传输特性,端到端加密传输,断点续传功能,无限制文件共享,团队协作工具,环保文件传输,开源文件共享,私密数据传输,WebRTC文件共享,安全文件同步,跨设备文件传输,本地文件处理",
     },
     help: {
       title: "PrivyDrop帮助与支持",
@@ -279,14 +281,13 @@ export const zh: Messages = {
         Copy_dis: "复制",
         inputRoomIdprompt: "您的房间ID（可编辑）：",
         joinRoomBtn: "加入房间",
-        startSendingBtn: "开始发送",
         readClipboardToRoomId: "粘贴房间ID",
         enterRoomID_placeholder: "输入房间ID",
         retrieveMethod: "接收方式",
         inputRoomId_tips: "您的房间ID（可编辑）：",
         joinRoom_dis: "加入房间",
-        startSending_loadingText: "已发送",
-        startSending_dis: "开始发送",
+        SyncSending_loadingText: "已同步",
+        SyncSending_dis: "同步",
         readClipboard_dis: "粘贴房间ID",
         retrieveRoomId_placeholder: "输入房间ID",
         RetrieveMethodTitle: "接收方式",

@@ -23,9 +23,12 @@ export const ja: Messages = {
         "PrivyDrop FAQ,よくある質問,安全なファイル共有FAQ,プライベートデータ共有ヘルプ,エンドツーエンド暗号化ファイル転送,安全なクリップボード共有サポート,PrivyDropの使用方法,ファイル転送FAQ,プライバシー重視の共有質問,PrivyDropトラブルシューティング",
     },
     features: {
-      title: "PrivyDropコア機能：P2Pファイル転送の6つの主要な利点 | 安全で無制限",
-      description: "PrivyDropのコア機能を発見しましょう：エンドツーエンド暗号化P2P直接転送、無制限のファイルサイズ、再開可能な転送、チームコラボレーション、エコフレンドリーなデザイン、オープンソースの透明性。真に安全でプライベートなファイル共有を体験してください。",
-      keywords: "P2Pファイル転送機能,エンドツーエンド暗号化転送,再開可能なファイル転送,無制限ファイル共有,チームコラボレーションツール,エコフレンドリーファイル転送,オープンソースファイル共有,プライベートデータ転送,WebRTCファイル共有,安全なファイル同期,クロスデバイスファイル転送,ローカルファイル処理",
+      title:
+        "PrivyDropコア機能：P2Pファイル転送の6つの主要な利点 | 安全で無制限",
+      description:
+        "PrivyDropのコア機能を発見しましょう：エンドツーエンド暗号化P2P直接転送、無制限のファイルサイズ、再開可能な転送、チームコラボレーション、エコフレンドリーなデザイン、オープンソースの透明性。真に安全でプライベートなファイル共有を体験してください。",
+      keywords:
+        "P2Pファイル転送機能,エンドツーエンド暗号化転送,再開可能なファイル転送,無制限ファイル共有,チームコラボレーションツール,エコフレンドリーファイル転送,オープンソースファイル共有,プライベートデータ転送,WebRTCファイル共有,安全なファイル同期,クロスデバイスファイル転送,ローカルファイル処理",
     },
     help: {
       title: "PrivyDropヘルプとサポート",
@@ -294,14 +297,13 @@ export const ja: Messages = {
         Copy_dis: "コピー",
         inputRoomIdprompt: "ルームID（編集可能）：",
         joinRoomBtn: "ルームに参加",
-        startSendingBtn: "送信開始",
         readClipboardToRoomId: "ルームIDを貼り付け",
         enterRoomID_placeholder: "ルームIDを入力",
         retrieveMethod: "取得方法",
         inputRoomId_tips: "ルームID（編集可能）：",
         joinRoom_dis: "ルームに参加",
-        startSending_loadingText: "送信済み",
-        startSending_dis: "送信開始",
+        SyncSending_loadingText: "同期完了",
+        SyncSending_dis: "同期（どうき）",
         readClipboard_dis: "ルームIDを貼り付け",
         retrieveRoomId_placeholder: "ルームIDを入力",
         RetrieveMethodTitle: "取得方法",

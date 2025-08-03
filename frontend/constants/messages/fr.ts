@@ -23,9 +23,12 @@ export const fr: Messages = {
         "PrivyDrop FAQ,questions fréquemment posées,FAQ de partage de fichiers sécurisé,aide au partage de données privées,transfert de fichiers chiffré de bout en bout,support de partage de presse-papiers sécurisé,comment utiliser PrivyDrop,FAQ de transfert de fichiers,questions de partage axées sur la confidentialité,dépannage PrivyDrop",
     },
     features: {
-      title: "Fonctionnalités Principales de PrivyDrop : 6 Avantages Clés du Transfert P2P | Sécurisé et Illimité",
-      description: "Découvrez les fonctionnalités principales de PrivyDrop : transfert direct P2P chiffré de bout en bout, taille de fichier illimitée, transferts reprenables, collaboration d'équipe, conception écologique et transparence open source. Vivez un partage de fichiers vraiment sécurisé et privé.",
-      keywords: "fonctionnalités de transfert de fichiers P2P,transfert chiffré de bout en bout,transfert de fichiers reprendre,partage de fichiers illimité,outil de collaboration d'équipe,transfert de fichiers écologique,partage de fichiers open source,transfert de données privées,partage de fichiers WebRTC,synchronisation de fichiers sécurisée,transfert de fichiers inter-appareils,traitement de fichiers local",
+      title:
+        "Fonctionnalités Principales de PrivyDrop : 6 Avantages Clés du Transfert P2P | Sécurisé et Illimité",
+      description:
+        "Découvrez les fonctionnalités principales de PrivyDrop : transfert direct P2P chiffré de bout en bout, taille de fichier illimitée, transferts reprenables, collaboration d'équipe, conception écologique et transparence open source. Vivez un partage de fichiers vraiment sécurisé et privé.",
+      keywords:
+        "fonctionnalités de transfert de fichiers P2P,transfert chiffré de bout en bout,transfert de fichiers reprendre,partage de fichiers illimité,outil de collaboration d'équipe,transfert de fichiers écologique,partage de fichiers open source,transfert de données privées,partage de fichiers WebRTC,synchronisation de fichiers sécurisée,transfert de fichiers inter-appareils,traitement de fichiers local",
     },
     help: {
       title: "Aide et Support PrivyDrop",
@@ -306,14 +309,13 @@ export const fr: Messages = {
         Copy_dis: "Copier",
         inputRoomIdprompt: "Votre ID de salle (modifiable) :",
         joinRoomBtn: "Rejoindre la salle",
-        startSendingBtn: "Commencer l'envoi",
         readClipboardToRoomId: "Coller l'ID de salle",
         enterRoomID_placeholder: "entrez l'ID de salle",
         retrieveMethod: "Méthode de récupération",
         inputRoomId_tips: "Votre ID de salle (modifiable) :",
         joinRoom_dis: "Rejoindre la salle",
-        startSending_loadingText: "Envoyé",
-        startSending_dis: "Commencer l'envoi",
+        SyncSending_loadingText: "Synchronisé",
+        SyncSending_dis: "Synchroniser",
         readClipboard_dis: "Coller l'ID de salle",
         retrieveRoomId_placeholder: "Entrez l'ID de salle",
         RetrieveMethodTitle: "Méthode de récupération",

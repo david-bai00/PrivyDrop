@@ -23,9 +23,12 @@ export const es: Messages = {
         "PrivyDrop FAQ,preguntas frecuentes,FAQ de compartir archivos seguros,ayuda de compartir datos privados,transferencia de archivos cifrada de extremo a extremo,soporte de compartir portapapeles seguro,cómo usar PrivyDrop,FAQ de transferencia de archivos,preguntas de compartir centrado en privacidad,solución de problemas de PrivyDrop",
     },
     features: {
-      title: "Características Principales de PrivyDrop: 6 Ventajas Clave de la Transferencia P2P | Seguro e Ilimitado",
-      description: "Descubre las características principales de PrivyDrop: transferencia directa P2P cifrada de extremo a extremo, tamaño de archivo ilimitado, transferencias reanudables, colaboración en equipo, diseño ecológico y transparencia de código abierto. Experimenta el intercambio de archivos verdaderamente seguro y privado.",
-      keywords: "características de transferencia de archivos P2P,transferencia cifrada de extremo a extremo,transferencia de archivos reanudable,compartir archivos ilimitado,herramienta de colaboración en equipo,transferencia de archivos ecológica,compartir archivos de código abierto,transferencia de datos privados,compartir archivos WebRTC,sincronización de archivos segura,transferencia de archivos entre dispositivos,procesamiento de archivos local",
+      title:
+        "Características Principales de PrivyDrop: 6 Ventajas Clave de la Transferencia P2P | Seguro e Ilimitado",
+      description:
+        "Descubre las características principales de PrivyDrop: transferencia directa P2P cifrada de extremo a extremo, tamaño de archivo ilimitado, transferencias reanudables, colaboración en equipo, diseño ecológico y transparencia de código abierto. Experimenta el intercambio de archivos verdaderamente seguro y privado.",
+      keywords:
+        "características de transferencia de archivos P2P,transferencia cifrada de extremo a extremo,transferencia de archivos reanudable,compartir archivos ilimitado,herramienta de colaboración en equipo,transferencia de archivos ecológica,compartir archivos de código abierto,transferencia de datos privados,compartir archivos WebRTC,sincronización de archivos segura,transferencia de archivos entre dispositivos,procesamiento de archivos local",
     },
     help: {
       title: "Ayuda y Soporte de PrivyDrop",
@@ -299,14 +302,13 @@ export const es: Messages = {
         Copy_dis: "Copiar",
         inputRoomIdprompt: "Tu ID de Sala (Editable):",
         joinRoomBtn: "Unirse a sala",
-        startSendingBtn: "Comenzar a enviar",
         readClipboardToRoomId: "Pegar ID de Sala",
         enterRoomID_placeholder: "ingresa ID de Sala",
         retrieveMethod: "Método de recuperación",
         inputRoomId_tips: "Tu ID de Sala (Editable):",
         joinRoom_dis: "Unirse a sala",
-        startSending_loadingText: "Enviado",
-        startSending_dis: "Comenzar a enviar",
+        SyncSending_loadingText: "Sincronizado",
+        SyncSending_dis: "Sincronizar",
         readClipboard_dis: "Pegar ID de Sala",
         retrieveRoomId_placeholder: "Ingresa ID de Sala",
         RetrieveMethodTitle: "Método de recuperación",

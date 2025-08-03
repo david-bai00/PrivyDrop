@@ -23,9 +23,12 @@ export const ko: Messages = {
         "PrivyDrop FAQ,자주 묻는 질문,안전한 파일 공유 FAQ,개인 데이터 공유 도움말,종단간 암호화 파일 전송,안전한 클립보드 공유 지원,PrivyDrop 사용 방법,파일 전송 FAQ,개인정보 중심 공유 질문,PrivyDrop 문제 해결",
     },
     features: {
-      title: "PrivyDrop 핵심 기능: P2P 파일 전송의 6가지 주요 장점 | 안전하고 무제한",
-      description: "PrivyDrop의 핵심 기능을 발견하세요: 종단간 암호화 P2P 직접 전송, 무제한 파일 크기, 재개 가능한 전송, 팀 협업, 친환경 설계, 오픈 소스 투명성. 진정으로 안전하고 개인적인 파일 공유를 경험하세요.",
-      keywords: "P2P 파일 전송 기능,종단간 암호화 전송,재개 가능한 파일 전송,무제한 파일 공유,팀 협업 도구,친환경 파일 전송,오픈 소스 파일 공유,개인 데이터 전송,WebRTC 파일 공유,안전한 파일 동기화,교차 장치 파일 전송,로컬 파일 처리",
+      title:
+        "PrivyDrop 핵심 기능: P2P 파일 전송의 6가지 주요 장점 | 안전하고 무제한",
+      description:
+        "PrivyDrop의 핵심 기능을 발견하세요: 종단간 암호화 P2P 직접 전송, 무제한 파일 크기, 재개 가능한 전송, 팀 협업, 친환경 설계, 오픈 소스 투명성. 진정으로 안전하고 개인적인 파일 공유를 경험하세요.",
+      keywords:
+        "P2P 파일 전송 기능,종단간 암호화 전송,재개 가능한 파일 전송,무제한 파일 공유,팀 협업 도구,친환경 파일 전송,오픈 소스 파일 공유,개인 데이터 전송,WebRTC 파일 공유,안전한 파일 동기화,교차 장치 파일 전송,로컬 파일 처리",
     },
     help: {
       title: "PrivyDrop 도움말 및 지원",
@@ -292,14 +295,13 @@ export const ko: Messages = {
         Copy_dis: "복사",
         inputRoomIdprompt: "방 ID (편집 가능):",
         joinRoomBtn: "방 참여",
-        startSendingBtn: "전송 시작",
         readClipboardToRoomId: "방 ID 붙여넣기",
         enterRoomID_placeholder: "방 ID 입력",
         retrieveMethod: "검색 방법",
         inputRoomId_tips: "방 ID (편집 가능):",
         joinRoom_dis: "방 참여",
-        startSending_loadingText: "전송됨",
-        startSending_dis: "전송 시작",
+        SyncSending_loadingText: "동기화 완료",
+        SyncSending_dis: "동기화（동기화）",
         readClipboard_dis: "방 ID 붙여넣기",
         retrieveRoomId_placeholder: "방 ID 입력",
         RetrieveMethodTitle: "검색 방법",

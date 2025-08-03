@@ -237,14 +237,13 @@ export type ClipboardAppHtml = {
   Copy_dis: string;
   inputRoomIdprompt: string;
   joinRoomBtn: string;
-  startSendingBtn: string;
   readClipboardToRoomId: string;
   enterRoomID_placeholder: string;
   retrieveMethod: string;
   inputRoomId_tips: string;
   joinRoom_dis: string;
-  startSending_loadingText: string;
-  startSending_dis: string;
+  SyncSending_loadingText: string;
+  SyncSending_dis: string;
   readClipboard_dis: string;
   retrieveRoomId_placeholder: string;
   RetrieveMethodTitle: string;

@@ -3,9 +3,12 @@ import { Messages } from "@/types/messages";
 export const en: Messages = {
   meta: {
     home: {
-      title: "PrivyDrop: Open-Source & Free P2P File Transfer & Clipboard Sharing | Privacy-First",
-      description: "PrivyDrop is an open-source, free, and secure P2P file transfer tool with no size limits, no registration, and support for resumable transfers. Based on WebRTC for end-to-end encryption, its code is transparent and trustworthy. Share text, images, and folders across devices, perfect for team collaboration and private file transfer.",
-      keywords: "resumable file transfer,reliable file sharing,interrupted transfer recovery,P2P file resume,WebRTC resumable transfer,open source file sharing,P2P file transfer,secure file transfer,webrtc file sharing,private clipboard,source code transparency,GitHub project,team collaboration,cross-device sharing,encrypted file transfer,no-registration file sharing,unlimited file transfer,folder sync,mobile file transfer,secure messaging,instant file sharing,private data transfer",
+      title:
+        "PrivyDrop: Open-Source & Free P2P File Transfer & Clipboard Sharing | Privacy-First",
+      description:
+        "PrivyDrop is an open-source, free, and secure P2P file transfer tool with no size limits, no registration, and support for resumable transfers. Based on WebRTC for end-to-end encryption, its code is transparent and trustworthy. Share text, images, and folders across devices, perfect for team collaboration and private file transfer.",
+      keywords:
+        "resumable file transfer,reliable file sharing,interrupted transfer recovery,P2P file resume,WebRTC resumable transfer,open source file sharing,P2P file transfer,secure file transfer,webrtc file sharing,private clipboard,source code transparency,GitHub project,team collaboration,cross-device sharing,encrypted file transfer,no-registration file sharing,unlimited file transfer,folder sync,mobile file transfer,secure messaging,instant file sharing,private data transfer",
     },
     about: {
       title: "About PrivyDrop",
@@ -20,9 +23,12 @@ export const en: Messages = {
         "PrivyDrop FAQ,frequently asked questions,secure file sharing FAQ,private data sharing help,end-to-end encrypted file transfer,secure clipboard sharing support,how to use PrivyDrop,file transfer FAQ,privacy-focused sharing questions,PrivyDrop troubleshooting",
     },
     features: {
-      title: "PrivyDrop Core Features: 6 Key Advantages of P2P File Transfer | Secure & Unlimited",
-      description: "Discover PrivyDrop's core features: end-to-end encrypted P2P direct transfer, unlimited file size, resumable transfers, team collaboration, eco-friendly design, and open-source transparency. Experience truly secure and private file sharing.",
-      keywords: "P2P file transfer features,end-to-end encrypted transfer,resumable file transfer,unlimited file sharing,team collaboration tool,eco-friendly file transfer,open source file sharing,private data transfer,WebRTC file sharing,secure file sync,cross-device file transfer,local file processing",
+      title:
+        "PrivyDrop Core Features: 6 Key Advantages of P2P File Transfer | Secure & Unlimited",
+      description:
+        "Discover PrivyDrop's core features: end-to-end encrypted P2P direct transfer, unlimited file size, resumable transfers, team collaboration, eco-friendly design, and open-source transparency. Experience truly secure and private file sharing.",
+      keywords:
+        "P2P file transfer features,end-to-end encrypted transfer,resumable file transfer,unlimited file sharing,team collaboration tool,eco-friendly file transfer,open source file sharing,private data transfer,WebRTC file sharing,secure file sync,cross-device file transfer,local file processing",
     },
     help: {
       title: "PrivyDrop Help and Support",
@@ -295,14 +301,13 @@ export const en: Messages = {
         Copy_dis: "Copy",
         inputRoomIdprompt: "Your RoomID (Editable):",
         joinRoomBtn: "Join room",
-        startSendingBtn: "Start sending",
         readClipboardToRoomId: "Paste RoomID",
         enterRoomID_placeholder: "enter RoomID",
         retrieveMethod: "Retrieve method",
         inputRoomId_tips: "Your RoomID (Editable):",
         joinRoom_dis: "Join room",
-        startSending_loadingText: "Sended",
-        startSending_dis: "Start sending",
+        SyncSending_loadingText: "Synced",
+        SyncSending_dis: "Sync",
         readClipboard_dis: "Paste RoomID",
         retrieveRoomId_placeholder: "Enter RoomID",
         RetrieveMethodTitle: "Retrieve method",

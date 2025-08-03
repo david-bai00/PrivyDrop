@@ -149,7 +149,7 @@ SendTabPanelProps) {
         <AnimatedButton
           className="w-full"
           onClick={generateShareLinkAndBroadcast}
-          loadingText={messages.text.ClipboardApp.html.startSending_loadingText}
+          loadingText={messages.text.ClipboardApp.html.SyncSending_loadingText}
           disabled={
             !sender ||
             !sender.isInRoom ||
@@ -157,7 +157,7 @@ SendTabPanelProps) {
             !currentValidatedShareRoomId.trim()
           } // Ensure there is a validated room ID before allowing sharing
         >
-          {messages.text.ClipboardApp.html.startSending_dis}
+          {messages.text.ClipboardApp.html.SyncSending_dis}
         </AnimatedButton>
       </div>
       {shareMessage && (

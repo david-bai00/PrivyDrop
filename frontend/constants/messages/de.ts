@@ -23,9 +23,12 @@ export const de: Messages = {
         "PrivyDrop FAQ,häufig gestellte Fragen,sichere Dateifreigabe FAQ,private Datenfreigabe Hilfe,Ende-zu-Ende verschlüsselte Dateiübertragung,sichere Zwischenablage-Freigabe Unterstützung,wie man PrivyDrop verwendet,Dateiübertragung FAQ,datenschutzorientierte Freigabe Fragen,PrivyDrop Fehlerbehebung",
     },
     features: {
-      title: "PrivyDrop Kernfunktionen: 6 Hauptvorteile der P2P-Dateiübertragung | Sicher & Unbegrenzt",
-      description: "Entdecken Sie PrivyDrops Kernfunktionen: Ende-zu-Ende verschlüsselte P2P-Direktübertragung, unbegrenzte Dateigröße, fortsetzbare Übertragungen, Teamzusammenarbeit, umweltfreundliches Design und Open-Source-Transparenz. Erleben Sie wirklich sichere und private Dateifreigabe.",
-      keywords: "P2P-Dateiübertragungsfunktionen,Ende-zu-Ende verschlüsselte Übertragung,fortsetzbare Dateiübertragung,unbegrenzte Dateifreigabe,Teamzusammenarbeit Tool,umweltfreundliche Dateiübertragung,Open-Source-Dateifreigabe,private Datenübertragung,WebRTC-Dateifreigabe,sichere Dateisynchronisation,geräteübergreifende Dateiübertragung,lokale Dateiverarbeitung",
+      title:
+        "PrivyDrop Kernfunktionen: 6 Hauptvorteile der P2P-Dateiübertragung | Sicher & Unbegrenzt",
+      description:
+        "Entdecken Sie PrivyDrops Kernfunktionen: Ende-zu-Ende verschlüsselte P2P-Direktübertragung, unbegrenzte Dateigröße, fortsetzbare Übertragungen, Teamzusammenarbeit, umweltfreundliches Design und Open-Source-Transparenz. Erleben Sie wirklich sichere und private Dateifreigabe.",
+      keywords:
+        "P2P-Dateiübertragungsfunktionen,Ende-zu-Ende verschlüsselte Übertragung,fortsetzbare Dateiübertragung,unbegrenzte Dateifreigabe,Teamzusammenarbeit Tool,umweltfreundliche Dateiübertragung,Open-Source-Dateifreigabe,private Datenübertragung,WebRTC-Dateifreigabe,sichere Dateisynchronisation,geräteübergreifende Dateiübertragung,lokale Dateiverarbeitung",
     },
     help: {
       title: "PrivyDrop Hilfe und Support",
@@ -306,14 +309,13 @@ export const de: Messages = {
         Copy_dis: "Kopieren",
         inputRoomIdprompt: "Ihre Raum-ID (bearbeitbar):",
         joinRoomBtn: "Raum beitreten",
-        startSendingBtn: "Senden starten",
         readClipboardToRoomId: "Raum-ID einfügen",
         enterRoomID_placeholder: "Raum-ID eingeben",
         retrieveMethod: "Abrufmethode",
         inputRoomId_tips: "Ihre Raum-ID (bearbeitbar):",
         joinRoom_dis: "Raum beitreten",
-        startSending_loadingText: "Gesendet",
-        startSending_dis: "Senden starten",
+        SyncSending_loadingText: "Synchronisiert",
+        SyncSending_dis: "Synchronisieren",
         readClipboard_dis: "Raum-ID einfügen",
         retrieveRoomId_placeholder: "Raum-ID eingeben",
         RetrieveMethodTitle: "Abrufmethode",
