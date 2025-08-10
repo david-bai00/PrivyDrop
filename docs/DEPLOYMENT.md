@@ -57,16 +57,14 @@ sudo apt install coturn
 2.  **Firewall Configuration:**
     Open the necessary ports on your server's firewall (e.g., using `ufw`):
 
-    - TCP & UDP `3478`: For STUN and TURN.
-    - TCP & UDP `5349`: For TURNS (TURN over TLS/DTLS).
-    - UDP `49152-65535`: Coturn's default relay port range.
-
-      ```bash
-        sudo ufw allow 3478
-        sudo ufw allow 5349
-        sudo ufw allow 49152:65535/udp
+    ```bash
+        sudo ufw allow Turnserver
         sudo ufw reload # or ufw enable
-      ```
+    ```
+
+    The ports seen via `sudo ufw app info Turnserver` are as follows:
+    `3478,3479,5349,5350,49152:65535/tcp`
+    `3478,3479,5349,5350,49152:65535/udp`
 
       **Engineer's Note**: Detailed production configuration for Coturn (like SSL certificates, username, password, etc.) will be handled in `Section 4: Application Deployment` alongside Nginx and the main application to ensure a streamlined and unified process.
 
@@ -121,7 +119,17 @@ In production, Nginx will act as the entry point for all traffic, handling SSL t
 
 2.  **Install Nginx:** It's recommended to install a newer version that supports HTTP/3.
 
-3.  **Firewall:** Ensure ports `TCP:80 (HTTP)` and `TCP/UDP:443 (HTTPS/HTTP3)` are open.
+3.  **Firewall:**
+    Open 'Nginx Full' default ports and 443/udp:
+
+    ```bash
+        sudo ufw allow 'Nginx Full'
+        sudo ufw allow 443/udp
+        sudo ufw reload # or ufw enable
+    ```
+
+    The ports seen via `sudo ufw app info 'Nginx Full'` are as follows:
+    80,443/tcp
 
 4.  **Generate Base Nginx Configuration:**
     The `backend/docker/Nginx/` directory provides a configuration script and template. This template uses a temporary "placeholder" certificate to ensure the Nginx configuration is valid before obtaining a real certificate.
@@ -139,7 +147,7 @@ In production, Nginx will act as the entry point for all traffic, handling SSL t
 
 ### 4.4. Use Certbot to Install a Unified SSL Certificate
 
-With the base Nginx configuration in place, we can now use Certbot to obtain and install a real SSL certificate. We will request a single, unified certificate for all our services (main domain, www, and TURN) and let Certbot automatically update our Nginx configuration.
+With the base Nginx configuration in place, we can now use Certbot to obtain and install a real SSL certificate. We will request a single, unified certificate for all our services (main domain, www, and TURN) and let Certbot automatically update your Nginx configuration.
 
 1.  **Install Certbot's Nginx Plugin:**
 
@@ -180,8 +188,9 @@ With the base Nginx configuration in place, we can now use Certbot to obtain and
 
 4.  **start nginx:**
     ```bash
-    sudo systemctl reload nginx
+    sudo systemctl start[reload] nginx
     ```
+    If you see an error "Address already in use" (check via `systemctl status nginx.service`), run `pkill nginx`.
 
 ### 4.5. Configure and Start the TURN Service (Production)
 

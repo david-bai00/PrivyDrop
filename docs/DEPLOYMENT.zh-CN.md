@@ -55,18 +55,16 @@ sudo apt install coturn
     编辑 `/etc/default/coturn` 并取消注释 `TURNSERVER_ENABLED=1`。
 
 2.  **防火墙配置：**
-    在服务器的防火墙上打开必要的端口 (例如，使用 `ufw`)：
-
-    - TCP & UDP `3478`: 用于 STUN 和 TURN。
-    - TCP & UDP `5349`: 用于 TURNS (TURN over TLS/DTLS)。
-    - UDP `49152-65535`: Coturn 的默认中继端口范围。
+    在服务器的防火墙上打开 Turnserver 默认端口 (例如，使用 `ufw`)：
 
     ```bash
-        sudo ufw allow 3478
-        sudo ufw allow 5349
-        sudo ufw allow 49152:65535/udp
+        sudo ufw allow Turnserver
         sudo ufw reload # 或 ufw enable
     ```
+
+    通过 sudo ufw app info Turnserver 看到的端口如下：
+    3478,3479,5349,5350,49152:65535/tcp
+    3478,3479,5349,5350,49152:65535/udp
 
 **工程师提示**：关于 Coturn 在生产环境中的详细配置（如 SSL 证书、用户名、密码等），将在 `第 4 节：应用部署` 中与 Nginx 和主应用一同进行，以确保流程的统一和简化。
 
@@ -121,7 +119,17 @@ cd backend && npm run build && cd ..
 
 2.  **安装 Nginx:** 推荐安装支持 HTTP/3 的较新版本。
 
-3.  **防火墙:** 确保 `TCP:80 (HTTP)` 和 `TCP/UDP:443 (HTTPS/HTTP3)` 端口已打开。
+3.  **防火墙:**
+    打开'Nginx Full'默认端口以及 443/udp
+
+    ```bash
+        sudo ufw allow 'Nginx Full'
+        sudo ufw allow 443/udp
+        sudo ufw reload # 或 ufw enable
+    ```
+
+    通过 sudo ufw app info 'Nginx Full'看到的端口如下：
+    80,443/tcp
 
 4.  **生成 Nginx 基础配置:**
     后端项目 `backend/docker/Nginx/` 目录中提供了配置脚本和模板。此模板使用一个临时的"占位符"证书，以确保 Nginx 配置在申请真实证书前是有效的。
@@ -180,8 +188,9 @@ cd backend && npm run build && cd ..
 
 4.  **启动 nginx 服务:**
     ```bash
-    sudo systemctl reload nginx
+    sudo systemctl start[reload] nginx
     ```
+    如果报错显示 Address already in use（通过 systemctl status nginx.service 查看），则运行 pkill nginx。
 
 ### 4.5. 配置并启动 TURN 服务 (生产环境)
 
@@ -280,7 +289,7 @@ PM2 是一个强大的 Node.js 进程管理器，我们将用它来运行后端�
 - **PM2 问题:** `pm2 logs <app_name>` 查看应用日志。
 - **证书权限 (生产环境)：** 如果 Coturn 或 Nginx 无法读取 SSL 证书，请仔细检查 `第 4.5 节` 中的文件权限和用户/组设置。
 
-## 7. 安全与维护
+## 6. 安全与维护
 
 - **SSL 证书续订：** 当你使用 `certbot --nginx` 并配合 `--deploy-hook` 成功配置证书后，Certbot 会自动处理 Nginx 证书的续订和 Coturn 服务的重启。你无需手动干预或使用额外的脚本。
 - **防火墙：** 保持防火墙规则严格，仅允许必要的端口。
