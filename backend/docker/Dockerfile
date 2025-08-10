@@ -35,7 +35,7 @@ RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesourc
 RUN apt-get update
 ## Install Node.js, npm, pnpm
 RUN apt install -y nodejs
-RUN npm install -g pnpm
+RUN npm install -g pnpm pm2
 ## node -v -> v20.18.1;npm -v -> 10.8.2;pnpm -v -> 9.14.4
 ## install Yarn package manager
 #curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | tee /usr/share/keyrings/yarnkey.gpg >/dev/null
