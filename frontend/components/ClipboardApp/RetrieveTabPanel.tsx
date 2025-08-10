@@ -40,6 +40,8 @@ interface RetrieveTabPanelProps {
   ) => Promise<void>;
   getReceiverSaveType: () => { [fileId: string]: boolean } | undefined;
   retrieveMessage: string;
+  senderDisconnected: boolean;
+  handleLeaveRoom: () => void;
 }
 
 export function RetrieveTabPanel({
@@ -62,6 +64,8 @@ export function RetrieveTabPanel({
   setReceiverDirectoryHandle,
   getReceiverSaveType,
   retrieveMessage,
+  senderDisconnected,
+  handleLeaveRoom,
 }: RetrieveTabPanelProps) {
   const onLocationPick = useCallback(async (): Promise<boolean> => {
     if (!messages) return false; // Should not happen if panel is rendered
@@ -145,6 +149,17 @@ export function RetrieveTabPanel({
           {messages.text.ClipboardApp.html.joinRoom_dis}
         </Button>
       </div>
+      {senderDisconnected && (
+        <div className="mb-3">
+          <Button
+            className="w-full"
+            variant="destructive"
+            onClick={handleLeaveRoom}
+          >
+            {messages.text.ClipboardApp.html.leaveRoom_dis || "Leave Room"}
+          </Button>
+        </div>
+      )}
       {retrievedContent && (
         <div className="my-3 p-2 border rounded bg-gray-50">
           <RichTextEditor

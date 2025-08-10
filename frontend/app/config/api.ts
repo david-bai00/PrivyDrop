@@ -6,6 +6,7 @@ export const API_ROUTES = {
   get_room: `${API_URL}/api/get_room`,
   check_room: `${API_URL}/api/check_room`,
   create_room: `${API_URL}/api/create_room`,
+  leave_room: `${API_URL}/api/leave_room`,
   set_track: `${API_URL}/api/set_track`,
   logs_debug: `${API_URL}/api/logs_debug`,
 };
@@ -94,4 +95,20 @@ export const postLogInDebug = async (message: string) => {
     }),
   });
   return apiCall<void>(API_ROUTES.logs_debug, options);
+};
+
+// Leave a room
+export const leaveRoom = async (
+  roomId: string,
+  socketId: string
+): Promise<boolean> => {
+  const options = getFetchOptions({
+    method: "POST",
+    body: JSON.stringify({ roomId, socketId }),
+  });
+  const data = await apiCall<{ success: boolean }>(
+    API_ROUTES.leave_room,
+    options
+  );
+  return data?.success ?? false;
 };

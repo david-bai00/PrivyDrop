@@ -72,6 +72,7 @@ const ClipboardApp = () => {
     requestFolder,
     setReceiverDirectoryHandle,
     getReceiverSaveType,
+    senderDisconnected,
   } = useWebRTCConnection({
     shareContent,
     sendFiles,
@@ -83,6 +84,12 @@ const ClipboardApp = () => {
     onFileReceived: onFileFullyReceived,
   });
 
+  const resetAppState = useCallback(() => {
+    // This function will reset the state of the application
+    // For now, it just reloads the page, a more granular state reset can be implemented later.
+    window.location.reload();
+  }, []);
+
   // Initialize Room Manager Hook
   const {
     shareRoomId,
@@ -93,6 +100,7 @@ const ClipboardApp = () => {
     processRoomIdInput,
     joinRoom,
     generateShareLinkAndBroadcast,
+    handleLeaveRoom,
   } = useRoomManager({
     messages,
     putMessageInMs,
@@ -101,9 +109,10 @@ const ClipboardApp = () => {
     activeTab,
     sharePeerCount,
     retrievePeerCount,
-    // Pass the actual broadcast function from useWebRTCConnection
+    senderDisconnected,
     broadcastDataToPeers: () =>
       broadcastDataToAllPeers(shareContent, sendFiles),
+    resetApp: resetAppState,
   });
 
   const handleFileDrop = useCallback(
@@ -267,6 +276,8 @@ const ClipboardApp = () => {
               setReceiverDirectoryHandle={setReceiverDirectoryHandle}
               getReceiverSaveType={getReceiverSaveType}
               retrieveMessage={retrieveMessage}
+              senderDisconnected={senderDisconnected}
+              handleLeaveRoom={handleLeaveRoom}
             />
           )}
         </CardContent>

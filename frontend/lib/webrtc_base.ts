@@ -26,6 +26,7 @@ interface CallbackTypes {
     state: RTCPeerConnectionState,
     peerId: string
   ) => void;
+  onPeerDisconnected?: (peerId: string) => void;
   onError?: (error: WebRTCError) => void;
 }
 
@@ -50,6 +51,7 @@ export default class BaseWebRTC {
   public onConnectionStateChange:
     | CallbackTypes["onConnectionStateChange"]
     | null;
+  public onPeerDisconnected: CallbackTypes["onPeerDisconnected"] | null;
   public onError: CallbackTypes["onError"] | null;
 
   protected iceCandidatesQueue: Map<string, RTCIceCandidateInit[]>;
@@ -74,6 +76,7 @@ export default class BaseWebRTC {
     this.onDataReceived = null; // Callback for receiving data
     this.onConnectionEstablished = null; // Triggered when the WebRTC connection is established
     this.onConnectionStateChange = null; // Monitors and responds to connection state changes
+    this.onPeerDisconnected = null;
     this.onError = null;
 
     this.iceCandidatesQueue = new Map(); // Stores ICE candidates for each peer
@@ -132,6 +135,13 @@ export default class BaseWebRTC {
       // Attempt to reconnect. On mobile, switching to the background disconnects both P2P and socket connections.
       // The disconnect code executes upon returning, so reconnect directly here; send a new signal to start reconnection.
       this.attemptReconnection();
+    });
+
+    this.socket.on("peer-disconnected", ({ peerId }) => {
+      this.log("log", `Peer ${peerId} has disconnected.`);
+      this.onPeerDisconnected?.(peerId);
+      // We can also clean up the connection here if needed
+      this.cleanupExistingConnection(peerId);
     });
   }
   protected async attemptReconnection(): Promise<void> {
@@ -211,10 +221,6 @@ export default class BaseWebRTC {
     const candidates = this.iceCandidatesQueue.get(peerId);
     const peerConnection = this.peerConnections.get(peerId);
 
-    // this.log('log',`Attempting to add ${candidates?.length || 0} queued candidates for ${peerId}`);
-    // this.log('log',`Connection state: ${peerConnection?.connectionState}`);
-    // this.log('log',`Signaling state: ${peerConnection?.signalingState}`);
-
     if (!peerConnection || !candidates?.length) {
       return;
     }
@@ -262,15 +268,6 @@ export default class BaseWebRTC {
       iceServers: this.iceServers,
     });
 
-    // // Add more detailed connection state monitoring
-    // newPeerConnection.oniceconnectionstatechange = () => {
-    //   this.log('log',`ICE Connection State (${peerId}):`, newPeerConnection.iceConnectionState);
-    // };
-
-    // newPeerConnection.onsignalingstatechange = () => {
-    //   this.log('log',`Signaling State (${peerId}):`, newPeerConnection.signalingState);
-    // };
-
     newPeerConnection.onconnectionstatechange = () => {
       // const state = newPeerConnection.connectionState;
       // this.log('log',`Connection State (${peerId}):`, state);
@@ -287,11 +284,6 @@ export default class BaseWebRTC {
         });
       }
     };
-
-    // // Add ICE gathering state monitoring
-    // newPeerConnection.onicegatheringstatechange = () => {
-    //   this.log('log',`ICE Gathering State (${peerId}):`, newPeerConnection.iceGatheringState);
-    // };
 
     this.peerConnections.set(peerId, newPeerConnection);
     // this.log('log','New peer connection created for:', peerId);

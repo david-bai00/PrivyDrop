@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { fetchRoom, createRoom, checkRoom } from "@/app/config/api";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { fetchRoom, createRoom, checkRoom, leaveRoom } from "@/app/config/api";
 import { debounce } from "lodash";
 import type { Messages } from "@/types/messages";
 import type WebRTC_Initiator from "@/lib/webrtc_Initiator";
@@ -21,7 +21,9 @@ interface UseRoomManagerProps {
   activeTab: "send" | "retrieve";
   sharePeerCount: number;
   retrievePeerCount: number;
+  senderDisconnected: boolean;
   broadcastDataToPeers: () => Promise<boolean>;
+  resetApp: () => void; // Add a reset function prop
 }
 
 export function useRoomManager({
@@ -32,13 +34,34 @@ export function useRoomManager({
   activeTab,
   sharePeerCount,
   retrievePeerCount,
+  senderDisconnected,
   broadcastDataToPeers,
+  resetApp,
 }: UseRoomManagerProps) {
   const [shareRoomId, setShareRoomId] = useState(""); // Represents the validated or initially fetched room ID
   const [initShareRoomId, setInitShareRoomId] = useState(""); // Stores the initially fetched room ID for comparison
   const [shareLink, setShareLink] = useState("");
   const [shareRoomStatusText, setShareRoomStatusText] = useState("");
   const [retrieveRoomStatusText, setRetrieveRoomStatusText] = useState("");
+  const autoLeaveTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const handleLeaveRoom = useCallback(async () => {
+    if (!receiver || !receiver.roomId || !receiver.peerId) return;
+    try {
+      await leaveRoom(receiver.roomId, receiver.peerId);
+      putMessageInMs("You have left the room.", false);
+    } catch (error) {
+      console.error("Error leaving room:", error);
+      putMessageInMs("Failed to leave the room.", false);
+    } finally {
+      // Reset application state
+      resetApp();
+      if (autoLeaveTimer.current) {
+        clearTimeout(autoLeaveTimer.current);
+        autoLeaveTimer.current = null;
+      }
+    }
+  }, [receiver, putMessageInMs, resetApp]);
 
   // Initialize shareRoomId on mount
   useEffect(() => {
@@ -278,7 +301,28 @@ export function useRoomManager({
     sender,
     receiver,
     messages,
+    senderDisconnected,
   ]);
+
+  useEffect(() => {
+    if (activeTab === "retrieve" && senderDisconnected) {
+      setRetrieveRoomStatusText(
+        messages?.text.ClipboardApp.roomStatus.senderDisconnected_dis ||
+          "The sender has disconnected. The room will close in 15 minutes."
+      );
+      // Set a timer to automatically leave the room
+      autoLeaveTimer.current = setTimeout(() => {
+        handleLeaveRoom();
+      }, 900000); // 15 minutes
+    }
+
+    return () => {
+      // Cleanup timer if the component unmounts or dependencies change
+      if (autoLeaveTimer.current) {
+        clearTimeout(autoLeaveTimer.current);
+      }
+    };
+  }, [senderDisconnected, activeTab, messages, handleLeaveRoom]);
 
   return {
     shareRoomId, // This is the validated or initial room ID
@@ -289,5 +333,6 @@ export function useRoomManager({
     processRoomIdInput, // New input processing function
     joinRoom,
     generateShareLinkAndBroadcast,
+    handleLeaveRoom,
   };
 }

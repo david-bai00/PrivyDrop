@@ -115,16 +115,16 @@ export function setupSocketHandlers(io: Server): void {
       console.log("Disconnected:", socket.id);
       const roomId = await roomService.getRoomBySocketId(socket.id);
       if (roomId) {
+        // Notify other users in the room that this peer has left
+        socket.to(roomId).emit("peer-disconnected", { peerId: socket.id });
         await roomService.unbindSocketFromRoom(socket.id, roomId);
         if (await roomService.isRoomEmpty(roomId)) {
           // await deleteRoom(roomId);
-          await roomService.refreshRoom(roomId, 3600);
+          await roomService.refreshRoom(roomId, 900);
           console.log(
-            `Room ${roomId} is empty and will be deleted in 1 hour due to disconnect.`
+            `Room ${roomId} is empty and will be deleted in 15 min due to disconnect.`
           );
         }
-        // Notify other users in the room that this peer has left
-        // io.to(roomId).emit('peer-disconnected', { peerId: socket.id });
       }
     });
   });

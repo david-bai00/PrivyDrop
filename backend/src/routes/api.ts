@@ -29,6 +29,11 @@ interface CheckRoomRequest {
   roomId: string;
 }
 
+interface LeaveRoomRequest {
+  roomId: string;
+  socketId: string;
+}
+
 // Route handler for creating a room
 const createRoomHandler: RequestHandler<{}, any, CreateRoomRequest> = async (
   req,
@@ -110,7 +115,7 @@ const setTrackHandler: RequestHandler<{}, any, ReferrerTrack> = async (
     // Use MULTI to ensure atomicity of hincrby and expire
     await redis
       .multi()
-      .hincrby(dailyKey, ref, 1) // \"referrers:daily:2024-01-20\" : { \"producthunt\": \"5\", \"twitter\": \"3\" }
+      .hincrby(dailyKey, ref, 1) // "referrers:daily:2024-01-20" : { "producthunt": "5", "twitter": "3" }
       .expire(dailyKey, thirtyDaysInSeconds) // Set a 30-day expiration
       .exec();
 
@@ -136,11 +141,46 @@ const logsDebugHandler: RequestHandler<{}, any, LogMessage> = async (
   }
 };
 
+// Route handler for leaving a room
+const leaveRoomHandler: RequestHandler<{}, any, LeaveRoomRequest> = async (
+  req,
+  res
+) => {
+  const { roomId, socketId } = req.body;
+  if (!roomId || !socketId) {
+    res.status(400).json({ error: "Room ID and Socket ID are required" });
+    return;
+  }
+
+  try {
+    const roomExists = await roomService.isRoomExist(roomId);
+    if (!roomExists) {
+      res.json({ success: true, message: "Room does not exist." });
+      return;
+    }
+
+    await roomService.unbindSocketFromRoom(socketId, roomId);
+
+    if (await roomService.isRoomEmpty(roomId)) {
+      await roomService.refreshRoom(roomId, 900); // 15 minutes
+      console.log(
+        `Room ${roomId} is empty after leave and will be deleted in 15 min.`
+      );
+    }
+
+    res.json({ success: true, message: "Successfully left the room" });
+  } catch (error) {
+    console.error("Error leaving room:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 // Register routes
 router.post("/api/create_room", createRoomHandler);
 router.get("/api/get_room", getRoomHandler);
 router.post("/api/check_room", checkRoomHandler);
 router.post("/api/set_track", setTrackHandler);
 router.post("/api/logs_debug", logsDebugHandler);
+router.post("/api/leave_room", leaveRoomHandler);
 
 export default router;

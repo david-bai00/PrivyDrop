@@ -58,6 +58,7 @@ export function useWebRTCConnection({
 
   const [sendProgress, setSendProgress] = useState<ProgressState>({});
   const [receiveProgress, setReceiveProgress] = useState<ProgressState>({});
+  const [senderDisconnected, setSenderDisconnected] = useState(false);
 
   // Calculate isAnyFileTransferring internally based on progress states
   const isAnyFileTransferring = useMemo(() => {
@@ -222,6 +223,20 @@ export function useWebRTCConnection({
         onFileReceived(file, peerId || "unknown_peer");
       };
 
+      receiver.onPeerDisconnected = (peerId) => {
+        if (developmentEnv)
+          console.log(`Receiver peer ${peerId} disconnected.`);
+        // On the receiver side, any peer is a sender.
+        setSenderDisconnected(true);
+      };
+
+      receiver.onConnectionEstablished = (peerId) => {
+        if (developmentEnv)
+          console.log(`Receiver connection established with ${peerId}.`);
+        // If a connection is re-established, assume sender is back.
+        setSenderDisconnected(false);
+      };
+
       receiver.onError = (error) => {
         console.error("Receiver Error:", error.message, error.context);
         putMessageInMs(`Connection error: ${error.message}`, false);
@@ -317,5 +332,6 @@ export function useWebRTCConnection({
     requestFolder,
     setReceiverDirectoryHandle,
     getReceiverSaveType,
+    senderDisconnected,
   };
 }
