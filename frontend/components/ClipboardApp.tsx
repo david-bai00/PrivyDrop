@@ -51,6 +51,7 @@ const ClipboardApp = () => {
     onFileMetadataReceived,
     onFileFullyReceived,
     handleDownloadFile,
+    resetReceiverState,
   } = useFileTransferHandler({ messages, putMessageInMs });
   // Calculate the derived states for unload protection
   const isContentPresent = useMemo(() => {
@@ -73,6 +74,7 @@ const ClipboardApp = () => {
     setReceiverDirectoryHandle,
     getReceiverSaveType,
     senderDisconnected,
+    resetReceiverConnection,
   } = useWebRTCConnection({
     shareContent,
     sendFiles,
@@ -84,11 +86,25 @@ const ClipboardApp = () => {
     onFileReceived: onFileFullyReceived,
   });
 
-  const resetAppState = useCallback(() => {
-    // This function will reset the state of the application
-    // For now, it just reloads the page, a more granular state reset can be implemented later.
-    window.location.reload();
-  }, []);
+  const resetAppState = useCallback(async () => {
+    // Graceful state reset instead of page reload
+    try {
+      // Reset file transfer state
+      resetReceiverState();
+      
+      // Reset WebRTC connection state
+      await resetReceiverConnection();
+      
+      // Reset room input
+      setRetrieveRoomIdInput("");
+      
+      console.log("Application state reset successfully");
+    } catch (error) {
+      console.error("Error during state reset:", error);
+      // Fallback to page reload if graceful reset fails
+      window.location.reload();
+    }
+  }, [resetReceiverState, resetReceiverConnection]);
 
   // Initialize Room Manager Hook
   const {

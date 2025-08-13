@@ -70,6 +70,13 @@ export function useFileTransferHandler({
     setRetrievedFileMetas([]);
   }, []);
 
+  // Reset function specifically for receiver state (for leave room functionality)
+  const resetReceiverState = useCallback(() => {
+    setRetrievedContent("");
+    setRetrievedFiles([]);
+    setRetrievedFileMetas([]);
+  }, []);
+
   // Callbacks for useWebRTCConnection
   const onStringDataReceived = useCallback((data: string, peerId: string) => {
     // console.log(`FileTransferHandler received string from ${peerId}`);
@@ -167,6 +174,7 @@ export function useFileTransferHandler({
     removeFileToSend,
     clearSentItems,
     clearRetrievedItems,
+    resetReceiverState, // Export the new reset function
     // Callbacks to provide to useWebRTCConnection
     onStringDataReceived,
     onFileMetadataReceived,

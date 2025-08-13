@@ -55,8 +55,8 @@ export default class BaseWebRTC {
   public onError: CallbackTypes["onError"] | null;
 
   protected iceCandidatesQueue: Map<string, RTCIceCandidateInit[]>;
-  protected roomId: string | null;
-  protected peerId: string | undefined | null;
+  public roomId: string | null;
+  public peerId: string | undefined | null;
   public isInRoom: boolean;
   protected isInitiator: boolean; // Flag for the initiator
   // Reconnection related
@@ -496,6 +496,27 @@ export default class BaseWebRTC {
       this.socket.disconnect();
     }
     this.isInRoom = false;
+  }
+
+  // Public method to leave room and cleanup connections while keeping socket alive
+  public async leaveRoomAndCleanup(): Promise<void> {
+    // Clean up all peer connections
+    for (const peerId of Array.from(this.peerConnections.keys())) {
+      await this.cleanupExistingConnection(peerId);
+    }
+
+    // Reset room-related state but keep socket connected
+    this.isInRoom = false;
+    this.roomId = null;
+    this.isInitiator = false;
+    this.isPeerDisconnected = false;
+    this.isSocketDisconnected = false;
+    this.reconnectionInProgress = false;
+
+    this.log(
+      "log",
+      "Left room and cleaned up connections, socket remains connected"
+    );
   }
   // Abstract method declaration
   protected createDataChannel(peerId: string) {

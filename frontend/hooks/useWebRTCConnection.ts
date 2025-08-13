@@ -318,6 +318,14 @@ export function useWebRTCConnection({
     return receiverFileTransfer?.saveType;
   }, [receiverFileTransfer]);
 
+  // Reset function for receiver connection (for leave room functionality)
+  const resetReceiverConnection = useCallback(async () => {
+    if (receiver) {
+      await receiver.leaveRoomAndCleanup();
+      setSenderDisconnected(false);
+    }
+  }, [receiver]);
+
   return {
     sender, // Exposed for useRoomManager (e.g., sender.isInRoom, sender.joinRoom)
     receiver, // Exposed for useRoomManager
@@ -333,5 +341,6 @@ export function useWebRTCConnection({
     setReceiverDirectoryHandle,
     getReceiverSaveType,
     senderDisconnected,
+    resetReceiverConnection, // Export the new reset function
   };
 }
