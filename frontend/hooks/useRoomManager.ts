@@ -43,9 +43,9 @@ export function useRoomManager({
   const [shareLink, setShareLink] = useState("");
   const [shareRoomStatusText, setShareRoomStatusText] = useState("");
   const [retrieveRoomStatusText, setRetrieveRoomStatusText] = useState("");
-  const autoLeaveTimer = useRef<NodeJS.Timeout | null>(null);
 
-  const handleLeaveRoom = useCallback(async () => {
+  // Receiver leave room function (renamed and simplified)
+  const handleLeaveReceiverRoom = useCallback(async () => {
     if (!receiver || !receiver.roomId || !receiver.peerId) return;
     try {
       await leaveRoom(receiver.roomId, receiver.peerId);
@@ -56,12 +56,46 @@ export function useRoomManager({
     } finally {
       // Reset application state
       resetApp();
-      if (autoLeaveTimer.current) {
-        clearTimeout(autoLeaveTimer.current);
-        autoLeaveTimer.current = null;
-      }
     }
   }, [receiver, putMessageInMs, resetApp]);
+
+  // Sender leave room function (new)
+  const handleLeaveSenderRoom = useCallback(async () => {
+    if (!sender || !sender.roomId || !sender.peerId) return;
+    try {
+      await leaveRoom(sender.roomId, sender.peerId);
+      putMessageInMs("You have left the room.", true);
+    } catch (error) {
+      console.error("Error leaving room:", error);
+      putMessageInMs("Failed to leave the room.", true);
+    } finally {
+      // Reset sender state and get new room ID
+      await resetSenderApp();
+    }
+  }, [sender, putMessageInMs]);
+
+  // Reset sender app state (preserve send content, get new room ID)
+  const resetSenderApp = useCallback(async () => {
+    try {
+      // 1. Clean up WebRTC connections
+      if (sender) {
+        await sender.leaveRoomAndCleanup();
+      }
+      
+      // 2. Clear share link
+      setShareLink("");
+      
+      // 3. Get new room ID from backend
+      const newRoomId = await fetchRoom();
+      setShareRoomId(newRoomId || "");
+      setInitShareRoomId(newRoomId || "");
+      
+      console.log("Sender application state reset successfully, new room ID:", newRoomId);
+    } catch (error) {
+      console.error("Error during sender state reset:", error);
+      putMessageInMs("Error resetting sender state.", true);
+    }
+  }, [sender, putMessageInMs]);
 
   // Initialize shareRoomId on mount
   useEffect(() => {
@@ -304,25 +338,7 @@ export function useRoomManager({
     senderDisconnected,
   ]);
 
-  useEffect(() => {
-    if (activeTab === "retrieve" && senderDisconnected) {
-      setRetrieveRoomStatusText(
-        messages?.text.ClipboardApp.roomStatus.senderDisconnected_dis ||
-          "The sender has disconnected. The room will close in 15 minutes."
-      );
-      // Set a timer to automatically leave the room
-      autoLeaveTimer.current = setTimeout(() => {
-        handleLeaveRoom();
-      }, 900000); // 15 minutes
-    }
-
-    return () => {
-      // Cleanup timer if the component unmounts or dependencies change
-      if (autoLeaveTimer.current) {
-        clearTimeout(autoLeaveTimer.current);
-      }
-    };
-  }, [senderDisconnected, activeTab, messages, handleLeaveRoom]);
+  
 
   return {
     shareRoomId, // This is the validated or initial room ID
@@ -333,6 +349,7 @@ export function useRoomManager({
     processRoomIdInput, // New input processing function
     joinRoom,
     generateShareLinkAndBroadcast,
-    handleLeaveRoom,
+    handleLeaveReceiverRoom, // Renamed function
+    handleLeaveSenderRoom, // New function
   };
 }

@@ -116,7 +116,8 @@ const ClipboardApp = () => {
     processRoomIdInput,
     joinRoom,
     generateShareLinkAndBroadcast,
-    handleLeaveRoom,
+    handleLeaveReceiverRoom,
+    handleLeaveSenderRoom,
   } = useRoomManager({
     messages,
     putMessageInMs,
@@ -269,6 +270,7 @@ const ClipboardApp = () => {
               sender={sender}
               shareMessage={shareMessage}
               currentValidatedShareRoomId={shareRoomId}
+              handleLeaveSenderRoom={handleLeaveSenderRoom}
             />
           ) : (
             <RetrieveTabPanel
@@ -293,7 +295,7 @@ const ClipboardApp = () => {
               getReceiverSaveType={getReceiverSaveType}
               retrieveMessage={retrieveMessage}
               senderDisconnected={senderDisconnected}
-              handleLeaveRoom={handleLeaveRoom}
+              handleLeaveRoom={handleLeaveReceiverRoom}
             />
           )}
         </CardContent>

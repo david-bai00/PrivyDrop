@@ -137,9 +137,9 @@ export function RetrieveTabPanel({
           className="flex-grow min-w-0"
         />
       </div>
-      <div className="mb-3">
+      <div className="flex gap-2 mb-3">
         <Button
-          className="w-full"
+          className="flex-1"
           onClick={() => joinRoom(false, retrieveRoomIdInput)}
           ref={retrieveJoinRoomBtnRef}
           disabled={
@@ -148,18 +148,14 @@ export function RetrieveTabPanel({
         >
           {messages.text.ClipboardApp.html.joinRoom_dis}
         </Button>
+        <Button
+          variant="outline"
+          onClick={handleLeaveRoom}
+          disabled={!receiver || !receiver.isInRoom || isAnyFileTransferring}
+        >
+          Leave Room
+        </Button>
       </div>
-      {senderDisconnected && (
-        <div className="mb-3">
-          <Button
-            className="w-full"
-            variant="destructive"
-            onClick={handleLeaveRoom}
-          >
-            {messages.text.ClipboardApp.html.leaveRoom_dis || "Leave Room"}
-          </Button>
-        </div>
-      )}
       {retrievedContent && (
         <div className="my-3 p-2 border rounded bg-gray-50">
           <RichTextEditor

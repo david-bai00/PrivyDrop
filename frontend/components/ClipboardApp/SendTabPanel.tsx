@@ -47,6 +47,7 @@ interface SendTabPanelProps {
   // Pass the validated/initial shareRoomId from useRoomManager for display/initialization
   // Also, initShareRoomId can be useful if we want to reset the input to it.
   currentValidatedShareRoomId: string;
+  handleLeaveSenderRoom: () => void; // New prop for leaving room
   // initShareRoomId: string; // If needed for reset logic
 }
 
@@ -67,6 +68,7 @@ export function SendTabPanel({
   sender,
   shareMessage,
   currentValidatedShareRoomId,
+  handleLeaveSenderRoom,
 }: // initShareRoomId,
 SendTabPanelProps) {
   // Local state for immediate response in the input field
@@ -145,20 +147,28 @@ SendTabPanelProps) {
           {messages.text.ClipboardApp.html.joinRoom_dis}
         </Button>
       </div>
-      <div className="flex">
+      <div className="flex gap-2">
         <AnimatedButton
-          className="w-full"
+          className="flex-1"
           onClick={generateShareLinkAndBroadcast}
           loadingText={messages.text.ClipboardApp.html.SyncSending_loadingText}
           disabled={
             !sender ||
             !sender.isInRoom ||
             (sendFiles.length === 0 && shareContent.trim() === "") ||
-            !currentValidatedShareRoomId.trim()
+            !currentValidatedShareRoomId.trim() ||
+            isAnyFileTransferring
           } // Ensure there is a validated room ID before allowing sharing
         >
           {messages.text.ClipboardApp.html.SyncSending_dis}
         </AnimatedButton>
+        <Button
+          variant="outline"
+          onClick={handleLeaveSenderRoom}
+          disabled={!sender || !sender.isInRoom || isAnyFileTransferring}
+        >
+          Leave Room
+        </Button>
       </div>
       {shareMessage && (
         <p className="mt-3 text-sm text-blue-600">{shareMessage}</p>
