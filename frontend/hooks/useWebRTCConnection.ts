@@ -228,6 +228,10 @@ export function useWebRTCConnection({
           console.log(`Receiver peer ${peerId} disconnected.`);
         // On the receiver side, any peer is a sender.
         setSenderDisconnected(true);
+        // Set peer count to 0 since the peer has disconnected
+        // Note: receiver.peerConnections.size might still be > 0 at this point
+        // because cleanupExistingConnection hasn't been called yet
+        setRetrievePeerCount(0);
       };
 
       receiver.onConnectionEstablished = (peerId) => {
