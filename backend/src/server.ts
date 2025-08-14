@@ -10,12 +10,16 @@ import { setupSocketHandlers } from "./socket/handlers";
 const app = express(); // Create an Express application
 app.use(cors(corsOptions)); // Add CORS middleware
 app.use(express.json());
-app.use(apiRouter);
 
 const server = http.createServer(app);
 
 const io = new Server(server, { cors: corsWSOptions });
 setupSocketHandlers(io);
+
+// Make io instance available to routes
+app.set('io', io);
+
+app.use(apiRouter);
 
 server.listen(CONFIG.BACKEND_PORT, () => {
   console.log(

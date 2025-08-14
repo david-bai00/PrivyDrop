@@ -159,6 +159,12 @@ const leaveRoomHandler: RequestHandler<{}, any, LeaveRoomRequest> = async (
       return;
     }
 
+    // Notify other users in the room that this peer has left (before unbinding)
+    const io = req.app.get('io');
+    if (io) {
+      io.to(roomId).emit("peer-disconnected", { peerId: socketId });
+    }
+
     await roomService.unbindSocketFromRoom(socketId, roomId);
 
     if (await roomService.isRoomEmpty(roomId)) {

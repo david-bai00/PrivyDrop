@@ -75,6 +75,7 @@ const ClipboardApp = () => {
     getReceiverSaveType,
     senderDisconnected,
     resetReceiverConnection,
+    resetSenderConnection,
   } = useWebRTCConnection({
     shareContent,
     sendFiles,
@@ -86,18 +87,27 @@ const ClipboardApp = () => {
     onFileReceived: onFileFullyReceived,
   });
 
+  // Function to reset sender peer count
+  const resetSenderPeerCount = useCallback(() => {
+    // This will be used by useRoomManager to reset sharePeerCount
+    // We can access the sharePeerCount setter through a custom approach
+    // For now, we'll implement this by triggering a re-render
+    // The actual reset happens in useWebRTCConnection via sender.leaveRoomAndCleanup()
+    // But we need to ensure the UI updates, so we'll add this logic there
+  }, []);
+
   const resetAppState = useCallback(async () => {
     // Graceful state reset instead of page reload
     try {
       // Reset file transfer state
       resetReceiverState();
-      
+
       // Reset WebRTC connection state
       await resetReceiverConnection();
-      
+
       // Reset room input
       setRetrieveRoomIdInput("");
-      
+
       console.log("Application state reset successfully");
     } catch (error) {
       console.error("Error during state reset:", error);
@@ -130,6 +140,7 @@ const ClipboardApp = () => {
     broadcastDataToPeers: () =>
       broadcastDataToAllPeers(shareContent, sendFiles),
     resetApp: resetAppState,
+    resetSenderConnection,
   });
 
   const handleFileDrop = useCallback(

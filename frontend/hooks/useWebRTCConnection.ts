@@ -321,10 +321,23 @@ export function useWebRTCConnection({
   // Reset function for receiver connection (for leave room functionality)
   const resetReceiverConnection = useCallback(async () => {
     if (receiver) {
-      await receiver.leaveRoomAndCleanup();
+      // First reset all UI states to ensure consistent state
       setSenderDisconnected(false);
+      setRetrievePeerCount(0);
+      // Then cleanup the WebRTC connection
+      await receiver.leaveRoomAndCleanup();
     }
   }, [receiver]);
+
+  // Reset function for sender connection (for leave room functionality)
+  const resetSenderConnection = useCallback(async () => {
+    if (sender) {
+      // First reset UI state to ensure consistent state
+      setSharePeerCount(0);
+      // Then cleanup the WebRTC connection
+      await sender.leaveRoomAndCleanup();
+    }
+  }, [sender]);
 
   return {
     sender, // Exposed for useRoomManager (e.g., sender.isInRoom, sender.joinRoom)
@@ -342,5 +355,6 @@ export function useWebRTCConnection({
     getReceiverSaveType,
     senderDisconnected,
     resetReceiverConnection, // Export the new reset function
+    resetSenderConnection, // Export the new sender reset function
   };
 }

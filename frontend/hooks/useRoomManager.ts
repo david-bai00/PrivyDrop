@@ -24,6 +24,7 @@ interface UseRoomManagerProps {
   senderDisconnected: boolean;
   broadcastDataToPeers: () => Promise<boolean>;
   resetApp: () => void; // Add a reset function prop
+  resetSenderConnection: () => Promise<void>; // Add function to reset sender connection
 }
 
 export function useRoomManager({
@@ -37,6 +38,7 @@ export function useRoomManager({
   senderDisconnected,
   broadcastDataToPeers,
   resetApp,
+  resetSenderConnection,
 }: UseRoomManagerProps) {
   const [shareRoomId, setShareRoomId] = useState(""); // Represents the validated or initially fetched room ID
   const [initShareRoomId, setInitShareRoomId] = useState(""); // Stores the initially fetched room ID for comparison
@@ -59,6 +61,30 @@ export function useRoomManager({
     }
   }, [receiver, putMessageInMs, resetApp]);
 
+  // Reset sender app state (preserve send content, get new room ID)
+  const resetSenderApp = useCallback(async () => {
+    try {
+      // 1. Clean up WebRTC connections and reset peer count
+      await resetSenderConnection();
+
+      // 2. Clear share link
+      setShareLink("");
+
+      // 3. Get new room ID from backend
+      const newRoomId = await fetchRoom();
+      setShareRoomId(newRoomId || "");
+      setInitShareRoomId(newRoomId || "");
+
+      console.log(
+        "Sender application state reset successfully, new room ID:",
+        newRoomId
+      );
+    } catch (error) {
+      console.error("Error during sender state reset:", error);
+      putMessageInMs("Error resetting sender state.", true);
+    }
+  }, [resetSenderConnection, putMessageInMs]);
+
   // Sender leave room function (new)
   const handleLeaveSenderRoom = useCallback(async () => {
     if (!sender || !sender.roomId || !sender.peerId) return;
@@ -72,30 +98,7 @@ export function useRoomManager({
       // Reset sender state and get new room ID
       await resetSenderApp();
     }
-  }, [sender, putMessageInMs]);
-
-  // Reset sender app state (preserve send content, get new room ID)
-  const resetSenderApp = useCallback(async () => {
-    try {
-      // 1. Clean up WebRTC connections
-      if (sender) {
-        await sender.leaveRoomAndCleanup();
-      }
-      
-      // 2. Clear share link
-      setShareLink("");
-      
-      // 3. Get new room ID from backend
-      const newRoomId = await fetchRoom();
-      setShareRoomId(newRoomId || "");
-      setInitShareRoomId(newRoomId || "");
-      
-      console.log("Sender application state reset successfully, new room ID:", newRoomId);
-    } catch (error) {
-      console.error("Error during sender state reset:", error);
-      putMessageInMs("Error resetting sender state.", true);
-    }
-  }, [sender, putMessageInMs]);
+  }, [sender, putMessageInMs, resetSenderApp]);
 
   // Initialize shareRoomId on mount
   useEffect(() => {
@@ -337,8 +340,6 @@ export function useRoomManager({
     messages,
     senderDisconnected,
   ]);
-
-  
 
   return {
     shareRoomId, // This is the validated or initial room ID

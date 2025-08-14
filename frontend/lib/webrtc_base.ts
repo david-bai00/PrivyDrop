@@ -45,7 +45,7 @@ export default class BaseWebRTC {
 
   public onDataChannelOpen: CallbackTypes["onDataChannelOpen"] | null;
   public onDataReceived: CallbackTypes["onDataReceived"] | null;
-  protected onConnectionEstablished:
+  public onConnectionEstablished:
     | CallbackTypes["onConnectionEstablished"]
     | null;
   public onConnectionStateChange:
