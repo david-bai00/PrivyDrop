@@ -339,6 +339,8 @@ export function useRoomManager({
     receiver,
     messages,
     senderDisconnected,
+    sender?.isInRoom, // Add isInRoom state to dependencies
+    receiver?.isInRoom, // Add isInRoom state to dependencies
   ]);
 
   return {

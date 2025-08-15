@@ -174,6 +174,14 @@ export function useWebRTCConnection({
       sender.onDataChannelOpen = () =>
         broadcastDataToAllPeers(shareContent, sendFiles);
 
+      sender.onPeerDisconnected = (peerId) => {
+        // Use setTimeout to ensure cleanupExistingConnection has been called
+        // before we update the peer count
+        setTimeout(() => {
+          setSharePeerCount(sender.peerConnections.size);
+        }, 0);
+      };
+
       sender.onError = (error) => {
         console.error("Sender Error:", error.message, error.context);
         // Optionally, use putMessageInMs to show a user-friendly error
@@ -336,10 +344,10 @@ export function useWebRTCConnection({
   // Reset function for sender connection (for leave room functionality)
   const resetSenderConnection = useCallback(async () => {
     if (sender) {
-      // First reset UI state to ensure consistent state
-      setSharePeerCount(0);
-      // Then cleanup the WebRTC connection
+      // First cleanup the WebRTC connection (this sets isInRoom = false)
       await sender.leaveRoomAndCleanup();
+      // Then reset UI state to ensure consistent state
+      setSharePeerCount(0);
     }
   }, [sender]);
 
