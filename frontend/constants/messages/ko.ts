@@ -243,8 +243,11 @@ export const ko: Messages = {
       PopupDialog_description:
         "대용량 파일이나 폴더를 직접 디스크에 저장하는 것을 권장합니다. 이를 통해 대용량 파일 전송 및 폴더 동기화가 더 효율적으로 이루어집니다.",
       chooseSavePath_tips:
-        "대용량 파일이나 폴더를 선택한 디렉토리에 직접 저장하세요. 👉",
+        "큰 파일이나 폴더를 선택한 디렉터리에 직접 저장합니다. 👉",
       chooseSavePath_dis: "저장 위치 선택",
+      safeSave_dis: "안전 저장",
+      safeSave_tooltip: "연결 중단을 두려워하지 마세요. 다음 재개를 위해 파일을 안전하게 저장하려면 여기를 클릭하세요",
+      safeSaveSuccessMsg: "파일이 디스크에 안전하게 저장되었습니다. 페이지를 안전하게 닫을 수 있으며 전송 재개를 지원합니다!",
     },
     RetrieveMethod: {
       P: "축하합니다 🎉 공유된 콘텐츠가 검색을 기다리고 있습니다:",
@@ -284,6 +287,8 @@ export const ko: Messages = {
         onlyOneMsg: "현재 방에 혼자 있습니다",
         peopleMsg_template: "방에 {peerCount}명이 있습니다",
         connected_dis: "연결됨",
+        senderDisconnectedMsg: "발신자가 연결 해제됨",
+        leftRoomMsg: "방을 나갔습니다.",
       },
       html: {
         senderTab: "보내기",

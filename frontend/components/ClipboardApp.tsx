@@ -76,6 +76,7 @@ const ClipboardApp = () => {
     senderDisconnected,
     resetReceiverConnection,
     resetSenderConnection,
+    manualSafeSave,
   } = useWebRTCConnection({
     shareContent,
     sendFiles,
@@ -307,6 +308,7 @@ const ClipboardApp = () => {
               retrieveMessage={retrieveMessage}
               senderDisconnected={senderDisconnected}
               handleLeaveRoom={handleLeaveReceiverRoom}
+              manualSafeSave={manualSafeSave}
             />
           )}
         </CardContent>

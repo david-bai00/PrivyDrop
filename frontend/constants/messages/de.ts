@@ -254,6 +254,9 @@ export const de: Messages = {
       chooseSavePath_tips:
         "Speichern Sie große Dateien oder Ordner direkt in einem ausgewählten Verzeichnis. 👉",
       chooseSavePath_dis: "Speicherort auswählen",
+      safeSave_dis: "Sicheres Speichern",
+      safeSave_tooltip: "Keine Angst vor Verbindungsunterbrechung, klicken Sie hier, um Dateien sicher zu speichern für die nächste Fortsetzung",
+      safeSaveSuccessMsg: "Dateien wurden sicher auf der Festplatte gespeichert, sicher die Seite zu schließen, unterstützt Wiederaufnahme der Übertragung!",
     },
     RetrieveMethod: {
       P: "Glückwunsch 🎉 Freigegebene Inhalte warten darauf, abgerufen zu werden:",
@@ -298,6 +301,8 @@ export const de: Messages = {
         onlyOneMsg: "Sie sind der Einzige hier",
         peopleMsg_template: "{peerCount} Personen im Raum",
         connected_dis: "Verbunden",
+        senderDisconnectedMsg: "Sender getrennt",
+        leftRoomMsg: "Sie haben den Raum verlassen.",
       },
       html: {
         senderTab: "Senden",

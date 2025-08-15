@@ -253,8 +253,11 @@ export const fr: Messages = {
       PopupDialog_description:
         "Nous recommandons de sélectionner un répertoire de sauvegarde pour enregistrer directement les fichiers sur votre disque. Cela facilite le transfert de fichiers volumineux et la synchronisation efficace des dossiers.",
       chooseSavePath_tips:
-        "Enregistrez des fichiers ou dossiers volumineux directement dans un répertoire sélectionné. 👉",
-      chooseSavePath_dis: "Choisir un emplacement de sauvegarde",
+        "Enregistrez des fichiers volumineux ou des dossiers directement dans un répertoire sélectionné. 👉",
+      chooseSavePath_dis: "Choisir l'emplacement de sauvegarde",
+      safeSave_dis: "Sauvegarde Sécurisée",
+      safeSave_tooltip: "N'ayez pas peur de l'interruption de connexion, cliquez ici pour sauvegarder les fichiers en toute sécurité pour la prochaine reprise",
+      safeSaveSuccessMsg: "Les fichiers ont été sauvegardés en toute sécurité sur le disque, sûr de fermer la page, prend en charge la reprise du transfert !",
     },
     RetrieveMethod: {
       P: "Félicitations 🎉 Le contenu partagé attend d'être récupéré :",
@@ -298,6 +301,8 @@ export const fr: Messages = {
         onlyOneMsg: "Vous êtes le seul ici",
         peopleMsg_template: "{peerCount} personnes dans la salle",
         connected_dis: "Connecté",
+        senderDisconnectedMsg: "Expéditeur déconnecté",
+        leftRoomMsg: "Vous avez quitté la salle.",
       },
       html: {
         senderTab: "Envoyer",

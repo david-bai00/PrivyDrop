@@ -40,6 +40,7 @@ interface FileListDisplayProps {
   onRequest?: (item: FileMeta) => void; // Request file
   onDelete?: (item: FileMeta) => void;
   onLocationPick?: () => Promise<boolean>;
+  onSafeSave?: () => void; // New prop for safe save functionality
   saveType?: { [fileId: string]: boolean }; // File stored on disk or in memory
   largeFileThreshold?: number;
 }
@@ -61,6 +62,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
   onRequest,
   onDelete,
   onLocationPick,
+  onSafeSave,
   saveType,
   largeFileThreshold = 500 * 1024 * 1024, // 500MB default
 }) => {
@@ -380,6 +382,28 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
                     {messages.text.FileListDisplay.chooseSavePath_dis}
                   </Button>
                 )}
+                {/* Safe Save Button - only show when location is picked and files are saved to disk */}
+                {onSafeSave &&
+                  pickedLocation &&
+                  (isAnyFileTransferring || 
+                   (saveType && Object.values(saveType).some(
+                     (isSavedToDisk) => isSavedToDisk
+                   ))) && (
+                    <Tooltip
+                      content={messages.text.FileListDisplay.safeSave_tooltip}
+                    >
+                      <Button
+                        onClick={() => {
+                          onSafeSave();
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="mr-2 text-green-600 border-green-600 hover:bg-green-50"
+                      >
+                        {messages.text.FileListDisplay.safeSave_dis}
+                      </Button>
+                    </Tooltip>
+                  )}
               </div>
             </div>
           )}

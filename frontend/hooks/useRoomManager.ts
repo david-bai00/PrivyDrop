@@ -48,10 +48,10 @@ export function useRoomManager({
 
   // Receiver leave room function (renamed and simplified)
   const handleLeaveReceiverRoom = useCallback(async () => {
-    if (!receiver || !receiver.roomId || !receiver.peerId) return;
+    if (!receiver || !receiver.roomId || !receiver.peerId || !messages) return;
     try {
       await leaveRoom(receiver.roomId, receiver.peerId);
-      putMessageInMs("You have left the room.", false);
+      putMessageInMs(messages.text.ClipboardApp.roomStatus.leftRoomMsg, false);
     } catch (error) {
       console.error("Error leaving room:", error);
       putMessageInMs("Failed to leave the room.", false);
@@ -59,7 +59,7 @@ export function useRoomManager({
       // Reset application state
       resetApp();
     }
-  }, [receiver, putMessageInMs, resetApp]);
+  }, [receiver, putMessageInMs, resetApp, messages]);
 
   // Reset sender app state (preserve send content, get new room ID)
   const resetSenderApp = useCallback(async () => {
@@ -87,10 +87,10 @@ export function useRoomManager({
 
   // Sender leave room function (new)
   const handleLeaveSenderRoom = useCallback(async () => {
-    if (!sender || !sender.roomId || !sender.peerId) return;
+    if (!sender || !sender.roomId || !sender.peerId || !messages) return;
     try {
       await leaveRoom(sender.roomId, sender.peerId);
-      putMessageInMs("You have left the room.", true);
+      putMessageInMs(messages.text.ClipboardApp.roomStatus.leftRoomMsg, true);
     } catch (error) {
       console.error("Error leaving room:", error);
       putMessageInMs("Failed to leave the room.", true);
@@ -98,7 +98,7 @@ export function useRoomManager({
       // Reset sender state and get new room ID
       await resetSenderApp();
     }
-  }, [sender, putMessageInMs, resetSenderApp]);
+  }, [sender, putMessageInMs, resetSenderApp, messages]);
 
   // Initialize shareRoomId on mount
   useEffect(() => {

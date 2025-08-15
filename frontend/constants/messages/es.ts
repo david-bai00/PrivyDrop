@@ -252,6 +252,9 @@ export const es: Messages = {
       chooseSavePath_tips:
         "Guarda archivos grandes o carpetas directamente en un directorio seleccionado. 👉",
       chooseSavePath_dis: "Elegir ubicación de guardado",
+      safeSave_dis: "Guardar Seguro",
+      safeSave_tooltip: "No te preocupes por la interrupción de la conexión, haz clic aquí para guardar archivos de forma segura para la próxima reanudación",
+      safeSaveSuccessMsg: "Los archivos se han guardado de forma segura en el disco, es seguro cerrar la página, ¡admite transferencia de reanudación!",
     },
     RetrieveMethod: {
       P: "¡Felicitaciones 🎉 El contenido compartido está esperando ser recuperado:",
@@ -291,6 +294,8 @@ export const es: Messages = {
         onlyOneMsg: "Eres el único aquí",
         peopleMsg_template: "{peerCount} Personas en la sala",
         connected_dis: "Conectado",
+        senderDisconnectedMsg: "Remitente desconectado",
+        leftRoomMsg: "Has salido de la sala.",
       },
       html: {
         senderTab: "Enviar",

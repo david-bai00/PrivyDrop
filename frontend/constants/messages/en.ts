@@ -251,6 +251,9 @@ export const en: Messages = {
       chooseSavePath_tips:
         "Save large files or folders directly to a selected directory. 👉",
       chooseSavePath_dis: "Choose save location",
+      safeSave_dis: "Safe Save",
+      safeSave_tooltip: "Don't worry about connection interruption, click here to safely save files for next resume",
+      safeSaveSuccessMsg: "Files have been safely saved to disk, safe to close page, supports resume transfer!",
     },
     RetrieveMethod: {
       P: "Congrats 🎉 Share content is waiting to be retrieved:",
@@ -287,9 +290,11 @@ export const en: Messages = {
       roomStatus: {
         senderEmptyMsg: "Room is empty",
         receiverEmptyMsg: "You can accept an invitation to join the room",
-        onlyOneMsg: "You’re the only one here",
+        onlyOneMsg: "You're the only one here",
         peopleMsg_template: "{peerCount} People in the room",
         connected_dis: "Connected",
+        senderDisconnectedMsg: "Sender disconnected",
+        leftRoomMsg: "You have left the room.",
       },
       html: {
         senderTab: "Send",

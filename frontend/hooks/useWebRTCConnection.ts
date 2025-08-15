@@ -351,6 +351,21 @@ export function useWebRTCConnection({
     }
   }, [sender]);
 
+  // Manual safe save function (replaces the beforeunload graceful shutdown)
+  const manualSafeSave = useCallback(() => {
+    if (receiverFileTransfer) {
+      receiverFileTransfer.gracefulShutdown();
+      // Provide user feedback
+      if (putMessageInMs && messages) {
+        putMessageInMs(
+          messages.text.FileListDisplay.safeSaveSuccessMsg,
+          false,
+          3000
+        );
+      }
+    }
+  }, [receiverFileTransfer, putMessageInMs, messages]);
+
   return {
     sender, // Exposed for useRoomManager (e.g., sender.isInRoom, sender.joinRoom)
     receiver, // Exposed for useRoomManager
@@ -368,5 +383,6 @@ export function useWebRTCConnection({
     senderDisconnected,
     resetReceiverConnection, // Export the new reset function
     resetSenderConnection, // Export the new sender reset function
+    manualSafeSave, // Export the manual safe save function
   };
 }
