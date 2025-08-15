@@ -296,6 +296,7 @@ export const es: Messages = {
         connected_dis: "Conectado",
         senderDisconnectedMsg: "Remitente desconectado",
         leftRoomMsg: "Has salido de la sala.",
+        leaveRoomBtn: "Salir de la Sala",
       },
       html: {
         senderTab: "Enviar",

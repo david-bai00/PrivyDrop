@@ -291,6 +291,7 @@ export const ja: Messages = {
         connected_dis: "接続済み",
         senderDisconnectedMsg: "送信者が切断されました",
         leftRoomMsg: "ルームを離れました。",
+        leaveRoomBtn: "ルームを離れる",
       },
       html: {
         senderTab: "送信",

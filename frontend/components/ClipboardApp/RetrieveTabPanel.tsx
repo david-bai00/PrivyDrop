@@ -155,7 +155,7 @@ export function RetrieveTabPanel({
           onClick={handleLeaveRoom}
           disabled={!receiver || !receiver.isInRoom || isAnyFileTransferring}
         >
-          Leave Room
+          {messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
         </Button>
       </div>
       {retrievedContent && (

@@ -289,6 +289,7 @@ export const ko: Messages = {
         connected_dis: "연결됨",
         senderDisconnectedMsg: "발신자가 연결 해제됨",
         leftRoomMsg: "방을 나갔습니다.",
+        leaveRoomBtn: "방 나가기",
       },
       html: {
         senderTab: "보내기",

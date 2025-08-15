@@ -235,7 +235,8 @@ export const zh: Messages = {
       chooseSavePath_dis: "选择保存位置",
       safeSave_dis: "安全保存",
       safeSave_tooltip: "连接中断不要怕，点击这里安全保存文件，方便下次续传",
-      safeSaveSuccessMsg: "文件已安全保存到磁盘，可以安全关闭页面，支持断点续传！",
+      safeSaveSuccessMsg:
+        "文件已安全保存到磁盘，可以安全关闭页面，支持断点续传！",
     },
     RetrieveMethod: {
       P: "恭喜 🎉 共享内容等待接收：",
@@ -275,6 +276,7 @@ export const zh: Messages = {
         connected_dis: "已连接",
         senderDisconnectedMsg: "发送端已断开连接",
         leftRoomMsg: "您已离开房间。",
+        leaveRoomBtn: "离开房间",
       },
       html: {
         senderTab: "发送",

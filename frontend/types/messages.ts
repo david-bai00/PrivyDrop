@@ -230,6 +230,7 @@ export type RoomStatus = {
   connected_dis: string;
   senderDisconnectedMsg: string;
   leftRoomMsg: string;
+  leaveRoomBtn: string;
 };
 
 export type ClipboardAppHtml = {

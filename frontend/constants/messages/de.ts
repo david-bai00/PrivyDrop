@@ -303,6 +303,7 @@ export const de: Messages = {
         connected_dis: "Verbunden",
         senderDisconnectedMsg: "Sender getrennt",
         leftRoomMsg: "Sie haben den Raum verlassen.",
+        leaveRoomBtn: "Raum Verlassen",
       },
       html: {
         senderTab: "Senden",

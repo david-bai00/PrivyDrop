@@ -167,7 +167,7 @@ SendTabPanelProps) {
           onClick={handleLeaveSenderRoom}
           disabled={!sender || !sender.isInRoom || isAnyFileTransferring}
         >
-          Leave Room
+          {messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
         </Button>
       </div>
       {shareMessage && (
