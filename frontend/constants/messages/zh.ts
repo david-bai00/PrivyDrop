@@ -278,6 +278,10 @@ export const zh: Messages = {
         leftRoomMsg: "您已离开房间。",
         leaveRoomBtn: "离开房间",
       },
+      fileExistMsg: "某些文件已添加。",
+      noFilesForFolderMsg: "在文件夹 '{folderName}' 中未找到文件。",
+      zipError: "创建 ZIP 文件时出错。",
+      fileNotFoundMsg: "未找到要下载的文件 '{fileName}'。",
       html: {
         senderTab: "发送",
         retrieveTab: "接收",

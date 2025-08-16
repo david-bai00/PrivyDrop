@@ -1,8 +1,9 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { CustomFile, FileMeta, fileMetadata } from "@/types/webrtc";
 import { Messages } from "@/types/messages";
 import JSZip from "jszip";
 import { downloadAs } from "@/lib/fileUtils";
+import { useFileTransferStore } from "@/stores/fileTransferStore";
 
 interface UseFileTransferHandlerProps {
   messages: Messages | null;
@@ -17,98 +18,76 @@ export function useFileTransferHandler({
   messages,
   putMessageInMs,
 }: UseFileTransferHandlerProps) {
-  const [shareContent, setShareContent] = useState("");
-  const [sendFiles, setSendFiles] = useState<CustomFile[]>([]);
-  const [retrievedContent, setRetrievedContent] = useState("");
-  const [retrievedFiles, setRetrievedFiles] = useState<CustomFile[]>([]);
-  const [retrievedFileMetas, setRetrievedFileMetas] = useState<FileMeta[]>([]);
+  // 从 store 中获取状态
+  const {
+    shareContent,
+    sendFiles,
+    retrievedContent,
+    retrievedFiles,
+    retrievedFileMetas,
+    setShareContent,
+    setSendFiles,
+    addSendFiles,
+    removeSendFile,
+    setRetrievedContent,
+    setRetrievedFiles,
+    setRetrievedFileMetas,
+  } = useFileTransferStore();
 
   const updateShareContent = useCallback((content: string) => {
     setShareContent(content);
-  }, []);
+  }, [setShareContent]);
 
   const addFilesToSend = useCallback(
     (pickedFiles: CustomFile[]) => {
-      setSendFiles((prevFiles) => {
-        const newFiles = pickedFiles.filter(
-          (pf) =>
-            !prevFiles.some((ef) => ef.name === pf.name && ef.size === pf.size)
+      const newFiles = pickedFiles.filter(
+        (pf) =>
+          !sendFiles.some((ef) => ef.name === pf.name && ef.size === pf.size)
+      );
+      if (newFiles.length < pickedFiles.length && messages) {
+        putMessageInMs(
+          messages.text.ClipboardApp.fileExistMsg ||
+          "Some files were already added.",
+          true
         );
-        if (newFiles.length < pickedFiles.length && messages) {
-          putMessageInMs(
-            // messages.text.ClipboardApp.fileExistMsg ||
-            "Some files were already added.",
-            true
-          );
-        }
-        return [...prevFiles, ...newFiles];
-      });
+      }
+      addSendFiles(newFiles);
     },
-    [messages, putMessageInMs]
+    [sendFiles, messages, putMessageInMs, addSendFiles]
   );
 
   const removeFileToSend = useCallback((metaToRemove: FileMeta) => {
-    setSendFiles((prevFiles) => {
-      if (metaToRemove.folderName && metaToRemove.folderName !== "") {
-        return prevFiles.filter(
-          (file) => file.folderName !== metaToRemove.folderName
-        );
-      } else {
-        return prevFiles.filter((file) => file.name !== metaToRemove.name);
-      }
-    });
-  }, []);
-
-  const clearSentItems = useCallback(() => {
-    setShareContent("");
-    setSendFiles([]);
-  }, []);
-
-  const clearRetrievedItems = useCallback(() => {
-    setRetrievedContent("");
-    setRetrievedFiles([]);
-    setRetrievedFileMetas([]);
-  }, []);
-
-  // Reset function specifically for receiver state (for leave room functionality)
-  const resetReceiverState = useCallback(() => {
-    setRetrievedContent("");
-    setRetrievedFiles([]);
-    setRetrievedFileMetas([]);
-  }, []);
+    removeSendFile(metaToRemove);
+  }, [removeSendFile]);
 
   // Callbacks for useWebRTCConnection
   const onStringDataReceived = useCallback((data: string, peerId: string) => {
-    // console.log(`FileTransferHandler received string from ${peerId}`);
     setRetrievedContent(data);
-  }, []);
+  }, [setRetrievedContent]);
 
   const onFileMetadataReceived = useCallback(
     (meta: fileMetadata, peerId: string) => {
-      // console.log(`FileTransferHandler received file meta from ${peerId}: ${meta.name}`);
-      const { type, ...metaWithoutType } = meta; // Assuming 'type' is not part of FileMeta
-      setRetrievedFileMetas((prev) => {
-        const DPrev = prev.filter(
-          (existingFile) => existingFile.fileId !== metaWithoutType.fileId
-        );
-        return [...DPrev, metaWithoutType];
-      });
+      const { type, ...metaWithoutType } = meta;
+      // Filter out existing file with same ID and add the new one
+      const DPrev = retrievedFileMetas.filter(
+        (existingFile: FileMeta) => existingFile.fileId !== metaWithoutType.fileId
+      );
+      setRetrievedFileMetas([...DPrev, metaWithoutType]);
     },
-    []
+    [retrievedFileMetas, setRetrievedFileMetas]
   );
 
-  const onFileFullyReceived = async (file: CustomFile, peerId: string) => {
-    // console.log(`FileTransferHandler received file from ${peerId}: ${file.name}`);
-    setRetrievedFiles((prev) => {
-      const isDuplicate = prev.some(
-        (existingFile) =>
-          existingFile.fullName === file.fullName &&
-          existingFile.size === file.size
-      );
-      if (isDuplicate) return prev;
-      return [...prev, file];
-    });
-  };
+  const onFileFullyReceived = useCallback((file: CustomFile, peerId: string) => {
+    // Check if file already exists
+    const isDuplicate = retrievedFiles.some(
+      (existingFile: CustomFile) =>
+        existingFile.fullName === file.fullName &&
+        existingFile.size === file.size
+    );
+    if (!isDuplicate) {
+      setRetrievedFiles([...retrievedFiles, file]);
+    }
+  }, [retrievedFiles, setRetrievedFiles]);
 
   const handleDownloadFile = useCallback(
     async (meta: FileMeta) => {
@@ -120,7 +99,7 @@ export function useFileTransferHandler({
         );
         if (filesToZip.length === 0) {
           putMessageInMs(
-            // messages.text.ClipboardApp.noFilesForFolderMsg ||
+            messages.text.ClipboardApp.noFilesForFolderMsg ||
             "No files found for folder '{folderName}'.".replace(
               "{folderName}",
               meta.folderName
@@ -139,7 +118,7 @@ export function useFileTransferHandler({
         } catch (error) {
           console.error("Error creating zip file:", error);
           putMessageInMs(
-            // messages.text.ClipboardApp.zipError ||
+            messages.text.ClipboardApp.zipError ||
             "Error creating ZIP.",
             false
           );
@@ -150,7 +129,7 @@ export function useFileTransferHandler({
           downloadAs(fileToDownload, fileToDownload.name);
         } else {
           putMessageInMs(
-            // messages.text.ClipboardApp.fileNotFoundMsg ||
+            messages.text.ClipboardApp.fileNotFoundMsg ||
             "File '{fileName}' not found for download.".replace(
               "{fileName}",
               meta.name
@@ -163,6 +142,13 @@ export function useFileTransferHandler({
     [retrievedFiles, messages, putMessageInMs]
   );
 
+  // Reset function specifically for receiver state (for leave room functionality)
+  const resetReceiverState = useCallback(() => {
+    setRetrievedContent("");
+    setRetrievedFiles([]);
+    setRetrievedFileMetas([]);
+  }, [setRetrievedContent, setRetrievedFiles, setRetrievedFileMetas]);
+
   return {
     shareContent,
     sendFiles,
@@ -172,14 +158,10 @@ export function useFileTransferHandler({
     updateShareContent,
     addFilesToSend,
     removeFileToSend,
-    clearSentItems,
-    clearRetrievedItems,
-    resetReceiverState, // Export the new reset function
-    // Callbacks to provide to useWebRTCConnection
+    resetReceiverState, // Export the reset function
     onStringDataReceived,
     onFileMetadataReceived,
     onFileFullyReceived,
-    // Download function
     handleDownloadFile,
   };
 }

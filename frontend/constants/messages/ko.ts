@@ -291,6 +291,10 @@ export const ko: Messages = {
         leftRoomMsg: "방을 나갔습니다.",
         leaveRoomBtn: "방 나가기",
       },
+      fileExistMsg: "일부 파일이 이미 추가되었습니다.",
+      noFilesForFolderMsg: "폴더 '{folderName}'에서 파일을 찾을 수 없습니다.",
+      zipError: "ZIP 파일 생성 중 오류가 발생했습니다.",
+      fileNotFoundMsg: "다운로드할 파일 '{fileName}'을(를) 찾을 수 없습니다.",
       html: {
         senderTab: "보내기",
         retrieveTab: "검색",

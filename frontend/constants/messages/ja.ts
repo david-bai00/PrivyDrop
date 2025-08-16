@@ -293,6 +293,10 @@ export const ja: Messages = {
         leftRoomMsg: "ルームを離れました。",
         leaveRoomBtn: "ルームを離れる",
       },
+      fileExistMsg: "一部のファイルは既に追加されています。",
+      noFilesForFolderMsg: "フォルダ '{folderName}' にファイルが見つかりません。",
+      zipError: "ZIP の作成中にエラーが発生しました。",
+      fileNotFoundMsg: "ダウンロードするファイル '{fileName}' が見つかりません。",
       html: {
         senderTab: "送信",
         retrieveTab: "取得",

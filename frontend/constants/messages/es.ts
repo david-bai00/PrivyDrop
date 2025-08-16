@@ -253,8 +253,10 @@ export const es: Messages = {
         "Guarda archivos grandes o carpetas directamente en un directorio seleccionado. 👉",
       chooseSavePath_dis: "Elegir ubicación de guardado",
       safeSave_dis: "Guardar Seguro",
-      safeSave_tooltip: "No te preocupes por la interrupción de la conexión, haz clic aquí para guardar archivos de forma segura para la próxima reanudación",
-      safeSaveSuccessMsg: "Los archivos se han guardado de forma segura en el disco, es seguro cerrar la página, ¡admite transferencia de reanudación!",
+      safeSave_tooltip:
+        "No te preocupes por la interrupción de la conexión, haz clic aquí para guardar archivos de forma segura para la próxima reanudación",
+      safeSaveSuccessMsg:
+        "Los archivos se han guardado de forma segura en el disco, es seguro cerrar la página, ¡admite transferencia de reanudación!",
     },
     RetrieveMethod: {
       P: "¡Felicitaciones 🎉 El contenido compartido está esperando ser recuperado:",
@@ -298,6 +300,11 @@ export const es: Messages = {
         leftRoomMsg: "Has salido de la sala.",
         leaveRoomBtn: "Salir de la Sala",
       },
+      fileExistMsg: "Algunos archivos ya han sido añadidos.",
+      noFilesForFolderMsg:
+        "No se encontraron archivos en la carpeta '{folderName}'.",
+      zipError: "Error al crear el archivo ZIP.",
+      fileNotFoundMsg: "Archivo '{fileName}' no encontrado para descargar.",
       html: {
         senderTab: "Enviar",
         retrieveTab: "Recuperar",

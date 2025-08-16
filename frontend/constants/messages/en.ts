@@ -252,8 +252,10 @@ export const en: Messages = {
         "Save large files or folders directly to a selected directory. 👉",
       chooseSavePath_dis: "Choose save location",
       safeSave_dis: "Safe Save",
-      safeSave_tooltip: "Don't worry about connection interruption, click here to safely save files for next resume",
-      safeSaveSuccessMsg: "Files have been safely saved to disk, safe to close page, supports resume transfer!",
+      safeSave_tooltip:
+        "Don't worry about connection interruption, click here to safely save files for next resume",
+      safeSaveSuccessMsg:
+        "Files have been safely saved to disk, safe to close page, supports resume transfer!",
     },
     RetrieveMethod: {
       P: "Congrats 🎉 Share content is waiting to be retrieved:",
@@ -297,6 +299,10 @@ export const en: Messages = {
         leftRoomMsg: "You have left the room.",
         leaveRoomBtn: "Leave Room",
       },
+      fileExistMsg: "Some files were already added.",
+      noFilesForFolderMsg: "No files found for folder '{folderName}'.",
+      zipError: "Error creating ZIP.",
+      fileNotFoundMsg: "File '{fileName}' not found for download.",
       html: {
         senderTab: "Send",
         retrieveTab: "Retrieve",

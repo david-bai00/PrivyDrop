@@ -48,7 +48,8 @@
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7",
     "unified": "^11.0.5",
-    "unist-util-visit": "^5.0.0"
+    "unist-util-visit": "^5.0.0",
+    "zustand": "^5.0.7"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",

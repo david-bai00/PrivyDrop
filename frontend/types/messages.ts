@@ -264,6 +264,10 @@ export type ClipboardApp = {
   pickSaveMsg: string;
   roomStatus: RoomStatus;
   html: ClipboardAppHtml;
+  fileExistMsg?: string;
+  noFilesForFolderMsg?: string;
+  zipError?: string;
+  fileNotFoundMsg?: string;
 };
 
 export type Home = {
