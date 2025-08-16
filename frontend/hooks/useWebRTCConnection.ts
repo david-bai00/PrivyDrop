@@ -8,8 +8,9 @@ import {
   getIceServers,
   getSocketOptions,
 } from "@/app/config/environment";
-import type { CustomFile, fileMetadata, FileMeta } from "@/types/webrtc"; // Assuming FileMeta might be used by caller
+import type { CustomFile, fileMetadata, FileMeta } from "@/types/webrtc";
 import type { Messages } from "@/types/messages";
+import { useFileTransferStore } from "@/stores/fileTransferStore";
 
 const developmentEnv = process.env.NEXT_PUBLIC_development === "true";
 
@@ -21,7 +22,7 @@ export type ProgressState = { [fileId: string]: FileProgressPeers };
 interface UseWebRTCConnectionProps {
   shareContent: string;
   sendFiles: CustomFile[];
-  isContentPresent: boolean; // To know if there is any content (text or files)
+  isContentPresent: boolean;
   // Callbacks for data received from peers
   onStringReceived: (data: string, peerId: string) => void;
   onFileMetaReceived: (meta: fileMetadata, peerId: string) => void;
@@ -53,12 +54,20 @@ export function useWebRTCConnection({
   const [receiverFileTransfer, setReceiverFileTransfer] =
     useState<FileReceiver | null>(null);
 
-  const [sharePeerCount, setSharePeerCount] = useState(0);
-  const [retrievePeerCount, setRetrievePeerCount] = useState(0);
-
-  const [sendProgress, setSendProgress] = useState<ProgressState>({});
-  const [receiveProgress, setReceiveProgress] = useState<ProgressState>({});
-  const [senderDisconnected, setSenderDisconnected] = useState(false);
+  // 从 store 中获取状态
+  const {
+    sharePeerCount,
+    retrievePeerCount,
+    sendProgress,
+    receiveProgress,
+    senderDisconnected,
+    setSharePeerCount,
+    setRetrievePeerCount,
+    setSendProgress,
+    setReceiveProgress,
+    setSenderDisconnected,
+    setIsAnyFileTransferring,
+  } = useFileTransferStore();
 
   // Calculate isAnyFileTransferring internally based on progress states
   const isAnyFileTransferring = useMemo(() => {
@@ -66,12 +75,21 @@ export function useWebRTCConnection({
       ...Object.values(sendProgress),
       ...Object.values(receiveProgress),
     ];
-    return allProgress.some((fileProgress) =>
-      Object.values(fileProgress).some(
-        (progress) => progress.progress > 0 && progress.progress < 1
-      )
-    );
+    return allProgress.some((fileProgress: unknown) => {
+      const typedFileProgress = fileProgress as FileProgressPeers;
+      return Object.values(typedFileProgress).some(
+        (progress: unknown) => {
+          const typedProgress = progress as PeerProgressDetails;
+          return typedProgress.progress > 0 && typedProgress.progress < 1;
+        }
+      );
+    });
   }, [sendProgress, receiveProgress]);
+
+  // 更新 store 中的 isAnyFileTransferring 状态
+  useEffect(() => {
+    setIsAnyFileTransferring(isAnyFileTransferring);
+  }, [isAnyFileTransferring, setIsAnyFileTransferring]);
 
   // Initialize WebRTC objects and their cleanup
   useEffect(() => {
@@ -106,7 +124,6 @@ export function useWebRTCConnection({
         console.error(
           "SenderFileTransfer not initialized for sendStringAndMetasToPeer"
         );
-        // TODO: Use putMessageInMs for critical errors visible to user?
         return;
       }
       if (textContent) {
@@ -123,12 +140,11 @@ export function useWebRTCConnection({
   const broadcastDataToAllPeers = useCallback(
     async (textContent: string, filesToSend: CustomFile[]) => {
       if (!sender || sender.peerConnections.size === 0) {
-        // The caller (useRoomManager) will handle user message like "waiting for peers"
         if (developmentEnv)
           console.warn(
             "No sender peers to broadcast to, or sender not initialized."
           );
-        return false; // Indicate failure or no action
+        return false;
       }
       if (!senderFileTransfer) {
         console.error("senderFileTransfer is not initialized for broadcast.");
@@ -143,11 +159,10 @@ export function useWebRTCConnection({
             sendStringAndMetasToPeer(peerId, textContent, filesToSend)
           )
         );
-        return true; // Indicate success
+        return true;
       } catch (error) {
         console.error("Error broadcasting data to peers:", error);
-        // Optionally use putMessageInMs here for a generic broadcast error
-        return false; // Indicate failure
+        return false;
       }
     },
     [sender, senderFileTransfer, sendStringAndMetasToPeer]
@@ -161,22 +176,18 @@ export function useWebRTCConnection({
           console.log(`Sender connection state with ${peerId}: ${state}`);
         setSharePeerCount(sender.peerConnections.size);
         if (state === "connected") {
-          senderFileTransfer.setProgressCallback((fileId, progress, speed) => {
-            setSendProgress((prev) => ({
+          senderFileTransfer.setProgressCallback((fileId, progress: number, speed: number) => {
+            setSendProgress((prev: ProgressState) => ({
               ...prev,
               [fileId]: { ...prev[fileId], [peerId]: { progress, speed } },
             }));
           }, peerId);
-          // putMessageInMs(`Connected to a new peer (sender side). Total: ${sender.peerConnections.size}`, true);
         }
-        // Add more detailed user messages based on state if needed via putMessageInMs
       };
       sender.onDataChannelOpen = () =>
         broadcastDataToAllPeers(shareContent, sendFiles);
 
       sender.onPeerDisconnected = (peerId) => {
-        // Use setTimeout to ensure cleanupExistingConnection has been called
-        // before we update the peer count
         setTimeout(() => {
           setSharePeerCount(sender.peerConnections.size);
         }, 0);
@@ -184,7 +195,6 @@ export function useWebRTCConnection({
 
       sender.onError = (error) => {
         console.error("Sender Error:", error.message, error.context);
-        // Optionally, use putMessageInMs to show a user-friendly error
         putMessageInMs(`Connection error: ${error.message}`, true);
       };
     }
@@ -196,14 +206,13 @@ export function useWebRTCConnection({
         setRetrievePeerCount(receiver.peerConnections.size);
         if (state === "connected") {
           receiverFileTransfer.setProgressCallback(
-            (fileId, progress, speed) => {
-              setReceiveProgress((prev) => ({
+            (fileId, progress: number, speed: number) => {
+              setReceiveProgress((prev: ProgressState) => ({
                 ...prev,
                 [fileId]: { ...prev[fileId], [peerId]: { progress, speed } },
               }));
             }
           );
-          // Example: putMessageInMs(`Connected to a new peer (receiver side). Total: ${receiver.peerConnections.size}`, false);
         } else if (state === "failed" || state === "disconnected") {
           if (isAnyFileTransferring) {
             receiverFileTransfer.gracefulShutdown();
@@ -234,18 +243,13 @@ export function useWebRTCConnection({
       receiver.onPeerDisconnected = (peerId) => {
         if (developmentEnv)
           console.log(`Receiver peer ${peerId} disconnected.`);
-        // On the receiver side, any peer is a sender.
         setSenderDisconnected(true);
-        // Set peer count to 0 since the peer has disconnected
-        // Note: receiver.peerConnections.size might still be > 0 at this point
-        // because cleanupExistingConnection hasn't been called yet
         setRetrievePeerCount(0);
       };
 
       receiver.onConnectionEstablished = (peerId) => {
         if (developmentEnv)
           console.log(`Receiver connection established with ${peerId}.`);
-        // If a connection is re-established, assume sender is back.
         setSenderDisconnected(false);
       };
 
@@ -267,6 +271,11 @@ export function useWebRTCConnection({
     shareContent,
     sendFiles,
     isAnyFileTransferring,
+    setSharePeerCount,
+    setRetrievePeerCount,
+    setSendProgress,
+    setReceiveProgress,
+    setSenderDisconnected,
   ]);
 
   // Effect to handle graceful shutdown on page unload
@@ -276,7 +285,6 @@ export function useWebRTCConnection({
         if (isAnyFileTransferring) {
           receiverFileTransfer?.gracefulShutdown();
         }
-        // Show the browser's confirmation dialog
         e.preventDefault();
         e.returnValue = "";
       }
@@ -291,7 +299,6 @@ export function useWebRTCConnection({
 
   const requestFile = useCallback(
     (fileId: string, peerId?: string) => {
-      // Assuming FileReceiver methods can take optional peerId
       if (!receiverFileTransfer) return;
       if (developmentEnv)
         console.log(
@@ -333,29 +340,24 @@ export function useWebRTCConnection({
   // Reset function for receiver connection (for leave room functionality)
   const resetReceiverConnection = useCallback(async () => {
     if (receiver) {
-      // First reset all UI states to ensure consistent state
       setSenderDisconnected(false);
       setRetrievePeerCount(0);
-      // Then cleanup the WebRTC connection
       await receiver.leaveRoomAndCleanup();
     }
-  }, [receiver]);
+  }, [receiver, setSenderDisconnected, setRetrievePeerCount]);
 
   // Reset function for sender connection (for leave room functionality)
   const resetSenderConnection = useCallback(async () => {
     if (sender) {
-      // First cleanup the WebRTC connection (this sets isInRoom = false)
       await sender.leaveRoomAndCleanup();
-      // Then reset UI state to ensure consistent state
       setSharePeerCount(0);
     }
-  }, [sender]);
+  }, [sender, setSharePeerCount]);
 
-  // Manual safe save function (replaces the beforeunload graceful shutdown)
+  // Manual safe save function
   const manualSafeSave = useCallback(() => {
     if (receiverFileTransfer) {
       receiverFileTransfer.gracefulShutdown();
-      // Provide user feedback
       if (putMessageInMs && messages) {
         putMessageInMs(
           messages.text.FileListDisplay.safeSaveSuccessMsg,
@@ -367,22 +369,21 @@ export function useWebRTCConnection({
   }, [receiverFileTransfer, putMessageInMs, messages]);
 
   return {
-    sender, // Exposed for useRoomManager (e.g., sender.isInRoom, sender.joinRoom)
-    receiver, // Exposed for useRoomManager
-    // Not exposing senderFileTransfer/receiverFileTransfer directly to encourage using specific methods
+    sender,
+    receiver,
     sharePeerCount,
     retrievePeerCount,
     sendProgress,
     receiveProgress,
-    isAnyFileTransferring, // Export the calculated state
+    isAnyFileTransferring,
     broadcastDataToAllPeers,
     requestFile,
     requestFolder,
     setReceiverDirectoryHandle,
     getReceiverSaveType,
     senderDisconnected,
-    resetReceiverConnection, // Export the new reset function
-    resetSenderConnection, // Export the new sender reset function
-    manualSafeSave, // Export the manual safe save function
+    resetReceiverConnection,
+    resetSenderConnection,
+    manualSafeSave,
   };
 }

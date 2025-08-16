@@ -27,7 +27,7 @@ interface FileTransferState {
   isAnyFileTransferring: boolean;
   
   // UI 状态
-  activeTab: 'send' | 'receive';
+  activeTab: 'send' | 'retrieve';
   retrieveRoomIdInput: string;
   isDragging: boolean;
   
@@ -63,7 +63,7 @@ interface FileTransferState {
   setIsAnyFileTransferring: (transferring: boolean) => void;
   
   // UI 状态相关 actions
-  setActiveTab: (tab: 'send' | 'receive') => void;
+  setActiveTab: (tab: 'send' | 'retrieve') => void;
   setRetrieveRoomIdInput: (input: string) => void;
   setIsDragging: (dragging: boolean) => void;
   

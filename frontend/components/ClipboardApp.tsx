@@ -1,11 +1,5 @@
 "use client";
-import React, {
-  useState,
-  useRef,
-  useCallback,
-  useEffect,
-  useMemo,
-} from "react";
+import React, { useRef, useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import useRichTextToPlainText from "../hooks/useRichTextToPlainText";
 import QRCodeComponent from "./ClipboardApp/ShareCard";
@@ -19,31 +13,47 @@ import { SendTabPanel } from "./ClipboardApp/SendTabPanel";
 import { RetrieveTabPanel } from "./ClipboardApp/RetrieveTabPanel";
 import FullScreenDropZone from "./ClipboardApp/FullScreenDropZone";
 import { traverseFileTree } from "@/lib/fileUtils";
+import { useFileTransferStore } from "@/stores/fileTransferStore";
 
 const ClipboardApp = () => {
   const { shareMessage, retrieveMessage, putMessageInMs } =
     useClipboardAppMessages();
 
-  const [retrieveRoomIdInput, setRetrieveRoomIdInput] = useState("");
-  const [activeTab, setActiveTab] = useState<"send" | "retrieve">("send");
-  const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
-  const retrieveJoinRoomBtnRef = useRef<HTMLButtonElement>(null); // Ref for the receiver's "Join Room" button
+  const retrieveJoinRoomBtnRef = useRef<HTMLButtonElement>(null);
 
   const { messages, isLoadingMessages } = usePageSetup({
-    setRetrieveRoomId: setRetrieveRoomIdInput,
-    setActiveTab,
+    setRetrieveRoomId: useFileTransferStore.getState().setRetrieveRoomIdInput,
+    setActiveTab: useFileTransferStore.getState().setActiveTab,
     retrieveJoinRoomBtnRef,
   });
+
+  // 从 store 中获取状态
+  const {
+    activeTab,
+    retrieveRoomIdInput,
+    isDragging,
+    shareContent,
+    sendFiles,
+    retrievedContent,
+    retrievedFileMetas,
+    sendProgress,
+    receiveProgress,
+    isAnyFileTransferring,
+    shareRoomId,
+    initShareRoomId,
+    shareLink,
+    shareRoomStatusText,
+    retrieveRoomStatusText,
+    setIsDragging,
+    setRetrieveRoomIdInput,
+    setActiveTab,
+  } = useFileTransferStore();
 
   const richTextToPlainText = useRichTextToPlainText();
 
   // Initialize File Transfer Handler Hook
   const {
-    shareContent,
-    sendFiles,
-    retrievedContent,
-    retrievedFileMetas,
     updateShareContent,
     addFilesToSend,
     removeFileToSend,
@@ -51,23 +61,21 @@ const ClipboardApp = () => {
     onFileMetadataReceived,
     onFileFullyReceived,
     handleDownloadFile,
-    resetReceiverState,
   } = useFileTransferHandler({ messages, putMessageInMs });
+
   // Calculate the derived states for unload protection
   const isContentPresent = useMemo(() => {
     return (
       shareContent !== "" || retrievedContent !== "" || sendFiles.length > 0
     );
   }, [shareContent, retrievedContent, sendFiles]);
+
   // Initialize WebRTC Connection Hook
   const {
     sender,
     receiver,
     sharePeerCount,
     retrievePeerCount,
-    sendProgress,
-    receiveProgress,
-    isAnyFileTransferring,
     broadcastDataToAllPeers,
     requestFile,
     requestFolder,
@@ -88,20 +96,10 @@ const ClipboardApp = () => {
     onFileReceived: onFileFullyReceived,
   });
 
-  // Function to reset sender peer count
-  const resetSenderPeerCount = useCallback(() => {
-    // This will be used by useRoomManager to reset sharePeerCount
-    // We can access the sharePeerCount setter through a custom approach
-    // For now, we'll implement this by triggering a re-render
-    // The actual reset happens in useWebRTCConnection via sender.leaveRoomAndCleanup()
-    // But we need to ensure the UI updates, so we'll add this logic there
-  }, []);
-
   const resetAppState = useCallback(async () => {
-    // Graceful state reset instead of page reload
     try {
       // Reset file transfer state
-      resetReceiverState();
+      useFileTransferStore.getState().resetReceiverState();
 
       // Reset WebRTC connection state
       await resetReceiverConnection();
@@ -112,18 +110,12 @@ const ClipboardApp = () => {
       console.log("Application state reset successfully");
     } catch (error) {
       console.error("Error during state reset:", error);
-      // Fallback to page reload if graceful reset fails
       window.location.reload();
     }
-  }, [resetReceiverState, resetReceiverConnection]);
+  }, [resetReceiverConnection, setRetrieveRoomIdInput]);
 
   // Initialize Room Manager Hook
   const {
-    shareRoomId,
-    initShareRoomId,
-    shareLink,
-    shareRoomStatusText,
-    retrieveRoomStatusText,
     processRoomIdInput,
     joinRoom,
     generateShareLinkAndBroadcast,
@@ -134,13 +126,8 @@ const ClipboardApp = () => {
     putMessageInMs,
     sender,
     receiver,
-    activeTab,
-    sharePeerCount,
-    retrievePeerCount,
-    senderDisconnected,
     broadcastDataToPeers: () =>
       broadcastDataToAllPeers(shareContent, sendFiles),
-    resetApp: resetAppState,
     resetSenderConnection,
   });
 
@@ -214,12 +201,9 @@ const ClipboardApp = () => {
       window.removeEventListener("dragover", handleDragOver);
       window.removeEventListener("drop", handleDrop);
     };
-  }, [activeTab, handleFileDrop]);
+  }, [activeTab, handleFileDrop, setIsDragging]);
 
   if (isLoadingMessages || !messages) {
-    // Use a skeleton screen placeholder to replace the simple text loading prompt.
-    // The height of this placeholder is similar to the height of the component that is finally loaded,
-    // This prevents layout displacement and ensures that the lazy loading component below will not be triggered prematurely.
     return (
       <div className="container mx-auto px-4 py-8 w-full md:max-w-4xl">
         <div className="min-h-[1000px] w-full bg-gray-200/50 dark:bg-gray-800/50 rounded-lg animate-pulse">
@@ -287,7 +271,7 @@ const ClipboardApp = () => {
           ) : (
             <RetrieveTabPanel
               messages={messages}
-              putMessageInMs={putMessageInMs} // Needed for onLocationPick
+              putMessageInMs={putMessageInMs}
               retrieveRoomStatusText={retrieveRoomStatusText}
               retrieveRoomIdInput={retrieveRoomIdInput}
               setRetrieveRoomIdInput={setRetrieveRoomIdInput}
@@ -300,7 +284,6 @@ const ClipboardApp = () => {
               receiveProgress={receiveProgress}
               isAnyFileTransferring={isAnyFileTransferring}
               handleDownloadFile={handleDownloadFile}
-              // Pass WebRTC interaction methods
               requestFile={requestFile}
               requestFolder={requestFolder}
               setReceiverDirectoryHandle={setReceiverDirectoryHandle}

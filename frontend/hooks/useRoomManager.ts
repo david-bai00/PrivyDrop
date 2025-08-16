@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import { fetchRoom, createRoom, checkRoom, leaveRoom } from "@/app/config/api";
 import { debounce } from "lodash";
 import type { Messages } from "@/types/messages";
 import type WebRTC_Initiator from "@/lib/webrtc_Initiator";
 import type WebRTC_Recipient from "@/lib/webrtc_Recipient";
+import { useFileTransferStore } from "@/stores/fileTransferStore";
 
 function format_peopleMsg(template: string, peerCount: number) {
   return template.replace("{peerCount}", peerCount.toString());
@@ -18,13 +19,8 @@ interface UseRoomManagerProps {
   ) => void;
   sender: WebRTC_Initiator | null;
   receiver: WebRTC_Recipient | null;
-  activeTab: "send" | "retrieve";
-  sharePeerCount: number;
-  retrievePeerCount: number;
-  senderDisconnected: boolean;
   broadcastDataToPeers: () => Promise<boolean>;
-  resetApp: () => void; // Add a reset function prop
-  resetSenderConnection: () => Promise<void>; // Add function to reset sender connection
+  resetSenderConnection: () => Promise<void>;
 }
 
 export function useRoomManager({
@@ -32,21 +28,32 @@ export function useRoomManager({
   putMessageInMs,
   sender,
   receiver,
-  activeTab,
-  sharePeerCount,
-  retrievePeerCount,
-  senderDisconnected,
   broadcastDataToPeers,
-  resetApp,
   resetSenderConnection,
 }: UseRoomManagerProps) {
-  const [shareRoomId, setShareRoomId] = useState(""); // Represents the validated or initially fetched room ID
-  const [initShareRoomId, setInitShareRoomId] = useState(""); // Stores the initially fetched room ID for comparison
-  const [shareLink, setShareLink] = useState("");
-  const [shareRoomStatusText, setShareRoomStatusText] = useState("");
-  const [retrieveRoomStatusText, setRetrieveRoomStatusText] = useState("");
+  // 从 store 中获取状态
+  const {
+    shareRoomId,
+    initShareRoomId,
+    shareLink,
+    shareRoomStatusText,
+    retrieveRoomStatusText,
+    activeTab,
+    sharePeerCount,
+    retrievePeerCount,
+    senderDisconnected,
+    setShareRoomId,
+    setInitShareRoomId,
+    setShareLink,
+    setShareRoomStatusText,
+    setRetrieveRoomStatusText,
+    setSharePeerCount,
+    setRetrievePeerCount,
+    resetReceiverState,
+    resetSenderApp,
+  } = useFileTransferStore();
 
-  // Receiver leave room function (renamed and simplified)
+  // Receiver leave room function
   const handleLeaveReceiverRoom = useCallback(async () => {
     if (!receiver || !receiver.roomId || !receiver.peerId || !messages) return;
     try {
@@ -57,18 +64,26 @@ export function useRoomManager({
       putMessageInMs("Failed to leave the room.", false);
     } finally {
       // Reset application state
-      resetApp();
+      resetReceiverState();
+      // Reset peer count
+      setRetrievePeerCount(0);
     }
-  }, [receiver, putMessageInMs, resetApp, messages]);
+  }, [
+    receiver,
+    putMessageInMs,
+    messages,
+    resetReceiverState,
+    setRetrievePeerCount,
+  ]);
 
-  // Reset sender app state (preserve send content, get new room ID)
-  const resetSenderApp = useCallback(async () => {
+  // Reset sender app state
+  const resetSenderAppState = useCallback(async () => {
     try {
       // 1. Clean up WebRTC connections and reset peer count
       await resetSenderConnection();
 
-      // 2. Clear share link
-      setShareLink("");
+      // 2. Clear share link and progress
+      resetSenderApp();
 
       // 3. Get new room ID from backend
       const newRoomId = await fetchRoom();
@@ -83,9 +98,15 @@ export function useRoomManager({
       console.error("Error during sender state reset:", error);
       putMessageInMs("Error resetting sender state.", true);
     }
-  }, [resetSenderConnection, putMessageInMs]);
+  }, [
+    resetSenderConnection,
+    putMessageInMs,
+    resetSenderApp,
+    setShareRoomId,
+    setInitShareRoomId,
+  ]);
 
-  // Sender leave room function (new)
+  // Sender leave room function
   const handleLeaveSenderRoom = useCallback(async () => {
     if (!sender || !sender.roomId || !sender.peerId || !messages) return;
     try {
@@ -96,9 +117,9 @@ export function useRoomManager({
       putMessageInMs("Failed to leave the room.", true);
     } finally {
       // Reset sender state and get new room ID
-      await resetSenderApp();
+      await resetSenderAppState();
     }
-  }, [sender, putMessageInMs, resetSenderApp, messages]);
+  }, [sender, putMessageInMs, resetSenderAppState, messages]);
 
   // Initialize shareRoomId on mount
   useEffect(() => {
@@ -124,7 +145,14 @@ export function useRoomManager({
       };
       initNewRoom();
     }
-  }, [messages, initShareRoomId]);
+  }, [
+    messages,
+    initShareRoomId,
+    activeTab,
+    setShareRoomId,
+    setInitShareRoomId,
+    putMessageInMs,
+  ]);
 
   // Debounced function to actually check the room ID and update the state
   const performDebouncedRoomCheck = useMemo(
@@ -133,24 +161,18 @@ export function useRoomManager({
         if (!messages || !putMessageInMs) return;
 
         if (!roomIdToCheck.trim()) {
-          // If the input is cleared, don't perform a check, but you can clear the message or handle it otherwise
-          // putMessageInMs(messages.text.ClipboardApp.roomCheck.empty_msg, true);
-          // Consider resetting shareRoomId to initShareRoomId if you want to restore the default when input is cleared
-          // setShareRoomId(initShareRoomId);
           return;
         }
 
         try {
           const available = await checkRoom(roomIdToCheck);
           if (available) {
-            setShareRoomId(roomIdToCheck); // Update the validated shareRoomId
+            setShareRoomId(roomIdToCheck);
             putMessageInMs(
               messages.text.ClipboardApp.roomCheck.available_msg,
               true
             );
           } else {
-            // Room is not available, do not update shareRoomId; it will retain the last valid or initial value
-            // The value in the user's input box is managed by SendTabPanel's local state and will not roll back because of this
             putMessageInMs(
               messages.text.ClipboardApp.roomCheck.notAvailable_msg,
               true
@@ -158,13 +180,9 @@ export function useRoomManager({
           }
         } catch (error) {
           console.error("Error checking room availability:", error);
-          putMessageInMs(
-            //messages.text.ClipboardApp.roomCheck.error_msg ||
-            "Error checking room.",
-            true
-          );
+          putMessageInMs("Error checking room.", true);
         }
-      }, 750), // Increased debounce delay to 750ms
+      }, 750),
     [messages, putMessageInMs, setShareRoomId]
   );
 
@@ -172,12 +190,9 @@ export function useRoomManager({
   const processRoomIdInput = useCallback(
     (inputRoomId: string) => {
       if (!inputRoomId.trim() && messages && putMessageInMs) {
-        // If the user clears the input box
         putMessageInMs(messages.text.ClipboardApp.roomCheck.empty_msg, true);
         performDebouncedRoomCheck.cancel();
-        // And if you want the validated shareRoomId to revert to the initial state upon clearing:
-        // setShareRoomId(initShareRoomId); // This would update the QR code, etc., to the initial ID
-        return; // Don't proceed with debounced check for an empty string
+        return;
       }
       performDebouncedRoomCheck(inputRoomId);
     },
@@ -197,7 +212,7 @@ export function useRoomManager({
       }
 
       const peer = isSenderSide ? sender : receiver;
-      if (!peer) return; // Should be caught by above, but for type safety
+      if (!peer) return;
 
       if (!currentRoomIdToJoin.trim()) {
         putMessageInMs(
@@ -219,7 +234,6 @@ export function useRoomManager({
               );
               return;
             }
-            // If creation is successful, WebRTC's joinRoom will use this ID, and we should update shareRoomId to this newly created ID
             setShareRoomId(currentRoomIdToJoin);
           } catch (error) {
             putMessageInMs(
@@ -233,9 +247,6 @@ export function useRoomManager({
       }
 
       try {
-        // WebRTC joinRoom uses the ID provided by the user (for the receiver) or the validated/newly created ID (for the sender)
-        // For the sender, if createRoom above was successful and set shareRoomId, peer.joinRoom should use it
-        // But if currentRoomIdToJoin is initShareRoomId, use it directly
         const actualRoomIdForSenderJoin =
           isSenderSide && currentRoomIdToJoin !== initShareRoomId
             ? currentRoomIdToJoin
@@ -254,7 +265,6 @@ export function useRoomManager({
           const link = `${window.location.origin}${window.location.pathname}?roomId=${actualRoomIdForSenderJoin}`;
           setShareLink(link);
           if (actualRoomIdForSenderJoin !== shareRoomId) {
-            // If joining was successful by entering a new ID, update shareRoomId
             setShareRoomId(actualRoomIdForSenderJoin);
           }
         }
@@ -283,7 +293,7 @@ export function useRoomManager({
   );
 
   const generateShareLinkAndBroadcast = useCallback(async () => {
-    if (!sender || !messages || !putMessageInMs || !shareRoomId) return; // Ensure shareRoomId is valid
+    if (!sender || !messages || !putMessageInMs || !shareRoomId) return;
 
     if (sender.peerConnections.size === 0) {
       putMessageInMs(messages.text.ClipboardApp.waitting_tips, true);
@@ -292,7 +302,14 @@ export function useRoomManager({
     }
     const link = `${window.location.origin}${window.location.pathname}?roomId=${shareRoomId}`;
     setShareLink(link);
-  }, [sender, messages, putMessageInMs, shareRoomId]);
+  }, [
+    sender,
+    messages,
+    putMessageInMs,
+    shareRoomId,
+    setShareLink,
+    broadcastDataToPeers,
+  ]);
 
   // useEffect for room status text
   useEffect(() => {
@@ -339,20 +356,22 @@ export function useRoomManager({
     receiver,
     messages,
     senderDisconnected,
-    sender?.isInRoom, // Add isInRoom state to dependencies
-    receiver?.isInRoom, // Add isInRoom state to dependencies
+    sender?.isInRoom,
+    receiver?.isInRoom,
+    setShareRoomStatusText,
+    setRetrieveRoomStatusText,
   ]);
 
   return {
-    shareRoomId, // This is the validated or initial room ID
-    initShareRoomId, // Exposed for UI comparison or reset logic
+    shareRoomId,
+    initShareRoomId,
     shareLink,
     shareRoomStatusText,
     retrieveRoomStatusText,
-    processRoomIdInput, // New input processing function
+    processRoomIdInput,
     joinRoom,
     generateShareLinkAndBroadcast,
-    handleLeaveReceiverRoom, // Renamed function
-    handleLeaveSenderRoom, // New function
+    handleLeaveReceiverRoom,
+    handleLeaveSenderRoom,
   };
 }
