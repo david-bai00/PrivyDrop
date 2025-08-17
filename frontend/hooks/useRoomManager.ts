@@ -1,39 +1,22 @@
-import { useEffect, useCallback, useMemo } from "react";
+import { useCallback, useEffect } from "react";
+import { webrtcService } from "@/lib/webrtcService";
+import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { fetchRoom, createRoom, checkRoom, leaveRoom } from "@/app/config/api";
 import { debounce } from "lodash";
 import type { Messages } from "@/types/messages";
-import type WebRTC_Initiator from "@/lib/webrtc_Initiator";
-import type WebRTC_Recipient from "@/lib/webrtc_Recipient";
-import { useFileTransferStore } from "@/stores/fileTransferStore";
 
 function format_peopleMsg(template: string, peerCount: number) {
   return template.replace("{peerCount}", peerCount.toString());
 }
 
+// 移除所有 WebRTC 相关的 props 依赖
 interface UseRoomManagerProps {
   messages: Messages | null;
-  putMessageInMs: (
-    message: string,
-    isShareEnd?: boolean,
-    displayTimeMs?: number
-  ) => void;
-  sender: WebRTC_Initiator | null;
-  receiver: WebRTC_Recipient | null;
-  broadcastDataToPeers: () => Promise<boolean>;
-  resetSenderConnection: () => Promise<void>;
-  resetReceiverConnection: () => Promise<void>;
+  putMessageInMs: (message: string, isShareEnd?: boolean, displayTimeMs?: number) => void;
 }
 
-export function useRoomManager({
-  messages,
-  putMessageInMs,
-  sender,
-  receiver,
-  broadcastDataToPeers,
-  resetSenderConnection,
-  resetReceiverConnection,
-}: UseRoomManagerProps) {
-  // 从 store 中获取状态
+export function useRoomManager({ messages, putMessageInMs }: UseRoomManagerProps) {
+  // 从 store 获取状态
   const {
     shareRoomId,
     initShareRoomId,
@@ -51,295 +34,207 @@ export function useRoomManager({
     setShareLink,
     setShareRoomStatusText,
     setRetrieveRoomStatusText,
-    setSharePeerCount,
-    setRetrievePeerCount,
     resetReceiverState,
     resetSenderApp,
   } = useFileTransferStore();
 
-  // Receiver leave room function
-  const handleLeaveReceiverRoom = useCallback(async () => {
-    console.log(`[RoomManager Debug] Receiver leaving room manually`);
-    if (!receiver || !receiver.roomId || !receiver.peerId || !messages) return;
-    try {
-      await leaveRoom(receiver.roomId, receiver.peerId);
-      putMessageInMs(messages.text.ClipboardApp.roomStatus.leftRoomMsg, false);
-    } catch (error) {
-      console.error("Error leaving room:", error);
-      putMessageInMs("Failed to leave the room.", false);
-    } finally {
-      // Reset application state (不清空房间ID)
-      resetReceiverState();
-      // 清理WebRTC连接状态
-      await resetReceiverConnection();
-      console.log(
-        `[RoomManager Debug] Receiver left room and WebRTC connection reset`
-      );
-    }
-  }, [
-    receiver,
-    putMessageInMs,
-    messages,
-    resetReceiverState,
-    resetReceiverConnection,
-  ]);
+  // 加入房间方法 - 直接使用 webrtcService
+  const joinRoom = useCallback(async (isSenderSide: boolean, roomId: string) => {
+    if (!messages) return;
 
-  // Reset sender app state
+    try {
+      console.log(`[RoomManager] 正在加入房间: ${roomId} (${isSenderSide ? '发送方' : '接收方'})`);
+      
+      // 如果是发送方且房间ID不是初始ID，需要先创建房间
+      if (isSenderSide && activeTab === "send" && roomId !== initShareRoomId) {
+        try {
+          const success = await createRoom(roomId);
+          if (!success) {
+            putMessageInMs(messages.text.ClipboardApp.joinRoom.DuplicateMsg, isSenderSide);
+            return;
+          }
+          setShareRoomId(roomId);
+        } catch (error) {
+          putMessageInMs(
+            messages.text.ClipboardApp.joinRoom.failMsg + ` (Create room error)`,
+            isSenderSide
+          );
+          return;
+        }
+      }
+
+      // 确定实际要加入的房间ID
+      const actualRoomId = isSenderSide && roomId !== initShareRoomId
+        ? roomId
+        : isSenderSide
+        ? shareRoomId
+        : roomId;
+      
+      // 直接调用 service 方法，无需依赖注入
+      await webrtcService.joinRoom(actualRoomId, isSenderSide);
+      
+      putMessageInMs(messages.text.ClipboardApp.joinRoom.successMsg, isSenderSide, 6000);
+      
+      // 更新分享链接
+      if (isSenderSide) {
+        const link = `${window.location.origin}${window.location.pathname}?roomId=${actualRoomId}`;
+        setShareLink(link);
+        if (actualRoomId !== shareRoomId) {
+          setShareRoomId(actualRoomId);
+        }
+      }
+      
+      console.log(`[RoomManager] 成功加入房间: ${actualRoomId}`);
+      
+      // 注意：广播逻辑已经在 webrtcService 的 onDataChannelOpen 事件中自动处理
+    } catch (error) {
+      console.error("[RoomManager] 加入房间失败:", error);
+      let errorMsg = messages.text.ClipboardApp.joinRoom.failMsg;
+      if (error instanceof Error) {
+        errorMsg = error.message === "Room does not exist"
+          ? messages.text.ClipboardApp.joinRoom.notExist
+          : `${messages.text.ClipboardApp.joinRoom.failMsg} ${error.message}`;
+      }
+      putMessageInMs(errorMsg, isSenderSide);
+    }
+  }, [messages, putMessageInMs, activeTab, initShareRoomId, shareRoomId, setShareRoomId, setShareLink]);
+
+  // 生成分享链接并广播
+  const generateShareLinkAndBroadcast = useCallback(async () => {
+    if (!messages || !shareRoomId) return;
+
+    try {
+      if (sharePeerCount === 0) {
+        putMessageInMs(messages.text.ClipboardApp.waitting_tips, true);
+      } else {
+        // 直接调用 service 的广播方法
+        await webrtcService.broadcastDataToAllPeers();
+      }
+
+      // 更新分享链接
+      const link = `${window.location.origin}${window.location.pathname}?roomId=${shareRoomId}`;
+      setShareLink(link);
+      
+      console.log("[RoomManager] 分享链接已生成并广播");
+    } catch (error) {
+      console.error("[RoomManager] 生成分享链接失败:", error);
+      putMessageInMs("生成分享链接失败", true);
+    }
+  }, [messages, putMessageInMs, shareRoomId, sharePeerCount, setShareLink]);
+
+  // 接收方离开房间
+  const handleLeaveReceiverRoom = useCallback(async () => {
+    if (!messages) return;
+
+    try {
+      console.log("[RoomManager] 接收方离开房间");
+      
+      // 调用后端 API 离开房间
+      if (webrtcService.receiver.roomId && webrtcService.receiver.peerId) {
+        await leaveRoom(webrtcService.receiver.roomId, webrtcService.receiver.peerId);
+      }
+      
+      putMessageInMs(messages.text.ClipboardApp.roomStatus.leftRoomMsg, false);
+      
+      // 重置接收方状态
+      resetReceiverState();
+      
+      // 清理 WebRTC 连接
+      await webrtcService.leaveRoom(false);
+      
+      console.log("[RoomManager] 接收方已离开房间并重置状态");
+    } catch (error) {
+      console.error("[RoomManager] 接收方离开房间失败:", error);
+      putMessageInMs("离开房间失败", true);
+    }
+  }, [messages, putMessageInMs, resetReceiverState]);
+
+  // 发送方重置应用状态
   const resetSenderAppState = useCallback(async () => {
     try {
-      // 1. Clean up WebRTC connections and reset peer count
-      await resetSenderConnection();
+      console.log("[RoomManager] 重置发送方应用状态");
+      
+      // 1. 清理 WebRTC 连接
+      await webrtcService.leaveRoom(true);
 
-      // 2. Clear share link and progress
+      // 2. 清除分享链接和进度
       resetSenderApp();
 
-      // 3. Get new room ID from backend
+      // 3. 从后端获取新的房间ID
       const newRoomId = await fetchRoom();
       setShareRoomId(newRoomId || "");
       setInitShareRoomId(newRoomId || "");
 
-      console.log(
-        "Sender application state reset successfully, new room ID:",
-        newRoomId
-      );
+      console.log("[RoomManager] 发送方状态重置完成，新房间ID:", newRoomId);
     } catch (error) {
-      console.error("Error during sender state reset:", error);
-      putMessageInMs("Error resetting sender state.", true);
+      console.error("[RoomManager] 重置发送方状态失败:", error);
+      putMessageInMs("重置发送方状态失败", true);
     }
-  }, [
-    resetSenderConnection,
-    putMessageInMs,
-    resetSenderApp,
-    setShareRoomId,
-    setInitShareRoomId,
-  ]);
+  }, [putMessageInMs, resetSenderApp, setShareRoomId, setInitShareRoomId]);
 
-  // Sender leave room function
+  // 发送方离开房间
   const handleLeaveSenderRoom = useCallback(async () => {
-    if (!sender || !sender.roomId || !sender.peerId || !messages) return;
-    try {
-      await leaveRoom(sender.roomId, sender.peerId);
-      putMessageInMs(messages.text.ClipboardApp.roomStatus.leftRoomMsg, true);
-    } catch (error) {
-      console.error("Error leaving room:", error);
-      putMessageInMs("Failed to leave the room.", true);
-    } finally {
-      // Reset sender state and get new room ID
-      await resetSenderAppState();
-    }
-  }, [sender, putMessageInMs, resetSenderAppState, messages]);
+    if (!messages) return;
 
-  // Initialize shareRoomId on mount
+    try {
+      console.log("[RoomManager] 发送方离开房间");
+      
+      // 调用后端 API 离开房间
+      if (webrtcService.sender.roomId && webrtcService.sender.peerId) {
+        await leaveRoom(webrtcService.sender.roomId, webrtcService.sender.peerId);
+      }
+      
+      putMessageInMs(messages.text.ClipboardApp.roomStatus.leftRoomMsg, true);
+      
+      // 重置发送方状态并获取新房间ID
+      await resetSenderAppState();
+    } catch (error) {
+      console.error("[RoomManager] 发送方离开房间失败:", error);
+      putMessageInMs("离开房间失败", true);
+    }
+  }, [messages, putMessageInMs, resetSenderAppState]);
+
+  // 房间ID输入处理
+  const processRoomIdInput = useCallback(
+    debounce(async (input: string) => {
+      if (!input.trim() || !messages) return;
+      
+      try {
+        const isValid = await checkRoom(input);
+        if (isValid) {
+          console.log(`[RoomManager] 房间 ${input} 验证成功`);
+          setShareRoomId(input);
+          putMessageInMs(messages.text.ClipboardApp.roomCheck.available_msg, true);
+        } else {
+          putMessageInMs(messages.text.ClipboardApp.roomCheck.notAvailable_msg, true);
+        }
+      } catch (error) {
+        console.error("[RoomManager] 验证房间失败:", error);
+        putMessageInMs("验证房间失败", true);
+      }
+    }, 750),
+    [messages, putMessageInMs, setShareRoomId]
+  );
+
+  // 初始化发送方房间ID
   useEffect(() => {
-    if (
-      messages &&
-      putMessageInMs &&
-      !initShareRoomId &&
-      activeTab === "send"
-    ) {
-      // Ensure this only runs on the sender's side on initial load
+    if (messages && putMessageInMs && !initShareRoomId && activeTab === "send") {
       const initNewRoom = async () => {
         try {
           const newRoomId = await fetchRoom();
           setShareRoomId(newRoomId || "");
           setInitShareRoomId(newRoomId || "");
         } catch (err) {
-          console.error("Error fetching initial room:", err);
-          const errorMsg =
-            messages.text?.ClipboardApp?.fetchRoom_err ||
-            "Error fetching room ID.";
+          console.error("[RoomManager] 获取初始房间失败:", err);
+          const errorMsg = messages.text?.ClipboardApp?.fetchRoom_err || "获取房间ID失败";
           putMessageInMs(errorMsg, true);
         }
       };
       initNewRoom();
     }
-  }, [
-    messages,
-    initShareRoomId,
-    activeTab,
-    setShareRoomId,
-    setInitShareRoomId,
-    putMessageInMs,
-  ]);
+  }, [messages, putMessageInMs, initShareRoomId, activeTab, setShareRoomId, setInitShareRoomId]);
 
-  // Debounced function to actually check the room ID and update the state
-  const performDebouncedRoomCheck = useMemo(
-    () =>
-      debounce(async (roomIdToCheck: string) => {
-        if (!messages || !putMessageInMs) return;
-
-        if (!roomIdToCheck.trim()) {
-          return;
-        }
-
-        try {
-          const available = await checkRoom(roomIdToCheck);
-          if (available) {
-            setShareRoomId(roomIdToCheck);
-            putMessageInMs(
-              messages.text.ClipboardApp.roomCheck.available_msg,
-              true
-            );
-          } else {
-            putMessageInMs(
-              messages.text.ClipboardApp.roomCheck.notAvailable_msg,
-              true
-            );
-          }
-        } catch (error) {
-          console.error("Error checking room availability:", error);
-          putMessageInMs("Error checking room.", true);
-        }
-      }, 750),
-    [messages, putMessageInMs, setShareRoomId]
-  );
-
-  // UI calls this function to handle changes in the room ID input
-  const processRoomIdInput = useCallback(
-    (inputRoomId: string) => {
-      if (!inputRoomId.trim() && messages && putMessageInMs) {
-        putMessageInMs(messages.text.ClipboardApp.roomCheck.empty_msg, true);
-        performDebouncedRoomCheck.cancel();
-        return;
-      }
-      performDebouncedRoomCheck(inputRoomId);
-    },
-    [performDebouncedRoomCheck, messages, putMessageInMs]
-  );
-
-  const joinRoom = useCallback(
-    async (isSenderSide: boolean, currentRoomIdToJoin: string) => {
-      if (
-        !messages ||
-        !putMessageInMs ||
-        (isSenderSide && !sender) ||
-        (!isSenderSide && !receiver)
-      ) {
-        console.warn("joinRoom prerequisites not met");
-        return;
-      }
-
-      const peer = isSenderSide ? sender : receiver;
-      if (!peer) return;
-
-      if (!currentRoomIdToJoin.trim()) {
-        putMessageInMs(
-          messages.text.ClipboardApp.joinRoom.EmptyMsg,
-          isSenderSide
-        );
-        return;
-      }
-
-      // Create room if sender and not the initial room ID
-      if (isSenderSide && activeTab === "send" && !peer.isInRoom) {
-        if (currentRoomIdToJoin !== initShareRoomId) {
-          try {
-            const success = await createRoom(currentRoomIdToJoin);
-            if (!success) {
-              putMessageInMs(
-                messages.text.ClipboardApp.joinRoom.DuplicateMsg,
-                isSenderSide
-              );
-              return;
-            }
-            setShareRoomId(currentRoomIdToJoin);
-          } catch (error) {
-            putMessageInMs(
-              messages.text.ClipboardApp.joinRoom.failMsg +
-                ` (Create room error)`,
-              isSenderSide
-            );
-            return;
-          }
-        }
-      }
-
-      try {
-        const actualRoomIdForSenderJoin =
-          isSenderSide && currentRoomIdToJoin !== initShareRoomId
-            ? currentRoomIdToJoin
-            : isSenderSide
-            ? shareRoomId
-            : currentRoomIdToJoin;
-
-        console.log(
-          `[RoomManager Debug] ${
-            isSenderSide ? "Sender" : "Receiver"
-          } joining room: ${actualRoomIdForSenderJoin}`
-        );
-        console.log(
-          `[RoomManager Debug] Peer current state - isInRoom: ${peer.isInRoom}, roomId: ${peer.roomId}`
-        );
-
-        await peer.joinRoom(actualRoomIdForSenderJoin, isSenderSide);
-        putMessageInMs(
-          messages.text.ClipboardApp.joinRoom.successMsg,
-          isSenderSide,
-          6000
-        );
-
-        // 更新 Store 中的房间状态
-        if (isSenderSide) {
-          useFileTransferStore.getState().setIsSenderInRoom(true);
-          console.log(
-            `[RoomManager Debug] Sender joined room, setIsSenderInRoom(true)`
-          );
-          const link = `${window.location.origin}${window.location.pathname}?roomId=${actualRoomIdForSenderJoin}`;
-          setShareLink(link);
-          if (actualRoomIdForSenderJoin !== shareRoomId) {
-            setShareRoomId(actualRoomIdForSenderJoin);
-          }
-        } else {
-          useFileTransferStore.getState().setIsReceiverInRoom(true);
-          console.log(
-            `[RoomManager Debug] Receiver joined room, setIsReceiverInRoom(true)`
-          );
-        }
-      } catch (error) {
-        let errorMsgToShow = messages.text.ClipboardApp.joinRoom.failMsg;
-        if (error instanceof Error) {
-          errorMsgToShow =
-            error.message === "Room does not exist"
-              ? messages.text.ClipboardApp.joinRoom.notExist
-              : `${messages.text.ClipboardApp.joinRoom.failMsg} ${error.message}`;
-        }
-        putMessageInMs(errorMsgToShow, isSenderSide);
-      }
-    },
-    [
-      messages,
-      putMessageInMs,
-      sender,
-      receiver,
-      activeTab,
-      initShareRoomId,
-      shareRoomId,
-      setShareLink,
-      setShareRoomId,
-    ]
-  );
-
-  const generateShareLinkAndBroadcast = useCallback(async () => {
-    if (!sender || !messages || !putMessageInMs || !shareRoomId) return;
-
-    if (sharePeerCount === 0) {
-      putMessageInMs(messages.text.ClipboardApp.waitting_tips, true);
-    } else {
-      await broadcastDataToPeers();
-    }
-    const link = `${window.location.origin}${window.location.pathname}?roomId=${shareRoomId}`;
-    setShareLink(link);
-  }, [
-    sender,
-    messages,
-    putMessageInMs,
-    shareRoomId,
-    sharePeerCount,
-    setShareLink,
-    broadcastDataToPeers,
-  ]);
-
-  // useEffect for room status text
+  // 房间状态文本更新
   useEffect(() => {
     if (!messages) {
       if (activeTab === "send") setShareRoomStatusText("");
@@ -348,25 +243,22 @@ export function useRoomManager({
     }
 
     const isInRoom = activeTab === "send" ? isSenderInRoom : isReceiverInRoom;
-    const currentPeerCount =
-      activeTab === "send" ? sharePeerCount : retrievePeerCount;
+    const currentPeerCount = activeTab === "send" ? sharePeerCount : retrievePeerCount;
     let statusText = "";
 
     if (!isInRoom) {
-      statusText =
-        activeTab === "retrieve"
-          ? messages.text.ClipboardApp.roomStatus.receiverEmptyMsg
-          : messages.text.ClipboardApp.roomStatus.senderEmptyMsg;
+      statusText = activeTab === "retrieve"
+        ? messages.text.ClipboardApp.roomStatus.receiverEmptyMsg
+        : messages.text.ClipboardApp.roomStatus.senderEmptyMsg;
     } else if (currentPeerCount === 0) {
       statusText = messages.text.ClipboardApp.roomStatus.onlyOneMsg;
     } else {
-      statusText =
-        activeTab === "send"
-          ? format_peopleMsg(
-              messages.text.ClipboardApp.roomStatus.peopleMsg_template,
-              currentPeerCount + 1
-            )
-          : messages.text.ClipboardApp.roomStatus.connected_dis;
+      statusText = activeTab === "send"
+        ? format_peopleMsg(
+            messages.text.ClipboardApp.roomStatus.peopleMsg_template,
+            currentPeerCount + 1
+          )
+        : messages.text.ClipboardApp.roomStatus.connected_dis;
     }
 
     if (activeTab === "send") setShareRoomStatusText(statusText);
@@ -384,11 +276,19 @@ export function useRoomManager({
   ]);
 
   return {
+    // 状态
     shareRoomId,
     initShareRoomId,
     shareLink,
     shareRoomStatusText,
     retrieveRoomStatusText,
+    sharePeerCount,
+    retrievePeerCount,
+    senderDisconnected,
+    isSenderInRoom,
+    isReceiverInRoom,
+    
+    // 方法
     processRoomIdInput,
     joinRoom,
     generateShareLinkAndBroadcast,

@@ -10,7 +10,7 @@ import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import type { Messages } from "@/types/messages";
 import type { FileMeta } from "@/types/webrtc";
 import type { ProgressState } from "@/hooks/useWebRTCConnection"; // Assuming this type is exported
-import type WebRTC_Recipient from "@/lib/webrtc_Recipient";
+
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 
 interface RetrieveTabPanelProps {
@@ -23,7 +23,6 @@ interface RetrieveTabPanelProps {
   setRetrieveRoomIdInput: (value: string) => void;
   joinRoom: (isSender: boolean, roomId: string) => void;
   retrieveJoinRoomBtnRef: React.RefObject<HTMLButtonElement>;
-  receiver: WebRTC_Recipient | null;
   richTextToPlainText: (html: string) => string;
   handleDownloadFile: (meta: FileMeta) => void;
   // Functions for WebRTC interaction, passed from parent via useWebRTCConnection
@@ -44,7 +43,6 @@ export function RetrieveTabPanel({
   setRetrieveRoomIdInput,
   joinRoom,
   retrieveJoinRoomBtnRef,
-  receiver,
   richTextToPlainText,
   handleDownloadFile,
   requestFile,
@@ -117,7 +115,7 @@ export function RetrieveTabPanel({
     <div id="retrieve-panel" role="tabpanel" aria-labelledby="retrieve-tab">
       <div className="mb-3 text-sm text-gray-600">
         {retrieveRoomStatusText ||
-          (receiver && receiver.isInRoom
+          (isReceiverInRoom
             ? messages.text.ClipboardApp.roomStatus.connected_dis
             : messages.text.ClipboardApp.roomStatus.receiverEmptyMsg)}
       </div>
@@ -141,16 +139,14 @@ export function RetrieveTabPanel({
           className="flex-1"
           onClick={() => joinRoom(false, retrieveRoomIdInput)}
           ref={retrieveJoinRoomBtnRef}
-          disabled={
-            !receiver || isReceiverInRoom || !retrieveRoomIdInput.trim()
-          }
+          disabled={isReceiverInRoom || !retrieveRoomIdInput.trim()}
         >
           {messages.text.ClipboardApp.html.joinRoom_dis}
         </Button>
         <Button
           variant="outline"
           onClick={handleLeaveRoom}
-          disabled={!receiver || !isReceiverInRoom || isAnyFileTransferring}
+          disabled={!isReceiverInRoom || isAnyFileTransferring}
         >
           {messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
         </Button>

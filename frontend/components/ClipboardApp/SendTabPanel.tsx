@@ -12,7 +12,7 @@ import AnimatedButton from "@/components/ui/AnimatedButton";
 import type { Messages } from "@/types/messages";
 import type { CustomFile, FileMeta } from "@/types/webrtc";
 import type { ProgressState } from "@/hooks/useWebRTCConnection";
-import type WebRTC_Initiator from "@/lib/webrtc_Initiator";
+
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 
 // Dynamically import the RichTextEditor
@@ -37,7 +37,6 @@ interface SendTabPanelProps {
   processRoomIdInput: (roomId: string) => void; // Passed from useRoomManager
   joinRoom: (isSender: boolean, roomId: string) => void;
   generateShareLinkAndBroadcast: () => void;
-  sender: WebRTC_Initiator | null;
   shareMessage: string;
   currentValidatedShareRoomId: string;
   handleLeaveSenderRoom: () => void; // New prop for leaving room
@@ -52,7 +51,6 @@ export function SendTabPanel({
   processRoomIdInput,
   joinRoom,
   generateShareLinkAndBroadcast,
-  sender,
   shareMessage,
   currentValidatedShareRoomId,
   handleLeaveSenderRoom,
@@ -137,7 +135,7 @@ export function SendTabPanel({
         <Button
           className="w-full sm:w-auto"
           onClick={() => joinRoom(true, inputFieldValue.trim())} // Attempt to join using the current input field value
-          disabled={!sender || isSenderInRoom || !inputFieldValue.trim()}
+          disabled={isSenderInRoom || !inputFieldValue.trim()}
         >
           {messages.text.ClipboardApp.html.joinRoom_dis}
         </Button>
@@ -148,7 +146,6 @@ export function SendTabPanel({
           onClick={generateShareLinkAndBroadcast}
           loadingText={messages.text.ClipboardApp.html.SyncSending_loadingText}
           disabled={
-            !sender ||
             !isSenderInRoom ||
             (sendFiles.length === 0 && shareContent.trim() === "") ||
             !currentValidatedShareRoomId.trim() ||
@@ -160,7 +157,7 @@ export function SendTabPanel({
         <Button
           variant="outline"
           onClick={handleLeaveSenderRoom}
-          disabled={!sender || !isSenderInRoom || isAnyFileTransferring}
+          disabled={!isSenderInRoom || isAnyFileTransferring}
         >
           {messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
         </Button>

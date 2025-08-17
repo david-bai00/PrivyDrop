@@ -49,10 +49,8 @@ const ClipboardApp = () => {
     handleDownloadFile,
   } = useFileTransferHandler({ messages, putMessageInMs });
 
-  // Initialize WebRTC Connection Hook
+  // 简化的 WebRTC 连接初始化
   const {
-    sender,
-    receiver,
     sharePeerCount,
     retrievePeerCount,
     broadcastDataToAllPeers,
@@ -87,7 +85,7 @@ const ClipboardApp = () => {
     }
   }, [resetReceiverConnection, setRetrieveRoomIdInput]);
 
-  // Initialize Room Manager Hook
+  // 大大简化的房间管理 - 不再需要传递任何 WebRTC 依赖
   const {
     processRoomIdInput,
     joinRoom,
@@ -97,11 +95,6 @@ const ClipboardApp = () => {
   } = useRoomManager({
     messages,
     putMessageInMs,
-    sender,
-    receiver,
-    broadcastDataToPeers: broadcastDataToAllPeers,
-    resetSenderConnection,
-    resetReceiverConnection,
   });
 
   const handleFileDrop = useCallback(
@@ -231,7 +224,7 @@ const ClipboardApp = () => {
               processRoomIdInput={processRoomIdInput}
               joinRoom={joinRoom}
               generateShareLinkAndBroadcast={generateShareLinkAndBroadcast}
-              sender={sender}
+
               shareMessage={shareMessage}
               currentValidatedShareRoomId={shareRoomId}
               handleLeaveSenderRoom={handleLeaveSenderRoom}
@@ -243,7 +236,7 @@ const ClipboardApp = () => {
               setRetrieveRoomIdInput={setRetrieveRoomIdInput}
               joinRoom={joinRoom}
               retrieveJoinRoomBtnRef={retrieveJoinRoomBtnRef}
-              receiver={receiver}
+
               richTextToPlainText={richTextToPlainText}
               handleDownloadFile={handleDownloadFile}
               requestFile={requestFile}
