@@ -64,6 +64,7 @@ export function RetrieveTabPanel({
     senderDisconnected,
     isReceiverInRoom,
   } = useFileTransferStore();
+
   const onLocationPick = useCallback(async (): Promise<boolean> => {
     if (!messages) return false; // Should not happen if panel is rendered
     if (!window.showDirectoryPicker) {

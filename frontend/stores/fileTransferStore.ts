@@ -237,16 +237,25 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
   setShareMessage: (message) => set({ shareMessage: message }),
   setRetrieveMessage: (message) => set({ retrieveMessage: message }),
 
-  resetReceiverState: () =>
+  resetReceiverState: () => {
+    // 🔧 清理 FileReceiver 的内部状态（通过 Service 层）
+    try {
+      const { webrtcService } = require("@/lib/webrtcService");
+      webrtcService.fileReceiver.gracefulShutdown();
+    } catch (error) {
+      console.warn(`[DEBUG] ⚠️ 清理 FileReceiver 状态失败:`, error);
+    }
+
     set({
       retrievedContent: "",
       retrievedFiles: [],
-      retrievedFileMetas: [],
+      retrievedFileMetas: [], // 清空 Store 中的文件元数据
       retrievePeerCount: 0,
       senderDisconnected: false,
       receiveProgress: {},
       retrieveRoomStatusText: "",
-    }),
+    });
+  },
 
   resetSenderApp: () =>
     set({

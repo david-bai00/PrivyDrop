@@ -115,7 +115,6 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
           fileType: file.type,
           fileId: generateFileId(file),
         }));
-    console.log("Processed files:", processedFiles);
     for (let file of processedFiles) {
       if (file.folderName !== "") {
         folders_[file.folderName] = folders_[file.folderName] || {
@@ -144,18 +143,11 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
         if (file.size >= largeFileThreshold) needPick = true;
       }
     }
-    // console.log('Single files before setState:', tempSingleFiles);
-    // console.log('Folders before setState:', Object.values(folders_));
-
     // Use functional updates to ensure the state is updated correctly
     setSingleFiles((prev) => {
-      // console.log('Previous single files:', prev);
-      // console.log('New single files:', tempSingleFiles);
       return [...tempSingleFiles];
     });
     setFolders((prev) => {
-      // console.log('Previous folders:', prev);
-      // console.log('New folders:', Object.values(folders_));
       return [...Object.values(folders_)];
     });
     setNeedPickLocation(needPick); // Set whether a save directory needs to be selected
@@ -188,21 +180,11 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
           setShowFinished((prev) => ({ ...prev, [fileId]: true }));
 
           setTimeout(() => {
-            console.log(
-              `[FileListDisplay Debug] ⏰ Timeout executing for fileId: ${fileId}, peerId: ${activePeerId}`
-            );
             setShowFinished((prev) => {
               const updated = { ...prev };
               delete updated[fileId];
-              console.log(
-                `[FileListDisplay Debug] ❌ Deleted showFinished for fileId: ${fileId}`
-              );
               return updated;
             });
-
-            console.log(
-              `[FileListDisplay Debug] 🗑️ Clearing progress for fileId: ${fileId}, peerId: ${activePeerId}`
-            );
             // 根据模式清理对应的progress数据
             if (mode === "sender") {
               clearSendProgress(fileId, activePeerId);
@@ -252,32 +234,8 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
       const currentProgress = activePeerId
         ? fileProgress?.[activePeerId]?.progress
         : null;
-
-      console.log(`[FileListDisplay Debug] 🔍 File: ${item.fileId}`);
-      console.log(
-        `[FileListDisplay Debug] - prevShowFinished: ${prevShowFinished}`
-      );
-      console.log(
-        `[FileListDisplay Debug] - currentShowFinished: ${currentShowFinished}`
-      );
-      console.log(`[FileListDisplay Debug] - activePeerId: ${activePeerId}`);
-      console.log(
-        `[FileListDisplay Debug] - currentProgress: ${currentProgress}`
-      );
-      console.log(
-        `[FileListDisplay Debug] - downloadCount: ${
-          downloadCounts[item.fileId] || 0
-        }`
-      );
-
       // Detecting false -> true transitions
       if (!prevShowFinished && currentShowFinished) {
-        console.log(
-          `[FileListDisplay Debug] 🎯 COUNTING! File ${item.fileId} transition detected`
-        );
-        console.log(
-          `[FileListDisplay Debug] - Transition: ${prevShowFinished} -> ${currentShowFinished}`
-        );
         if (!isSaveToDisk && onDownload) {
           onDownload(item);
         }

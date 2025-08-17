@@ -203,8 +203,10 @@ class FileSender {
         const fileId = generateFileId(file);
         this.pendingFiles.set(fileId, file);
         const fileMeta = this.getFileMeta(file);
-        this.log("log", "Sending file metadata", { fileMeta, peerId: pId });
-        if (!this.webrtcConnection.sendData(JSON.stringify(fileMeta), pId)) {
+        const metaDataString = JSON.stringify(fileMeta);
+
+        const sendResult = this.webrtcConnection.sendData(metaDataString, pId);
+        if (!sendResult) {
           this.fireError("Failed to send file metadata", {
             fileMeta,
             peerId: pId,

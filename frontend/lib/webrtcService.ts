@@ -2,7 +2,11 @@ import WebRTC_Initiator from "@/lib/webrtc_Initiator";
 import WebRTC_Recipient from "@/lib/webrtc_Recipient";
 import FileSender from "@/lib/fileSender";
 import FileReceiver from "@/lib/fileReceiver";
-import { getIceServers, getSocketOptions, config } from "@/app/config/environment";
+import {
+  getIceServers,
+  getSocketOptions,
+  config,
+} from "@/app/config/environment";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import type { CustomFile } from "@/types/webrtc";
 
@@ -27,7 +31,6 @@ class WebRTCService {
     this.fileReceiver = new FileReceiver(this.receiver);
 
     this.initializeEventHandlers();
-    console.log("WebRTC Service 初始化完成 (单例模式)");
   }
 
   public static getInstance(): WebRTCService {
@@ -40,28 +43,31 @@ class WebRTCService {
   private initializeEventHandlers(): void {
     // 发送方事件处理
     this.sender.onConnectionStateChange = (state, peerId) => {
-      console.log(`[WebRTC Service] 发送方连接状态: ${state} (对等端: ${peerId})`);
       useFileTransferStore.getState().setShareConnectionState(state as any);
-      useFileTransferStore.getState().setSharePeerCount(this.sender.peerConnections.size);
-      
-      if (state === 'connected') {
+      useFileTransferStore
+        .getState()
+        .setSharePeerCount(this.sender.peerConnections.size);
+
+      if (state === "connected") {
         this.fileSender.setProgressCallback((fileId, progress, speed) => {
-          useFileTransferStore.getState().updateSendProgress(fileId, peerId, { progress, speed });
+          useFileTransferStore
+            .getState()
+            .updateSendProgress(fileId, peerId, { progress, speed });
         }, peerId);
       }
     };
-    
+
     this.sender.onDataChannelOpen = (peerId) => {
-      console.log(`[WebRTC Service] 发送方数据通道打开: ${peerId}`);
       useFileTransferStore.getState().setIsSenderInRoom(true);
       // 自动广播当前内容
       this.broadcastDataToAllPeers();
     };
 
     this.sender.onPeerDisconnected = (peerId) => {
-      console.log(`[WebRTC Service] 发送方对等端断开: ${peerId}`);
       setTimeout(() => {
-        useFileTransferStore.getState().setSharePeerCount(this.sender.peerConnections.size);
+        useFileTransferStore
+          .getState()
+          .setSharePeerCount(this.sender.peerConnections.size);
       }, 0);
     };
 
@@ -71,15 +77,18 @@ class WebRTCService {
 
     // 接收方事件处理
     this.receiver.onConnectionStateChange = (state, peerId) => {
-      console.log(`[WebRTC Service] 接收方连接状态: ${state} (对等端: ${peerId})`);
       useFileTransferStore.getState().setRetrieveConnectionState(state as any);
-      useFileTransferStore.getState().setRetrievePeerCount(this.receiver.peerConnections.size);
-      
-      if (state === 'connected') {
+      useFileTransferStore
+        .getState()
+        .setRetrievePeerCount(this.receiver.peerConnections.size);
+
+      if (state === "connected") {
         this.fileReceiver.setProgressCallback((fileId, progress, speed) => {
-          useFileTransferStore.getState().updateReceiveProgress(fileId, peerId, { progress, speed });
+          useFileTransferStore
+            .getState()
+            .updateReceiveProgress(fileId, peerId, { progress, speed });
         });
-      } else if (state === 'failed' || state === 'disconnected') {
+      } else if (state === "failed" || state === "disconnected") {
         const { isAnyFileTransferring } = useFileTransferStore.getState();
         if (isAnyFileTransferring) {
           this.fileReceiver.gracefulShutdown();
@@ -88,13 +97,14 @@ class WebRTCService {
     };
 
     this.receiver.onConnectionEstablished = (peerId) => {
-      console.log(`[WebRTC Service] 接收方连接建立: ${peerId}`);
+      const store = useFileTransferStore.getState();
       useFileTransferStore.getState().setSenderDisconnected(false);
       useFileTransferStore.getState().setIsReceiverInRoom(true);
     };
 
     this.receiver.onPeerDisconnected = (peerId) => {
-      console.log(`[WebRTC Service] 接收方对等端断开: ${peerId}`);
+      const store = useFileTransferStore.getState();
+
       useFileTransferStore.getState().setSenderDisconnected(true);
       useFileTransferStore.getState().setRetrievePeerCount(0);
     };
@@ -119,20 +129,16 @@ class WebRTCService {
 
   // 业务方法
   public async joinRoom(roomId: string, isSender: boolean): Promise<void> {
-    console.log(`[WebRTC Service] 加入房间: ${roomId} (${isSender ? '发送方' : '接收方'})`);
-    
     const peer = isSender ? this.sender : this.receiver;
     await peer.joinRoom(roomId, isSender);
-    
-    const setInRoom = isSender 
+
+    const setInRoom = isSender
       ? useFileTransferStore.getState().setIsSenderInRoom
       : useFileTransferStore.getState().setIsReceiverInRoom;
     setInRoom(true);
   }
 
   public async leaveRoom(isSender: boolean): Promise<void> {
-    console.log(`[WebRTC Service] 离开房间 (${isSender ? '发送方' : '接收方'})`);
-    
     if (isSender) {
       await this.sender.leaveRoomAndCleanup();
       useFileTransferStore.getState().setIsSenderInRoom(false);
@@ -147,7 +153,6 @@ class WebRTCService {
   public async broadcastDataToAllPeers(): Promise<boolean> {
     const { shareContent, sendFiles } = useFileTransferStore.getState();
     const peerIds = Array.from(this.sender.peerConnections.keys());
-    
     if (peerIds.length === 0) {
       console.warn("[WebRTC Service] 没有连接的对等端进行广播");
       return false;
@@ -164,7 +169,6 @@ class WebRTCService {
           }
         })
       );
-      console.log(`[WebRTC Service] 成功广播到 ${peerIds.length} 个对等端`);
       return true;
     } catch (error) {
       console.error("[WebRTC Service] 广播失败:", error);
@@ -180,7 +184,9 @@ class WebRTCService {
     this.fileReceiver.requestFolder(folderName);
   }
 
-  public async setReceiverDirectoryHandle(directoryHandle: FileSystemDirectoryHandle): Promise<void> {
+  public async setReceiverDirectoryHandle(
+    directoryHandle: FileSystemDirectoryHandle
+  ): Promise<void> {
     return this.fileReceiver.setSaveDirectory(directoryHandle);
   }
 
@@ -197,7 +203,7 @@ class WebRTCService {
     try {
       await Promise.all([
         this.sender.cleanUpBeforeExit(),
-        this.receiver.cleanUpBeforeExit()
+        this.receiver.cleanUpBeforeExit(),
       ]);
       console.log("[WebRTC Service] 清理完成");
     } catch (error) {

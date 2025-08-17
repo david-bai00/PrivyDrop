@@ -1,6 +1,6 @@
-import { useEffect, useMemo } from 'react';
-import { webrtcService } from '@/lib/webrtcService';
-import { useFileTransferStore } from '@/stores/fileTransferStore';
+import { useEffect, useMemo } from "react";
+import { webrtcService } from "@/lib/webrtcService";
+import { useFileTransferStore } from "@/stores/fileTransferStore";
 import type { Messages } from "@/types/messages";
 
 // 保留类型定义以保持兼容性
@@ -10,10 +10,17 @@ export type ProgressState = { [fileId: string]: FileProgressPeers };
 
 interface UseWebRTCConnectionProps {
   messages: Messages | null;
-  putMessageInMs: (message: string, isShareEnd?: boolean, displayTimeMs?: number) => void;
+  putMessageInMs: (
+    message: string,
+    isShareEnd?: boolean,
+    displayTimeMs?: number
+  ) => void;
 }
 
-export function useWebRTCConnection({ messages, putMessageInMs }: UseWebRTCConnectionProps) {
+export function useWebRTCConnection({
+  messages,
+  putMessageInMs,
+}: UseWebRTCConnectionProps) {
   // 从 store 获取状态
   const {
     sharePeerCount,
@@ -41,15 +48,6 @@ export function useWebRTCConnection({ messages, putMessageInMs }: UseWebRTCConne
     setIsAnyFileTransferring(isAnyFileTransferring);
   }, [isAnyFileTransferring, setIsAnyFileTransferring]);
 
-  // 确保服务在 React 生命周期内被初始化
-  useEffect(() => {
-    console.log('[useWebRTCConnection] WebRTC 服务已初始化');
-    
-    return () => {
-      console.log('[useWebRTCConnection] Hook 清理');
-    };
-  }, []);
-
   return {
     // 状态从 store 获取
     sharePeerCount,
@@ -57,19 +55,21 @@ export function useWebRTCConnection({ messages, putMessageInMs }: UseWebRTCConne
     senderDisconnected,
     sendProgress,
     receiveProgress,
-    
+
     // 方法直接从 service 暴露
-    broadcastDataToAllPeers: webrtcService.broadcastDataToAllPeers.bind(webrtcService),
+    broadcastDataToAllPeers:
+      webrtcService.broadcastDataToAllPeers.bind(webrtcService),
     requestFile: webrtcService.requestFile.bind(webrtcService),
     requestFolder: webrtcService.requestFolder.bind(webrtcService),
-    setReceiverDirectoryHandle: webrtcService.setReceiverDirectoryHandle.bind(webrtcService),
+    setReceiverDirectoryHandle:
+      webrtcService.setReceiverDirectoryHandle.bind(webrtcService),
     getReceiverSaveType: webrtcService.getReceiverSaveType.bind(webrtcService),
     manualSafeSave: webrtcService.manualSafeSave.bind(webrtcService),
-    
+
     // 重置连接方法
     resetSenderConnection: () => webrtcService.leaveRoom(true),
     resetReceiverConnection: () => webrtcService.leaveRoom(false),
-    
+
     // 为了兼容性，保留这些属性（但实际上不再需要）
     sender: webrtcService.sender,
     receiver: webrtcService.receiver,

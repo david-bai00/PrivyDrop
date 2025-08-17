@@ -283,13 +283,19 @@ class FileReceiver {
     peerId: string
   ): Promise<void> {
     this.peerId = peerId;
+
     if (typeof data === "string") {
       try {
         const parsedData = JSON.parse(data) as WebRTCMessage;
+
         const handler =
           this.fileHandlers[parsedData.type as keyof FileHandlers];
         if (handler) {
           await handler(parsedData, peerId);
+        } else {
+          console.warn(
+            `[DEBUG] ⚠️ FileReceiver 未找到处理器: ${parsedData.type}`
+          );
         }
       } catch (error) {
         this.fireError("Error parsing received JSON data", { error });
@@ -308,11 +314,20 @@ class FileReceiver {
   }
 
   private handleFileMetadata(metadata: fileMetadata): void {
-    if (this.pendingFilesMeta.has(metadata.fileId)) return; // Ignore if already received.
+    if (this.pendingFilesMeta.has(metadata.fileId)) {
+      console.log(
+        `[DEBUG] 📥 FileReceiver 文件元数据已存在，忽略: ${metadata.fileId}`
+      );
+      return; // Ignore if already received.
+    }
 
-    this.log("log", "Received file metadata", { metadata });
     this.pendingFilesMeta.set(metadata.fileId, metadata);
-    this.onFileMetaReceived?.(metadata);
+
+    if (this.onFileMetaReceived) {
+      this.onFileMetaReceived(metadata);
+    } else {
+      console.error(`[DEBUG] ❌ FileReceiver onFileMetaReceived 回调不存在!`);
+    }
     // Record the file size for folder progress calculation.
     if (metadata.folderName) {
       const folderId = metadata.folderName;
@@ -553,8 +568,15 @@ class FileReceiver {
           err,
         });
       });
-      this.activeFileReception = null;
     }
+
+    // 🔧 清理所有内部状态，确保重新连接时能正确接收文件元数据
+    this.pendingFilesMeta.clear();
+    this.folderProgresses = {};
+    this.saveType = {};
+    this.activeFileReception = null;
+    this.activeStringReception = null;
+    this.currentFolderName = null;
   }
 }
 
