@@ -10,12 +10,22 @@ interface FileTransferState {
   retrieveRoomStatusText: string;
 
   // WebRTC 连接状态 - 发送方
-  shareConnectionState: 'idle' | 'connecting' | 'connected' | 'disconnected' | 'failed';
+  shareConnectionState:
+    | "idle"
+    | "connecting"
+    | "connected"
+    | "disconnected"
+    | "failed";
   isSenderInRoom: boolean;
   sharePeerCount: number;
 
   // WebRTC 连接状态 - 接收方
-  retrieveConnectionState: 'idle' | 'connecting' | 'connected' | 'disconnected' | 'failed';
+  retrieveConnectionState:
+    | "idle"
+    | "connecting"
+    | "connected"
+    | "disconnected"
+    | "failed";
   isReceiverInRoom: boolean;
   retrievePeerCount: number;
   senderDisconnected: boolean;
@@ -50,10 +60,14 @@ interface FileTransferState {
   setRetrieveRoomStatusText: (text: string) => void;
 
   // WebRTC 连接相关 actions
-  setShareConnectionState: (state: 'idle' | 'connecting' | 'connected' | 'disconnected' | 'failed') => void;
+  setShareConnectionState: (
+    state: "idle" | "connecting" | "connected" | "disconnected" | "failed"
+  ) => void;
   setIsSenderInRoom: (isInRoom: boolean) => void;
   setSharePeerCount: (count: number) => void;
-  setRetrieveConnectionState: (state: 'idle' | 'connecting' | 'connected' | 'disconnected' | 'failed') => void;
+  setRetrieveConnectionState: (
+    state: "idle" | "connecting" | "connected" | "disconnected" | "failed"
+  ) => void;
   setIsReceiverInRoom: (isInRoom: boolean) => void;
   setRetrievePeerCount: (count: number) => void;
   setSenderDisconnected: (disconnected: boolean) => void;
@@ -71,8 +85,16 @@ interface FileTransferState {
   // 传输进度相关 actions
   setSendProgress: (progress: Record<string, any>) => void;
   setReceiveProgress: (progress: Record<string, any>) => void;
-  updateSendProgress: (fileId: string, peerId: string, progress: { progress: number; speed: number }) => void;
-  updateReceiveProgress: (fileId: string, peerId: string, progress: { progress: number; speed: number }) => void;
+  updateSendProgress: (
+    fileId: string,
+    peerId: string,
+    progress: { progress: number; speed: number }
+  ) => void;
+  updateReceiveProgress: (
+    fileId: string,
+    peerId: string,
+    progress: { progress: number; speed: number }
+  ) => void;
   setIsAnyFileTransferring: (transferring: boolean) => void;
 
   // UI 状态相关 actions
@@ -97,10 +119,10 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
   shareLink: "",
   shareRoomStatusText: "",
   retrieveRoomStatusText: "",
-  shareConnectionState: 'idle',
+  shareConnectionState: "idle",
   isSenderInRoom: false,
   sharePeerCount: 0,
-  retrieveConnectionState: 'idle',
+  retrieveConnectionState: "idle",
   isReceiverInRoom: false,
   retrievePeerCount: 0,
   senderDisconnected: false,
@@ -129,7 +151,8 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
   setShareConnectionState: (state) => set({ shareConnectionState: state }),
   setIsSenderInRoom: (isInRoom) => set({ isSenderInRoom: isInRoom }),
   setSharePeerCount: (count) => set({ sharePeerCount: count }),
-  setRetrieveConnectionState: (state) => set({ retrieveConnectionState: state }),
+  setRetrieveConnectionState: (state) =>
+    set({ retrieveConnectionState: state }),
   setIsReceiverInRoom: (isInRoom) => set({ isReceiverInRoom: isInRoom }),
   setRetrievePeerCount: (count) => set({ retrievePeerCount: count }),
   setSenderDisconnected: (disconnected) =>
@@ -193,7 +216,6 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
       retrievedFileMetas: [],
       retrievePeerCount: 0,
       senderDisconnected: false,
-      retrieveRoomIdInput: "",
       receiveProgress: {},
       retrieveRoomStatusText: "",
     }),

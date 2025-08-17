@@ -13,6 +13,7 @@ import type { Messages } from "@/types/messages";
 import type { CustomFile, FileMeta } from "@/types/webrtc";
 import type { ProgressState } from "@/hooks/useWebRTCConnection";
 import type WebRTC_Initiator from "@/lib/webrtc_Initiator";
+import { useFileTransferStore } from "@/stores/fileTransferStore";
 
 // Dynamically import the RichTextEditor
 const RichTextEditor = dynamic(
@@ -29,39 +30,25 @@ const RichTextEditor = dynamic(
 
 interface SendTabPanelProps {
   messages: Messages;
-  shareRoomStatusText: string;
-  shareContent: string;
-  sendFiles: CustomFile[];
   updateShareContent: (content: string) => void;
   addFilesToSend: (files: CustomFile[]) => void;
   removeFileToSend: (meta: FileMeta) => void;
   richTextToPlainText: (html: string) => string;
-  sendProgress: ProgressState;
-  isAnyFileTransferring: boolean;
-  // shareRoomId: string; // This comes from useRoomManager and represents the validated ID
   processRoomIdInput: (roomId: string) => void; // Passed from useRoomManager
   joinRoom: (isSender: boolean, roomId: string) => void;
   generateShareLinkAndBroadcast: () => void;
   sender: WebRTC_Initiator | null;
   shareMessage: string;
-  // Pass the validated/initial shareRoomId from useRoomManager for display/initialization
-  // Also, initShareRoomId can be useful if we want to reset the input to it.
   currentValidatedShareRoomId: string;
   handleLeaveSenderRoom: () => void; // New prop for leaving room
-  // initShareRoomId: string; // If needed for reset logic
 }
 
 export function SendTabPanel({
   messages,
-  shareRoomStatusText,
-  shareContent,
-  sendFiles,
   updateShareContent,
   addFilesToSend,
   removeFileToSend,
   richTextToPlainText,
-  sendProgress,
-  isAnyFileTransferring,
   processRoomIdInput,
   joinRoom,
   generateShareLinkAndBroadcast,
@@ -69,8 +56,16 @@ export function SendTabPanel({
   shareMessage,
   currentValidatedShareRoomId,
   handleLeaveSenderRoom,
-}: // initShareRoomId,
-SendTabPanelProps) {
+}: SendTabPanelProps) {
+  // 从 store 中获取状态
+  const {
+    shareContent,
+    sendFiles,
+    shareRoomStatusText,
+    sendProgress,
+    isAnyFileTransferring,
+    isSenderInRoom,
+  } = useFileTransferStore();
   // Local state for immediate response in the input field
   const [inputFieldValue, setInputFieldValue] = useState<string>(
     currentValidatedShareRoomId
@@ -103,7 +98,7 @@ SendTabPanelProps) {
     <div id="send-panel" role="tabpanel" aria-labelledby="send-tab">
       <div className="mb-3 text-sm text-gray-600">
         {shareRoomStatusText ||
-          (sender?.isInRoom
+          (isSenderInRoom
             ? messages.text.ClipboardApp.roomStatus.onlyOneMsg
             : messages.text.ClipboardApp.roomStatus.senderEmptyMsg)}
       </div>
@@ -142,7 +137,7 @@ SendTabPanelProps) {
         <Button
           className="w-full sm:w-auto"
           onClick={() => joinRoom(true, inputFieldValue.trim())} // Attempt to join using the current input field value
-          disabled={!sender || sender.isInRoom || !inputFieldValue.trim()}
+          disabled={!sender || isSenderInRoom || !inputFieldValue.trim()}
         >
           {messages.text.ClipboardApp.html.joinRoom_dis}
         </Button>
@@ -154,7 +149,7 @@ SendTabPanelProps) {
           loadingText={messages.text.ClipboardApp.html.SyncSending_loadingText}
           disabled={
             !sender ||
-            !sender.isInRoom ||
+            !isSenderInRoom ||
             (sendFiles.length === 0 && shareContent.trim() === "") ||
             !currentValidatedShareRoomId.trim() ||
             isAnyFileTransferring
@@ -165,7 +160,7 @@ SendTabPanelProps) {
         <Button
           variant="outline"
           onClick={handleLeaveSenderRoom}
-          disabled={!sender || !sender.isInRoom || isAnyFileTransferring}
+          disabled={!sender || !isSenderInRoom || isAnyFileTransferring}
         >
           {messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
         </Button>

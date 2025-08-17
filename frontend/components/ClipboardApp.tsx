@@ -31,20 +31,9 @@ const ClipboardApp = () => {
   // 从 store 中获取状态
   const {
     activeTab,
-    retrieveRoomIdInput,
     isDragging,
-    shareContent,
-    sendFiles,
-    retrievedContent,
-    retrievedFileMetas,
-    sendProgress,
-    receiveProgress,
-    isAnyFileTransferring,
     shareRoomId,
-    initShareRoomId,
     shareLink,
-    shareRoomStatusText,
-    retrieveRoomStatusText,
     setIsDragging,
     setRetrieveRoomIdInput,
     setActiveTab,
@@ -59,13 +48,6 @@ const ClipboardApp = () => {
     removeFileToSend,
     handleDownloadFile,
   } = useFileTransferHandler({ messages, putMessageInMs });
-
-  // Calculate the derived states for unload protection
-  const isContentPresent = useMemo(() => {
-    return (
-      shareContent !== "" || retrievedContent !== "" || sendFiles.length > 0
-    );
-  }, [shareContent, retrievedContent, sendFiles]);
 
   // Initialize WebRTC Connection Hook
   const {
@@ -83,9 +65,6 @@ const ClipboardApp = () => {
     resetSenderConnection,
     manualSafeSave,
   } = useWebRTCConnection({
-    shareContent,
-    sendFiles,
-    isContentPresent,
     messages,
     putMessageInMs,
   });
@@ -120,9 +99,9 @@ const ClipboardApp = () => {
     putMessageInMs,
     sender,
     receiver,
-    broadcastDataToPeers: () =>
-      broadcastDataToAllPeers(shareContent, sendFiles),
+    broadcastDataToPeers: broadcastDataToAllPeers,
     resetSenderConnection,
+    resetReceiverConnection,
   });
 
   const handleFileDrop = useCallback(
@@ -245,15 +224,10 @@ const ClipboardApp = () => {
           {activeTab === "send" ? (
             <SendTabPanel
               messages={messages}
-              shareRoomStatusText={shareRoomStatusText}
-              shareContent={shareContent}
-              sendFiles={sendFiles}
               updateShareContent={updateShareContent}
               addFilesToSend={addFilesToSend}
               removeFileToSend={removeFileToSend}
               richTextToPlainText={richTextToPlainText}
-              sendProgress={sendProgress}
-              isAnyFileTransferring={isAnyFileTransferring}
               processRoomIdInput={processRoomIdInput}
               joinRoom={joinRoom}
               generateShareLinkAndBroadcast={generateShareLinkAndBroadcast}
@@ -266,24 +240,17 @@ const ClipboardApp = () => {
             <RetrieveTabPanel
               messages={messages}
               putMessageInMs={putMessageInMs}
-              retrieveRoomStatusText={retrieveRoomStatusText}
-              retrieveRoomIdInput={retrieveRoomIdInput}
               setRetrieveRoomIdInput={setRetrieveRoomIdInput}
               joinRoom={joinRoom}
               retrieveJoinRoomBtnRef={retrieveJoinRoomBtnRef}
               receiver={receiver}
-              retrievedContent={retrievedContent}
               richTextToPlainText={richTextToPlainText}
-              retrievedFileMetas={retrievedFileMetas}
-              receiveProgress={receiveProgress}
-              isAnyFileTransferring={isAnyFileTransferring}
               handleDownloadFile={handleDownloadFile}
               requestFile={requestFile}
               requestFolder={requestFolder}
               setReceiverDirectoryHandle={setReceiverDirectoryHandle}
               getReceiverSaveType={getReceiverSaveType}
               retrieveMessage={retrieveMessage}
-              senderDisconnected={senderDisconnected}
               handleLeaveRoom={handleLeaveReceiverRoom}
               manualSafeSave={manualSafeSave}
             />

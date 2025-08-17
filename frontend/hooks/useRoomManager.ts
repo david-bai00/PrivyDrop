@@ -21,6 +21,7 @@ interface UseRoomManagerProps {
   receiver: WebRTC_Recipient | null;
   broadcastDataToPeers: () => Promise<boolean>;
   resetSenderConnection: () => Promise<void>;
+  resetReceiverConnection: () => Promise<void>;
 }
 
 export function useRoomManager({
@@ -30,6 +31,7 @@ export function useRoomManager({
   receiver,
   broadcastDataToPeers,
   resetSenderConnection,
+  resetReceiverConnection,
 }: UseRoomManagerProps) {
   // 从 store 中获取状态
   const {
@@ -57,6 +59,7 @@ export function useRoomManager({
 
   // Receiver leave room function
   const handleLeaveReceiverRoom = useCallback(async () => {
+    console.log(`[RoomManager Debug] Receiver leaving room manually`);
     if (!receiver || !receiver.roomId || !receiver.peerId || !messages) return;
     try {
       await leaveRoom(receiver.roomId, receiver.peerId);
@@ -65,17 +68,20 @@ export function useRoomManager({
       console.error("Error leaving room:", error);
       putMessageInMs("Failed to leave the room.", false);
     } finally {
-      // Reset application state
+      // Reset application state (不清空房间ID)
       resetReceiverState();
-      // Reset peer count
-      setRetrievePeerCount(0);
+      // 清理WebRTC连接状态
+      await resetReceiverConnection();
+      console.log(
+        `[RoomManager Debug] Receiver left room and WebRTC connection reset`
+      );
     }
   }, [
     receiver,
     putMessageInMs,
     messages,
     resetReceiverState,
-    setRetrievePeerCount,
+    resetReceiverConnection,
   ]);
 
   // Reset sender app state
@@ -256,6 +262,15 @@ export function useRoomManager({
             ? shareRoomId
             : currentRoomIdToJoin;
 
+        console.log(
+          `[RoomManager Debug] ${
+            isSenderSide ? "Sender" : "Receiver"
+          } joining room: ${actualRoomIdForSenderJoin}`
+        );
+        console.log(
+          `[RoomManager Debug] Peer current state - isInRoom: ${peer.isInRoom}, roomId: ${peer.roomId}`
+        );
+
         await peer.joinRoom(actualRoomIdForSenderJoin, isSenderSide);
         putMessageInMs(
           messages.text.ClipboardApp.joinRoom.successMsg,
@@ -266,6 +281,9 @@ export function useRoomManager({
         // 更新 Store 中的房间状态
         if (isSenderSide) {
           useFileTransferStore.getState().setIsSenderInRoom(true);
+          console.log(
+            `[RoomManager Debug] Sender joined room, setIsSenderInRoom(true)`
+          );
           const link = `${window.location.origin}${window.location.pathname}?roomId=${actualRoomIdForSenderJoin}`;
           setShareLink(link);
           if (actualRoomIdForSenderJoin !== shareRoomId) {
@@ -273,6 +291,9 @@ export function useRoomManager({
           }
         } else {
           useFileTransferStore.getState().setIsReceiverInRoom(true);
+          console.log(
+            `[RoomManager Debug] Receiver joined room, setIsReceiverInRoom(true)`
+          );
         }
       } catch (error) {
         let errorMsgToShow = messages.text.ClipboardApp.joinRoom.failMsg;
@@ -301,7 +322,7 @@ export function useRoomManager({
   const generateShareLinkAndBroadcast = useCallback(async () => {
     if (!sender || !messages || !putMessageInMs || !shareRoomId) return;
 
-    if (sender.peerConnections.size === 0) {
+    if (sharePeerCount === 0) {
       putMessageInMs(messages.text.ClipboardApp.waitting_tips, true);
     } else {
       await broadcastDataToPeers();
@@ -313,6 +334,7 @@ export function useRoomManager({
     messages,
     putMessageInMs,
     shareRoomId,
+    sharePeerCount,
     setShareLink,
     broadcastDataToPeers,
   ]);
@@ -330,13 +352,31 @@ export function useRoomManager({
       activeTab === "send" ? sharePeerCount : retrievePeerCount;
     let statusText = "";
 
+    // 调试日志
+    console.log(
+      `[RoomStatus Debug] activeTab: ${activeTab}, isInRoom: ${isInRoom}, peerCount: ${currentPeerCount}`
+    );
+    if (activeTab === "send") {
+      console.log(
+        `[RoomStatus Debug] Sender - isSenderInRoom: ${isSenderInRoom}, sharePeerCount: ${sharePeerCount}`
+      );
+    } else {
+      console.log(
+        `[RoomStatus Debug] Receiver - isReceiverInRoom: ${isReceiverInRoom}, retrievePeerCount: ${retrievePeerCount}`
+      );
+    }
+
     if (!isInRoom) {
       statusText =
         activeTab === "retrieve"
           ? messages.text.ClipboardApp.roomStatus.receiverEmptyMsg
           : messages.text.ClipboardApp.roomStatus.senderEmptyMsg;
+      console.log(`[RoomStatus Debug] Not in room, status: ${statusText}`);
     } else if (currentPeerCount === 0) {
       statusText = messages.text.ClipboardApp.roomStatus.onlyOneMsg;
+      console.log(
+        `[RoomStatus Debug] In room, no peers, status: ${statusText}`
+      );
     } else {
       statusText =
         activeTab === "send"
@@ -345,8 +385,11 @@ export function useRoomManager({
               currentPeerCount + 1
             )
           : messages.text.ClipboardApp.roomStatus.connected_dis;
+      console.log(
+        `[RoomStatus Debug] In room, with peers, status: ${statusText}`
+      );
     }
-    
+
     if (activeTab === "send") setShareRoomStatusText(statusText);
     else setRetrieveRoomStatusText(statusText);
   }, [

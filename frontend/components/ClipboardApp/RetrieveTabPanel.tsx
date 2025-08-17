@@ -11,6 +11,7 @@ import type { Messages } from "@/types/messages";
 import type { FileMeta } from "@/types/webrtc";
 import type { ProgressState } from "@/hooks/useWebRTCConnection"; // Assuming this type is exported
 import type WebRTC_Recipient from "@/lib/webrtc_Recipient";
+import { useFileTransferStore } from "@/stores/fileTransferStore";
 
 interface RetrieveTabPanelProps {
   messages: Messages;
@@ -19,18 +20,11 @@ interface RetrieveTabPanelProps {
     isShareEnd?: boolean,
     displayTimeMs?: number
   ) => void; // For onLocationPick
-  retrieveRoomStatusText: string;
-  retrieveRoomIdInput: string;
   setRetrieveRoomIdInput: (value: string) => void;
   joinRoom: (isSender: boolean, roomId: string) => void;
   retrieveJoinRoomBtnRef: React.RefObject<HTMLButtonElement>;
   receiver: WebRTC_Recipient | null;
-  retrievedContent: string;
-  // setRetrievedContent: (content: string) => void; // If editor becomes editable
   richTextToPlainText: (html: string) => string;
-  retrievedFileMetas: FileMeta[];
-  receiveProgress: ProgressState;
-  isAnyFileTransferring: boolean;
   handleDownloadFile: (meta: FileMeta) => void;
   // Functions for WebRTC interaction, passed from parent via useWebRTCConnection
   requestFile: (fileId: string, peerId?: string) => void;
@@ -41,24 +35,17 @@ interface RetrieveTabPanelProps {
   getReceiverSaveType: () => { [fileId: string]: boolean } | undefined;
   manualSafeSave: () => void; // Add manual safe save function
   retrieveMessage: string;
-  senderDisconnected: boolean;
   handleLeaveRoom: () => void;
 }
 
 export function RetrieveTabPanel({
   messages,
   putMessageInMs,
-  retrieveRoomStatusText,
-  retrieveRoomIdInput,
   setRetrieveRoomIdInput,
   joinRoom,
   retrieveJoinRoomBtnRef,
   receiver,
-  retrievedContent,
   richTextToPlainText,
-  retrievedFileMetas,
-  receiveProgress,
-  isAnyFileTransferring,
   handleDownloadFile,
   requestFile,
   requestFolder,
@@ -66,9 +53,19 @@ export function RetrieveTabPanel({
   getReceiverSaveType,
   manualSafeSave,
   retrieveMessage,
-  senderDisconnected,
   handleLeaveRoom,
 }: RetrieveTabPanelProps) {
+  // 从 store 中获取状态
+  const {
+    retrieveRoomStatusText,
+    retrieveRoomIdInput,
+    retrievedContent,
+    retrievedFileMetas,
+    receiveProgress,
+    isAnyFileTransferring,
+    senderDisconnected,
+    isReceiverInRoom,
+  } = useFileTransferStore();
   const onLocationPick = useCallback(async (): Promise<boolean> => {
     if (!messages) return false; // Should not happen if panel is rendered
     if (!window.showDirectoryPicker) {
@@ -145,7 +142,7 @@ export function RetrieveTabPanel({
           onClick={() => joinRoom(false, retrieveRoomIdInput)}
           ref={retrieveJoinRoomBtnRef}
           disabled={
-            !receiver || receiver.isInRoom || !retrieveRoomIdInput.trim()
+            !receiver || isReceiverInRoom || !retrieveRoomIdInput.trim()
           }
         >
           {messages.text.ClipboardApp.html.joinRoom_dis}
@@ -153,7 +150,7 @@ export function RetrieveTabPanel({
         <Button
           variant="outline"
           onClick={handleLeaveRoom}
-          disabled={!receiver || !receiver.isInRoom || isAnyFileTransferring}
+          disabled={!receiver || !isReceiverInRoom || isAnyFileTransferring}
         >
           {messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
         </Button>

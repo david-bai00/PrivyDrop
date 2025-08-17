@@ -60,34 +60,7 @@ export function useFileTransferHandler({
     removeSendFile(metaToRemove);
   }, [removeSendFile]);
 
-  // Callbacks for useWebRTCConnection
-  const onStringDataReceived = useCallback((data: string, peerId: string) => {
-    setRetrievedContent(data);
-  }, [setRetrievedContent]);
-
-  const onFileMetadataReceived = useCallback(
-    (meta: fileMetadata, peerId: string) => {
-      const { type, ...metaWithoutType } = meta;
-      // Filter out existing file with same ID and add the new one
-      const DPrev = retrievedFileMetas.filter(
-        (existingFile: FileMeta) => existingFile.fileId !== metaWithoutType.fileId
-      );
-      setRetrievedFileMetas([...DPrev, metaWithoutType]);
-    },
-    [retrievedFileMetas, setRetrievedFileMetas]
-  );
-
-  const onFileFullyReceived = useCallback((file: CustomFile, peerId: string) => {
-    // Check if file already exists
-    const isDuplicate = retrievedFiles.some(
-      (existingFile: CustomFile) =>
-        existingFile.fullName === file.fullName &&
-        existingFile.size === file.size
-    );
-    if (!isDuplicate) {
-      setRetrievedFiles([...retrievedFiles, file]);
-    }
-  }, [retrievedFiles, setRetrievedFiles]);
+  // 这些回调函数已经不再需要，因为WebRTC Hook现在直接使用Store
 
   const handleDownloadFile = useCallback(
     async (meta: FileMeta) => {
@@ -159,9 +132,6 @@ export function useFileTransferHandler({
     addFilesToSend,
     removeFileToSend,
     resetReceiverState, // Export the reset function
-    onStringDataReceived,
-    onFileMetadataReceived,
-    onFileFullyReceived,
     handleDownloadFile,
   };
 }

@@ -20,10 +20,6 @@ export type FileProgressPeers = { [peerId: string]: PeerProgressDetails };
 export type ProgressState = { [fileId: string]: FileProgressPeers };
 
 interface UseWebRTCConnectionProps {
-  shareContent: string;
-  sendFiles: CustomFile[];
-  isContentPresent: boolean;
-
   // For user feedback and messages from the hook, if any (mostly for console for now)
   messages: Messages | null;
   putMessageInMs: (
@@ -34,9 +30,6 @@ interface UseWebRTCConnectionProps {
 }
 
 export function useWebRTCConnection({
-  shareContent,
-  sendFiles,
-  isContentPresent,
   messages,
   putMessageInMs,
 }: UseWebRTCConnectionProps) {
@@ -47,8 +40,10 @@ export function useWebRTCConnection({
   const [receiverFileTransfer, setReceiverFileTransfer] =
     useState<FileReceiver | null>(null);
 
-  // 从 store 中获取状态
+  // 从 store 中获取状态和数据
   const {
+    shareContent,
+    sendFiles,
     sharePeerCount,
     retrievePeerCount,
     sendProgress,
@@ -128,36 +123,39 @@ export function useWebRTCConnection({
   );
 
   // Exposed function to broadcast data to all connected sender peers
-  const broadcastDataToAllPeers = useCallback(
-    async (textContent: string, filesToSend: CustomFile[]) => {
-      if (!sender || sender.peerConnections.size === 0) {
-        if (developmentEnv)
-          console.warn(
-            "No sender peers to broadcast to, or sender not initialized."
-          );
-        return false;
-      }
-      if (!senderFileTransfer) {
-        console.error("senderFileTransfer is not initialized for broadcast.");
-        return false;
-      }
-      const peerIds = Array.from(sender.peerConnections.keys());
+  const broadcastDataToAllPeers = useCallback(async () => {
+    if (!sender || sender.peerConnections.size === 0) {
       if (developmentEnv)
-        console.log(`Broadcasting to peers: ${peerIds.join(", ")}`);
-      try {
-        await Promise.all(
-          peerIds.map((peerId) =>
-            sendStringAndMetasToPeer(peerId, textContent, filesToSend)
-          )
+        console.warn(
+          "No sender peers to broadcast to, or sender not initialized."
         );
-        return true;
-      } catch (error) {
-        console.error("Error broadcasting data to peers:", error);
-        return false;
-      }
-    },
-    [sender, senderFileTransfer, sendStringAndMetasToPeer]
-  );
+      return false;
+    }
+    if (!senderFileTransfer) {
+      console.error("senderFileTransfer is not initialized for broadcast.");
+      return false;
+    }
+    const peerIds = Array.from(sender.peerConnections.keys());
+    if (developmentEnv)
+      console.log(`Broadcasting to peers: ${peerIds.join(", ")}`);
+    try {
+      await Promise.all(
+        peerIds.map((peerId) =>
+          sendStringAndMetasToPeer(peerId, shareContent, sendFiles)
+        )
+      );
+      return true;
+    } catch (error) {
+      console.error("Error broadcasting data to peers:", error);
+      return false;
+    }
+  }, [
+    sender,
+    senderFileTransfer,
+    sendStringAndMetasToPeer,
+    shareContent,
+    sendFiles,
+  ]);
 
   // Setup sender and receiver event handlers
   useEffect(() => {
@@ -171,7 +169,9 @@ export function useWebRTCConnection({
         if (state === "connected") {
           senderFileTransfer.setProgressCallback(
             (fileId, progress: number, speed: number) => {
-              useFileTransferStore.getState().updateSendProgress(fileId, peerId, { progress, speed });
+              useFileTransferStore
+                .getState()
+                .updateSendProgress(fileId, peerId, { progress, speed });
             },
             peerId
           );
@@ -180,16 +180,17 @@ export function useWebRTCConnection({
       sender.onDataChannelOpen = () => {
         // 当数据通道打开时，标记发送方已加入房间
         useFileTransferStore.getState().setIsSenderInRoom(true);
-        broadcastDataToAllPeers(shareContent, sendFiles);
-      }
+        broadcastDataToAllPeers();
+      };
 
       sender.onPeerDisconnected = (peerId) => {
+        console.log(`[WebRTC Debug] Sender peer ${peerId} disconnected`);
         setTimeout(() => {
-          setSharePeerCount(sender.peerConnections.size);
-          // 检查是否所有 peer 都已断开连接
-          if (sender.peerConnections.size === 0) {
-            useFileTransferStore.getState().setIsSenderInRoom(false);
-          }
+          const newPeerCount = sender.peerConnections.size;
+          console.log(
+            `[WebRTC Debug] Sender peer count after disconnect: ${newPeerCount}`
+          );
+          setSharePeerCount(newPeerCount);
         }, 0);
       };
 
@@ -204,12 +205,16 @@ export function useWebRTCConnection({
         if (developmentEnv)
           console.log(`Receiver connection state with ${peerId}: ${state}`);
         // 更新连接状态
-        useFileTransferStore.getState().setRetrieveConnectionState(state as any);
+        useFileTransferStore
+          .getState()
+          .setRetrieveConnectionState(state as any);
         setRetrievePeerCount(receiver.peerConnections.size);
         if (state === "connected") {
           receiverFileTransfer.setProgressCallback(
             (fileId, progress: number, speed: number) => {
-              useFileTransferStore.getState().updateReceiveProgress(fileId, peerId, { progress, speed });
+              useFileTransferStore
+                .getState()
+                .updateReceiveProgress(fileId, peerId, { progress, speed });
             }
           );
         } else if (state === "failed" || state === "disconnected") {
@@ -224,7 +229,7 @@ export function useWebRTCConnection({
         if (developmentEnv) console.log(`String received from peer ${peerId}`);
         useFileTransferStore.getState().setRetrievedContent(data);
       };
-      
+
       receiverFileTransfer.onFileMetaReceived = (meta) => {
         const peerId = "testId";
         if (developmentEnv)
@@ -239,7 +244,7 @@ export function useWebRTCConnection({
         );
         store.setRetrievedFileMetas([...DPrev, metaWithoutType]);
       };
-      
+
       receiverFileTransfer.onFileReceived = async (file) => {
         const peerId = "testId"; // This should be dynamic in a multi-peer scenario
         if (developmentEnv)
@@ -249,18 +254,24 @@ export function useWebRTCConnection({
       };
 
       receiver.onPeerDisconnected = (peerId) => {
-        if (developmentEnv)
-          console.log(`Receiver peer ${peerId} disconnected.`);
+        console.log(`[WebRTC Debug] Receiver peer ${peerId} disconnected`);
         setSenderDisconnected(true);
         setRetrievePeerCount(0);
-        useFileTransferStore.getState().setIsReceiverInRoom(false);
+        // 注意：接收端断开连接时应该保持在房间状态，除非主动离开
+        console.log(
+          `[WebRTC Debug] Receiver peer disconnected, but staying in room`
+        );
       };
 
       receiver.onConnectionEstablished = (peerId) => {
-        if (developmentEnv)
-          console.log(`Receiver connection established with ${peerId}.`);
+        console.log(
+          `[WebRTC Debug] Receiver connection established with ${peerId}`
+        );
         setSenderDisconnected(false);
         useFileTransferStore.getState().setIsReceiverInRoom(true);
+        console.log(
+          `[WebRTC Debug] Receiver setIsReceiverInRoom(true) after connection established`
+        );
       };
 
       receiver.onError = (error) => {
@@ -275,13 +286,16 @@ export function useWebRTCConnection({
     receiverFileTransfer,
     putMessageInMs,
     broadcastDataToAllPeers,
-    shareContent,
-    sendFiles,
     isAnyFileTransferring,
     setSharePeerCount,
     setRetrievePeerCount,
     setSenderDisconnected,
   ]);
+
+  // Calculate isContentPresent from store data
+  const isContentPresent = useMemo(() => {
+    return shareContent !== "" || sendFiles.length > 0;
+  }, [shareContent, sendFiles]);
 
   // Effect to handle graceful shutdown on page unload
   useEffect(() => {
