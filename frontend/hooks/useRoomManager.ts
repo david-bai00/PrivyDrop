@@ -352,31 +352,13 @@ export function useRoomManager({
       activeTab === "send" ? sharePeerCount : retrievePeerCount;
     let statusText = "";
 
-    // 调试日志
-    console.log(
-      `[RoomStatus Debug] activeTab: ${activeTab}, isInRoom: ${isInRoom}, peerCount: ${currentPeerCount}`
-    );
-    if (activeTab === "send") {
-      console.log(
-        `[RoomStatus Debug] Sender - isSenderInRoom: ${isSenderInRoom}, sharePeerCount: ${sharePeerCount}`
-      );
-    } else {
-      console.log(
-        `[RoomStatus Debug] Receiver - isReceiverInRoom: ${isReceiverInRoom}, retrievePeerCount: ${retrievePeerCount}`
-      );
-    }
-
     if (!isInRoom) {
       statusText =
         activeTab === "retrieve"
           ? messages.text.ClipboardApp.roomStatus.receiverEmptyMsg
           : messages.text.ClipboardApp.roomStatus.senderEmptyMsg;
-      console.log(`[RoomStatus Debug] Not in room, status: ${statusText}`);
     } else if (currentPeerCount === 0) {
       statusText = messages.text.ClipboardApp.roomStatus.onlyOneMsg;
-      console.log(
-        `[RoomStatus Debug] In room, no peers, status: ${statusText}`
-      );
     } else {
       statusText =
         activeTab === "send"
@@ -385,9 +367,6 @@ export function useRoomManager({
               currentPeerCount + 1
             )
           : messages.text.ClipboardApp.roomStatus.connected_dis;
-      console.log(
-        `[RoomStatus Debug] In room, with peers, status: ${statusText}`
-      );
     }
 
     if (activeTab === "send") setShareRoomStatusText(statusText);

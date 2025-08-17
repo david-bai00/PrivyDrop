@@ -95,6 +95,8 @@ interface FileTransferState {
     peerId: string,
     progress: { progress: number; speed: number }
   ) => void;
+  clearSendProgress: (fileId: string, peerId: string) => void;
+  clearReceiveProgress: (fileId: string, peerId: string) => void;
   setIsAnyFileTransferring: (transferring: boolean) => void;
 
   // UI 状态相关 actions
@@ -198,6 +200,32 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
         [fileId]: { ...state.receiveProgress[fileId], [peerId]: progress },
       },
     })),
+  clearSendProgress: (fileId, peerId) =>
+    set((state) => {
+      const newSendProgress = { ...state.sendProgress };
+      if (newSendProgress[fileId]) {
+        const { [peerId]: removed, ...rest } = newSendProgress[fileId];
+        if (Object.keys(rest).length === 0) {
+          delete newSendProgress[fileId];
+        } else {
+          newSendProgress[fileId] = rest;
+        }
+      }
+      return { sendProgress: newSendProgress };
+    }),
+  clearReceiveProgress: (fileId, peerId) =>
+    set((state) => {
+      const newReceiveProgress = { ...state.receiveProgress };
+      if (newReceiveProgress[fileId]) {
+        const { [peerId]: removed, ...rest } = newReceiveProgress[fileId];
+        if (Object.keys(rest).length === 0) {
+          delete newReceiveProgress[fileId];
+        } else {
+          newReceiveProgress[fileId] = rest;
+        }
+      }
+      return { receiveProgress: newReceiveProgress };
+    }),
   setIsAnyFileTransferring: (transferring) =>
     set({ isAnyFileTransferring: transferring }),
 

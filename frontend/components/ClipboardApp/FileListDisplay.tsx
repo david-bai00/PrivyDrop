@@ -10,6 +10,7 @@ import FileTransferButton from "./FileTransferButton";
 import { getDictionary } from "@/lib/dictionary";
 import { useLocale } from "@/hooks/useLocale";
 import type { Messages } from "@/types/messages";
+import { useFileTransferStore } from "@/stores/fileTransferStore";
 
 function formatFolderDis(template: string, num: number, size: string) {
   return template.replace("{num}", num.toString()).replace("{size}", size);
@@ -68,6 +69,9 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
 }) => {
   const locale = useLocale();
   const [messages, setMessages] = useState<Messages | null>(null);
+
+  // 获取store的清理方法
+  const { clearSendProgress, clearReceiveProgress } = useFileTransferStore();
   const [showFinished, setShowFinished] = useState<{
     [fileId: string]: boolean;
   }>({});
@@ -87,6 +91,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
   const [downloadCounts, setDownloadCounts] = useState<{
     [fileId: string]: number;
   }>({});
+
   useEffect(() => {
     getDictionary(locale)
       .then((dict) => setMessages(dict))
@@ -183,13 +188,27 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
           setShowFinished((prev) => ({ ...prev, [fileId]: true }));
 
           setTimeout(() => {
+            console.log(
+              `[FileListDisplay Debug] ⏰ Timeout executing for fileId: ${fileId}, peerId: ${activePeerId}`
+            );
             setShowFinished((prev) => {
               const updated = { ...prev };
               delete updated[fileId];
+              console.log(
+                `[FileListDisplay Debug] ❌ Deleted showFinished for fileId: ${fileId}`
+              );
               return updated;
             });
 
-            delete fileProgress[activePeerId]; //need to delete the progress of this peer, otherwise the progress will be displayed abnormally when the same file is requested next time.
+            console.log(
+              `[FileListDisplay Debug] 🗑️ Clearing progress for fileId: ${fileId}, peerId: ${activePeerId}`
+            );
+            // 根据模式清理对应的progress数据
+            if (mode === "sender") {
+              clearSendProgress(fileId, activePeerId);
+            } else {
+              clearReceiveProgress(fileId, activePeerId);
+            }
             // Find the next outstanding transfer
             const nextTransfer = transfers.find(
               ([pid, prog]) =>
@@ -226,14 +245,44 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
       const currentShowFinished = showFinished[item.fileId];
       const prevShowFinished = prevShowFinishedRef.current[item.fileId];
       const isSaveToDisk = saveType ? saveType[item.fileId] : false;
-      // console.log(`last:${prevShowFinished} --> cur:${currentShowFinished}`);
+
+      // 添加详细调试信息
+      const fileProgress = fileProgresses[item.fileId];
+      const activePeerId = activeTransfers[item.fileId];
+      const currentProgress = activePeerId
+        ? fileProgress?.[activePeerId]?.progress
+        : null;
+
+      console.log(`[FileListDisplay Debug] 🔍 File: ${item.fileId}`);
+      console.log(
+        `[FileListDisplay Debug] - prevShowFinished: ${prevShowFinished}`
+      );
+      console.log(
+        `[FileListDisplay Debug] - currentShowFinished: ${currentShowFinished}`
+      );
+      console.log(`[FileListDisplay Debug] - activePeerId: ${activePeerId}`);
+      console.log(
+        `[FileListDisplay Debug] - currentProgress: ${currentProgress}`
+      );
+      console.log(
+        `[FileListDisplay Debug] - downloadCount: ${
+          downloadCounts[item.fileId] || 0
+        }`
+      );
+
       // Detecting false -> true transitions
       if (!prevShowFinished && currentShowFinished) {
+        console.log(
+          `[FileListDisplay Debug] 🎯 COUNTING! File ${item.fileId} transition detected`
+        );
+        console.log(
+          `[FileListDisplay Debug] - Transition: ${prevShowFinished} -> ${currentShowFinished}`
+        );
         if (!isSaveToDisk && onDownload) {
           onDownload(item);
         }
 
-        // Increase download count
+        // Increase download count - 文件传输完成时增加下载次数 (只计算一次)
         setDownloadCounts((prevCounts) => ({
           ...prevCounts,
           [item.fileId]: (prevCounts[item.fileId] || 0) + 1,
@@ -243,7 +292,14 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
       // Update the last status
       prevShowFinishedRef.current[item.fileId] = currentShowFinished;
     });
-  }, [showFinished, singleFiles, folders, saveType, onDownload]);
+  }, [
+    showFinished,
+    singleFiles,
+    folders,
+    saveType,
+    onDownload,
+    downloadCounts,
+  ]);
 
   //Actions corresponding to each file - progress, download, delete
   const renderItemActions = (item: FileMeta) => {
@@ -385,10 +441,11 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
                 {/* Safe Save Button - only show when location is picked and files are saved to disk */}
                 {onSafeSave &&
                   pickedLocation &&
-                  (isAnyFileTransferring || 
-                   (saveType && Object.values(saveType).some(
-                     (isSavedToDisk) => isSavedToDisk
-                   ))) && (
+                  (isAnyFileTransferring ||
+                    (saveType &&
+                      Object.values(saveType).some(
+                        (isSavedToDisk) => isSavedToDisk
+                      ))) && (
                     <Tooltip
                       content={messages.text.FileListDisplay.safeSave_tooltip}
                     >
