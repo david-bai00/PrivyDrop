@@ -57,9 +57,6 @@ const ClipboardApp = () => {
     updateShareContent,
     addFilesToSend,
     removeFileToSend,
-    onStringDataReceived,
-    onFileMetadataReceived,
-    onFileFullyReceived,
     handleDownloadFile,
   } = useFileTransferHandler({ messages, putMessageInMs });
 
@@ -91,9 +88,6 @@ const ClipboardApp = () => {
     isContentPresent,
     messages,
     putMessageInMs,
-    onStringReceived: onStringDataReceived,
-    onFileMetaReceived: onFileMetadataReceived,
-    onFileReceived: onFileFullyReceived,
   });
 
   const resetAppState = useCallback(async () => {

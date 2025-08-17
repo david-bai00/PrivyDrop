@@ -42,6 +42,8 @@ export function useRoomManager({
     sharePeerCount,
     retrievePeerCount,
     senderDisconnected,
+    isSenderInRoom,
+    isReceiverInRoom,
     setShareRoomId,
     setInitShareRoomId,
     setShareLink,
@@ -261,12 +263,16 @@ export function useRoomManager({
           6000
         );
 
+        // 更新 Store 中的房间状态
         if (isSenderSide) {
+          useFileTransferStore.getState().setIsSenderInRoom(true);
           const link = `${window.location.origin}${window.location.pathname}?roomId=${actualRoomIdForSenderJoin}`;
           setShareLink(link);
           if (actualRoomIdForSenderJoin !== shareRoomId) {
             setShareRoomId(actualRoomIdForSenderJoin);
           }
+        } else {
+          useFileTransferStore.getState().setIsReceiverInRoom(true);
         }
       } catch (error) {
         let errorMsgToShow = messages.text.ClipboardApp.joinRoom.failMsg;
@@ -313,51 +319,44 @@ export function useRoomManager({
 
   // useEffect for room status text
   useEffect(() => {
-    if (
-      !messages ||
-      (activeTab === "send" && !sender) ||
-      (activeTab === "retrieve" && !receiver)
-    ) {
+    if (!messages) {
       if (activeTab === "send") setShareRoomStatusText("");
       else setRetrieveRoomStatusText("");
       return;
     }
 
-    const currentPeer = activeTab === "send" ? sender : receiver;
+    const isInRoom = activeTab === "send" ? isSenderInRoom : isReceiverInRoom;
     const currentPeerCount =
       activeTab === "send" ? sharePeerCount : retrievePeerCount;
     let statusText = "";
 
-    if (currentPeer) {
-      if (!currentPeer.isInRoom) {
-        statusText =
-          activeTab === "retrieve"
-            ? messages.text.ClipboardApp.roomStatus.receiverEmptyMsg
-            : messages.text.ClipboardApp.roomStatus.senderEmptyMsg;
-      } else if (currentPeerCount === 0) {
-        statusText = messages.text.ClipboardApp.roomStatus.onlyOneMsg;
-      } else {
-        statusText =
-          activeTab === "send"
-            ? format_peopleMsg(
-                messages.text.ClipboardApp.roomStatus.peopleMsg_template,
-                currentPeerCount + 1
-              )
-            : messages.text.ClipboardApp.roomStatus.connected_dis;
-      }
-      if (activeTab === "send") setShareRoomStatusText(statusText);
-      else setRetrieveRoomStatusText(statusText);
+    if (!isInRoom) {
+      statusText =
+        activeTab === "retrieve"
+          ? messages.text.ClipboardApp.roomStatus.receiverEmptyMsg
+          : messages.text.ClipboardApp.roomStatus.senderEmptyMsg;
+    } else if (currentPeerCount === 0) {
+      statusText = messages.text.ClipboardApp.roomStatus.onlyOneMsg;
+    } else {
+      statusText =
+        activeTab === "send"
+          ? format_peopleMsg(
+              messages.text.ClipboardApp.roomStatus.peopleMsg_template,
+              currentPeerCount + 1
+            )
+          : messages.text.ClipboardApp.roomStatus.connected_dis;
     }
+    
+    if (activeTab === "send") setShareRoomStatusText(statusText);
+    else setRetrieveRoomStatusText(statusText);
   }, [
     activeTab,
     sharePeerCount,
     retrievePeerCount,
-    sender,
-    receiver,
     messages,
     senderDisconnected,
-    sender?.isInRoom,
-    receiver?.isInRoom,
+    isSenderInRoom,
+    isReceiverInRoom,
     setShareRoomStatusText,
     setRetrieveRoomStatusText,
   ]);
