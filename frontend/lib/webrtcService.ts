@@ -123,7 +123,37 @@ class WebRTCService {
     };
 
     this.fileReceiver.onFileReceived = async (file) => {
-      useFileTransferStore.getState().addRetrievedFile(file);
+      // 🔧 增强修复：确保Store状态更新完全同步，使用多重验证
+      const store = useFileTransferStore.getState();
+
+      // 检查文件是否已经存在，避免重复添加
+      const existingFile = store.retrievedFiles.find(
+        (f) => f.name === file.name && f.size === file.size
+      );
+
+      if (!existingFile) {
+        store.addRetrievedFile(file);
+      }
+
+      // 🔧 额外确保：立即验证状态更新是否成功，并重试机制
+      let verificationAttempts = 0;
+      const maxVerificationAttempts = 3;
+
+      const verifyFileAdded = () => {
+        verificationAttempts++;
+        const updatedStore = useFileTransferStore.getState();
+        const fileExists = updatedStore.retrievedFiles.some(
+          (f) => f.name === file.name && f.size === file.size
+        );
+
+        if (!fileExists && verificationAttempts < maxVerificationAttempts) {
+          updatedStore.addRetrievedFile(file);
+          setTimeout(verifyFileAdded, 10);
+        }
+      };
+
+      // 立即进行第一次验证
+      verifyFileAdded();
     };
   }
 

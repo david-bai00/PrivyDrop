@@ -1,7 +1,7 @@
 // BaseWebRTC.js
 import io, { Socket, ManagerOptions, SocketOptions } from "socket.io-client";
 import { WakeLockManager } from "./wakeLockManager";
-import { postLogInDebug } from "@/app/config/api";
+import { postLogToBackend } from "@/app/config/api";
 const developmentEnv = process.env.NEXT_PUBLIC_development!; // Development environment
 
 export class WebRTCError extends Error {
@@ -129,7 +129,7 @@ export default class BaseWebRTC {
       this.isInRoom = false;
       this.isSocketDisconnected = true;
       if (developmentEnv === "true")
-        postLogInDebug(
+        postLogToBackend(
           `${this.peerId} disconnect on socket,isInitiator:${this.isInitiator},isInRoom:${this.isInRoom}`
         );
       // Attempt to reconnect. On mobile, switching to the background disconnects both P2P and socket connections.
@@ -151,7 +151,7 @@ export default class BaseWebRTC {
       // Start reconnection only after both socket and P2P connections are disconnected
       this.reconnectionInProgress = true;
       if (developmentEnv === "true") {
-        postLogInDebug(
+        postLogToBackend(
           `Starting reconnection, socket and peer both disconnected. isInitiator:${this.isInitiator}`
         );
       }
@@ -312,7 +312,7 @@ export default class BaseWebRTC {
         await this.cleanupExistingConnection(peerId);
         this.isPeerDisconnected = true;
         if (developmentEnv === "true")
-          postLogInDebug(`p2p disconnected, isInitiator:${this.isInitiator}`);
+          postLogToBackend(`p2p disconnected, isInitiator:${this.isInitiator}`);
         // Attempt to reconnect
         this.attemptReconnection();
         await this.wakeLockManager.releaseWakeLock();
@@ -391,7 +391,7 @@ export default class BaseWebRTC {
             });
           }
           if (developmentEnv === "true")
-            postLogInDebug(
+            postLogToBackend(
               `peerId:${this.socket.id} Successfully joined room: ${response.roomId},isInitiator:${this.isInitiator},isInRoom:${this.isInRoom}`
             );
           resolve();
@@ -399,7 +399,7 @@ export default class BaseWebRTC {
           this.isInRoom = false;
           this.roomId = null;
           if (developmentEnv === "true")
-            postLogInDebug(`Failed to join room,message:${response.message}`);
+            postLogToBackend(`Failed to join room,message:${response.message}`);
           this.fireError("Failed to join room", { message: response.message });
           reject(new Error(response.message));
         }

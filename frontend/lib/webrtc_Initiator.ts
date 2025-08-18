@@ -1,6 +1,6 @@
 // Initiator flow: Join room; receive 'ready' event (this event is triggered by the socket server after a new recipient enters) -> createPeerConnection + createDataChannel -> createAndSendOffer
 import BaseWebRTC, { WebRTCConfig } from "./webrtc_base";
-import { postLogInDebug } from "@/app/config/api";
+import { postLogToBackend } from "@/app/config/api";
 const developmentEnv = process.env.NEXT_PUBLIC_development!; // Development environment
 
 export default class WebRTC_Initiator extends BaseWebRTC {
@@ -17,7 +17,9 @@ export default class WebRTC_Initiator extends BaseWebRTC {
     // Add listener for recipient's response
     this.socket.on("recipient-ready", ({ peerId }) => {
       if (developmentEnv === "true")
-        postLogInDebug(`[Initiator] Received recipient-ready from: ${peerId}`);
+        postLogToBackend(
+          `[Initiator] Received recipient-ready from: ${peerId}`
+        );
       this.handleReady({ peerId });
     });
     // Add answer handler listener
@@ -31,7 +33,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
     // Recipient peerId
     // this.log('log',`Received ready signal from peer ${peerId}`);
     if (developmentEnv === "true")
-      postLogInDebug(`Received ready signal from peer ${peerId}`);
+      postLogToBackend(`Received ready signal from peer ${peerId}`);
     await this.createPeerConnection(peerId);
     await this.createDataChannel(peerId);
     await this.createAndSendOffer(peerId);
@@ -47,7 +49,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
   }): Promise<void> {
     // this.log('log',`Handling answer from peer ${from}`);
     if (developmentEnv === "true")
-      postLogInDebug(`Handling answer from peer ${from}`);
+      postLogToBackend(`Handling answer from peer ${from}`);
     const peerConnection = this.peerConnections.get(from);
     if (!peerConnection) {
       this.fireError(`No peer connection found for peer ${from}`, { from });
@@ -93,7 +95,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
   private async createAndSendOffer(peerId: string): Promise<void> {
     // this.log('log', `Creating and sending offer to ${peerId}`);
     if (developmentEnv === "true")
-      postLogInDebug(`createAndSendOffer for peerId: ${peerId}`);
+      postLogToBackend(`createAndSendOffer for peerId: ${peerId}`);
     const peerConnection = this.peerConnections.get(peerId);
     if (!peerConnection) {
       this.fireError(`No peer connection found for peer ${peerId}`, { peerId });

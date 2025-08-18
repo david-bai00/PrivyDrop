@@ -86,7 +86,7 @@ export const setTrack = async (ref: string) => {
 };
 
 // Log debug messages
-export const postLogInDebug = async (message: string) => {
+export const postLogToBackend = async (message: string) => {
   const options = getFetchOptions({
     method: "POST",
     body: JSON.stringify({

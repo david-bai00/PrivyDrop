@@ -376,11 +376,22 @@ class FileReceiver {
       return;
     }
 
+    // 🔧 关键修复：先完成文件处理，确保文件添加到Store
+    await this.finalizeFileReceive();
+
+    // 🏗️ 架构重构：确保Store状态完全同步后再触发进度回调
     if (!this.currentFolderName) {
-      this.progressCallback?.(reception.meta.fileId, 1, 0);
+      // 🔧 优化的异步确保机制 - 确保Store状态完全同步
+      await Promise.resolve(); // 确保当前执行栈完成
+      await new Promise<void>((resolve) => {
+        // 使用更长的延迟确保Store状态完全更新
+        setTimeout(() => {
+          this.progressCallback?.(reception.meta.fileId, 1, 0);
+          resolve();
+        }, 10); // 增加到10ms确保Store状态完全同步
+      });
     }
 
-    await this.finalizeFileReceive();
     this.sendFileAck(reception.meta.fileId);
     this.log("log", "Sent file-finish ack", { fileId: reception.meta.fileId });
 
@@ -542,8 +553,13 @@ class FileReceiver {
       folderName: this.currentFolderName,
     }) as CustomFile;
 
-    // saveType is now set in requestFile.
-    await this.onFileReceived?.(customFile);
+    if (this.onFileReceived) {
+      // 🔧 关键修复：确保 onFileReceived 回调完全同步执行完成
+      await this.onFileReceived(customFile);
+      // 🔧 多重确认机制：确保 Store 状态完全同步
+      await Promise.resolve(); // 第一层确认
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 0)); // 第二层确认
+    }
   }
   // endregion
 

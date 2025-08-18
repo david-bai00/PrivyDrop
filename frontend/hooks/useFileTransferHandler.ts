@@ -34,9 +34,12 @@ export function useFileTransferHandler({
     setRetrievedFileMetas,
   } = useFileTransferStore();
 
-  const updateShareContent = useCallback((content: string) => {
-    setShareContent(content);
-  }, [setShareContent]);
+  const updateShareContent = useCallback(
+    (content: string) => {
+      setShareContent(content);
+    },
+    [setShareContent]
+  );
 
   const addFilesToSend = useCallback(
     (pickedFiles: CustomFile[]) => {
@@ -47,7 +50,7 @@ export function useFileTransferHandler({
       if (newFiles.length < pickedFiles.length && messages) {
         putMessageInMs(
           messages.text.ClipboardApp.fileExistMsg ||
-          "Some files were already added.",
+            "Some files were already added.",
           true
         );
       }
@@ -56,27 +59,27 @@ export function useFileTransferHandler({
     [sendFiles, messages, putMessageInMs, addSendFiles]
   );
 
-  const removeFileToSend = useCallback((metaToRemove: FileMeta) => {
-    removeSendFile(metaToRemove);
-  }, [removeSendFile]);
-
-  // 这些回调函数已经不再需要，因为WebRTC Hook现在直接使用Store
+  const removeFileToSend = useCallback(
+    (metaToRemove: FileMeta) => {
+      removeSendFile(metaToRemove);
+    },
+    [removeSendFile]
+  );
 
   const handleDownloadFile = useCallback(
     async (meta: FileMeta) => {
       if (!messages) return;
 
       if (meta.folderName && meta.folderName !== "") {
-        const filesToZip = retrievedFiles.filter(
+        const { retrievedFiles: latestRetrievedFiles } =
+          useFileTransferStore.getState();
+        const filesToZip = latestRetrievedFiles.filter(
           (file) => file.folderName === meta.folderName
         );
         if (filesToZip.length === 0) {
           putMessageInMs(
             messages.text.ClipboardApp.noFilesForFolderMsg ||
-            "No files found for folder '{folderName}'.".replace(
-              "{folderName}",
-              meta.folderName
-            ),
+              `No files found for folder '${meta.folderName}'.`,
             false
           );
           return;
@@ -91,28 +94,58 @@ export function useFileTransferHandler({
         } catch (error) {
           console.error("Error creating zip file:", error);
           putMessageInMs(
-            messages.text.ClipboardApp.zipError ||
-            "Error creating ZIP.",
+            messages.text.ClipboardApp.zipError || "Error creating ZIP.",
             false
           );
         }
       } else {
-        const fileToDownload = retrievedFiles.find((f) => f.name === meta.name);
-        if (fileToDownload) {
-          downloadAs(fileToDownload, fileToDownload.name);
-        } else {
-          putMessageInMs(
-            messages.text.ClipboardApp.fileNotFoundMsg ||
-            "File '{fileName}' not found for download.".replace(
-              "{fileName}",
-              meta.name
-            ),
-            false
+        let retryCount = 0;
+        const maxRetries = 3; // 重试次数
+
+        const findAndDownload = async (): Promise<boolean> => {
+          retryCount++;
+          // 🔧 关键修复：使用最新的Store状态，而不是闭包中的旧状态
+          const { retrievedFiles: latestRetrievedFiles } =
+            useFileTransferStore.getState();
+          const fileToDownload = latestRetrievedFiles.find(
+            (f) => f.name === meta.name
           );
+
+          if (fileToDownload) {
+            downloadAs(fileToDownload, fileToDownload.name);
+            return true;
+          }
+
+          return false;
+        };
+
+        // 首次尝试
+        const found = await findAndDownload();
+
+        if (!found) {
+          // 如果没找到，启动重试机制
+          const retryWithDelay = async (): Promise<void> => {
+            while (retryCount < maxRetries) {
+              await new Promise((resolve) => setTimeout(resolve, 50)); // 固定50ms延迟，因为现在状态应该很快同步
+              const foundInRetry = await findAndDownload();
+              if (foundInRetry) {
+                return;
+              }
+            }
+            // 所有重试都失败了
+            putMessageInMs(
+              messages.text.ClipboardApp.fileNotFoundMsg ||
+                `File '${meta.name}' not found for download.`,
+              false
+            );
+          };
+
+          // 异步执行重试，不阻塞主线程
+          retryWithDelay().catch(console.error);
         }
       }
     },
-    [retrievedFiles, messages, putMessageInMs]
+    [messages, putMessageInMs] // 🔧 移除retrievedFiles依赖，因为我们现在直接从Store获取最新状态
   );
 
   // Reset function specifically for receiver state (for leave room functionality)
