@@ -138,6 +138,7 @@ cd backend && npm run build && cd ..
       ```
       NGINX_SERVER_NAME=privydrop.app # 你的主域名
       NGINX_FRONTEND_ROOT=/path/to/your/PrivyDrop/frontend # 前端项目根目录
+      TURN_REALM=turn.privydrop.app # TURN 服务器域名（如需配置 TURN 服务）
       ```
     - 执行脚本生成 Nginx 配置文件：
       ```bash

@@ -5,6 +5,7 @@ declare -A required_vars=(
     ["NGINX_SERVER_NAME"]="Nginx server domain"
     ["NGINX_FRONTEND_ROOT"]="Frontend build file path"
     ["BACKEND_PORT"]="Backend service port"
+    ["TURN_REALM"]="TURN server domain name"
 )
 
 # Validate environment variables
@@ -70,6 +71,7 @@ configure_nginx() {
         -e "s/YourDomain/$NGINX_SERVER_NAME/g" \
         -e "s|path/to/PrivyDrop/frontend|$NGINX_FRONTEND_ROOT|g" \
         -e "s/localhost:3001/localhost:$BACKEND_PORT/g" \
+        -e "s/TurnServerName/$TURN_REALM/g" \
         "$NGINX_TEMPLATE" > "$TEMP_NGINX"
 
     # Copy the configuration file to the target location
@@ -78,12 +80,31 @@ configure_nginx() {
     rm "$TEMP_NGINX"
 }
 
+# Configure nginx.conf with variable substitution
+configure_nginx_conf() {
+    echo "Configuring nginx.conf..."
+    
+    NGINX_CONF_TEMPLATE="$SCRIPT_DIR/nginx.conf"
+    echo "reading $NGINX_CONF_TEMPLATE ..."
+    TEMP_NGINX_CONF=$(mktemp)
+
+    # Use sed to replace variables in nginx.conf
+    sed -e "s/TurnServerName/$TURN_REALM/g" \
+        "$NGINX_CONF_TEMPLATE" > "$TEMP_NGINX_CONF"
+
+    # Copy the configuration file to the target location
+    cp "$TEMP_NGINX_CONF" /etc/nginx/nginx.conf
+    rm "$TEMP_NGINX_CONF"
+}
+
 # Execute configuration
 configure_nginx
-cp backend/docker/Nginx/nginx.conf /etc/nginx
+configure_nginx_conf
 
-echo "Nginx base configuration generated successfully at /etc/nginx/sites-enabled/default."
+echo "Nginx configuration files generated successfully:"
+echo "  - /etc/nginx/sites-enabled/default (site configuration)"
+echo "  - /etc/nginx/nginx.conf (main configuration with TURN routing)"
 echo "The script no longer restarts Nginx automatically."
 echo ""
 echo "NEXT STEP: Run Certbot to install the SSL certificate and automatically configure Nginx:"
-echo "sudo certbot --nginx -d your_domain.com -d www.your_domain.com"
+echo "sudo certbot --nginx -d your_domain.com -d www.your_domain.com -d turn.your_domain.com"

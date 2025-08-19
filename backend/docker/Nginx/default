@@ -135,9 +135,9 @@ listen 443 quic reuseport; # Listen on UDP port 443 for QUIC and HTTP/3 # 'reuse
 
 }
 
-server { # Add a server block for Certbot to install certificates for turn.privydrop.app
+server { # Add a server block for Certbot to install certificates for TURN server
 listen 80;
-server_name turn.privydrop.app;
+server_name TurnServerName;
 
     # Only process Let's Encrypt validation requests
     location /.well-known/acme-challenge/ {

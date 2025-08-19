@@ -138,6 +138,7 @@ In production, Nginx will act as the entry point for all traffic, handling SSL t
       ```
       NGINX_SERVER_NAME=privydrop.app # Your main domain
       NGINX_FRONTEND_ROOT=/path/to/your/PrivyDrop/frontend # Path to the frontend project root
+      TURN_REALM=turn.privydrop.app # TURN server domain name (if configuring TURN service)
       ```
     - Execute the script to generate the Nginx configuration file:
       ```bash
