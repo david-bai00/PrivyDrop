@@ -117,14 +117,16 @@ In production, Nginx will act as the entry point for all traffic, handling SSL t
       ```
       Then, edit `frontend/.env.production` to set `NEXT_PUBLIC_API_URL` to your backend service domain (e.g., `https://privydrop.app`).
 
-2.  **Install Nginx:** It's recommended to install a newer version that supports HTTP/3.
+2.  **Install Nginx:**
+    ```bash
+    sudo apt install -y nginx
+    ```
 
 3.  **Firewall:**
     Open 'Nginx Full' default ports and 443/udp:
 
     ```bash
         sudo ufw allow 'Nginx Full'
-        sudo ufw allow 443/udp
         sudo ufw reload # or ufw enable
     ```
 

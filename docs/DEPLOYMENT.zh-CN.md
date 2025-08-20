@@ -117,14 +117,15 @@ cd backend && npm run build && cd ..
       ```
       然后编辑 `frontend/.env.production`，配置 `NEXT_PUBLIC_API_URL` 为您的后端服务域名 (例如 `https://privydrop.app`)。
 
-2.  **安装 Nginx:** 推荐安装支持 HTTP/3 的较新版本。
-
+2.  **安装 Nginx:**
+    ```bash
+    sudo apt install -y nginx
+    ```
 3.  **防火墙:**
     打开'Nginx Full'默认端口以及 443/udp
 
     ```bash
         sudo ufw allow 'Nginx Full'
-        sudo ufw allow 443/udp
         sudo ufw reload # 或 ufw enable
     ```
 
