@@ -6,7 +6,10 @@ export class WakeLockManager {
 
   constructor() {
     // Check if the browser supports the Wake Lock API
-    this.isSupported = "wakeLock" in navigator;
+    this.isSupported =
+      typeof window !== "undefined" &&
+      typeof navigator !== "undefined" &&
+      "wakeLock" in navigator;
   }
 
   async requestWakeLock(): Promise<void> {
