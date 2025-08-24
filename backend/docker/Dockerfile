@@ -22,7 +22,7 @@ RUN apt-get install -y vim coturn
 RUN apt-get install -y redis-server
 
 # Install nodejs 20
-RUN apt-get install -y curl
+RUN apt-get install -y curl lsb-release
 
 # node.js
 ## Import repository GPG key
@@ -43,7 +43,9 @@ RUN npm install -g pnpm pm2
 #apt update && apt-get install yarn -y
 
 ## Install Nginx
-RUN apt install -y nginx
+RUN curl -fsSL https://nginx.org/keys/nginx_signing.key | apt-key add - && \
+    echo "deb https://nginx.org/packages/ubuntu/ $(lsb_release -cs) nginx" | tee /etc/apt/sources.list.d/nginx.list && \
+    apt update && apt install -y nginx
 
 #clean up
 RUN apt-get clean autoclean
