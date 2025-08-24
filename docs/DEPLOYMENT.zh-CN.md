@@ -17,56 +17,59 @@
 - **域名：** 生产环境部署需要一个域名。
 - **可选：基础环境与 Docker 镜像参考：** 如果您需要从一个非常纯净的系统环境开始搭建，或者希望了解用于 Docker 构建的基础依赖，可以参考 `backend/docker/Dockerfile` 文件（用于 Docker 基础镜像构建）和 `backend/docker/env_install.log` 文件（依赖安装记录）。
 
-## 3. 依赖服务安装与配置
+## 3. 环境安装
 
-### 3.1. Redis 服务器
-
-Redis 用于后端的房间管理、会话信息和缓存。
-
-**安装 (Ubuntu 示例)：**
+**重要提示：** 项目根目录的 `backend/docker/env_install.sh` 脚本包含了所有必要的依赖安装命令，包括 Node.js、Redis、Coturn、Nginx 等。您可以直接运行此脚本来安装所有依赖：
 
 ```bash
-sudo apt update
-sudo apt install redis-server
+# 确保脚本有执行权限
+chmod +x backend/docker/env_install.sh
+
+# 运行安装脚本
+sudo bash backend/docker/env_install.sh
 ```
 
-**配置：**
+该脚本将自动安装：
+- **Node.js v20** - 运行环境
+- **Redis Server** - 用于房间管理和缓存  
+- **Coturn** - TURN/STUN 服务器（可选，用于NAT穿透）
+- **Nginx** - Web 服务器和反向代理（使用官方仓库）
+- **PM2** - Node.js 进程管理器
+- **Certbot** - SSL 证书管理
 
-- 默认情况下，Redis 监听 `127.0.0.1:6379` 且无需密码。请确保后端的 `.env.production[development]` 文件中包含 `REDIS_HOST` 和 `REDIS_PORT`。
-- 确保 Redis 正在运行：`sudo systemctl status redis-server`
-- 如果未运行，请启动：`sudo systemctl start redis-server`
-
-### 3.2. TURN/STUN 服务器 (Coturn)
-
-**重要提示：本节为可选配置。** Privydrop 默认仅使用公共 STUN 服务器，在多数网络环境下足以建立连接。只有当您对 NAT 穿透成功率有极高要求时，才需要搭建自己的 TURN 服务器。
-
-TURN 服务器对于 WebRTC 穿透 NAT 和防火墙至关重要。Coturn 是一个流行的实现。
-
-**安装 (Ubuntu 示例)：**
-
+安装完成后，可以验证各服务状态：
 ```bash
-sudo apt update
-sudo apt install coturn
+# 验证 Node.js 版本
+node -v
+
+# 验证 Redis 状态
+sudo systemctl status redis-server
+
+# 验证 Nginx 安装
+nginx -V
+
+# 验证 Coturn 安装
+sudo systemctl status coturn
 ```
 
-**基础配置：**
+**注意事项：**
+- **Redis配置：** 默认监听 `127.0.0.1:6379`，请确保后端 `.env` 文件中包含正确的 `REDIS_HOST` 和 `REDIS_PORT`
+- **TURN服务：** 为可选配置，Privydrop 默认使用公共 STUN 服务器，只有对 NAT 穿透有极高要求时才需要配置
+- **Nginx：** 脚本安装官方版本并验证 stream 模块支持
 
-1.  **启用 Coturn 服务：**
-    编辑 `/etc/default/coturn` 并取消注释 `TURNSERVER_ENABLED=1`。
+**TURN服务器防火墙配置（如果需要配置TURN服务）：**
+```bash
+# 启用 Coturn 服务
+sudo sed -i 's/#TURNSERVER_ENABLED=1/TURNSERVER_ENABLED=1/' /etc/default/coturn
 
-2.  **防火墙配置：**
-    在服务器的防火墙上打开 Turnserver 默认端口 (例如，使用 `ufw`)：
+# 防火墙配置：打开 Turnserver 默认端口
+sudo ufw allow Turnserver
+sudo ufw reload
+```
 
-    ```bash
-        sudo ufw allow Turnserver
-        sudo ufw reload # 或 ufw enable
-    ```
-
-    通过 sudo ufw app info Turnserver 看到的端口如下：
-    3478,3479,5349,5350,49152:65535/tcp
-    3478,3479,5349,5350,49152:65535/udp
-
-**工程师提示**：关于 Coturn 在生产环境中的详细配置（如 SSL 证书、用户名、密码等），将在 `第 4 节：应用部署` 中与 Nginx 和主应用一同进行，以确保流程的统一和简化。
+通过 `sudo ufw app info Turnserver` 看到的端口如下：
+- `3478,3479,5349,5350,49152:65535/tcp`
+- `3478,3479,5349,5350,49152:65535/udp`
 
 ## 4. 应用部署 (生产环境)
 
@@ -117,11 +120,7 @@ cd backend && npm run build && cd ..
       ```
       然后编辑 `frontend/.env.production`，配置 `NEXT_PUBLIC_API_URL` 为您的后端服务域名 (例如 `https://privydrop.app`)。
 
-2.  **安装 Nginx:**
-    ```bash
-    sudo apt install -y nginx
-    ```
-3.  **防火墙:**
+2.  **防火墙:**
     打开'Nginx Full'默认端口以及 443/udp
 
     ```bash
@@ -132,7 +131,7 @@ cd backend && npm run build && cd ..
     通过 sudo ufw app info 'Nginx Full'看到的端口如下：
     80,443/tcp
 
-4.  **生成 Nginx 基础配置:**
+3.  **生成 Nginx 基础配置:**
     后端项目 `backend/docker/Nginx/` 目录中提供了配置脚本和模板。此模板使用一个临时的"占位符"证书，以确保 Nginx 配置在申请真实证书前是有效的。
 
     - 现在，编辑 `backend/.env.production` 文件，添加 `NGINX_*` 相关变量。**无需 SSL 证书路径**。示例为：
@@ -259,13 +258,7 @@ cd backend && npm run build && cd ..
 
 PM2 是一个强大的 Node.js 进程管理器，我们将用它来运行后端和前端服务。
 
-1.  **全局安装 PM2：**
-
-    ```bash
-    sudo npm install -g pm2
-    ```
-
-2.  **使用统一配置文件启动服务：**
+1.  **使用统一配置文件启动服务：**
 
     项目根目录提供了一个统一的 `ecosystem.config.js` 配置文件，可以一次性启动所有服务：
 
@@ -277,7 +270,7 @@ PM2 是一个强大的 Node.js 进程管理器，我们将用它来运行后端�
     sudo pm2 start ecosystem.config.js
     ```
 
-3.  **管理应用：**
+2.  **管理应用：**
     - 查看状态: `pm2 list`
     - 查看日志: `pm2 logs <app_name>` (例如：`pm2 logs signaling-server` 或 `pm2 logs privydrop-frontend`)
     - 设置开机自启: `pm2 startup` 然后 `pm2 save`

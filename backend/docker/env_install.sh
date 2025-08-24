@@ -3,7 +3,7 @@ sudo apt-get install -y vim coturn
 
 sudo apt-get install -y redis-server
 
-sudo apt-get install -y curl
+sudo apt-get install -y curl lsb-release
 
 sudo apt install -y ca-certificates gnupg && sudo mkdir -p /etc/apt/keyrings
 
@@ -16,8 +16,12 @@ sudo apt-get update
 sudo apt install -y nodejs
 sudo npm install -g pnpm pm2
 
-# Install Nginx
-sudo apt install -y nginx
+# Install Nginx from official repository
+curl -fsSL https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
+echo "deb https://nginx.org/packages/ubuntu/ $(lsb_release -cs) nginx" | sudo tee /etc/apt/sources.list.d/nginx.list
+sudo apt update && sudo apt install -y nginx
+# Verify stream module
+nginx -V 2>&1 | grep -o with-stream || echo "Stream module not available"
 
 sudo apt-get clean autoclean
 sudo apt-get autoremove --yes

@@ -17,56 +17,59 @@ Before you begin, please ensure your server environment meets the following requ
 - **Domain Name:** Required for a production deployment.
 - **Optional: Base Environment & Docker Image Reference:** If you are starting from a very clean system environment or wish to see the base dependencies for a Docker build, you can refer to the `backend/docker/Dockerfile` (for Docker image creation) and `backend/docker/env_install.log` (dependency installation log) files.
 
-## 3. Dependency Services: Installation & Configuration
+## 3. Environment Installation
 
-### 3.1. Redis Server
-
-Redis is used by the backend for room management, session information, and caching.
-
-**Installation (Ubuntu Example):**
+**Important Note:** The `backend/docker/env_install.sh` script in the project root contains all necessary dependency installation commands, including Node.js, Redis, Coturn, Nginx, and more. You can run this script directly to install all dependencies:
 
 ```bash
-sudo apt update
-sudo apt install redis-server
+# Make the script executable
+chmod +x backend/docker/env_install.sh
+
+# Run the installation script
+sudo bash backend/docker/env_install.sh
 ```
 
-**Configuration:**
+This script will automatically install:
+- **Node.js v20** - Runtime environment
+- **Redis Server** - Used for room management and caching
+- **Coturn** - TURN/STUN server (optional, for NAT traversal)
+- **Nginx** - Web server and reverse proxy (from official repository)
+- **PM2** - Node.js process manager
+- **Certbot** - SSL certificate management
 
-- By default, Redis listens on `127.0.0.1:6379` without a password. Ensure your backend's `.env.production[development]` file includes the correct `REDIS_HOST` and `REDIS_PORT`.
-- Verify that Redis is running: `sudo systemctl status redis-server`
-- If it's not running, start it: `sudo systemctl start redis-server`
-
-### 3.2. TURN/STUN Server (Coturn)
-
-**Important: This section is optional.** By default, PrivyDrop uses public STUN servers, which are sufficient to establish connections in most network environments. You only need to set up your own TURN server if you have extremely high requirements for NAT traversal success rates.
-
-A TURN server is crucial for WebRTC to traverse NATs and firewalls. Coturn is a popular implementation.
-
-**Installation (Ubuntu Example):**
-
+After installation, you can verify the services:
 ```bash
-sudo apt update
-sudo apt install coturn
+# Verify Node.js version
+node -v
+
+# Verify Redis status
+sudo systemctl status redis-server
+
+# Verify Nginx installation
+nginx -V
+
+# Verify Coturn installation
+sudo systemctl status coturn
 ```
 
-**Base Configuration:**
+**Configuration Notes:**
+- **Redis Configuration:** Default listening on `127.0.0.1:6379`, ensure your backend `.env` file includes correct `REDIS_HOST` and `REDIS_PORT`
+- **TURN Service:** Optional configuration, PrivyDrop uses public STUN servers by default, only needed for extremely high NAT traversal requirements
+- **Nginx:** Script installs official version and verifies stream module support
 
-1.  **Enable the Coturn service:**
-    Edit `/etc/default/coturn` and uncomment `TURNSERVER_ENABLED=1`.
+**TURN Server Firewall Configuration (if configuring TURN service):**
+```bash
+# Enable the Coturn service
+sudo sed -i 's/#TURNSERVER_ENABLED=1/TURNSERVER_ENABLED=1/' /etc/default/coturn
 
-2.  **Firewall Configuration:**
-    Open the necessary ports on your server's firewall (e.g., using `ufw`):
+# Firewall Configuration: Open Turnserver default ports
+sudo ufw allow Turnserver
+sudo ufw reload
+```
 
-    ```bash
-        sudo ufw allow Turnserver
-        sudo ufw reload # or ufw enable
-    ```
-
-    The ports seen via `sudo ufw app info Turnserver` are as follows:
-    `3478,3479,5349,5350,49152:65535/tcp`
-    `3478,3479,5349,5350,49152:65535/udp`
-
-      **Engineer's Note**: Detailed production configuration for Coturn (like SSL certificates, username, password, etc.) will be handled in `Section 4: Application Deployment` alongside Nginx and the main application to ensure a streamlined and unified process.
+The ports seen via `sudo ufw app info Turnserver` are as follows:
+- `3478,3479,5349,5350,49152:65535/tcp`
+- `3478,3479,5349,5350,49152:65535/udp`
 
 ## 4. Application Deployment (Production)
 
@@ -117,12 +120,7 @@ In production, Nginx will act as the entry point for all traffic, handling SSL t
       ```
       Then, edit `frontend/.env.production` to set `NEXT_PUBLIC_API_URL` to your backend service domain (e.g., `https://privydrop.app`).
 
-2.  **Install Nginx:**
-    ```bash
-    sudo apt install -y nginx
-    ```
-
-3.  **Firewall:**
+2.  **Firewall:**
     Open 'Nginx Full' default ports and 443/udp:
 
     ```bash
@@ -133,7 +131,7 @@ In production, Nginx will act as the entry point for all traffic, handling SSL t
     The ports seen via `sudo ufw app info 'Nginx Full'` are as follows:
     80,443/tcp
 
-4.  **Generate Base Nginx Configuration:**
+3.  **Generate Base Nginx Configuration:**
     The `backend/docker/Nginx/` directory provides a configuration script and template. This template uses a temporary "placeholder" certificate to ensure the Nginx configuration is valid before obtaining a real certificate.
 
     - Now, edit the `backend/.env.production` file and add the `NGINX_*` related variables. **Do not include SSL certificate paths yet**. Example:
@@ -261,13 +259,7 @@ With the unified SSL certificate obtained, we can now complete the production co
 
 PM2 is a powerful process manager for Node.js. We will use it to run both backend and frontend services.
 
-1.  **Install PM2 globally:**
-
-    ```bash
-    sudo npm install -g pm2
-    ```
-
-2.  **Start Services Using Unified Configuration:**
+1.  **Start Services Using Unified Configuration:**
 
     The project root directory provides a unified `ecosystem.config.js` configuration file that can start all services at once:
 
@@ -279,7 +271,7 @@ PM2 is a powerful process manager for Node.js. We will use it to run both backen
     sudo pm2 start ecosystem.config.js
     ```
 
-3.  **Manage Applications:**
+2.  **Manage Applications:**
     - View status: `pm2 list`
     - View logs: `pm2 logs <app_name>` (e.g., `pm2 logs signaling-server` or `pm2 logs privydrop-frontend`)
     - Set up startup script: `pm2 startup` followed by `pm2 save`

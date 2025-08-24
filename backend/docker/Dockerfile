@@ -43,7 +43,7 @@ RUN npm install -g pnpm pm2
 #apt update && apt-get install yarn -y
 
 ## Install Nginx
-RUN apt install nginx
+RUN apt install -y nginx
 
 #clean up
 RUN apt-get clean autoclean
