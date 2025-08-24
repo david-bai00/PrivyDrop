@@ -321,6 +321,7 @@ export const de: Messages = {
         Copy_dis: "Kopieren",
         inputRoomIdprompt: "Ihre Raum-ID (bearbeitbar):",
         joinRoomBtn: "Raum beitreten",
+        generateRoomId_tips: "Zufällige ID",
         readClipboardToRoomId: "Raum-ID einfügen",
         enterRoomID_placeholder: "Raum-ID eingeben",
         retrieveMethod: "Abrufmethode",

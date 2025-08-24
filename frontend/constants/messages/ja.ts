@@ -307,6 +307,7 @@ export const ja: Messages = {
         Copy_dis: "コピー",
         inputRoomIdprompt: "ルームID（編集可能）：",
         joinRoomBtn: "ルームに参加",
+        generateRoomId_tips: "ランダムID",
         readClipboardToRoomId: "ルームIDを貼り付け",
         enterRoomID_placeholder: "ルームIDを入力",
         retrieveMethod: "取得方法",

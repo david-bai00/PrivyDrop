@@ -315,6 +315,7 @@ export const es: Messages = {
         Copy_dis: "Copiar",
         inputRoomIdprompt: "Tu ID de Sala (Editable):",
         joinRoomBtn: "Unirse a sala",
+        generateRoomId_tips: "ID Aleatorio",
         readClipboardToRoomId: "Pegar ID de Sala",
         enterRoomID_placeholder: "ingresa ID de Sala",
         retrieveMethod: "Método de recuperación",

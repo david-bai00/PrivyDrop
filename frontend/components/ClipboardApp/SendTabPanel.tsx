@@ -139,6 +139,14 @@ export function SendTabPanel({
               }
             />
             <Button
+              variant="outline"
+              className="w-full sm:w-auto px-4"
+              onClick={() => processRoomIdInput(crypto.randomUUID())}
+              disabled={isSenderInRoom}
+            >
+              {messages.text.ClipboardApp.html.generateRoomId_tips}
+            </Button>
+            <Button
               className="w-full sm:w-auto px-4"
               onClick={() => joinRoom(true, inputFieldValue.trim())}
               disabled={isSenderInRoom || !inputFieldValue.trim()}

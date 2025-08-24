@@ -323,6 +323,7 @@ export const fr: Messages = {
         Copy_dis: "Copier",
         inputRoomIdprompt: "Votre ID de salle (modifiable) :",
         joinRoomBtn: "Rejoindre la salle",
+        generateRoomId_tips: "ID Aléatoire",
         readClipboardToRoomId: "Coller l'ID de salle",
         enterRoomID_placeholder: "entrez l'ID de salle",
         retrieveMethod: "Méthode de récupération",
