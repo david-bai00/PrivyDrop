@@ -6,11 +6,20 @@ This roadmap is a living document. We welcome community feedback and contributio
 
 ---
 
+## ✅ Completed
+
+- **Core Architecture Refactor (Q3 2025)**: Successfully refactored the entire frontend codebase to a modern, layered architecture.
+  - Implemented a framework-agnostic **Service Layer** (`webrtcService`) to encapsulate all WebRTC and business logic.
+  - Introduced **Zustand** for centralized, predictable state management (`fileTransferStore`).
+  - Decoupled UI components from business logic, establishing a clear, unidirectional data flow.
+- **Resumable File Transfers (Q3 2025):** Implemented robust logic for resuming transfers from the point of interruption. This is enabled by setting a save directory, which allows the receiver to check for partially downloaded files and request only the missing chunks.
+
+---
+
 ## Short-Term Goals (Next 1-3 Months)
 
 This phase focuses on perfecting the current feature set and enhancing reliability to build an even stronger foundation.
 
-- **[High Priority] Resumable File Transfers:** Implement logic to allow file transfers to be paused and resumed. This is crucial for large files and unstable network conditions. It will involve chunk-based confirmation and state management on both peers.
 - **Enhanced Connection Stability:** The current implementation supports automatic reconnection for a short period (e.g., 15 minutes) in default 4-digit rooms. This will be extended to support custom-named rooms with a longer reconnection window (e.g., 1 hour).
 - **Detailed Transfer Error-Handling:** Provide users with clearer, more specific feedback when a transfer fails (e.g., "Peer disconnected," "Browser storage full," "Network interrupted").
 
@@ -40,7 +49,7 @@ This phase introduces powerful new features that expand PrivyDrop's use cases be
 
 This section is for features that are not on the immediate roadmap but represent great opportunities for community contributions.
 
-- **Comprehensive Testing:** While manual testing currently suffices, we plan to gradually introduce a testing framework (like Jest/Vitest) to improve code quality and make community contributions safer. We welcome contributions in this area.
+- **Comprehensive Testing:** The recent architectural refactor has made the codebase significantly more testable. We now plan to introduce a testing framework (like Vitest) to add unit tests for the core `webrtcService` and Zustand store, improving code quality and making community contributions safer. We welcome contributions in this area.
 - **Your Ideas Here:** Have a great idea for a feature, like screen sharing or P2P media streaming? Open an issue and let's discuss it! We believe the best ideas can come from the community.
 
 ## How to Contribute

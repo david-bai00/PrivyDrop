@@ -75,6 +75,7 @@ configure_nginx() {
         "$NGINX_TEMPLATE" > "$TEMP_NGINX"
 
     # Copy the configuration file to the target location
+    mkdir -p /etc/nginx/sites-enabled
     cp "$TEMP_NGINX" /etc/nginx/sites-enabled/default
     # cp "$TEMP_NGINX" default_temp
     rm "$TEMP_NGINX"

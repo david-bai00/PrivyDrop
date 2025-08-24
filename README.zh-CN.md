@@ -86,7 +86,7 @@ PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）�
 我们提供了详尽的文档来帮助你深入了解项目的设计和部署细节：
 
 - [**项目整体架构**](./docs/ARCHITECTURE.zh-CN.md): 了解 PrivyDrop 系统各个组件如何协同工作。
-- [**前端架构详解**](./docs/FRONTEND_ARCHITECTURE.zh-CN.md): 深入探索前端的代码结构、状态管理和核心逻辑。
+- [**前端架构详解**](./docs/FRONTEND_ARCHITECTURE.zh-CN.md): 深入探索前端的现代化分层架构、基于 Zustand 的状态管理，以及解耦的服务化 WebRTC 实现。
 - [**后端架构详解**](./docs/BACKEND_ARCHITECTURE.zh-CN.md): 深入探索后端的代码结构、信令流程和 Redis 设计。
 - [**部署指南**](./docs/DEPLOYMENT.zh-CN.md): 学习如何在生产环境部署完整的 PrivyDrop 应用。
 
