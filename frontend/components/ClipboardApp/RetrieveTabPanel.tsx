@@ -120,47 +120,52 @@ export function RetrieveTabPanel({
             ? messages.text.ClipboardApp.roomStatus.connected_dis
             : messages.text.ClipboardApp.roomStatus.receiverEmptyMsg)}
       </div>
-      <div className="flex flex-col sm:flex-row items-center gap-2 mb-3">
-        <ReadClipboardButton
-          title={messages.text.ClipboardApp.html.readClipboard_dis}
-          onRead={setRetrieveRoomIdInput}
-        />
-        <Input
-          aria-label="Retrieve Room ID"
-          value={retrieveRoomIdInput}
-          onChange={(e) => setRetrieveRoomIdInput(e.target.value)}
-          placeholder={
-            messages.text.ClipboardApp.html.retrieveRoomId_placeholder
-          }
-          className="flex-grow min-w-0"
-        />
-      </div>
-      <div className="flex gap-2 mb-3">
-        <Button
-          className="flex-1"
-          onClick={() => joinRoom(false, retrieveRoomIdInput)}
-          ref={retrieveJoinRoomBtnRef}
-          disabled={isReceiverInRoom || !retrieveRoomIdInput.trim()}
-        >
-          {messages.text.ClipboardApp.html.joinRoom_dis}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={handleLeaveRoom}
-          disabled={!isReceiverInRoom || isAnyFileTransferring}
-        >
-          {messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
-        </Button>
+      <div className="space-y-3 mb-4">
+        {/* Room ID input section */}
+        <div className="space-y-2">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <ReadClipboardButton
+              title={messages.text.ClipboardApp.html.readClipboard_dis}
+              onRead={setRetrieveRoomIdInput}
+            />
+            <Input
+              aria-label="Retrieve Room ID"
+              value={retrieveRoomIdInput}
+              onChange={(e) => setRetrieveRoomIdInput(e.target.value)}
+              placeholder={
+                messages.text.ClipboardApp.html.retrieveRoomId_placeholder
+              }
+              className="flex-1 min-w-0"
+            />
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            className="flex-1 order-1"
+            onClick={() => joinRoom(false, retrieveRoomIdInput)}
+            ref={retrieveJoinRoomBtnRef}
+            disabled={isReceiverInRoom || !retrieveRoomIdInput.trim()}
+          >
+            {messages.text.ClipboardApp.html.joinRoom_dis}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleLeaveRoom}
+            disabled={!isReceiverInRoom || isAnyFileTransferring}
+            className="w-full sm:w-auto px-4 order-2"
+          >
+            {messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
+          </Button>
+        </div>
       </div>
       {retrievedContent && (
-        <div className="my-3 p-2 border rounded bg-gray-50">
-          <RichTextEditor
-            value={retrievedContent}
-            onChange={() => {
-              /* Read-only */
-            }}
-          />
-          <div className="mt-2">
+        <div className="my-3 p-3 border rounded-md">
+          <div className="bg-white p-3 rounded border border-gray-200 text-sm leading-relaxed">
+            <div dangerouslySetInnerHTML={{ __html: retrievedContent }} />
+          </div>
+          <div className="flex justify-start">
             <WriteClipboardButton
               title={messages.text.ClipboardApp.html.Copy_dis}
               textToCopy={richTextToPlainText(retrievedContent)}

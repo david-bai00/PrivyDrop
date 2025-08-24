@@ -181,7 +181,7 @@ const ClipboardApp = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 w-full md:max-w-4xl">
+    <div className="w-full mx-auto px-1 sm:px-1 py-3 sm:py-8 md:max-w-4xl md:container">
       <FullScreenDropZone isDragging={isDragging} messages={messages} />
       <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
         <Button
@@ -205,15 +205,15 @@ const ClipboardApp = () => {
           {messages.text.ClipboardApp.html.retrieveTab}
         </Button>
       </div>
-      <Card className="border-8 shadow-md">
-        <CardHeader>
-          <CardTitle>
+      <Card className="border-4 sm:border-8 shadow-md">
+        <CardHeader className="px-3 sm:px-6 py-3 sm:py-6">
+          <CardTitle className="text-lg sm:text-xl">
             {activeTab === "send"
               ? messages.text.ClipboardApp.html.shareTitle_dis
               : messages.text.ClipboardApp.html.retrieveTitle_dis}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 sm:px-6">
           {activeTab === "send" ? (
             <SendTabPanel
               messages={messages}
@@ -224,7 +224,6 @@ const ClipboardApp = () => {
               processRoomIdInput={processRoomIdInput}
               joinRoom={joinRoom}
               generateShareLinkAndBroadcast={generateShareLinkAndBroadcast}
-
               shareMessage={shareMessage}
               currentValidatedShareRoomId={shareRoomId}
               handleLeaveSenderRoom={handleLeaveSenderRoom}
@@ -236,7 +235,6 @@ const ClipboardApp = () => {
               setRetrieveRoomIdInput={setRetrieveRoomIdInput}
               joinRoom={joinRoom}
               retrieveJoinRoomBtnRef={retrieveJoinRoomBtnRef}
-
               richTextToPlainText={richTextToPlainText}
               handleDownloadFile={handleDownloadFile}
               requestFile={requestFile}
@@ -251,13 +249,13 @@ const ClipboardApp = () => {
         </CardContent>
       </Card>
       {activeTab === "send" && shareLink && messages && (
-        <Card className="border-2 shadow-md mt-4">
-          <CardHeader>
-            <CardTitle>
+        <Card className="border-2 sm:border-4 shadow-md mt-2 sm:mt-4">
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg">
               {messages.text.ClipboardApp.html.RetrieveMethodTitle}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0 px-3 sm:px-6">
             <QRCodeComponent RoomID={shareRoomId} shareLink={shareLink} />
           </CardContent>
         </Card>

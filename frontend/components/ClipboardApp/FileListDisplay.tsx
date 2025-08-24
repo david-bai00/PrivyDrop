@@ -273,56 +273,66 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
       return <div>Loading...</div>;
     }
     return (
-      <div className="flex items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0 flex-shrink-0">
         {progress && progress.progress < 1 ? ( //Show progress or completed
-          <TransferProgress
-            message={
-              mode === "sender"
-                ? messages.text.FileListDisplay.sending_dis
-                : messages.text.FileListDisplay.receiving_dis
-            }
-            progress={progress}
-          />
+          <div className="w-full sm:w-auto">
+            <TransferProgress
+              message={
+                mode === "sender"
+                  ? messages.text.FileListDisplay.sending_dis
+                  : messages.text.FileListDisplay.receiving_dis
+              }
+              progress={progress}
+            />
+          </div>
         ) : showCompletion ? (
-          <span className="mr-2 text-sm text-green-500">
+          <span className="text-sm text-green-500 whitespace-nowrap">
             {messages.text.FileListDisplay.finish_dis}
           </span>
         ) : null}
-        {mode === "receiver" &&
-          onRequest &&
-          onDownload && ( //Request && Download
-            <FileTransferButton
-              onRequest={() => onRequest(item)}
-              isCurrentFileTransferring={
+
+        <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+          {mode === "receiver" &&
+            onRequest &&
+            onDownload && ( //Request && Download
+              <FileTransferButton
+                onRequest={() => onRequest(item)}
+                isCurrentFileTransferring={
+                  progress
+                    ? progress.progress > 0 && progress.progress < 1
+                    : false
+                }
+                isOtherFileTransferring={isAnyFileTransferring && !progress}
+                isSavedToDisk={saveType ? saveType[item.fileId] : false}
+              />
+            )}
+          {/* display download Num*/}
+          {mode === "sender" && (
+            <span className="text-xs sm:text-sm whitespace-nowrap">
+              {messages.text.FileListDisplay.downloadNum_dis}: {downloadCount}
+            </span>
+          )}
+          {mode === "sender" && onDelete && (
+            <Button
+              onClick={() => {
+                onDelete(item);
+              }}
+              variant="destructive"
+              size="sm"
+              disabled={
                 progress
-                  ? progress.progress > 0 && progress.progress < 1
+                  ? progress?.progress > 0 && progress.progress < 1
                   : false
               }
-              isOtherFileTransferring={isAnyFileTransferring && !progress}
-              isSavedToDisk={saveType ? saveType[item.fileId] : false}
-            />
+              className="text-xs sm:text-sm px-2 sm:px-3"
+            >
+              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+              <span className="hidden sm:inline">
+                {messages.text.FileListDisplay.delete_dis}
+              </span>
+            </Button>
           )}
-        {/* display download Num*/}
-        {mode === "sender" && (
-          <span className="mr-2 text-sm">
-            {messages.text.FileListDisplay.downloadNum_dis}: {downloadCount}
-          </span>
-        )}
-        {mode === "sender" && onDelete && (
-          <Button
-            onClick={() => {
-              onDelete(item);
-            }}
-            variant="destructive"
-            size="sm"
-            disabled={
-              progress ? progress?.progress > 0 && progress.progress < 1 : false
-            }
-          >
-            <Trash2 className="mr-2 h-4 w-4" />{" "}
-            {messages.text.FileListDisplay.delete_dis}
-          </Button>
-        )}
+        </div>
       </div>
     );
   };
@@ -340,23 +350,32 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
       : `${item.name} ${formatSize}`;
 
     return (
-      <div key={item.name} className="flex items-center justify-between mb-1">
+      <div
+        key={item.name}
+        className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2 p-2 sm:p-3 border border-gray-100 rounded-lg"
+      >
         <Tooltip content={tooltipContent}>
-          <span className="mr-2 truncate max-w-sm">
-            {isFolder ? "📁 " : ""}
-            {item.name.length > filenameDisplayLen
-              ? `${item.name.slice(0, filenameDisplayLen - 3)}...`
-              : item.name}
-            {isFolder
-              ? `${formatFolderDis(
-                  messages!.text.FileListDisplay.folder_dis_template,
-                  item.fileCount || 0,
-                  formatSize
-                )}`
-              : ` ${formatSize}`}
-          </span>
+          <div className="flex-1 min-w-0">
+            <span className="block truncate text-sm sm:text-base">
+              {isFolder ? "📁 " : ""}
+              {item.name.length > filenameDisplayLen
+                ? `${item.name.slice(0, filenameDisplayLen - 3)}...`
+                : item.name}
+            </span>
+            <span className="text-xs sm:text-sm text-gray-500">
+              {isFolder
+                ? `${formatFolderDis(
+                    messages!.text.FileListDisplay.folder_dis_template,
+                    item.fileCount || 0,
+                    formatSize
+                  )}`
+                : ` ${formatSize}`}
+            </span>
+          </div>
         </Tooltip>
-        {renderItemActions(item)}
+        <div className="w-full sm:w-auto sm:flex-shrink-0">
+          {renderItemActions(item)}
+        </div>
       </div>
     );
   };

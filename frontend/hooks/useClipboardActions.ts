@@ -67,17 +67,44 @@ export const useClipboardActions = (): ClipboardActions => {
     async (textToCopy: string) => {
       setError(null);
       setIsCopied(false);
-      if (!navigator.clipboard) {
-        setError(clipboardMessages.copyError || "Clipboard API not available.");
-        return;
+
+      // Modern API: navigator.clipboard.writeText
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(textToCopy);
+          setIsCopied(true);
+          setTimeout(() => setIsCopied(false), 2000);
+          return; // Success
+        } catch (err) {
+          console.error("Failed to copy text with navigator.clipboard: ", err);
+          // Fallback will be attempted below
+        }
       }
+
+      // Fallback: document.execCommand('copy')
+      let textArea: HTMLTextAreaElement | null = null;
       try {
-        await navigator.clipboard.writeText(textToCopy);
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
+        textArea = document.createElement("textarea");
+        textArea.value = textToCopy;
+        textArea.style.position = "fixed"; // Prevent scrolling to bottom of page in MS Edge.
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand("copy");
+        if (successful) {
+          setIsCopied(true);
+          setTimeout(() => setIsCopied(false), 2000);
+        } else {
+          throw new Error("document.execCommand failed");
+        }
       } catch (err) {
-        console.error("Failed to copy text: ", err);
+        console.error("Fallback copy method failed: ", err);
         setError(clipboardMessages.copyError || "Failed to copy.");
+      } finally {
+        if (textArea) {
+          document.body.removeChild(textArea);
+        }
       }
     },
     [clipboardMessages.copyError]

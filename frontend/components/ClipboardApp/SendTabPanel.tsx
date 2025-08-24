@@ -101,7 +101,7 @@ export function SendTabPanel({
             : messages.text.ClipboardApp.roomStatus.senderEmptyMsg)}
       </div>
       <RichTextEditor value={shareContent} onChange={updateShareContent} />
-      <div className="flex flex-wrap gap-2 my-3">
+      <div className="flex flex-col sm:flex-row gap-2 my-3">
         <ReadClipboardButton
           title={messages.text.ClipboardApp.html.Paste_dis}
           onRead={updateShareContent}
@@ -121,46 +121,59 @@ export function SendTabPanel({
           onDelete={removeFileToSend}
         />
       </div>
-      <div className="flex flex-col sm:flex-row items-center gap-2 mb-3">
-        <span className="text-sm whitespace-nowrap">
-          {messages.text.ClipboardApp.html.inputRoomId_tips}
-        </span>
-        <Input
-          aria-label="Share Room ID"
-          value={inputFieldValue} // Bind to local state
-          onChange={handleInputChange}
-          onPaste={handlePaste}
-          className="flex-grow min-w-0"
-        />
-        <Button
-          className="w-full sm:w-auto"
-          onClick={() => joinRoom(true, inputFieldValue.trim())} // Attempt to join using the current input field value
-          disabled={isSenderInRoom || !inputFieldValue.trim()}
-        >
-          {messages.text.ClipboardApp.html.joinRoom_dis}
-        </Button>
-      </div>
-      <div className="flex gap-2">
-        <AnimatedButton
-          className="flex-1"
-          onClick={generateShareLinkAndBroadcast}
-          loadingText={messages.text.ClipboardApp.html.SyncSending_loadingText}
-          disabled={
-            !isSenderInRoom ||
-            (sendFiles.length === 0 && shareContent.trim() === "") ||
-            !currentValidatedShareRoomId.trim() ||
-            isAnyFileTransferring
-          } // Ensure there is a validated room ID before allowing sharing
-        >
-          {messages.text.ClipboardApp.html.SyncSending_dis}
-        </AnimatedButton>
-        <Button
-          variant="outline"
-          onClick={handleLeaveSenderRoom}
-          disabled={!isSenderInRoom || isAnyFileTransferring}
-        >
-          {messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
-        </Button>
+      <div className="space-y-3 mb-4">
+        {/* Room ID input section */}
+        <div className="space-y-2">
+          <p className="text-sm text-gray-600">
+            {messages.text.ClipboardApp.html.inputRoomId_tips}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input
+              aria-label="Share Room ID"
+              value={inputFieldValue}
+              onChange={handleInputChange}
+              onPaste={handlePaste}
+              className="flex-1 min-w-0"
+              placeholder={
+                messages.text.ClipboardApp.html.retrieveRoomId_placeholder
+              }
+            />
+            <Button
+              className="w-full sm:w-auto px-4"
+              onClick={() => joinRoom(true, inputFieldValue.trim())}
+              disabled={isSenderInRoom || !inputFieldValue.trim()}
+            >
+              {messages.text.ClipboardApp.html.joinRoom_dis}
+            </Button>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <AnimatedButton
+            className="flex-1 order-1"
+            onClick={generateShareLinkAndBroadcast}
+            loadingText={
+              messages.text.ClipboardApp.html.SyncSending_loadingText
+            }
+            disabled={
+              !isSenderInRoom ||
+              (sendFiles.length === 0 && shareContent.trim() === "") ||
+              !currentValidatedShareRoomId.trim() ||
+              isAnyFileTransferring
+            }
+          >
+            {messages.text.ClipboardApp.html.SyncSending_dis}
+          </AnimatedButton>
+          <Button
+            variant="outline"
+            onClick={handleLeaveSenderRoom}
+            disabled={!isSenderInRoom || isAnyFileTransferring}
+            className="w-full sm:w-auto px-4 order-2"
+          >
+            {messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
+          </Button>
+        </div>
       </div>
       {shareMessage && (
         <p className="mt-3 text-sm text-blue-600">{shareMessage}</p>

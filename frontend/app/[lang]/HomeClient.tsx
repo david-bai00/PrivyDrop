@@ -30,7 +30,7 @@ export default function HomeClient({ messages, lang }: PageContentProps) {
         className="py-12"
         aria-label="File Transfer Application"
       >
-        <div className="container mx-auto px-4">
+        <div className="w-full max-w-none">
           {/* sr-only--screen-only: visually hidden */}
           <h2 className={cn("sr-only", "text-3xl font-bold mb-8 text-center")}>
             {messages.text.home.h2_screenOnly}
