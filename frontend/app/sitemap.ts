@@ -1,5 +1,6 @@
 import { MetadataRoute } from "next";
 import { supportedLocales } from "@/constants/i18n-config";
+import { getAllPosts } from "@/lib/blog";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://www.privydrop.app";
@@ -36,6 +37,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
     });
   });
+
+  // Add blog posts for each language
+  for (const lang of languages) {
+    try {
+      const posts = await getAllPosts(lang);
+      
+      posts.forEach((post) => {
+        urls.push({
+          url: `${baseUrl}/${lang}/blog/${post.slug}`,
+          lastModified: new Date(post.frontmatter.date),
+          changeFrequency: "monthly",
+          priority: 0.7,
+        });
+      });
+    } catch (error) {
+      console.warn(`Failed to load blog posts for language ${lang}:`, error);
+    }
+  }
 
   return urls;
 }
