@@ -41,11 +41,12 @@ We believe everyone should have control over their own data. PrivyDrop was creat
 
 Before you begin, ensure your development environment has [Node.js](https://nodejs.org/) (v18+), [npm](https://www.npmjs.com/), and a running [Redis](https://redis.io/) instance installed.
 
-1.  **Clone the Project**
+1.  **Clone the Project & install redis**
 
     ```bash
     git clone https://github.com/david-bai00/PrivyDrop.git
     cd PrivyDrop
+    sudo apt-get install -y redis-server
     ```
 
 2.  **Configure and Start the Backend Service**
@@ -66,7 +67,7 @@ Before you begin, ensure your development environment has [Node.js](https://node
     cd frontend
     pnpm install
 
-    # Copy the development environment file, then modify .env.development as needed
+    # Copy the development environment file, then modify .env.development as needed, Remove optional items
     cp .env_development_example .env.development
 
     pnpm dev # Starts by default at http://localhost:3002

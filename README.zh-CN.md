@@ -41,11 +41,12 @@ PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）�
 
 在开始之前，请确保你的开发环境已安装 [Node.js](https://nodejs.org/) (v18+), [npm](https://www.npmjs.com/) 以及一个正在运行的 [Redis](https://redis.io/) 实例。
 
-1.  **克隆项目**
+1.  **克隆项目 & 安装 redis**
 
     ```bash
     git clone https://github.com/david-bai00/PrivyDrop.git
-    cd privydrop
+    cd PrivyDrop
+    sudo apt-get install -y redis-server
     ```
 
 2.  **配置并启动后端服务**
@@ -66,7 +67,7 @@ PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）�
     cd frontend
     pnpm install
 
-    # 复制开发环境变量文件，然后根据需要修改 .env.development
+    # 复制开发环境变量文件，然后根据需要修改 .env.development，删除可选项
     cp .env_development_example .env.development
 
     pnpm dev # 默认启动于 http://localhost:3002
