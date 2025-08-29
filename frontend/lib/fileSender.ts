@@ -25,6 +25,41 @@ class FileSender {
   private pendingFiles: Map<string, CustomFile>;
   private pendingFolerMeta: Record<string, FolderMeta>;
   private speedCalculator: SpeedCalculator;
+  
+  // 检测是否为移动设备
+  private isMobileDevice(): boolean {
+    if (typeof navigator !== 'undefined') {
+      return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+    return false;
+  }
+  
+  // 简化的日志记录（仅用于错误和关键信息）
+  private logInfo(message: string): void {
+    const deviceType = this.isMobileDevice() ? 'Mobile' : 'Desktop';
+    const logMsg = `[FileSender][${deviceType}] ${message}`;
+    console.log(logMsg);
+  }
+
+  // 根据设备类型获取最佳块大小
+  private getOptimalChunkSize(): number {
+    if (this.isMobileDevice()) {
+      // 移动端优化：256KB大块大小，减少FileReader调用频率
+      return 262144; // 移动端256KB，针对移动设备FileReader性能特点优化
+    }
+    return 65536; // 桌面端64KB保持标准大小
+  }
+
+  // 根据设备类型获取最佳缓冲区大小
+  private getOptimalBufferSize(): number {
+    if (this.isMobileDevice()) {
+      // 移动设备优化的缓冲区大小，平衡内存使用和性能
+      return 5; // 移动端5个块的预读，适合移动设备内存特点
+    }
+    return 10; // 桌面设备使用更大的缓冲区
+  }
+  
+
 
   constructor(WebRTC_initiator: WebRTC_Initiator) {
     this.webrtcConnection = WebRTC_initiator;
@@ -32,8 +67,9 @@ class FileSender {
     // Maintain independent sending states for each receiver
     this.peerStates = new Map(); // Map<peerId, PeerState>
 
-    this.chunkSize = 65536; // 64 KB chunks
-    this.maxBufferSize = 10; // Number of chunks to pre-read
+    // 动态设置基于设备的优化参数
+    this.chunkSize = this.getOptimalChunkSize();
+    this.maxBufferSize = this.getOptimalBufferSize();
     this.pendingFiles = new Map(); // All files pending to be sent (by reference) {fileId: CustomFile}
 
     this.pendingFolerMeta = {}; // Metadata for folders (total size, total file count), used for tracking transfer progress
@@ -41,6 +77,10 @@ class FileSender {
     // Create a SpeedCalculator instance
     this.speedCalculator = new SpeedCalculator();
     this.setupDataHandler();
+    
+    // 简化的初始化日志
+    const isMobile = this.isMobileDevice();
+    this.logInfo(`FileSender initialized - Device: ${isMobile ? 'Mobile' : 'Desktop'}, ChunkSize: ${Math.round(this.chunkSize / 1024)}KB`);
   }
 
   // region Logging and Error Handling
@@ -226,17 +266,11 @@ class FileSender {
     const peerState = this.getPeerState(peerId);
 
     if (peerState.isSending) {
-      this.log(
-        "warn",
-        `Already sending a file to peer ${peerId}, request for ${file.name} ignored.`
-      );
+      this.logInfo(`Already sending a file to peer ${peerId}, request for ${file.name} ignored.`);
       return;
     }
 
-    this.log(
-      "log",
-      `Starting to send single file: ${file.name} to ${peerId} from offset ${offset}`
-    );
+    this.logInfo(`Starting file transfer: ${file.name} (${Math.round(file.size / 1024 / 1024 * 100) / 100}MB)`);
 
     // Reset state for the new transfer
     peerState.isSending = true;
@@ -251,12 +285,10 @@ class FileSender {
       this.finalizeSendFile(fileId, peerId);
 
       await this.waitForTransferComplete(peerId); // Wait for transfer completion -- receiver confirmation
+      
+      this.logInfo(`File ${fileId} sent successfully to ${peerId}`);
     } catch (error: any) {
-      this.fireError(`Error sending file ${file.name}`, {
-        error: error.message,
-        fileId,
-        peerId,
-      });
+      this.fireError(`Error sending file ${file.name}: ${error.message}`, { fileId, peerId });
       this.abortFileSend(fileId, peerId);
     }
   }
@@ -334,22 +366,175 @@ class FileSender {
       throw new Error("Data channel not found");
     }
 
-    if (dataChannel.bufferedAmount > dataChannel.bufferedAmountLowThreshold) {
+    const isMobile = this.isMobileDevice();
+    // 优化的缓冲区阈值：移动设备1.5MB，桌面512KB
+    const threshold = isMobile ? 1572864 : 524288;
+    
+    // 检查是否需要等待背压缓解
+    if (dataChannel.bufferedAmount > threshold) {
       await new Promise<void>((resolve) => {
-        const listener = () => {
-          dataChannel.removeEventListener("bufferedamountlow", listener);
+        const onBufferedAmountLow = () => {
+          dataChannel.removeEventListener('bufferedamountlow', onBufferedAmountLow);
           resolve();
         };
-        dataChannel.addEventListener("bufferedamountlow", listener);
+        dataChannel.addEventListener('bufferedamountlow', onBufferedAmountLow);
+        
+        // 设置超时以避免永久等待
+        setTimeout(() => {
+          dataChannel.removeEventListener('bufferedamountlow', onBufferedAmountLow);
+          resolve();
+        }, isMobile ? 1000 : 3000);
       });
     }
-
+    
     if (!this.webrtcConnection.sendData(data, peerId)) {
       throw new Error("sendData failed");
     }
   }
-  //start sending file content
-  private async processSendQueue(
+
+  
+  // 移动设备使用简化版本读取单个块
+  private readSingleChunk(
+    fileReader: FileReader,
+    file: CustomFile,
+    offset: number,
+    chunkSize: number
+  ): Promise<ArrayBuffer> {
+    return new Promise((resolve, reject) => {
+      const slice = file.slice(offset, offset + chunkSize);
+      fileReader.onload = (e) => {
+        if (e.target?.result instanceof ArrayBuffer) {
+          resolve(e.target.result);
+        } else {
+          reject(new Error("Failed to read blob as ArrayBuffer"));
+        }
+      };
+      fileReader.onerror = () => reject(fileReader.error || new Error("Read error"));
+      fileReader.readAsArrayBuffer(slice);
+    });
+  }
+  
+  // 批量读取多个文件块，提升移动设备I/O性能
+  private async readMultipleChunks(
+    fileReader: FileReader,
+    file: CustomFile,
+    startOffset: number,
+    chunkSize: number,
+    batchSize: number
+  ): Promise<ArrayBuffer[]> {
+    const chunks: ArrayBuffer[] = [];
+    const remainingSize = file.size - startOffset;
+    const actualBatchSize = Math.min(batchSize, Math.ceil(remainingSize / chunkSize));
+    
+    for (let i = 0; i < actualBatchSize; i++) {
+      const offset = startOffset + (i * chunkSize);
+      if (offset >= file.size) break;
+      
+      const currentChunkSize = Math.min(chunkSize, file.size - offset);
+      const chunk = await this.readSingleChunk(fileReader, file, offset, currentChunkSize);
+      chunks.push(chunk);
+    }
+    
+    return chunks;
+  }
+  
+  // 移动设备优化的进度更新方法
+  private updateProgressForMobile(
+    byteLength: number,
+    fileId: string,
+    fileSize: number,
+    peerId: string
+  ): void {
+    const peerState = this.getPeerState(peerId);
+    
+    // 初始化如果需要
+    if (!peerState.totalBytesSent[fileId]) {
+      peerState.totalBytesSent[fileId] = 0;
+    }
+    peerState.totalBytesSent[fileId] += byteLength;
+    
+    // 确保SpeedCalculator正确更新
+    this.speedCalculator.updateSendSpeed(peerId, peerState.totalBytesSent[fileId]);
+    
+    if (peerState.currentFolderName) {
+      // 文件夹处理
+      const folderId = peerState.currentFolderName;
+      if (!peerState.totalBytesSent[folderId]) {
+        peerState.totalBytesSent[folderId] = 0;
+      }
+      peerState.totalBytesSent[folderId] += byteLength;
+      
+      // 更新SpeedCalculator为文件夹的总字节数
+      this.speedCalculator.updateSendSpeed(peerId, peerState.totalBytesSent[folderId]);
+      
+      const folderMeta = this.pendingFolerMeta[folderId];
+      if (folderMeta) {
+        const progress = peerState.totalBytesSent[folderId] / folderMeta.totalSize;
+        const speed = this.speedCalculator.getSendSpeed(peerId);
+        peerState.progressCallback?.(folderId, progress, speed);
+      }
+    } else {
+      // 单文件处理
+      const progress = peerState.totalBytesSent[fileId] / fileSize;
+      const speed = this.speedCalculator.getSendSpeed(peerId);
+      peerState.progressCallback?.(fileId, progress, speed);
+    }
+  }
+
+  // 移动设备优化版本，使用批量读取+循环，大幅提升性能
+  private async processSendQueueMobile(
+    file: CustomFile,
+    peerId: string
+  ): Promise<void> {
+    const fileId = generateFileId(file);
+    const peerState = this.getPeerState(peerId);
+    const fileReader = new FileReader();
+    
+    let offset = peerState.readOffset || 0;
+    // 优化的批量大小：移动端12块，桌面端3块
+    const batchSize = this.isMobileDevice() ? 12 : 3;
+    
+    this.logInfo(`Starting optimized transfer - ChunkSize: ${Math.round(this.chunkSize / 1024)}KB, BatchSize: ${batchSize}`);
+
+    try {
+      // 使用批量读取+循环替代单块递归，大幅提升性能
+      while (offset < file.size && peerState.isSending) {
+        // 批量读取多个块
+        const chunks = await this.readMultipleChunks(fileReader, file, offset, this.chunkSize, batchSize);
+        
+        if (chunks.length === 0) break;
+        
+        // 批量发送所有读取的块
+        for (const chunk of chunks) {
+          if (!peerState.isSending || offset >= file.size) break;
+          
+          await this.sendWithBackpressure(chunk, peerId);
+          
+          // 更新进度
+          offset += chunk.byteLength;
+          peerState.readOffset = offset;
+          
+          // 更新文件和文件夹进度
+          this.updateProgressForMobile(chunk.byteLength, fileId, file.size, peerId);
+        }
+      }
+      
+      // 文件发送完毕
+      if (offset >= file.size && !peerState.currentFolderName) {
+        peerState.progressCallback?.(fileId, 1, 0);
+      }
+      
+      const finalSpeed = this.speedCalculator.getSendSpeed(peerId);
+      this.logInfo(`Transfer completed - Speed: ${finalSpeed.toFixed(2)} KB/s`);
+      
+    } catch (error: any) {
+      this.fireError(`Error in mobile batch transfer: ${error.message}`, { fileId, peerId, offset });
+      throw error;
+    }
+  }
+  
+  // 重命名原始方法为桌面版本
+  private async processSendQueueDesktop(
     file: CustomFile,
     peerId: string
   ): Promise<void> {
@@ -395,7 +580,7 @@ class FileSender {
         await this.updateProgress(chunk.byteLength, fileId, file.size, peerId);
       } else if (peerState.isReading) {
         // If buffer is empty but we are still reading, wait a bit
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 1));
       } else if (relativeOffset < fileToSend.size) {
         // Buffer is empty, not reading, but not done, so trigger a read
         continue;
@@ -404,6 +589,20 @@ class FileSender {
     // Final progress update to 100%
     if (!peerState.currentFolderName) {
       this.getPeerState(peerId).progressCallback?.(fileId, 1, 0);
+    }
+  }
+
+  // 根据设备类型选择合适的处理方法
+  private async processSendQueue(
+    file: CustomFile,
+    peerId: string
+  ): Promise<void> {
+    // 根据设备类型选择不同的处理逻辑
+    if (this.isMobileDevice()) {
+      this.logInfo("Using mobile optimized send queue");
+      await this.processSendQueueMobile(file, peerId);
+    } else {
+      await this.processSendQueueDesktop(file, peerId);
     }
   }
 
