@@ -53,27 +53,6 @@ class FileSender {
     // Create a SpeedCalculator instance
     this.speedCalculator = new SpeedCalculator();
     this.setupDataHandler();
-
-    // 显示极致优化参数并发送日志
-    const batchSizeMB =
-      (this.chunkSize * FileSender.OPTIMIZED_CONFIG.BATCH_SIZE) / (1024 * 1024);
-    const initMessage = `[FileSender] 混合优化初始化 - FileReader: ${
-      this.chunkSize / (1024 * 1024)
-    }MB块, 批次: ${batchSizeMB}MB, 网络: 64KB小包, 修复sendData failed!`;
-    console.log(initMessage);
-
-    // 发送初始化日志到后端用于性能分析
-    postLogToBackend(
-      `HYBRID_OPTIMIZATION_INIT: FileReaderChunkSizeMB=${
-        this.chunkSize / (1024 * 1024)
-      }, BatchSize=${
-        FileSender.OPTIMIZED_CONFIG.BATCH_SIZE
-      }, BatchSizeMB=${batchSizeMB.toFixed(1)}, NetworkChunkSizeKB=${
-        FileSender.OPTIMIZED_CONFIG.NETWORK_CHUNK_SIZE / 1024
-      }, BufferThresholdMB=${
-        FileSender.OPTIMIZED_CONFIG.BUFFER_THRESHOLD / (1024 * 1024)
-      }, strategy=HYBRID_FileReader_Network_Optimization`
-    ).catch(() => {});
   }
 
   // region Logging and Error Handling
@@ -259,18 +238,8 @@ class FileSender {
     const peerState = this.getPeerState(peerId);
 
     if (peerState.isSending) {
-      console.log(`[FileSender] 正在发送文件给 ${peerId}，忽略 ${file.name}`);
       return;
     }
-
-    const fileSizeMB = Math.round((file.size / (1024 * 1024)) * 100) / 100;
-    const startMessage = `[FileSender] 开始混合优化传输: ${file.name} (${fileSizeMB}MB) - 4MB FileReader + 64KB 网络分片`;
-    console.log(startMessage);
-
-    // 发送传输开始日志
-    postLogToBackend(
-      `HYBRID_TRANSFER_START: fileName=${file.name}, fileSizeMB=${fileSizeMB}, fileReaderChunkSizeMB=4, networkChunkSizeKB=64, strategy=HYBRID_FileReader_Network_Optimization`
-    ).catch(() => {});
 
     // Reset state for the new transfer
     peerState.isSending = true;
@@ -285,22 +254,6 @@ class FileSender {
       this.finalizeSendFile(fileId, peerId);
 
       await this.waitForTransferComplete(peerId); // Wait for transfer completion -- receiver confirmation
-
-      const finalSpeed = this.speedCalculator.getSendSpeed(peerId);
-      const successMessage = `[FileSender] 文件 ${fileId} 成功发送至 ${peerId} - 最终速度: ${finalSpeed.toFixed(
-        2
-      )} KB/s`;
-      console.log(successMessage);
-
-      // 发送成功日志到后端
-      const fileSizeMB = Math.round((file.size / (1024 * 1024)) * 100) / 100;
-      postLogToBackend(
-        `HYBRID_TRANSFER_SUCCESS: fileName=${
-          file.name
-        }, fileSizeMB=${fileSizeMB}, finalSpeedKBps=${finalSpeed.toFixed(
-          2
-        )}, fileReaderChunkSizeMB=4, networkChunkSizeKB=64, hybridOptimized=true`
-      ).catch(() => {});
     } catch (error: any) {
       this.fireError(`Error sending file ${file.name}: ${error.message}`, {
         fileId,
@@ -409,23 +362,6 @@ class FileSender {
     // 分片发送大块
     let offset = 0;
     let fragmentIndex = 0;
-    const totalFragments = Math.ceil(totalSize / networkChunkSize);
-
-    const fragmentStartTime = performance.now();
-    console.log(
-      `[FileSender] 分片发送${
-        Math.round((totalSize / (1024 * 1024)) * 100) / 100
-      }MB大块 -> ${totalFragments}个64KB小包`
-    );
-
-    // 记录分片开始日志
-    postLogToBackend(
-      `NETWORK_FRAGMENTATION_START: totalSizeMB=${
-        Math.round((totalSize / (1024 * 1024)) * 100) / 100
-      }, totalFragments=${totalFragments}, networkChunkSizeKB=${
-        networkChunkSize / 1024
-      }`
-    ).catch(() => {});
 
     while (offset < totalSize) {
       const chunkSize = Math.min(networkChunkSize, totalSize - offset);
@@ -436,35 +372,7 @@ class FileSender {
 
       offset += chunkSize;
       fragmentIndex++;
-
-      // 每10个分片记录一次进度
-      if (fragmentIndex % 10 === 0) {
-        console.log(
-          `[FileSender] 分片发送进度: ${fragmentIndex}/${totalFragments} (${Math.round(
-            (offset / totalSize) * 100
-          )}%)`
-        );
-      }
     }
-
-    const fragmentTime = performance.now() - fragmentStartTime;
-    const fragmentThroughputMBps =
-      totalSize / (1024 * 1024) / (fragmentTime / 1000);
-
-    console.log(
-      `[FileSender] 大块分片发送完成: ${totalFragments}个64KB小包, 用时: ${fragmentTime.toFixed(
-        0
-      )}ms, 速度: ${fragmentThroughputMBps.toFixed(2)}MB/s`
-    );
-
-    // 记录分片完成日志
-    postLogToBackend(
-      `NETWORK_FRAGMENTATION_COMPLETE: totalFragments=${totalFragments}, fragmentTimeMs=${fragmentTime.toFixed(
-        0
-      )}, fragmentThroughputMBps=${fragmentThroughputMBps.toFixed(
-        2
-      )}, networkOptimizationSuccess=true`
-    ).catch(() => {});
   }
 
   // 新增：单个数据包发送含背压控制
@@ -572,23 +480,10 @@ class FileSender {
     let offset = peerState.readOffset || 0;
     const batchSize = FileSender.OPTIMIZED_CONFIG.BATCH_SIZE;
 
-    const expectedBatchSizeMB = (this.chunkSize * batchSize) / (1024 * 1024);
-    console.log(
-      `[FileSender] 极致优化传输开始 - 块大小: ${
-        this.chunkSize / (1024 * 1024)
-      }MB, 批次: ${batchSize}块 (${expectedBatchSizeMB}MB), 充分利用内存!`
-    );
-
-    // 记录批次处理开始日志
-    postLogToBackend(
-      `HYBRID_BATCH_START: fileReaderChunkSizeMB=4, batchSize=${batchSize}, expectedBatchSizeMB=${expectedBatchSizeMB}, fileOffset=${offset}, networkChunkSizeKB=64`
-    ).catch(() => {});
-
     try {
       // 使用批量读取+循环替代传统递归，大幅提升性能
       while (offset < file.size && peerState.isSending) {
         // 批量读取多个大块 - 充分利用内存优势
-        const batchReadStartTime = performance.now();
         const chunks = await this.readMultipleChunks(
           fileReader,
           file,
@@ -596,40 +491,9 @@ class FileSender {
           this.chunkSize,
           batchSize
         );
-        const batchReadTime = performance.now() - batchReadStartTime;
 
         if (chunks.length === 0) break;
 
-        const actualBatchSizeMB =
-          chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0) /
-          (1024 * 1024);
-        const readThroughputMBps = actualBatchSizeMB / (batchReadTime / 1000);
-
-        console.log(
-          `[FileSender] FileReader批次读取完成: ${
-            chunks.length
-          }块, 实际大小: ${actualBatchSizeMB.toFixed(
-            1
-          )}MB, 读取时间: ${batchReadTime.toFixed(
-            0
-          )}ms, 吐量: ${readThroughputMBps.toFixed(2)}MB/s, 将分片为64KB发送`
-        );
-
-        // 发送批次读取性能日志
-        postLogToBackend(
-          `HYBRID_BATCH_READ: chunksCount=${
-            chunks.length
-          }, actualBatchSizeMB=${actualBatchSizeMB.toFixed(
-            1
-          )}, readTimeMs=${batchReadTime.toFixed(
-            0
-          )}, readThroughputMBps=${readThroughputMBps.toFixed(
-            2
-          )}, fileReaderCallsReduced=93.75%, willFragmentToNetworkChunks=true`
-        ).catch(() => {});
-
-        // 批量发送所有读取的大块 - 记录发送性能
-        const batchSendStartTime = performance.now();
         for (const chunk of chunks) {
           if (!peerState.isSending || offset >= file.size) break;
 
@@ -647,53 +511,12 @@ class FileSender {
             peerId
           );
         }
-        const batchSendTime = performance.now() - batchSendStartTime;
-        const sendThroughputMBps = actualBatchSizeMB / (batchSendTime / 1000);
-        const totalBatchTime = batchReadTime + batchSendTime;
-        const readVsSendRatio = (
-          (batchReadTime / totalBatchTime) *
-          100
-        ).toFixed(1);
-
-        // 记录批次处理性能日志
-        postLogToBackend(
-          `HYBRID_BATCH_COMPLETE: sendTimeMs=${batchSendTime.toFixed(
-            0
-          )}, sendThroughputMBps=${sendThroughputMBps.toFixed(
-            2
-          )}, totalBatchTimeMs=${totalBatchTime.toFixed(
-            0
-          )}, readRatio=${readVsSendRatio}%, memoryUsageMB=${actualBatchSizeMB.toFixed(
-            1
-          )}, networkFragmentationApplied=true`
-        ).catch(() => {});
       }
 
       // 文件发送完毕
       if (offset >= file.size && !peerState.currentFolderName) {
         peerState.progressCallback?.(fileId, 1, 0);
       }
-
-      const finalSpeed = this.speedCalculator.getSendSpeed(peerId);
-      const totalChunks = Math.ceil(file.size / this.chunkSize);
-      const fileReaderCallReduction = (
-        (1 - totalChunks / (file.size / 262144)) *
-        100
-      ).toFixed(1); // 与256KB对比
-
-      console.log(
-        `[FileSender] 混合优化传输完成! FileReader: ${totalChunks}个4MB块, 网络: 64KB分片, 最终速度: ${finalSpeed.toFixed(
-          2
-        )} KB/s - sendData failed已修复!`
-      );
-
-      // 发送最终性能统计日志
-      const fileSizeMB = Math.round((file.size / (1024 * 1024)) * 100) / 100;
-      postLogToBackend(
-        `HYBRID_TRANSFER_COMPLETE: fileSizeMB=${fileSizeMB}, totalChunks=${totalChunks}, finalSpeedKBps=${finalSpeed.toFixed(
-          2
-        )}, fileReaderCallReduction=${fileReaderCallReduction}%, fileReaderChunkSizeMB=4, networkChunkSizeKB=64, hybridOptimizationSuccess=true`
-      ).catch(() => {});
     } catch (error: any) {
       const errorMessage = `Error in hybrid optimized transfer: ${error.message}`;
       this.fireError(errorMessage, {
@@ -701,13 +524,6 @@ class FileSender {
         peerId,
         offset,
       });
-
-      // 发送错误日志到后端用于分析
-      const fileSizeMB = Math.round((file.size / (1024 * 1024)) * 100) / 100;
-      postLogToBackend(
-        `HYBRID_TRANSFER_ERROR: fileName=${file.name}, fileSizeMB=${fileSizeMB}, errorMessage=${error.message}, offset=${offset}, fileReaderChunkSizeMB=4, networkChunkSizeKB=64, hybridOptimization=true`
-      ).catch(() => {});
-
       throw error;
     }
   }
