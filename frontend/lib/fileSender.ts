@@ -22,7 +22,6 @@ class FileSender {
   private webrtcConnection: WebRTC_Initiator;
   private peerStates: Map<string, PeerState>;
   private readonly chunkSize: number;
-  private readonly maxBufferSize: number;
   private pendingFiles: Map<string, CustomFile>;
   private pendingFolerMeta: Record<string, FolderMeta>;
   private speedCalculator: SpeedCalculator;
@@ -33,7 +32,6 @@ class FileSender {
     BATCH_SIZE: 8, // 8块批量 - 32MB批次处理成功
     NETWORK_CHUNK_SIZE: 65536, // 64KB - WebRTC安全发送大小，修复sendData failed
     BUFFER_THRESHOLD: 3145728, // 3MB - 提升缓冲区阈值匹配大块处理
-    MAX_BUFFER_SIZE: 3, // 3块预读缓冲 - 平衡内存和性能
     BACKPRESSURE_TIMEOUT: 2000, // 2秒超时 - 为大块处理预留更多时间
   } as const;
 
@@ -45,7 +43,6 @@ class FileSender {
 
     // 统一使用优化参数 - 所有设备共享最佳配置
     this.chunkSize = FileSender.OPTIMIZED_CONFIG.CHUNK_SIZE;
-    this.maxBufferSize = FileSender.OPTIMIZED_CONFIG.MAX_BUFFER_SIZE;
     this.pendingFiles = new Map(); // All files pending to be sent (by reference) {fileId: CustomFile}
 
     this.pendingFolerMeta = {}; // Metadata for folders (total size, total file count), used for tracking transfer progress

@@ -439,18 +439,19 @@ export default class BaseWebRTC {
     }
 
     this.log("warn", `Data channel not ready for peer ${peerId}. Retrying...`);
-    this.retryDataSend(data, peerId);
-    return false;
+    return this.retryDataSend(data, peerId);
   }
 
-  protected retryDataSend(data: any, peerId: string): void {
+  protected retryDataSend(data: any, peerId: string): boolean {
     const maxRetries = 5;
     let retryCount = 0;
+    let ret = false;
 
     const attemptSend = () => {
       const dataChannel = this.dataChannels.get(peerId);
       if (dataChannel?.readyState === "open") {
         dataChannel.send(data);
+        ret = true;
       } else if (retryCount < maxRetries) {
         retryCount++;
         this.log(
@@ -466,6 +467,7 @@ export default class BaseWebRTC {
     };
 
     setTimeout(attemptSend, 100);
+    return ret;
   }
 
   protected async closeDataChannel(peerId: string): Promise<void> {
