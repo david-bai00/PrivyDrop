@@ -31,7 +31,7 @@ class FileSender {
     CHUNK_SIZE: 4194304, // 4MB - 极致大块，最大化减少FileReader调用次数
     BATCH_SIZE: 8, // 8块批量 - 32MB批次处理成功
     NETWORK_CHUNK_SIZE: 65536, // 64KB - WebRTC安全发送大小，修复sendData failed
-    BUFFER_THRESHOLD: 3145728, // 3MB - 提升缓冲区阈值匹配大块处理
+    BUFFER_THRESHOLD: 3145728, // 3MB - 阈值
     BACKPRESSURE_TIMEOUT: 2000, // 2秒超时 - 为大块处理预留更多时间
   } as const;
 
@@ -372,7 +372,7 @@ class FileSender {
     }
   }
 
-  // 新增：单个数据包发送含背压控制
+  // 新增：单个数据包发送含主动轮询背压控制
   private async sendSingleData(
     data: string | ArrayBuffer,
     peerId: string
@@ -382,33 +382,110 @@ class FileSender {
       throw new Error("Data channel not found");
     }
 
-    // 背压控制
+    // 智能发送控制 - 根据缓冲区状态决定发送策略
     const threshold = FileSender.OPTIMIZED_CONFIG.BUFFER_THRESHOLD;
-    if (dataChannel.bufferedAmount > threshold) {
-      await new Promise<void>((resolve) => {
-        const onBufferedAmountLow = () => {
-          dataChannel.removeEventListener(
-            "bufferedamountlow",
-            onBufferedAmountLow
-          );
-          resolve();
-        };
-        dataChannel.addEventListener("bufferedamountlow", onBufferedAmountLow);
-
-        setTimeout(() => {
-          dataChannel.removeEventListener(
-            "bufferedamountlow",
-            onBufferedAmountLow
-          );
-          resolve();
-        }, FileSender.OPTIMIZED_CONFIG.BACKPRESSURE_TIMEOUT);
-      });
-    }
+    await this.smartBufferControl(dataChannel, threshold);
 
     // 发送数据
     if (!this.webrtcConnection.sendData(data, peerId)) {
       throw new Error("sendData failed");
     }
+  }
+
+  // 智能发送控制策略 - 根据缓冲区状态决定发送策略
+  private async intelligentSendControl(
+    dataChannel: RTCDataChannel,
+    threshold: number
+  ): Promise<"AGGRESSIVE" | "NORMAL" | "CAUTIOUS" | "WAIT"> {
+    const bufferedAmount = dataChannel.bufferedAmount;
+    const utilizationRate = bufferedAmount / threshold;
+    postLogToBackend(`[utilizationRate] ${utilizationRate}`);
+    // 多级缓冲区控制策略
+    if (utilizationRate < 0.3) {
+      // 缓冲区使用率 < 30% - 积极发送
+      return "AGGRESSIVE";
+    } else if (utilizationRate < 0.6) {
+      // 缓冲区使用率 30-60% - 正常发送
+      return "NORMAL";
+    } else if (utilizationRate < 0.9) {
+      // 缓冲区使用率 60-90% - 谨慎发送
+      return "CAUTIOUS";
+    } else {
+      // 缓冲区使用率 > 90% - 必须等待
+      return "WAIT";
+    }
+  }
+
+  // 智能等待策略 - 根据缓冲区状态调整发送控制
+  private async smartBufferControl(
+    dataChannel: RTCDataChannel,
+    threshold: number
+  ): Promise<void> {
+    const strategy = await this.intelligentSendControl(dataChannel, threshold);
+
+    if (strategy === "AGGRESSIVE") {
+      // 积极模式：无需等待，立即发送
+      postLogToBackend(`[SendStrategy] AGGRESSIVE mode - immediate send`);
+      return;
+    } else if (strategy === "NORMAL") {
+      await new Promise<void>((resolve) => setTimeout(resolve, 5));
+      // 正常模式：无需等待
+      return;
+    } else if (strategy === "CAUTIOUS") {
+      // 谨慎模式：短暂等待3ms让网络消费一些数据
+      await new Promise<void>((resolve) => setTimeout(resolve, 10));
+      return;
+    }
+
+    // WAIT模式：需要主动轮询等待
+    const POLLING_INTERVAL = 5;
+    const MAX_WAIT_TIME = 3000;
+    const startTime = Date.now();
+    const threshold_75 = threshold * 0.75;
+    const initialBuffered = dataChannel.bufferedAmount;
+    let pollCount = 0;
+
+    postLogToBackend(
+      `[BackPressure] Start waiting - buffered: ${Math.round(
+        initialBuffered / 1024
+      )}KB, threshold: ${Math.round(threshold / 1024)}KB`
+    );
+
+    while (dataChannel.bufferedAmount > threshold_75) {
+      pollCount++;
+
+      if (Date.now() - startTime > MAX_WAIT_TIME) {
+        this.log("warn", "Buffer wait timeout", {
+          bufferedAmount: dataChannel.bufferedAmount,
+          threshold,
+          waitTime: Date.now() - startTime,
+        });
+
+        postLogToBackend(
+          `[BackPressure] TIMEOUT after ${
+            Date.now() - startTime
+          }ms, ${pollCount} polls`
+        );
+        break;
+      }
+
+      await new Promise<void>((resolve) =>
+        setTimeout(resolve, POLLING_INTERVAL)
+      );
+    }
+
+    // 记录等待结束状态
+    const waitTime = Date.now() - startTime;
+    const finalBuffered = dataChannel.bufferedAmount;
+    const clearedBytes = initialBuffered - finalBuffered;
+    const clearingRate =
+      waitTime > 0 ? clearedBytes / 1024 / (waitTime / 1000) : 0;
+
+    postLogToBackend(
+      `[BackPressure] End waiting - time: ${waitTime}ms, polls: ${pollCount}, cleared: ${Math.round(
+        clearedBytes / 1024
+      )}KB, rate: ${Math.round(clearingRate)}KB/s`
+    );
   }
 
   // 读取单个文件块的优化方法
@@ -441,6 +518,7 @@ class FileSender {
     chunkSize: number,
     batchSize: number
   ): Promise<ArrayBuffer[]> {
+    const readStartTime = Date.now();
     const chunks: ArrayBuffer[] = [];
     const remainingSize = file.size - startOffset;
     const actualBatchSize = Math.min(
@@ -462,6 +540,21 @@ class FileSender {
       chunks.push(chunk);
     }
 
+    // 记录批量读取性能
+    const readTime = Date.now() - readStartTime;
+    const totalBytes = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+    const readThroughput =
+      readTime > 0 ? totalBytes / 1024 / (readTime / 1000) : 0; // KB/s
+
+    if (readTime > 100) {
+      // 只记录超过100ms的慢读取
+      postLogToBackend(
+        `[FileRead] Batch read: ${actualBatchSize} chunks, ${Math.round(
+          totalBytes / 1024
+        )}KB in ${readTime}ms, throughput: ${Math.round(readThroughput)}KB/s`
+      );
+    }
+
     return chunks;
   }
 
@@ -477,10 +570,29 @@ class FileSender {
     let offset = peerState.readOffset || 0;
     const batchSize = FileSender.OPTIMIZED_CONFIG.BATCH_SIZE;
 
+    // 性能统计变量
+    const transferStartTime = Date.now();
+    const initialOffset = offset; // 记录初始偏移量
+    let totalReadTime = 0;
+    let totalSendTime = 0;
+    let batchCount = 0;
+
+    postLogToBackend(
+      `[Transfer] Start sending ${file.name} (${Math.round(
+        file.size / 1024
+      )}KB) from offset ${Math.round(offset / 1024)}KB, threshold: ${Math.round(
+        FileSender.OPTIMIZED_CONFIG.BUFFER_THRESHOLD / 1024
+      )}KB`
+    );
+
     try {
       // 使用批量读取+循环替代传统递归，大幅提升性能
       while (offset < file.size && peerState.isSending) {
+        batchCount++;
+        const batchStartTime = Date.now();
+
         // 批量读取多个大块 - 充分利用内存优势
+        const readStartTime = Date.now();
         const chunks = await this.readMultipleChunks(
           fileReader,
           file,
@@ -488,12 +600,17 @@ class FileSender {
           this.chunkSize,
           batchSize
         );
+        const readTime = Date.now() - readStartTime;
+        totalReadTime += readTime;
 
         if (chunks.length === 0) break;
 
+        // 智能批量发送 - 根据缓冲区状态优化发送策略
+        const sendStartTime = Date.now();
+
         for (const chunk of chunks) {
           if (!peerState.isSending || offset >= file.size) break;
-
+          // 使用标准的智能控制发送
           await this.sendWithBackpressure(chunk, peerId);
 
           // 更新进度
@@ -508,7 +625,48 @@ class FileSender {
             peerId
           );
         }
+        const sendTime = Date.now() - sendStartTime;
+        totalSendTime += sendTime;
+
+        // 批次性能分析
+        const batchTime = Date.now() - batchStartTime;
+        const batchBytes = chunks.reduce(
+          (sum, chunk) => sum + chunk.byteLength,
+          0
+        );
+        const batchThroughput =
+          batchTime > 0 ? batchBytes / 1024 / (batchTime / 1000) : 0; // KB/s
+
+        if (readTime > 200 || sendTime > 200 || batchThroughput < 1000) {
+          postLogToBackend(
+            `[BatchPerf] Batch ${batchCount}: ${Math.round(
+              batchBytes / 1024
+            )}KB, read: ${readTime}ms, send: ${sendTime}ms, throughput: ${Math.round(
+              batchThroughput
+            )}KB/s`
+          );
+        }
       }
+
+      // 文件发送完毕，输出总体统计
+      const totalTransferTime = Date.now() - transferStartTime;
+      const totalBytes = offset - initialOffset;
+      const overallThroughput =
+        totalTransferTime > 0
+          ? totalBytes / 1024 / (totalTransferTime / 1000)
+          : 0;
+      const readRatio =
+        totalTransferTime > 0 ? (totalReadTime / totalTransferTime) * 100 : 0;
+      const sendRatio =
+        totalTransferTime > 0 ? (totalSendTime / totalTransferTime) * 100 : 0;
+
+      postLogToBackend(
+        `[TransferComplete] ${file.name}: ${batchCount} batches, ${Math.round(
+          totalBytes / 1024
+        )}KB in ${totalTransferTime}ms, throughput: ${Math.round(
+          overallThroughput
+        )}KB/s, read: ${readRatio.toFixed(1)}%, send: ${sendRatio.toFixed(1)}%`
+      );
 
       // 文件发送完毕
       if (offset >= file.size && !peerState.currentFolderName) {
