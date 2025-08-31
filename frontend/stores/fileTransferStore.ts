@@ -2,14 +2,14 @@ import { create } from "zustand";
 import { CustomFile, FileMeta } from "@/types/webrtc";
 
 interface FileTransferState {
-  // 房间相关状态
+  // Room-related state
   shareRoomId: string;
   initShareRoomId: string;
   shareLink: string;
   shareRoomStatusText: string;
   retrieveRoomStatusText: string;
 
-  // WebRTC 连接状态 - 发送方
+  // WebRTC connection state - Sender
   shareConnectionState:
     | "idle"
     | "connecting"
@@ -19,7 +19,7 @@ interface FileTransferState {
   isSenderInRoom: boolean;
   sharePeerCount: number;
 
-  // WebRTC 连接状态 - 接收方
+  // WebRTC connection state - Receiver
   retrieveConnectionState:
     | "idle"
     | "connecting"
@@ -30,36 +30,36 @@ interface FileTransferState {
   retrievePeerCount: number;
   senderDisconnected: boolean;
 
-  // 文件传输状态
+  // File transfer state
   shareContent: string;
   sendFiles: CustomFile[];
   retrievedContent: string;
   retrievedFiles: CustomFile[];
   retrievedFileMetas: FileMeta[];
 
-  // 传输进度状态
+  // Transfer progress state
   sendProgress: Record<string, any>;
   receiveProgress: Record<string, any>;
   isAnyFileTransferring: boolean;
 
-  // UI 状态
+  // UI state
   activeTab: "send" | "retrieve";
   retrieveRoomIdInput: string;
   isDragging: boolean;
 
-  // 消息状态
+  // Message state
   shareMessage: string;
   retrieveMessage: string;
 
   // Actions
-  // 房间相关 actions
+  // Room-related actions
   setShareRoomId: (id: string) => void;
   setInitShareRoomId: (id: string) => void;
   setShareLink: (link: string) => void;
   setShareRoomStatusText: (text: string) => void;
   setRetrieveRoomStatusText: (text: string) => void;
 
-  // WebRTC 连接相关 actions
+  // WebRTC connection-related actions
   setShareConnectionState: (
     state: "idle" | "connecting" | "connected" | "disconnected" | "failed"
   ) => void;
@@ -72,7 +72,7 @@ interface FileTransferState {
   setRetrievePeerCount: (count: number) => void;
   setSenderDisconnected: (disconnected: boolean) => void;
 
-  // 文件传输相关 actions
+  // File transfer-related actions
   setShareContent: (content: string) => void;
   setSendFiles: (files: CustomFile[]) => void;
   addSendFiles: (files: CustomFile[]) => void;
@@ -82,7 +82,7 @@ interface FileTransferState {
   setRetrievedFileMetas: (metas: FileMeta[]) => void;
   addRetrievedFile: (file: CustomFile) => void;
 
-  // 传输进度相关 actions
+  // Transfer progress-related actions
   setSendProgress: (progress: Record<string, any>) => void;
   setReceiveProgress: (progress: Record<string, any>) => void;
   updateSendProgress: (
@@ -99,23 +99,23 @@ interface FileTransferState {
   clearReceiveProgress: (fileId: string, peerId: string) => void;
   setIsAnyFileTransferring: (transferring: boolean) => void;
 
-  // UI 状态相关 actions
+  // UI state-related actions
   setActiveTab: (tab: "send" | "retrieve") => void;
   setRetrieveRoomIdInput: (input: string) => void;
   setIsDragging: (dragging: boolean) => void;
 
-  // 消息相关 actions
+  // Message-related actions
   setShareMessage: (message: string) => void;
   setRetrieveMessage: (message: string) => void;
   setRetrieveRoomId: (input: string) => void;
 
-  // 重置相关 actions
+  // Reset-related actions
   resetReceiverState: () => void;
   resetSenderApp: () => void;
 }
 
 export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
-  // 初始状态
+  // Initial state
   shareRoomId: "",
   initShareRoomId: "",
   shareLink: "",
@@ -142,14 +142,14 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
   shareMessage: "",
   retrieveMessage: "",
 
-  // Actions 实现
+  // Actions implementation
   setShareRoomId: (id) => set({ shareRoomId: id }),
   setInitShareRoomId: (id) => set({ initShareRoomId: id }),
   setShareLink: (link) => set({ shareLink: link }),
   setShareRoomStatusText: (text) => set({ shareRoomStatusText: text }),
   setRetrieveRoomStatusText: (text) => set({ retrieveRoomStatusText: text }),
 
-  // WebRTC 连接相关 actions
+  // WebRTC connection-related actions
   setShareConnectionState: (state) => set({ shareConnectionState: state }),
   setIsSenderInRoom: (isInRoom) => set({ isSenderInRoom: isInRoom }),
   setSharePeerCount: (count) => set({ sharePeerCount: count }),
@@ -238,18 +238,18 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
   setRetrieveMessage: (message) => set({ retrieveMessage: message }),
 
   resetReceiverState: () => {
-    // 🔧 清理 FileReceiver 的内部状态（通过 Service 层）
+    // 🔧 Clean up FileReceiver's internal state (via Service layer)
     try {
       const { webrtcService } = require("@/lib/webrtcService");
       webrtcService.fileReceiver.gracefulShutdown();
     } catch (error) {
-      console.warn(`[DEBUG] ⚠️ 清理 FileReceiver 状态失败:`, error);
+      console.warn(`[DEBUG] ⚠️ Failed to clean up FileReceiver state:`, error);
     }
 
     set({
       retrievedContent: "",
       retrievedFiles: [],
-      retrievedFileMetas: [], // 清空 Store 中的文件元数据
+      retrievedFileMetas: [], // Clear file metadata in Store
       retrievePeerCount: 0,
       senderDisconnected: false,
       receiveProgress: {},

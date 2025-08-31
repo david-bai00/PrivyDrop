@@ -3,7 +3,7 @@ import { webrtcService } from "@/lib/webrtcService";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import type { Messages } from "@/types/messages";
 
-// 保留类型定义以保持兼容性
+// Retain type definitions for compatibility
 export type PeerProgressDetails = { progress: number; speed: number };
 export type FileProgressPeers = { [peerId: string]: PeerProgressDetails };
 export type ProgressState = { [fileId: string]: FileProgressPeers };
@@ -21,7 +21,7 @@ export function useWebRTCConnection({
   messages,
   putMessageInMs,
 }: UseWebRTCConnectionProps) {
-  // 从 store 获取状态
+  // Get state from store
   const {
     sharePeerCount,
     retrievePeerCount,
@@ -31,7 +31,7 @@ export function useWebRTCConnection({
     setIsAnyFileTransferring,
   } = useFileTransferStore();
 
-  // 计算是否有文件正在传输
+  // Calculate if any file is being transferred
   const isAnyFileTransferring = useMemo(() => {
     const allProgress = [
       ...Object.values(sendProgress),
@@ -49,14 +49,14 @@ export function useWebRTCConnection({
   }, [isAnyFileTransferring, setIsAnyFileTransferring]);
 
   return {
-    // 状态从 store 获取
+    // State obtained from store
     sharePeerCount,
     retrievePeerCount,
     senderDisconnected,
     sendProgress,
     receiveProgress,
 
-    // 方法直接从 service 暴露
+    // Methods exposed directly from service
     broadcastDataToAllPeers:
       webrtcService.broadcastDataToAllPeers.bind(webrtcService),
     requestFile: webrtcService.requestFile.bind(webrtcService),
@@ -66,11 +66,11 @@ export function useWebRTCConnection({
     getReceiverSaveType: webrtcService.getReceiverSaveType.bind(webrtcService),
     manualSafeSave: webrtcService.manualSafeSave.bind(webrtcService),
 
-    // 重置连接方法
+    // Reset connection methods
     resetSenderConnection: () => webrtcService.leaveRoom(true),
     resetReceiverConnection: () => webrtcService.leaveRoom(false),
 
-    // 为了兼容性，保留这些属性（但实际上不再需要）
+    // For compatibility, retain these properties (but they are no longer needed)
     sender: webrtcService.sender,
     receiver: webrtcService.receiver,
   };

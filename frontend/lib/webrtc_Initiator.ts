@@ -81,7 +81,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
       });
       // this.log('log', `Created data channel for peer ${peerId}`);
 
-      dataChannel.bufferedAmountLowThreshold = 262144; //256 KB -- 可以根据需要调整
+      dataChannel.bufferedAmountLowThreshold = 262144; //256 KB -- Can be adjusted as needed
       this.setupDataChannel(dataChannel, peerId);
       this.dataChannels.set(peerId, dataChannel);
     } catch (error) {

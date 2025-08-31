@@ -41,7 +41,7 @@ class WebRTCService {
   }
 
   private initializeEventHandlers(): void {
-    // 发送方事件处理
+    // Sender event handling
     this.sender.onConnectionStateChange = (state, peerId) => {
       useFileTransferStore.getState().setShareConnectionState(state as any);
       useFileTransferStore
@@ -59,7 +59,7 @@ class WebRTCService {
 
     this.sender.onDataChannelOpen = (peerId) => {
       useFileTransferStore.getState().setIsSenderInRoom(true);
-      // 自动广播当前内容
+      // Automatically broadcast current content
       this.broadcastDataToAllPeers();
     };
 
@@ -72,10 +72,10 @@ class WebRTCService {
     };
 
     this.sender.onError = (error) => {
-      console.error("[WebRTC Service] 发送方错误:", error.message);
+      console.error("[WebRTC Service] Sender error:", error.message);
     };
 
-    // 接收方事件处理
+    // Receiver event handling
     this.receiver.onConnectionStateChange = (state, peerId) => {
       useFileTransferStore.getState().setRetrieveConnectionState(state as any);
       useFileTransferStore
@@ -123,10 +123,10 @@ class WebRTCService {
     };
 
     this.fileReceiver.onFileReceived = async (file) => {
-      // 🔧 增强修复：确保Store状态更新完全同步，使用多重验证
+      // 🔧 Enhanced fix: Ensure Store state updates are fully synchronized with multiple verifications
       const store = useFileTransferStore.getState();
 
-      // 检查文件是否已经存在，避免重复添加
+      // Check if file already exists to avoid duplicates
       const existingFile = store.retrievedFiles.find(
         (f) => f.name === file.name && f.size === file.size
       );
@@ -135,7 +135,7 @@ class WebRTCService {
         store.addRetrievedFile(file);
       }
 
-      // 🔧 额外确保：立即验证状态更新是否成功，并重试机制
+      // 🔧 Additional ensure: Immediately verify if state update was successful with retry mechanism
       let verificationAttempts = 0;
       const maxVerificationAttempts = 3;
 
@@ -152,12 +152,12 @@ class WebRTCService {
         }
       };
 
-      // 立即进行第一次验证
+      // Perform first verification immediately
       verifyFileAdded();
     };
   }
 
-  // 业务方法
+  // Business methods
   public async joinRoom(roomId: string, isSender: boolean): Promise<void> {
     const peer = isSender ? this.sender : this.receiver;
     await peer.joinRoom(roomId, isSender);
@@ -184,7 +184,7 @@ class WebRTCService {
     const { shareContent, sendFiles } = useFileTransferStore.getState();
     const peerIds = Array.from(this.sender.peerConnections.keys());
     if (peerIds.length === 0) {
-      console.warn("[WebRTC Service] 没有连接的对等端进行广播");
+      console.warn("[WebRTC Service] No connected peers to broadcast to");
       return false;
     }
 
@@ -201,7 +201,7 @@ class WebRTCService {
       );
       return true;
     } catch (error) {
-      console.error("[WebRTC Service] 广播失败:", error);
+      console.error("[WebRTC Service] Broadcast failed:", error);
       return false;
     }
   }
@@ -229,15 +229,15 @@ class WebRTCService {
   }
 
   public async cleanup(): Promise<void> {
-    console.log("[WebRTC Service] 开始清理...");
+    console.log("[WebRTC Service] Starting cleanup...");
     try {
       await Promise.all([
         this.sender.cleanUpBeforeExit(),
         this.receiver.cleanUpBeforeExit(),
       ]);
-      console.log("[WebRTC Service] 清理完成");
+      console.log("[WebRTC Service] Cleanup completed");
     } catch (error) {
-      console.error("[WebRTC Service] 清理过程中出错:", error);
+      console.error("[WebRTC Service] Error during cleanup:", error);
     }
   }
 }

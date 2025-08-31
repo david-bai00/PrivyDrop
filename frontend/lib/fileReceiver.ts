@@ -294,7 +294,7 @@ class FileReceiver {
           await handler(parsedData, peerId);
         } else {
           console.warn(
-            `[DEBUG] ⚠️ FileReceiver 未找到处理器: ${parsedData.type}`
+            `[DEBUG] ⚠️ FileReceiver Handler not found: ${parsedData.type}`
           );
         }
       } catch (error) {
@@ -316,7 +316,7 @@ class FileReceiver {
   private handleFileMetadata(metadata: fileMetadata): void {
     if (this.pendingFilesMeta.has(metadata.fileId)) {
       console.log(
-        `[DEBUG] 📥 FileReceiver 文件元数据已存在，忽略: ${metadata.fileId}`
+        `[DEBUG] 📥 FileReceiver File metadata already exists, ignoring: ${metadata.fileId}`
       );
       return; // Ignore if already received.
     }
@@ -326,7 +326,7 @@ class FileReceiver {
     if (this.onFileMetaReceived) {
       this.onFileMetaReceived(metadata);
     } else {
-      console.error(`[DEBUG] ❌ FileReceiver onFileMetaReceived 回调不存在!`);
+      console.error(`[DEBUG] ❌ FileReceiver onFileMetaReceived callback does not exist!`);
     }
     // Record the file size for folder progress calculation.
     if (metadata.folderName) {
@@ -376,19 +376,19 @@ class FileReceiver {
       return;
     }
 
-    // 🔧 关键修复：先完成文件处理，确保文件添加到Store
+    // 🔧 Key fix: Complete file processing first to ensure the file is added to Store
     await this.finalizeFileReceive();
 
-    // 🏗️ 架构重构：确保Store状态完全同步后再触发进度回调
+    // 🏗️ Architecture refactor: Ensure Store state is fully synchronized before triggering progress callback
     if (!this.currentFolderName) {
-      // 🔧 优化的异步确保机制 - 确保Store状态完全同步
-      await Promise.resolve(); // 确保当前执行栈完成
+      // 🔧 Optimized async ensure mechanism - ensure Store state is fully synchronized
+      await Promise.resolve(); // Ensure current execution stack is completed
       await new Promise<void>((resolve) => {
-        // 使用更长的延迟确保Store状态完全更新
+        // Use longer delay to ensure Store state is fully updated
         setTimeout(() => {
           this.progressCallback?.(reception.meta.fileId, 1, 0);
           resolve();
-        }, 10); // 增加到10ms确保Store状态完全同步
+        }, 10); // Increase to 10ms to ensure Store state is fully synchronized
       });
     }
 
@@ -554,11 +554,11 @@ class FileReceiver {
     }) as CustomFile;
 
     if (this.onFileReceived) {
-      // 🔧 关键修复：确保 onFileReceived 回调完全同步执行完成
+      // 🔧 Key fix: Ensure onFileReceived callback is fully synchronized
       await this.onFileReceived(customFile);
-      // 🔧 多重确认机制：确保 Store 状态完全同步
-      await Promise.resolve(); // 第一层确认
-      await new Promise<void>((resolve) => setTimeout(() => resolve(), 0)); // 第二层确认
+      // 🔧 Multiple confirmation mechanism: Ensure Store state is fully synchronized
+      await Promise.resolve(); // First layer confirmation
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 0)); // Second layer confirmation
     }
   }
   // endregion
@@ -586,7 +586,7 @@ class FileReceiver {
       });
     }
 
-    // 🔧 清理所有内部状态，确保重新连接时能正确接收文件元数据
+    // 🔧 Clean up all internal states to ensure correct file metadata reception upon reconnection
     this.pendingFilesMeta.clear();
     this.folderProgresses = {};
     this.saveType = {};

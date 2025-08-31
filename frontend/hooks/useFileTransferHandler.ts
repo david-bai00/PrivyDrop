@@ -18,7 +18,7 @@ export function useFileTransferHandler({
   messages,
   putMessageInMs,
 }: UseFileTransferHandlerProps) {
-  // 从 store 中获取状态
+  // Get state from store
   const {
     shareContent,
     sendFiles,
@@ -100,11 +100,11 @@ export function useFileTransferHandler({
         }
       } else {
         let retryCount = 0;
-        const maxRetries = 3; // 重试次数
+        const maxRetries = 3; // Retry count
 
         const findAndDownload = async (): Promise<boolean> => {
           retryCount++;
-          // 🔧 关键修复：使用最新的Store状态，而不是闭包中的旧状态
+          // 🔧 Key fix: Use the latest Store state instead of the old state in the closure
           const { retrievedFiles: latestRetrievedFiles } =
             useFileTransferStore.getState();
           const fileToDownload = latestRetrievedFiles.find(
@@ -119,20 +119,20 @@ export function useFileTransferHandler({
           return false;
         };
 
-        // 首次尝试
+        // First attempt
         const found = await findAndDownload();
 
         if (!found) {
-          // 如果没找到，启动重试机制
+          // If not found, start retry mechanism
           const retryWithDelay = async (): Promise<void> => {
             while (retryCount < maxRetries) {
-              await new Promise((resolve) => setTimeout(resolve, 50)); // 固定50ms延迟，因为现在状态应该很快同步
+              await new Promise((resolve) => setTimeout(resolve, 50)); // Fixed 50ms delay, as the state should sync quickly now
               const foundInRetry = await findAndDownload();
               if (foundInRetry) {
                 return;
               }
             }
-            // 所有重试都失败了
+            // All retries failed
             putMessageInMs(
               messages.text.ClipboardApp.fileNotFoundMsg ||
                 `File '${meta.name}' not found for download.`,
@@ -140,12 +140,12 @@ export function useFileTransferHandler({
             );
           };
 
-          // 异步执行重试，不阻塞主线程
+          // Execute retry asynchronously without blocking the main thread
           retryWithDelay().catch(console.error);
         }
       }
     },
-    [messages, putMessageInMs] // 🔧 移除retrievedFiles依赖，因为我们现在直接从Store获取最新状态
+    [messages, putMessageInMs] // 🔧 Remove retrievedFiles dependency as we now get the latest state directly from Store
   );
 
   // Reset function specifically for receiver state (for leave room functionality)

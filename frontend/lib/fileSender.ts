@@ -25,24 +25,24 @@ class FileSender {
   private pendingFolerMeta: Record<string, FolderMeta>;
   private speedCalculator: SpeedCalculator;
 
-  // 自适应性能监控
+  // Adaptive performance monitoring
   private networkPerformance: Map<
     string,
     {
-      avgClearingRate: number; // 平均网络清理速度 KB/s
-      optimalThreshold: number; // 动态优化的阈值
-      avgWaitTime: number; // 平均等待时间
-      sampleCount: number; // 采样次数
+      avgClearingRate: number; // Average network clearing speed KB/s
+      optimalThreshold: number; // Dynamically optimized threshold
+      avgWaitTime: number; // Average wait time
+      sampleCount: number; // Sample count
     }
   > = new Map();
 
-  // 混合优化配置 - FileReader大块 + 网络小包策略（修复sendData failed）
+  // Hybrid optimization configuration - FileReader large chunks + network small packets strategy (fixes sendData failed)
   private static readonly OPTIMIZED_CONFIG = {
-    CHUNK_SIZE: 4194304, // 4MB - 极致大块，最大化减少FileReader调用次数
-    BATCH_SIZE: 8, // 8块批量 - 32MB批次处理成功
-    NETWORK_CHUNK_SIZE: 65536, // 64KB - WebRTC安全发送大小，修复sendData failed
-    BUFFER_THRESHOLD: 3145728, // 3MB - 阈值
-    BACKPRESSURE_TIMEOUT: 2000, // 2秒超时 - 为大块处理预留更多时间
+    CHUNK_SIZE: 4194304, // 4MB - Extreme large chunks, maximally reduce FileReader calls
+    BATCH_SIZE: 8, // 8 chunks batch - 32MB batch processing success
+    NETWORK_CHUNK_SIZE: 65536, // 64KB - WebRTC safe sending size, fixes sendData failed
+    BUFFER_THRESHOLD: 3145728, // 3MB - Threshold
+    BACKPRESSURE_TIMEOUT: 2000, // 2 second timeout - reserves more time for large chunk processing
   } as const;
 
   constructor(WebRTC_initiator: WebRTC_Initiator) {
@@ -51,7 +51,7 @@ class FileSender {
     // Maintain independent sending states for each receiver
     this.peerStates = new Map(); // Map<peerId, PeerState>
 
-    // 统一使用优化参数 - 所有设备共享最佳配置
+    // Uniformly use optimized parameters - all devices share the best configuration
     this.chunkSize = FileSender.OPTIMIZED_CONFIG.CHUNK_SIZE;
     this.pendingFiles = new Map(); // All files pending to be sent (by reference) {fileId: CustomFile}
 
@@ -331,7 +331,7 @@ class FileSender {
     const speed = this.speedCalculator.getSendSpeed(peerId);
     const progress = totalSize > 0 ? currentBytes / totalSize : 0;
 
-    // 持续更新网络性能（从传输速度学习）
+    // Continuously update network performance (learn from transfer speed)
     this.updateNetworkFromSpeed(peerId);
 
     peerState.progressCallback?.(progressFileId, progress, speed);
@@ -346,16 +346,16 @@ class FileSender {
       throw new Error("Data channel not found");
     }
 
-    // 对于ArrayBuffer，如果超过64KB需要分片发送（修复sendData failed）
+    // For ArrayBuffer, if it exceeds 64KB, it needs to be sent in fragments (fixes sendData failed)
     if (data instanceof ArrayBuffer) {
       await this.sendLargeArrayBuffer(data, peerId);
     } else {
-      // 字符串直接发送
+      // Send string directly
       await this.sendSingleData(data, peerId);
     }
   }
 
-  // 新增：分片发送大ArrayBuffer
+  // New: Send large ArrayBuffer in fragments
   private async sendLargeArrayBuffer(
     data: ArrayBuffer,
     peerId: string
@@ -363,13 +363,13 @@ class FileSender {
     const networkChunkSize = FileSender.OPTIMIZED_CONFIG.NETWORK_CHUNK_SIZE;
     const totalSize = data.byteLength;
 
-    // 如果数据小于64KB，直接发送
+    // If data is less than 64KB, send directly
     if (totalSize <= networkChunkSize) {
       await this.sendSingleData(data, peerId);
       return;
     }
 
-    // 分片发送大块
+    // Send large chunks in fragments
     let offset = 0;
     let fragmentIndex = 0;
 
@@ -377,7 +377,7 @@ class FileSender {
       const chunkSize = Math.min(networkChunkSize, totalSize - offset);
       const chunk = data.slice(offset, offset + chunkSize);
 
-      // 发送分片
+      // Send fragment
       await this.sendSingleData(chunk, peerId);
 
       offset += chunkSize;
@@ -385,7 +385,7 @@ class FileSender {
     }
   }
 
-  // 新增：单个数据包发送含主动轮询背压控制
+  // New: Send single data packet with active polling backpressure control
   private async sendSingleData(
     data: string | ArrayBuffer,
     peerId: string
@@ -394,29 +394,29 @@ class FileSender {
     if (!dataChannel) {
       throw new Error("Data channel not found");
     }
-    // 智能发送控制 - 根据缓冲区状态决定发送策略
+    // Intelligent send control - decide sending strategy based on buffer status
     await this.smartBufferControl(dataChannel, peerId);
 
-    // 发送数据
+    // Send data
     if (!this.webrtcConnection.sendData(data, peerId)) {
       throw new Error("sendData failed");
     }
   }
 
-  // 初始化网络性能监控（传输开始时调用）
+  // Initialize network performance monitoring (called at the start of transfer)
   private initializeNetworkPerformance(peerId: string): void {
     if (!this.networkPerformance.has(peerId)) {
-      // 使用保守的初始值
+      // Use conservative initial values
       this.networkPerformance.set(peerId, {
-        avgClearingRate: 5000, // 5MB/s初始估计
+        avgClearingRate: 5000, // 5MB/s initial estimate
         optimalThreshold: FileSender.OPTIMIZED_CONFIG.BUFFER_THRESHOLD,
-        avgWaitTime: 50, // 50ms初始估计
+        avgWaitTime: 50, // 50ms initial estimate
         sampleCount: 0,
       });
     }
   }
 
-  // 从SpeedCalculator获取当前传输速度并更新网络性能
+  // Get current transfer speed from SpeedCalculator and update network performance
   private updateNetworkFromSpeed(peerId: string): void {
     const currentSpeed = this.speedCalculator.getSendSpeed(peerId); // KB/s
     if (currentSpeed > 0) {
@@ -425,7 +425,7 @@ class FileSender {
         perf.avgClearingRate = currentSpeed;
         perf.sampleCount++;
 
-        // 每10次速度更新时调整阈值
+        // Adjust threshold every 10 speed updates
         if (perf.sampleCount % 10 === 0) {
           this.adjustOptimalThreshold(perf);
         }
@@ -433,7 +433,7 @@ class FileSender {
     }
   }
 
-  // 调整最优阈值的共用逻辑
+  // Shared logic for adjusting optimal threshold
   private adjustOptimalThreshold(perf: {
     avgClearingRate: number;
     optimalThreshold: number;
@@ -441,16 +441,16 @@ class FileSender {
     sampleCount: number;
   }): void {
     if (perf.avgClearingRate > 8000) {
-      // >8MB/s网络很好
+      // >8MB/s network is good
       perf.optimalThreshold = Math.max(
         FileSender.OPTIMIZED_CONFIG.BUFFER_THRESHOLD,
         6291456
       ); // 6MB
     } else if (perf.avgClearingRate > 4000) {
-      // >4MB/s网络一般
+      // >4MB/s network is average
       perf.optimalThreshold = FileSender.OPTIMIZED_CONFIG.BUFFER_THRESHOLD; // 3MB
     } else {
-      // 网络较差
+      // Poor network
       perf.optimalThreshold = Math.min(
         FileSender.OPTIMIZED_CONFIG.BUFFER_THRESHOLD,
         1572864
@@ -458,7 +458,7 @@ class FileSender {
     }
   }
 
-  // 自适应网络性能学习（从背压等待中学习）
+  // Adaptive network performance learning (learn from backpressure waiting)
   private updateNetworkPerformance(
     peerId: string,
     clearingRate: number,
@@ -470,16 +470,16 @@ class FileSender {
 
     const perf = this.networkPerformance.get(peerId)!;
     perf.sampleCount++;
-    // 指数移动平均，新数据权重更高
+    // Exponential moving average, with higher weight for new data
     const alpha = 0.3;
     perf.avgClearingRate =
       perf.avgClearingRate * (1 - alpha) + clearingRate * alpha;
     perf.avgWaitTime = perf.avgWaitTime * (1 - alpha) + waitTime * alpha;
-    // 调整最优阈值
+    // Adjust optimal threshold
     this.adjustOptimalThreshold(perf);
   }
 
-  // 获取自适应阈值
+  // Get adaptive threshold
   private getAdaptiveThreshold(peerId: string): number {
     const perf = this.networkPerformance.get(peerId);
     return perf
@@ -487,7 +487,7 @@ class FileSender {
       : FileSender.OPTIMIZED_CONFIG.BUFFER_THRESHOLD;
   }
 
-  // 自适应智能发送控制策略
+  // Adaptive intelligent send control strategy
   private async intelligentSendControl(
     dataChannel: RTCDataChannel,
     peerId: string
@@ -496,7 +496,7 @@ class FileSender {
     const adaptiveThreshold = this.getAdaptiveThreshold(peerId);
     const utilizationRate = bufferedAmount / adaptiveThreshold;
 
-    // 动态调整策略阈值：基于网络性能
+    // Dynamically adjust strategy thresholds: based on network performance
     const perf = this.networkPerformance.get(peerId);
     const networkQuality = perf
       ? perf.avgClearingRate > 6000
@@ -509,14 +509,14 @@ class FileSender {
     let cautiousThreshold = 0.9;
 
     if (networkQuality === "good") {
-      // 网络好：更激进的策略
-      aggressiveThreshold = 0.4; // 40%以下积极发送
-      normalThreshold = 0.7; // 70%以下正常发送
+      // Good network: more aggressive strategy
+      aggressiveThreshold = 0.4; // Actively send below 40%
+      normalThreshold = 0.7; // Normal send below 70%
     } else if (networkQuality === "poor") {
-      // 网络差：更保守的策略
-      aggressiveThreshold = 0.2; // 20%以下才积极发送
-      normalThreshold = 0.5; // 50%以下正常发送
-      cautiousThreshold = 0.8; // 80%以上就要等待
+      // Poor network: more conservative strategy
+      aggressiveThreshold = 0.2; // Actively send only below 20%
+      normalThreshold = 0.5; // Normal send below 50%
+      cautiousThreshold = 0.8; // Wait above 80%
     }
     if (utilizationRate < aggressiveThreshold) {
       return "AGGRESSIVE";
@@ -529,7 +529,7 @@ class FileSender {
     }
   }
 
-  // 智能等待策略 - 根据缓冲区状态调整发送控制
+  // Intelligent waiting strategy - adjust send control based on buffer status
   private async smartBufferControl(
     dataChannel: RTCDataChannel,
     peerId: string
@@ -537,19 +537,19 @@ class FileSender {
     const strategy = await this.intelligentSendControl(dataChannel, peerId);
 
     if (strategy === "AGGRESSIVE") {
-      // 积极模式：无需等待，立即发送
+      // Aggressive mode: no need to wait, send immediately
       return;
     } else if (strategy === "NORMAL") {
       await new Promise<void>((resolve) => setTimeout(resolve, 5));
-      // 正常模式：少许等待
+      // Normal mode: slight wait
       return;
     } else if (strategy === "CAUTIOUS") {
-      // 谨慎模式：短暂等待让网络消费一些数据
+      // Cautious mode: brief wait to let the network consume some data
       await new Promise<void>((resolve) => setTimeout(resolve, 10));
       return;
     }
 
-    // WAIT模式：需要主动轮询等待
+    // WAIT mode: requires active polling wait
     const POLLING_INTERVAL = 5;
     const MAX_WAIT_TIME = 3000;
     const startTime = Date.now();
@@ -574,20 +574,20 @@ class FileSender {
       );
     }
 
-    // 记录等待结束状态
+    // Record wait end status
     const waitTime = Date.now() - startTime;
     const finalBuffered = dataChannel.bufferedAmount;
     const clearedBytes = initialBuffered - finalBuffered;
     const clearingRate =
       waitTime > 0 ? clearedBytes / 1024 / (waitTime / 1000) : 0;
 
-    // 更新网络性能学习
+    // Update network performance learning
     if (clearingRate > 0) {
       this.updateNetworkPerformance(peerId, clearingRate, waitTime);
     }
   }
 
-  // 读取单个文件块的优化方法
+  // Optimized method for reading a single file chunk
   private readSingleChunk(
     fileReader: FileReader,
     file: CustomFile,
@@ -609,7 +609,7 @@ class FileSender {
     });
   }
 
-  // 批量读取多个文件块，提升I/O性能
+  // Batch read multiple file chunks to improve I/O performance
   private async readMultipleChunks(
     fileReader: FileReader,
     file: CustomFile,
@@ -641,7 +641,7 @@ class FileSender {
     return chunks;
   }
 
-  // 统一优化版本 - 使用批量读取+循环，适用于所有设备
+  // Unified optimized version - uses batch reading + loop, suitable for all devices
   private async processSendQueue(
     file: CustomFile,
     peerId: string
@@ -653,14 +653,14 @@ class FileSender {
     let offset = peerState.readOffset || 0;
     const batchSize = FileSender.OPTIMIZED_CONFIG.BATCH_SIZE;
 
-    // 初始化网络性能监控
+    // Initialize network performance monitoring
     this.initializeNetworkPerformance(peerId);
 
     try {
-      // 使用批量读取+循环替代传统递归，大幅提升性能
+      // Use batch reading + loop instead of traditional recursion to greatly improve performance
       while (offset < file.size && peerState.isSending) {
 
-        // 批量读取多个大块 - 充分利用内存优势
+        // Batch read multiple large chunks - fully utilize memory advantages
         const chunks = await this.readMultipleChunks(
           fileReader,
           file,
@@ -673,14 +673,14 @@ class FileSender {
 
         for (const chunk of chunks) {
           if (!peerState.isSending || offset >= file.size) break;
-          // 使用标准的智能控制发送
+          // Use standard intelligent control sending
           await this.sendWithBackpressure(chunk, peerId);
 
-          // 更新进度
+          // Update progress
           offset += chunk.byteLength;
           peerState.readOffset = offset;
 
-          // 更新文件和文件夹进度
+          // Update file and folder progress
           await this.updateProgress(
             chunk.byteLength,
             fileId,
@@ -689,7 +689,7 @@ class FileSender {
           );
         }
       }
-      // 文件发送完毕
+      // File sending completed
       if (offset >= file.size && !peerState.currentFolderName) {
         peerState.progressCallback?.(fileId, 1, 0);
       }
