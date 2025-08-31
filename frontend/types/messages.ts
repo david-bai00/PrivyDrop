@@ -243,7 +243,8 @@ export type ClipboardAppHtml = {
   Copy_dis: string;
   inputRoomIdprompt: string;
   joinRoomBtn: string;
-  generateRoomId_tips: string;
+  generateSimpleId_tips: string;
+  generateRandomId_tips: string;
   readClipboardToRoomId: string;
   enterRoomID_placeholder: string;
   retrieveMethod: string;

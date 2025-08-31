@@ -68,6 +68,8 @@ export function SendTabPanel({
   const [inputFieldValue, setInputFieldValue] = useState<string>(
     currentValidatedShareRoomId
   );
+  // State to track ID generation mode (false = will show simple next, true = will show random next)
+  const [isSimpleIdMode, setIsSimpleIdMode] = useState<boolean>(true);
 
   // When the validatedShareRoomId from the parent component changes (e.g., after initial fetch), synchronize the local input field's value
   useEffect(() => {
@@ -91,6 +93,38 @@ export function SendTabPanel({
     },
     [processRoomIdInput]
   );
+
+  // Handle ID generation toggle
+  const handleIdGeneration = useCallback(async () => {
+    if (isSimpleIdMode) {
+      // Generate random UUID
+      const randomId = crypto.randomUUID();
+      processRoomIdInput(randomId);
+    } else {
+      // Generate simple 4-digit ID by calling backend API
+      try {
+        const { fetchRoom } = await import("@/app/config/api");
+        const simpleRoomId = await fetchRoom();
+        if (simpleRoomId) {
+          // Do not call processRoomIdInput, don't know why the validation will fail
+          // Instead, directly set the input and room ID
+          setInputFieldValue(simpleRoomId);
+          // Also update the store directly since this room was just created
+          const { useFileTransferStore } = await import(
+            "@/stores/fileTransferStore"
+          );
+          useFileTransferStore.getState().setShareRoomId(simpleRoomId);
+        } else {
+          processRoomIdInput(crypto.randomUUID());
+        }
+      } catch (error) {
+        processRoomIdInput(crypto.randomUUID());
+      }
+    }
+
+    // Toggle mode for next click
+    setIsSimpleIdMode(!isSimpleIdMode);
+  }, [isSimpleIdMode, processRoomIdInput, setInputFieldValue]);
 
   return (
     <div id="send-panel" role="tabpanel" aria-labelledby="send-tab">
@@ -141,10 +175,12 @@ export function SendTabPanel({
             <Button
               variant="outline"
               className="w-full sm:w-auto px-4"
-              onClick={() => processRoomIdInput(crypto.randomUUID())}
+              onClick={handleIdGeneration}
               disabled={isSenderInRoom}
             >
-              {messages.text.ClipboardApp.html.generateRoomId_tips}
+              {isSimpleIdMode
+                ? messages.text.ClipboardApp.html.generateRandomId_tips
+                : messages.text.ClipboardApp.html.generateSimpleId_tips}
             </Button>
             <Button
               className="w-full sm:w-auto px-4"
