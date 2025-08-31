@@ -106,14 +106,16 @@ export function SendTabPanel({
         const { fetchRoom } = await import("@/app/config/api");
         const simpleRoomId = await fetchRoom();
         if (simpleRoomId) {
-          // Do not call processRoomIdInput, don't know why the validation will fail
-          // Instead, directly set the input and room ID
+          // fetchRoom() already created the room, so set it as initial room ID
+          // This prevents joinRoom() from trying to create it again
           setInputFieldValue(simpleRoomId);
-          // Also update the store directly since this room was just created
           const { useFileTransferStore } = await import(
             "@/stores/fileTransferStore"
           );
-          useFileTransferStore.getState().setShareRoomId(simpleRoomId);
+          const store = useFileTransferStore.getState();
+          store.setShareRoomId(simpleRoomId);
+          // IMPORTANT: Set as initial room ID to prevent duplicate creation
+          store.setInitShareRoomId(simpleRoomId);
         } else {
           processRoomIdInput(crypto.randomUUID());
         }

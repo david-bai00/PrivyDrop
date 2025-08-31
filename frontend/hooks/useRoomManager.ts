@@ -215,29 +215,19 @@ export function useRoomManager({
   }, [messages, putMessageInMs, resetSenderAppState]);
 
   // Room ID input processing
-  const processRoomIdInput = useCallback(
+    const processRoomIdInput = useCallback(
     debounce(async (input: string) => {
-      console.log("🔍 processRoomIdInput called with:", input);
-
-      if (!input.trim() || !messages) {
-        console.log("❌ Input empty or no messages, returning");
-        return;
-      }
+      if (!input.trim() || !messages) return;
 
       try {
-        console.log("🌐 Calling checkRoom API for:", input);
         const isValid = await checkRoom(input);
-        console.log("📋 checkRoom result:", isValid, "for input:", input);
-
         if (isValid) {
-          console.log("✅ Room is valid, setting shareRoomId to:", input);
           setShareRoomId(input);
           putMessageInMs(
             messages.text.ClipboardApp.roomCheck.available_msg,
             true
           );
         } else {
-          console.log("❌ Room is not valid:", input);
           putMessageInMs(
             messages.text.ClipboardApp.roomCheck.notAvailable_msg,
             true
