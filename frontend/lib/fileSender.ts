@@ -5,7 +5,6 @@
 // The receiving display end distinguishes between single files and folders.
 import { generateFileId } from "@/lib/fileUtils";
 import { SpeedCalculator } from "@/lib/speedCalculator";
-import { postLogToBackend } from "@/app/config/api";
 import WebRTC_Initiator from "./webrtc_Initiator";
 import {
   CustomFile,
@@ -259,7 +258,7 @@ class FileSender {
 
     try {
       await this.processSendQueue(file, peerId);
-      this.finalizeSendFile(fileId, peerId);
+      await this.finalizeSendFile(fileId, peerId);
 
       await this.waitForTransferComplete(peerId); // Wait for transfer completion -- receiver confirmation
     } catch (error: any) {
@@ -395,7 +394,6 @@ class FileSender {
     if (!dataChannel) {
       throw new Error("Data channel not found");
     }
-
     // 智能发送控制 - 根据缓冲区状态决定发送策略
     await this.smartBufferControl(dataChannel, peerId);
 
@@ -415,9 +413,6 @@ class FileSender {
         avgWaitTime: 50, // 50ms初始估计
         sampleCount: 0,
       });
-      postLogToBackend(
-        `[NetworkInit] Initialized network performance for peer ${peerId}`
-      );
     }
   }
 
@@ -433,11 +428,6 @@ class FileSender {
         // 每10次速度更新时调整阈值
         if (perf.sampleCount % 10 === 0) {
           this.adjustOptimalThreshold(perf);
-          postLogToBackend(
-            `[SpeedAdapt] Updated from speed: ${Math.round(
-              currentSpeed
-            )}KB/s, avgRate: ${Math.round(perf.avgClearingRate)}KB/s`
-          );
         }
       }
     }
@@ -485,17 +475,8 @@ class FileSender {
     perf.avgClearingRate =
       perf.avgClearingRate * (1 - alpha) + clearingRate * alpha;
     perf.avgWaitTime = perf.avgWaitTime * (1 - alpha) + waitTime * alpha;
-
     // 调整最优阈值
     this.adjustOptimalThreshold(perf);
-
-    postLogToBackend(
-      `[BackpressureAdapt] clearingRate=${Math.round(
-        clearingRate
-      )}KB/s, avgRate=${Math.round(
-        perf.avgClearingRate
-      )}KB/s, threshold=${Math.round(perf.optimalThreshold / 1024)}KB`
-    );
   }
 
   // 获取自适应阈值
@@ -537,15 +518,6 @@ class FileSender {
       normalThreshold = 0.5; // 50%以下正常发送
       cautiousThreshold = 0.8; // 80%以上就要等待
     }
-
-    postLogToBackend(
-      `[AdaptiveStrategy] utilizationRate=${utilizationRate.toFixed(
-        3
-      )}, threshold=${Math.round(
-        adaptiveThreshold / 1024
-      )}KB, quality=${networkQuality}`
-    );
-
     if (utilizationRate < aggressiveThreshold) {
       return "AGGRESSIVE";
     } else if (utilizationRate < normalThreshold) {
@@ -566,14 +538,13 @@ class FileSender {
 
     if (strategy === "AGGRESSIVE") {
       // 积极模式：无需等待，立即发送
-      postLogToBackend(`[SendStrategy] AGGRESSIVE mode - immediate send`);
       return;
     } else if (strategy === "NORMAL") {
       await new Promise<void>((resolve) => setTimeout(resolve, 5));
-      // 正常模式：无需等待
+      // 正常模式：少许等待
       return;
     } else if (strategy === "CAUTIOUS") {
-      // 谨慎模式：短暂等待3ms让网络消费一些数据
+      // 谨慎模式：短暂等待让网络消费一些数据
       await new Promise<void>((resolve) => setTimeout(resolve, 10));
       return;
     }
@@ -586,13 +557,6 @@ class FileSender {
     const threshold_75 = adaptiveThreshold * 0.75;
     const initialBuffered = dataChannel.bufferedAmount;
     let pollCount = 0;
-
-    postLogToBackend(
-      `[BackPressure] Start waiting - buffered: ${Math.round(
-        initialBuffered / 1024
-      )}KB, threshold: ${Math.round(adaptiveThreshold / 1024)}KB`
-    );
-
     while (dataChannel.bufferedAmount > threshold_75) {
       pollCount++;
 
@@ -602,12 +566,6 @@ class FileSender {
           threshold: adaptiveThreshold,
           waitTime: Date.now() - startTime,
         });
-
-        postLogToBackend(
-          `[BackPressure] TIMEOUT after ${
-            Date.now() - startTime
-          }ms, ${pollCount} polls`
-        );
         break;
       }
 
@@ -627,12 +585,6 @@ class FileSender {
     if (clearingRate > 0) {
       this.updateNetworkPerformance(peerId, clearingRate, waitTime);
     }
-
-    postLogToBackend(
-      `[BackPressure] End waiting - time: ${waitTime}ms, polls: ${pollCount}, cleared: ${Math.round(
-        clearedBytes / 1024
-      )}KB, rate: ${Math.round(clearingRate)}KB/s`
-    );
   }
 
   // 读取单个文件块的优化方法
@@ -665,7 +617,6 @@ class FileSender {
     chunkSize: number,
     batchSize: number
   ): Promise<ArrayBuffer[]> {
-    const readStartTime = Date.now();
     const chunks: ArrayBuffer[] = [];
     const remainingSize = file.size - startOffset;
     const actualBatchSize = Math.min(
@@ -687,21 +638,6 @@ class FileSender {
       chunks.push(chunk);
     }
 
-    // 记录批量读取性能
-    const readTime = Date.now() - readStartTime;
-    const totalBytes = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
-    const readThroughput =
-      readTime > 0 ? totalBytes / 1024 / (readTime / 1000) : 0; // KB/s
-
-    if (readTime > 100) {
-      // 只记录超过100ms的慢读取
-      postLogToBackend(
-        `[FileRead] Batch read: ${actualBatchSize} chunks, ${Math.round(
-          totalBytes / 1024
-        )}KB in ${readTime}ms, throughput: ${Math.round(readThroughput)}KB/s`
-      );
-    }
-
     return chunks;
   }
 
@@ -717,35 +653,14 @@ class FileSender {
     let offset = peerState.readOffset || 0;
     const batchSize = FileSender.OPTIMIZED_CONFIG.BATCH_SIZE;
 
-    // 性能统计变量
-    const transferStartTime = Date.now();
-    const initialOffset = offset; // 记录初始偏移量
-    let totalReadTime = 0;
-    let totalSendTime = 0;
-    let batchCount = 0;
-
     // 初始化网络性能监控
     this.initializeNetworkPerformance(peerId);
-
-    const initialThreshold = this.getAdaptiveThreshold(peerId);
-    postLogToBackend(
-      `[Transfer] Start sending ${file.name} (${Math.round(
-        file.size / 1024
-      )}KB) from offset ${Math.round(
-        offset / 1024
-      )}KB, initial threshold: ${Math.round(
-        initialThreshold / 1024
-      )}KB (adaptive)`
-    );
 
     try {
       // 使用批量读取+循环替代传统递归，大幅提升性能
       while (offset < file.size && peerState.isSending) {
-        batchCount++;
-        const batchStartTime = Date.now();
 
         // 批量读取多个大块 - 充分利用内存优势
-        const readStartTime = Date.now();
         const chunks = await this.readMultipleChunks(
           fileReader,
           file,
@@ -753,13 +668,8 @@ class FileSender {
           this.chunkSize,
           batchSize
         );
-        const readTime = Date.now() - readStartTime;
-        totalReadTime += readTime;
 
         if (chunks.length === 0) break;
-
-        // 智能批量发送 - 根据缓冲区状态优化发送策略
-        const sendStartTime = Date.now();
 
         for (const chunk of chunks) {
           if (!peerState.isSending || offset >= file.size) break;
@@ -778,49 +688,7 @@ class FileSender {
             peerId
           );
         }
-        const sendTime = Date.now() - sendStartTime;
-        totalSendTime += sendTime;
-
-        // 批次性能分析
-        const batchTime = Date.now() - batchStartTime;
-        const batchBytes = chunks.reduce(
-          (sum, chunk) => sum + chunk.byteLength,
-          0
-        );
-        const batchThroughput =
-          batchTime > 0 ? batchBytes / 1024 / (batchTime / 1000) : 0; // KB/s
-
-        if (readTime > 200 || sendTime > 200 || batchThroughput < 1000) {
-          postLogToBackend(
-            `[BatchPerf] Batch ${batchCount}: ${Math.round(
-              batchBytes / 1024
-            )}KB, read: ${readTime}ms, send: ${sendTime}ms, throughput: ${Math.round(
-              batchThroughput
-            )}KB/s`
-          );
-        }
       }
-
-      // 文件发送完毕，输出总体统计
-      const totalTransferTime = Date.now() - transferStartTime;
-      const totalBytes = offset - initialOffset;
-      const overallThroughput =
-        totalTransferTime > 0
-          ? totalBytes / 1024 / (totalTransferTime / 1000)
-          : 0;
-      const readRatio =
-        totalTransferTime > 0 ? (totalReadTime / totalTransferTime) * 100 : 0;
-      const sendRatio =
-        totalTransferTime > 0 ? (totalSendTime / totalTransferTime) * 100 : 0;
-
-      postLogToBackend(
-        `[TransferComplete] ${file.name}: ${batchCount} batches, ${Math.round(
-          totalBytes / 1024
-        )}KB in ${totalTransferTime}ms, throughput: ${Math.round(
-          overallThroughput
-        )}KB/s, read: ${readRatio.toFixed(1)}%, send: ${sendRatio.toFixed(1)}%`
-      );
-
       // 文件发送完毕
       if (offset >= file.size && !peerState.currentFolderName) {
         peerState.progressCallback?.(fileId, 1, 0);
@@ -837,7 +705,7 @@ class FileSender {
   }
 
   //send fileEnd signal
-  private finalizeSendFile(fileId: string, peerId: string): void {
+  private async finalizeSendFile(fileId: string, peerId: string): Promise<void> {
     // this.log("log", `Finalizing file send for ${fileId} to ${peerId}`);
     const endMessage = JSON.stringify({ type: "fileEnd", fileId });
     if (!this.webrtcConnection.sendData(endMessage, peerId)) {
