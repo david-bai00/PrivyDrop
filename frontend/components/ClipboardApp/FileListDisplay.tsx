@@ -11,6 +11,8 @@ import { getDictionary } from "@/lib/dictionary";
 import { useLocale } from "@/hooks/useLocale";
 import type { Messages } from "@/types/messages";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
+import { supportsAutoDownload } from "@/lib/browserUtils";
+import { postLogToBackend } from "@/app/config/api";
 
 function formatFolderDis(template: string, num: number, size: string) {
   return template.replace("{num}", num.toString()).replace("{size}", size);
@@ -78,6 +80,11 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
   // Add a ref to store the previous showFinished state
   const prevShowFinishedRef = useRef<{ [fileId: string]: boolean }>({});
 
+  // 添加待保存状态 - 用于非Chrome浏览器的手动保存
+  const [pendingSave, setPendingSave] = useState<{
+    [fileId: string]: boolean;
+  }>({});
+
   const [pickedLocation, setPickedLocation] = useState<boolean>(false); // Whether a save directory has been selected
   const [needPickLocation, setNeedPickLocation] = useState<boolean>(false); // Whether a save directory needs to be selected -- for large files, folders, or user choice
 
@@ -91,6 +98,19 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
   const [downloadCounts, setDownloadCounts] = useState<{
     [fileId: string]: number;
   }>({});
+
+  // 处理手动保存 - 用于非Chrome浏览器
+  const handleManualSave = (item: FileMeta) => {
+    if (onDownload) {
+      onDownload(item);
+      // 清除待保存状态，让UI显示为"已完成"
+      setPendingSave((prev) => {
+        const updated = { ...prev };
+        delete updated[item.fileId];
+        return updated;
+      });
+    }
+  };
 
   useEffect(() => {
     getDictionary(locale)
@@ -237,7 +257,29 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
       // Detecting false -> true transitions
       if (!prevShowFinished && currentShowFinished) {
         if (!isSaveToDisk && onDownload) {
-          onDownload(item);
+          const isAutoDownloadSupported = supportsAutoDownload();
+
+          // 根据浏览器能力决定下载行为
+          if (isAutoDownloadSupported) {
+            // Chrome等支持自动下载的浏览器：直接下载
+            postLogToBackend(
+              `[Firefox Debug] Auto-downloading file: ${item.name}`
+            );
+            onDownload(item);
+          } else {
+            // 非Chrome浏览器：设置为待保存状态，等待用户手动点击
+            postLogToBackend(
+              `[Firefox Debug] Setting pendingSave for non-Chrome browser: ${item.name}`
+            );
+            setPendingSave((prev) => ({
+              ...prev,
+              [item.fileId]: true,
+            }));
+          }
+        } else {
+          postLogToBackend(
+            `[Firefox Debug] Skipping download logic - isSaveToDisk: ${isSaveToDisk}, onDownload: ${!!onDownload}`
+          );
         }
 
         // Increase download count - 文件传输完成时增加下载次数 (只计算一次)
@@ -250,22 +292,17 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
       // Update the last status
       prevShowFinishedRef.current[item.fileId] = currentShowFinished;
     });
-  }, [
-    showFinished,
-    singleFiles,
-    folders,
-    saveType,
-    onDownload,
-    downloadCounts,
-  ]);
+  }, [showFinished, singleFiles, folders, saveType, onDownload]);
 
   //Actions corresponding to each file - progress, download, delete
   const renderItemActions = (item: FileMeta) => {
     const fileProgress = fileProgresses[item.fileId];
     const activePeerId = activeTransfers[item.fileId];
     const progress = activePeerId ? fileProgress?.[activePeerId] : null;
-    const showCompletion = showFinished[item.fileId];
+    const showCompletion =
+      showFinished[item.fileId] && !pendingSave[item.fileId]; // 只有传输完成且不在待保存状态时才显示完成
     const isSaveToDisk = saveType ? saveType[item.fileId] : false;
+    const isPendingSave = pendingSave[item.fileId] || false;
     // Get download count
     const downloadCount = downloadCounts[item.fileId] || 0;
 
@@ -297,6 +334,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
             onDownload && ( //Request && Download
               <FileTransferButton
                 onRequest={() => onRequest(item)}
+                onSave={() => handleManualSave(item)}
                 isCurrentFileTransferring={
                   progress
                     ? progress.progress > 0 && progress.progress < 1
@@ -304,6 +342,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
                 }
                 isOtherFileTransferring={isAnyFileTransferring && !progress}
                 isSavedToDisk={saveType ? saveType[item.fileId] : false}
+                isPendingSave={isPendingSave}
               />
             )}
           {/* display download Num*/}

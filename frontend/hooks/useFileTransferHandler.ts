@@ -1,9 +1,10 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { CustomFile, FileMeta, fileMetadata } from "@/types/webrtc";
 import { Messages } from "@/types/messages";
 import JSZip from "jszip";
 import { downloadAs } from "@/lib/fileUtils";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
+import { postLogToBackend } from "@/app/config/api";
 
 interface UseFileTransferHandlerProps {
   messages: Messages | null;
@@ -26,7 +27,6 @@ export function useFileTransferHandler({
     retrievedFiles,
     retrievedFileMetas,
     setShareContent,
-    setSendFiles,
     addSendFiles,
     removeSendFile,
     setRetrievedContent,
@@ -68,7 +68,9 @@ export function useFileTransferHandler({
 
   const handleDownloadFile = useCallback(
     async (meta: FileMeta) => {
-      if (!messages) return;
+      if (!messages) {
+        return;
+      }
 
       if (meta.folderName && meta.folderName !== "") {
         const { retrievedFiles: latestRetrievedFiles } =
@@ -112,8 +114,32 @@ export function useFileTransferHandler({
           );
 
           if (fileToDownload) {
+            // 检查文件是否为空
+            if (fileToDownload.size === 0) {
+              postLogToBackend(
+                `[Firefox Debug] ERROR: File has 0 size! This explains the 0-byte download.`
+              );
+            }
+
+            // 检查文件是否为有效的Blob
+            if (fileToDownload instanceof Blob) {
+              postLogToBackend(`[Firefox Debug] File is a valid Blob object`);
+            } else {
+              postLogToBackend(
+                `[Firefox Debug] WARNING: File is not a Blob object, type: ${typeof fileToDownload}`
+              );
+            }
+
             downloadAs(fileToDownload, fileToDownload.name);
             return true;
+          } else {
+            // 调试日志：记录未找到文件的情况
+            const availableFileNames = latestRetrievedFiles.map((f) => f.name);
+            postLogToBackend(
+              `[Firefox Debug] File NOT found! Looking for: "${
+                meta.name
+              }", Available files: [${availableFileNames.join(", ")}]`
+            );
           }
 
           return false;

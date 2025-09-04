@@ -227,9 +227,11 @@ export const ko: Messages = {
       CurrentFileTransferring_tips: "파일 전송 중",
       OtherFileTransferring_tips: "현재 전송이 완료될 때까지 기다려주세요",
       download_tips: "파일을 다운로드하려면 클릭하세요",
+      PendingSave_tips: "로컬에 파일을 저장하려면 클릭하세요", // 新增
       Saved_dis: "저장됨",
       Waiting_dis: "대기 중",
       Download_dis: "다운로드",
+      Save_dis: "저장", // 新增
     },
     FileListDisplay: {
       sending_dis: "전송 중",

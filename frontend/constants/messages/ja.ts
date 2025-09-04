@@ -229,9 +229,11 @@ export const ja: Messages = {
       CurrentFileTransferring_tips: "ファイルが転送中です",
       OtherFileTransferring_tips: "現在の転送が完了するまでお待ちください",
       download_tips: "クリックしてファイルをダウンロード",
+      PendingSave_tips: "クリックしてファイルをローカルに保存", // 新增
       Saved_dis: "保存済み",
       Waiting_dis: "待機中",
       Download_dis: "ダウンロード",
+      Save_dis: "保存", // 新增
     },
     FileListDisplay: {
       sending_dis: "送信中",

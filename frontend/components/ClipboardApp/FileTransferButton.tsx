@@ -13,22 +13,28 @@ import type { Messages } from "@/types/messages";
 
 interface FileTransferButtonProps {
   onRequest: () => void;
+  onSave?: () => void; // 新增：处理手动保存
   isCurrentFileTransferring: boolean;
   isOtherFileTransferring: boolean;
   isSavedToDisk: boolean;
+  isPendingSave?: boolean; // 新增：是否待保存状态
 }
 // Manage buttons for different download statuses
 const FileTransferButton = ({
   onRequest,
+  onSave,
   isCurrentFileTransferring,
   isOtherFileTransferring,
   isSavedToDisk,
+  isPendingSave = false,
 }: FileTransferButtonProps) => {
   const locale = useLocale();
   const [messages, setMessages] = useState<Messages | null>(null);
-  // Button status judgment
+  // Button status judgment - 待保存状态时按钮应该可点击
   const isDisabled =
-    isCurrentFileTransferring || isSavedToDisk || isOtherFileTransferring;
+    isCurrentFileTransferring ||
+    isSavedToDisk ||
+    (isOtherFileTransferring && !isPendingSave);
 
   useEffect(() => {
     getDictionary(locale)
@@ -41,6 +47,8 @@ const FileTransferButton = ({
       return messages!.text.FileTransferButton.SavedToDisk_tips;
     if (isCurrentFileTransferring)
       return messages!.text.FileTransferButton.CurrentFileTransferring_tips;
+    if (isPendingSave)
+      return messages!.text.FileTransferButton.PendingSave_tips;
     if (isOtherFileTransferring)
       return messages!.text.FileTransferButton.OtherFileTransferring_tips;
     return messages!.text.FileTransferButton.download_tips;
@@ -58,6 +66,12 @@ const FileTransferButton = ({
       return {
         variant: "outline" as const,
         className: "mr-2 cursor-not-allowed",
+      };
+    }
+    if (isPendingSave) {
+      return {
+        variant: "default" as const, // 使用更明显的样式
+        className: "mr-2 bg-green-600 hover:bg-green-700 text-white",
       };
     }
     if (isOtherFileTransferring) {
@@ -83,7 +97,7 @@ const FileTransferButton = ({
         <TooltipTrigger asChild>
           <span className="inline-block">
             <Button
-              onClick={onRequest}
+              onClick={isPendingSave && onSave ? onSave : onRequest}
               variant={buttonStyles.variant}
               size="sm"
               className={buttonStyles.className}
@@ -91,11 +105,13 @@ const FileTransferButton = ({
             >
               <Download
                 className={`mr-2 h-4 w-4 ${
-                  isOtherFileTransferring ? "opacity-50" : ""
+                  isOtherFileTransferring && !isPendingSave ? "opacity-50" : ""
                 }`}
               />
               {isSavedToDisk
                 ? messages.text.FileTransferButton.Saved_dis
+                : isPendingSave
+                ? messages.text.FileTransferButton.Save_dis
                 : isOtherFileTransferring
                 ? messages.text.FileTransferButton.Waiting_dis
                 : messages.text.FileTransferButton.Download_dis}

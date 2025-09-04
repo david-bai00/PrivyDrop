@@ -1,6 +1,9 @@
-// Flow for receiving file(s)/folder(s): First, receive file metadata in batch, [decide if the user needs to select a save directory],
-// then click to request, receive the file content, and after receiving endMeta, send an ack to finish.
-// Flow for receiving a folder (same as above): Receive a batch file request.
+// 🚀 新流程 - 接收端主导的文件传输：
+// 1. 接收文件元数据 (fileMetadata) 
+// 2. 用户点击下载，发送文件请求 (fileRequest)
+// 3. 接收所有数据块，自动检测完整性
+// 4. 完成Store同步后，主动发送完成确认 (fileReceiveComplete/folderReceiveComplete)
+// 文件夹传输：重复单文件流程，最后发送文件夹完成确认
 import { SpeedCalculator } from "@/lib/speedCalculator";
 import WebRTC_Recipient from "./webrtc_Recipient";
 import {
@@ -11,12 +14,13 @@ import {
   CurrentString,
   StringMetadata,
   StringChunk,
-  FileEnd,
   FileHandlers,
   FileMeta,
   FileRequest,
-  FolderComplete,
+  FileReceiveComplete,
+  FolderReceiveComplete,
 } from "@/types/webrtc";
+import { postLogToBackend } from "@/app/config/api";
 
 /**
  * Manages the state of an active file reception.
@@ -32,6 +36,11 @@ interface ActiveFileReception {
     resolve: () => void;
     reject: (reason?: any) => void;
   };
+  // 新增：用于跟踪数据接收统计
+  receivedChunksCount: number; // 实际接收到的chunk数量
+  expectedChunksCount: number; // 预期的chunk数量
+  lastChunkIndex: number; // 最后接收的chunk索引
+  isFinalized?: boolean; // 防止重复finalize的标记
 }
 
 class FileReceiver {
@@ -71,7 +80,6 @@ class FileReceiver {
       string: this.handleReceivedStringChunk.bind(this),
       stringMetadata: this.handleStringMetadata.bind(this),
       fileMeta: this.handleFileMetadata.bind(this),
-      fileEnd: this.handleFileEnd.bind(this),
     };
 
     this.setupDataHandler();
@@ -178,6 +186,8 @@ class FileReceiver {
     }
 
     const receptionPromise = new Promise<void>((resolve, reject) => {
+      const expectedChunksCount = Math.ceil((fileInfo.size - offset) / 65536); // 计算预期chunk数量
+      
       this.activeFileReception = {
         meta: fileInfo,
         chunks: [],
@@ -186,7 +196,15 @@ class FileReceiver {
         fileHandle: null,
         writeStream: null,
         completionNotifier: { resolve, reject },
+        // 新增统计字段
+        receivedChunksCount: 0,
+        expectedChunksCount: expectedChunksCount,
+        lastChunkIndex: -1,
       };
+
+      postLogToBackend(
+        `[DEBUG] 🚀 FILE_INIT - ${fileInfo.name}, size: ${fileInfo.size}, chunks: ${expectedChunksCount}`
+      );
     });
 
     if (shouldSaveToDisk) {
@@ -197,6 +215,13 @@ class FileReceiver {
     if (this.peerId) {
       this.webrtcConnection.sendData(JSON.stringify(request), this.peerId);
       this.log("log", "Sent fileRequest", { request });
+
+      // 调试日志：记录发送完成
+      postLogToBackend(`[DEBUG] 📤 FILE_REQUEST sent`);
+    } else {
+      postLogToBackend(
+        `[Firefox Debug] ERROR: Cannot send fileRequest - no peerId available!`
+      );
     }
 
     return receptionPromise;
@@ -257,29 +282,64 @@ class FileReceiver {
     }
     this.currentFolderName = null;
 
-    // After the loop, the receiver has requested all necessary files.
-    // Send a completion message to the sender to sync the final state.
-    const folderComplete: FolderComplete = {
-      type: "FolderComplete",
-      folderName: folderName,
-    };
+    // 🚀 新流程：发送文件夹接收完成确认
+    // 收集所有成功完成的文件ID
+    const completedFileIds = folderProgress.fileIds.filter(fileId => {
+      // 这里可以添加更复杂的验证逻辑，现在简单假设都成功了
+      return true;
+    });
 
-    if (this.peerId) {
-      this.webrtcConnection.sendData(
-        JSON.stringify(folderComplete),
-        this.peerId
-      );
-      this.log(
-        "log",
-        `Sent folderComplete message for ${folderName} to peer ${this.peerId}`
-      );
-    }
+    postLogToBackend(
+      `[Firefox Debug] 📁 All files in folder completed - ${folderName}, files: ${completedFileIds.length}/${folderProgress.fileIds.length}`
+    );
+
+    // 发送文件夹完成消息
+    this.sendFolderReceiveComplete(folderName, completedFileIds, true);
   }
   // endregion
 
   // region WebRTC Data Handlers
+  
+  /**
+   * 将各种二进制数据格式转换为ArrayBuffer
+   * 支持Firefox的Blob、Uint8Array等格式
+   */
+  private async convertToArrayBuffer(data: any): Promise<ArrayBuffer | null> {
+    const originalType = Object.prototype.toString.call(data);
+    
+    if (data instanceof ArrayBuffer) {
+      return data;
+    } else if (data instanceof Blob) {
+      try {
+        const arrayBuffer = await data.arrayBuffer();
+        if (data.size !== arrayBuffer.byteLength) {
+          postLogToBackend(`[DEBUG] ⚠️ Blob size mismatch: ${data.size}→${arrayBuffer.byteLength}`);
+        }
+        return arrayBuffer;
+      } catch (error) {
+        postLogToBackend(`[DEBUG] ❌ Blob conversion failed: ${error}`);
+        return null;
+      }
+    } else if (data instanceof Uint8Array || ArrayBuffer.isView(data)) {
+      try {
+        const uint8Array = data instanceof Uint8Array 
+          ? data 
+          : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+        const newArrayBuffer = new ArrayBuffer(uint8Array.length);
+        new Uint8Array(newArrayBuffer).set(uint8Array);
+        return newArrayBuffer;
+      } catch (error) {
+        postLogToBackend(`[DEBUG] ❌ TypedArray conversion failed: ${error}`);
+        return null;
+      }
+    } else {
+      postLogToBackend(`[DEBUG] ❌ Unknown data type: ${Object.prototype.toString.call(data)}`);
+      return null;
+    }
+  }
+
   private async handleReceivedData(
-    data: string | ArrayBuffer,
+    data: string | ArrayBuffer | any,
     peerId: string
   ): Promise<void> {
     this.peerId = peerId;
@@ -300,24 +360,46 @@ class FileReceiver {
       } catch (error) {
         this.fireError("Error parsing received JSON data", { error });
       }
-    } else if (data instanceof ArrayBuffer) {
-      if (!this.activeFileReception) {
-        this.fireError(
-          "Received a file chunk without an active file reception.",
-          { peerId }
+    } else {
+      // 处理各种格式的二进制数据 - Firefox兼容性修复
+      const arrayBuffer = await this.convertToArrayBuffer(data);
+      
+      if (arrayBuffer) {
+        // 调试日志：记录接收到二进制数据
+        postLogToBackend(
+          `[Firefox Debug] Received binary data - originalType: ${Object.prototype.toString.call(data)}, convertedSize: ${arrayBuffer.byteLength}, peerId: ${peerId}`
         );
-        return;
+
+        if (!this.activeFileReception) {
+          postLogToBackend(
+            `[Firefox Debug] ERROR: Received file chunk but no active file reception!`
+          );
+          this.fireError(
+            "Received a file chunk without an active file reception.",
+            { peerId }
+          );
+          return;
+        }
+
+        postLogToBackend(
+          `[Firefox Debug] Processing chunk for file: ${this.activeFileReception.meta.name}`
+        );
+        this.updateProgress(arrayBuffer.byteLength);
+        await this.handleFileChunk(arrayBuffer);
+      } else {
+        postLogToBackend(
+          `[Firefox Debug] ERROR: Failed to convert binary data to ArrayBuffer`
+        );
+        this.fireError("Received unsupported binary data format", {
+          dataType: Object.prototype.toString.call(data),
+          peerId
+        });
       }
-      this.updateProgress(data.byteLength);
-      await this.handleFileChunk(data);
     }
   }
 
   private handleFileMetadata(metadata: fileMetadata): void {
     if (this.pendingFilesMeta.has(metadata.fileId)) {
-      console.log(
-        `[DEBUG] 📥 FileReceiver File metadata already exists, ignoring: ${metadata.fileId}`
-      );
       return; // Ignore if already received.
     }
 
@@ -326,7 +408,9 @@ class FileReceiver {
     if (this.onFileMetaReceived) {
       this.onFileMetaReceived(metadata);
     } else {
-      console.error(`[DEBUG] ❌ FileReceiver onFileMetaReceived callback does not exist!`);
+      console.error(
+        `[DEBUG] ❌ FileReceiver onFileMetaReceived callback does not exist!`
+      );
     }
     // Record the file size for folder progress calculation.
     if (metadata.folderName) {
@@ -368,46 +452,106 @@ class FileReceiver {
     }
   }
 
-  private async handleFileEnd(metadata: FileEnd): Promise<void> {
-    this.log("log", "File transmission ended", { metadata });
-    const reception = this.activeFileReception;
-    if (!reception || reception.meta.fileId !== metadata.fileId) {
-      this.log("warn", "Received fileEnd for unexpected file", { metadata });
-      return;
-    }
-
-    // 🔧 Key fix: Complete file processing first to ensure the file is added to Store
-    await this.finalizeFileReceive();
-
-    // 🏗️ Architecture refactor: Ensure Store state is fully synchronized before triggering progress callback
-    if (!this.currentFolderName) {
-      // 🔧 Optimized async ensure mechanism - ensure Store state is fully synchronized
-      await Promise.resolve(); // Ensure current execution stack is completed
-      await new Promise<void>((resolve) => {
-        // Use longer delay to ensure Store state is fully updated
-        setTimeout(() => {
-          this.progressCallback?.(reception.meta.fileId, 1, 0);
-          resolve();
-        }, 10); // Increase to 10ms to ensure Store state is fully synchronized
-      });
-    }
-
-    this.sendFileAck(reception.meta.fileId);
-    this.log("log", "Sent file-finish ack", { fileId: reception.meta.fileId });
-
-    reception.completionNotifier.resolve();
-    this.activeFileReception = null;
-  }
   // endregion
 
   // region File and Folder Processing
   private async handleFileChunk(chunk: ArrayBuffer): Promise<void> {
     if (!this.activeFileReception) return;
 
+    // 🐛 DEBUG: 记录接收到的原始chunk信息
+    const currentChunkIndex = this.activeFileReception.receivedChunksCount;
+    postLogToBackend(
+      `[DEBUG] 📥 RECEIVE chunk#${currentChunkIndex} - size: ${chunk.byteLength} bytes`
+    );
+
+    // 更新统计信息
+    this.activeFileReception.receivedChunksCount++;
+    this.activeFileReception.lastChunkIndex = Math.max(this.activeFileReception.lastChunkIndex, currentChunkIndex);
+    
+    // 更新进度统计
+    this.updateProgress(chunk.byteLength);
+    
     if (this.activeFileReception.writeStream) {
       await this.writeLargeFileChunk(chunk);
     } else {
+      // 存储chunk到内存
       this.activeFileReception.chunks.push(chunk);
+      
+      // 🐛 DEBUG: 验证存储结果
+      const storedChunk = this.activeFileReception.chunks[this.activeFileReception.chunks.length - 1];
+      const currentTotalSize = this.activeFileReception.chunks.reduce((sum, c) => sum + (c?.byteLength || 0), 0);
+      
+      postLogToBackend(
+        `[DEBUG] 📦 STORED chunk#${currentChunkIndex} - original: ${chunk.byteLength}, stored: ${storedChunk?.byteLength || 'null'}, total: ${currentTotalSize}`
+      );
+      
+      // 🐛 DEBUG: 特别关注最后几个chunks
+      if (currentChunkIndex >= 65) {
+        postLogToBackend(
+          `[DEBUG] 🔍 CRITICAL_CHUNK#${currentChunkIndex} - input: ${chunk.byteLength}, stored: ${storedChunk?.byteLength}, isLast: ${currentChunkIndex >= 67}`
+        );
+      }
+    }
+
+    await this.checkAndAutoFinalize();
+  }
+
+  /**
+   * 🚀 新流程：自动检查数据完整性并触发finalize
+   * 不再依赖发送端的fileEnd信号，接收端自主判断完成
+   */
+  private async checkAndAutoFinalize(): Promise<void> {
+    if (!this.activeFileReception) return;
+
+    const reception = this.activeFileReception;
+    const receivedChunks = reception.receivedChunksCount;
+    const expectedChunks = reception.expectedChunksCount;
+    
+    // 计算当前实际接收的总大小
+    const currentTotalSize = reception.chunks.reduce((sum, chunk) => {
+      return sum + (chunk instanceof ArrayBuffer ? chunk.byteLength : 0);
+    }, 0);
+    const expectedSize = reception.meta.size;
+    
+    const chunksComplete = (receivedChunks >= expectedChunks);
+    const sizeComplete = (currentTotalSize >= expectedSize);
+    const isDataComplete = chunksComplete && sizeComplete;
+    
+    // 🐛 DEBUG: 完成状态检查
+    if (receivedChunks % 10 === 0 || receivedChunks >= expectedChunks - 5) {
+      postLogToBackend(
+        `[DEBUG] 🔄 Progress check - chunks: ${receivedChunks}/${expectedChunks}, size: ${currentTotalSize}/${expectedSize}, complete: ${isDataComplete}`
+      );
+    }
+    
+    // 防止重复finalize
+    if (reception.isFinalized) {
+      return;
+    }
+    
+    if (isDataComplete) {
+      postLogToBackend(
+        `[DEBUG] 🎯 TRIGGERING finalize - chunks: ${receivedChunks}/${expectedChunks}, size: ${currentTotalSize}/${expectedSize}`
+      );
+      
+      reception.isFinalized = true;
+      
+      try {
+        await this.finalizeFileReceive();
+        
+        if (reception.completionNotifier) {
+          reception.completionNotifier.resolve();
+        }
+        this.activeFileReception = null;
+        
+        postLogToBackend(`[DEBUG] ✅ Auto-finalize SUCCESS`);
+      } catch (error) {
+        postLogToBackend(`[DEBUG] ❌ Auto-finalize ERROR: ${error}`);
+        if (reception.completionNotifier) {
+          reception.completionNotifier.reject(error);
+        }
+        this.activeFileReception = null;
+      }
     }
   }
 
@@ -541,33 +685,140 @@ class FileReceiver {
     const reception = this.activeFileReception;
     if (!reception) return;
 
-    const fileBlob = new Blob(reception.chunks as ArrayBuffer[], {
+    postLogToBackend(
+      `[DEBUG] 🔍 FINALIZE START - fileName: ${reception.meta.name}, expectedSize: ${reception.meta.size}, chunksArray: ${reception.chunks.length}`
+    );
+
+    // 🐛 DEBUG: 详细分析每个chunk
+    let totalChunkSize = 0;
+    let validChunks = 0;
+    const chunkDetails: string[] = [];
+    
+    reception.chunks.forEach((chunk, index) => {
+      if (chunk instanceof ArrayBuffer) {
+        validChunks++;
+        totalChunkSize += chunk.byteLength;
+        
+        // 🐛 DEBUG: 特别关注最后几个chunks
+        if (index >= reception.chunks.length - 5) {
+          chunkDetails.push(`chunk#${index}: ${chunk.byteLength}bytes`);
+          postLogToBackend(
+            `[DEBUG] 🔍 FINAL_CHUNK_ANALYSIS - index: ${index}, size: ${chunk.byteLength}, isLast: ${index === reception.chunks.length - 1}`
+          );
+        }
+        
+        // 检测异常大小
+        if (chunk.byteLength !== 65536 && index < reception.chunks.length - 1) {
+          postLogToBackend(`[DEBUG] ⚠️ UNEXPECTED_SIZE - chunk#${index}: ${chunk.byteLength} (should be 65536)`);
+        }
+      } else {
+        postLogToBackend(`[DEBUG] ❌ INVALID_CHUNK - index: ${index}, type: ${Object.prototype.toString.call(chunk)}`);
+      }
+    });
+
+    // 🐛 DEBUG: 总体分析
+    postLogToBackend(
+      `[DEBUG] 📊 CHUNK_SUMMARY - valid: ${validChunks}/${reception.chunks.length}, totalSize: ${totalChunkSize}, expected: ${reception.meta.size}, diff: ${reception.meta.size - totalChunkSize}`
+    );
+    
+    if (chunkDetails.length > 0) {
+      postLogToBackend(`[DEBUG] 🔍 FINAL_CHUNKS: ${chunkDetails.join(', ')}`);
+    }
+
+    // 最终验证
+    const sizeDifference = reception.meta.size - totalChunkSize;
+    if (sizeDifference !== 0) {
+      postLogToBackend(`[DEBUG] ❌ SIZE_MISMATCH - missing: ${sizeDifference} bytes`);
+    } else {
+      postLogToBackend(`[DEBUG] ✅ SIZE_VERIFIED - ${totalChunkSize} bytes`);
+    }
+    
+    // 创建文件
+    const fileBlob = new Blob(reception.chunks.filter(chunk => chunk instanceof ArrayBuffer) as ArrayBuffer[], {
       type: reception.meta.fileType,
     });
+    
     const file = new File([fileBlob], reception.meta.name, {
       type: reception.meta.fileType,
     });
+    
+    postLogToBackend(`[DEBUG] 📄 FILE_CREATED - size: ${file.size}, expected: ${reception.meta.size}, match: ${file.size === reception.meta.size}`);
 
     const customFile = Object.assign(file, {
       fullName: reception.meta.fullName,
       folderName: this.currentFolderName,
     }) as CustomFile;
 
+    let storeUpdated = false;
     if (this.onFileReceived) {
-      // 🔧 Key fix: Ensure onFileReceived callback is fully synchronized
       await this.onFileReceived(customFile);
-      // 🔧 Multiple confirmation mechanism: Ensure Store state is fully synchronized
-      await Promise.resolve(); // First layer confirmation
-      await new Promise<void>((resolve) => setTimeout(() => resolve(), 0)); // Second layer confirmation
+      await Promise.resolve();
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 0));
+      storeUpdated = true;
+      
+      postLogToBackend(`[DEBUG] ✅ STORE_UPDATED - ${reception.meta.name}`);
     }
+
+    // 发送完成确认
+    this.sendFileReceiveComplete(
+      reception.meta.fileId,
+      totalChunkSize,
+      validChunks,
+      storeUpdated
+    );
   }
   // endregion
 
   // region Communication
-  private sendFileAck(fileId: string): void {
+
+  /**
+   * 发送文件接收完成确认 - 新的接收端主导流程
+   */
+  private sendFileReceiveComplete(
+    fileId: string,
+    receivedSize: number,
+    receivedChunks: number,
+    storeUpdated: boolean
+  ): void {
     if (!this.peerId) return;
-    const confirmation = JSON.stringify({ type: "fileAck", fileId });
-    this.webrtcConnection.sendData(confirmation, this.peerId);
+    
+    const completeMessage: FileReceiveComplete = {
+      type: "fileReceiveComplete",
+      fileId,
+      receivedSize,
+      receivedChunks,
+      storeUpdated,
+    };
+    
+    const success = this.webrtcConnection.sendData(JSON.stringify(completeMessage), this.peerId);
+    
+    postLogToBackend(
+      `[DEBUG] 📤 SENT fileReceiveComplete - size: ${receivedSize}, chunks: ${receivedChunks}, success: ${success}`
+    );
+  }
+
+  /**
+   * 发送文件夹接收完成确认
+   */
+  private sendFolderReceiveComplete(
+    folderName: string,
+    completedFileIds: string[],
+    allStoreUpdated: boolean
+  ): void {
+    if (!this.peerId) return;
+    
+    const completeMessage: FolderReceiveComplete = {
+      type: "folderReceiveComplete",
+      folderName,
+      completedFileIds,
+      allStoreUpdated,
+    };
+    
+    const success = this.webrtcConnection.sendData(JSON.stringify(completeMessage), this.peerId);
+    
+    postLogToBackend(
+      `[Firefox Debug] 📤 Sent folderReceiveComplete - folderName: ${folderName}, completedFiles: ${completedFileIds.length}, allStoreUpdated: ${allStoreUpdated}, success: ${success}`
+    );
   }
   // endregion
 

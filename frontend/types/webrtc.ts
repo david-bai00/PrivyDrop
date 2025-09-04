@@ -29,11 +29,6 @@ export interface FileRequest {
   offset?: number; // Optional: byte offset to resume from
 }
 
-export interface FileAck {
-  type: "fileAck";
-  fileId: string;
-}
-
 export interface StringMetadata {
   type: "stringMetadata";
   length: number;
@@ -46,24 +41,29 @@ export interface StringChunk {
   total: number;
 }
 
-export interface FileEnd {
-  type: "fileEnd";
+// 接收端主导的完成确认消息
+export interface FileReceiveComplete {
+  type: "fileReceiveComplete";
   fileId: string;
+  receivedSize: number;
+  receivedChunks: number;
+  storeUpdated: boolean; // 确认Store已更新
 }
 
-export interface FolderComplete {
-  type: "FolderComplete";
+export interface FolderReceiveComplete {
+  type: "folderReceiveComplete";
   folderName: string;
+  completedFileIds: string[];
+  allStoreUpdated: boolean; // 确认所有文件都已加入Store
 }
 
 export type WebRTCMessage =
   | fileMetadata
   | FileRequest
-  | FileAck
   | StringMetadata
   | StringChunk
-  | FileEnd
-  | FolderComplete;
+  | FileReceiveComplete
+  | FolderReceiveComplete;
 
 export interface FolderMeta {
   totalSize: number;
@@ -96,5 +96,4 @@ export interface FileHandlers {
   string: (data: any, peerId: string) => void;
   stringMetadata: (data: any, peerId: string) => void;
   fileMeta: (data: any, peerId: string) => void;
-  fileEnd: (data: any) => Promise<void>;
 }

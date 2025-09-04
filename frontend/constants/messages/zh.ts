@@ -216,9 +216,11 @@ export const zh: Messages = {
       CurrentFileTransferring_tips: "文件正在传输中",
       OtherFileTransferring_tips: "请等待当前传输完成",
       download_tips: "点击下载文件",
+      PendingSave_tips: "点击保存文件到本地", // 新增
       Saved_dis: "已保存",
       Waiting_dis: "等待中",
       Download_dis: "下载",
+      Save_dis: "保存", // 新增
     },
     FileListDisplay: {
       sending_dis: "发送中",

@@ -233,9 +233,11 @@ export const es: Messages = {
       OtherFileTransferring_tips:
         "Por favor espera a que se complete la transferencia actual",
       download_tips: "Haz clic para descargar el archivo",
+      PendingSave_tips: "Haz clic para guardar el archivo localmente", // 新增
       Saved_dis: "Guardado",
       Waiting_dis: "Esperando",
       Download_dis: "Descargar",
+      Save_dis: "Guardar", // 新增
     },
     FileListDisplay: {
       sending_dis: "Enviando",

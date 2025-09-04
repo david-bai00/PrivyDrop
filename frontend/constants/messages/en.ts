@@ -232,9 +232,11 @@ export const en: Messages = {
       OtherFileTransferring_tips:
         "Please wait for current transfer to complete",
       download_tips: "Click to download file",
+      PendingSave_tips: "Click to save file locally", // 新增
       Saved_dis: "Saved",
       Waiting_dis: "Waiting",
       Download_dis: "Download",
+      Save_dis: "Save", // 新增
     },
     FileListDisplay: {
       sending_dis: "Sending",

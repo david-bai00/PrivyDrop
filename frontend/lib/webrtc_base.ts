@@ -344,7 +344,15 @@ export default class BaseWebRTC {
     dataChannel: RTCDataChannel,
     peerId: string
   ): void {
+    // 调试日志：记录DataChannel设置
+    postLogToBackend(
+      `[Firefox Debug] Setting up DataChannel for peer: ${peerId}, label: ${dataChannel.label}, readyState: ${dataChannel.readyState}`
+    );
+
     dataChannel.onopen = () => {
+      postLogToBackend(
+        `[Firefox Debug] DataChannel opened for peer: ${peerId}, readyState: ${dataChannel.readyState}`
+      );
       // this.log('log',`Data channel opened for peer ${peerId}`);
       setTimeout(() => {
         this.onDataChannelOpen?.(peerId);
@@ -352,11 +360,50 @@ export default class BaseWebRTC {
     };
 
     dataChannel.onmessage = (event) => {
-      this.onDataReceived?.(event.data, peerId);
+      // 增强的数据类型检测 - 支持Firefox的多种二进制数据格式
+      let dataType = "Unknown";
+      let dataSize = 0;
+      
+      if (typeof event.data === "string") {
+        dataType = "String";
+        dataSize = event.data.length;
+      } else if (event.data instanceof ArrayBuffer) {
+        dataType = "ArrayBuffer";
+        dataSize = event.data.byteLength;
+      } else if (event.data instanceof Blob) {
+        dataType = "Blob";
+        dataSize = event.data.size;
+      } else if (event.data instanceof Uint8Array) {
+        dataType = "Uint8Array";
+        dataSize = event.data.byteLength;
+      } else if (ArrayBuffer.isView(event.data)) {
+        dataType = "TypedArray";
+        dataSize = event.data.byteLength;
+      } else {
+        // 详细的未知类型调试信息
+        dataType = `Unknown(${Object.prototype.toString.call(event.data)})`;
+        dataSize = event.data?.length || event.data?.size || event.data?.byteLength || 0;
+      }
+
+      postLogToBackend(
+        `[Firefox Debug] DataChannel onmessage - peer: ${peerId}, dataType: ${dataType}, size: ${dataSize}`
+      );
+
+      if (this.onDataReceived) {
+        this.onDataReceived(event.data, peerId);
+      }
     };
 
-    dataChannel.onclose = () =>
+    dataChannel.onerror = (error) => {
+      this.log("error", `Data channel error for peer ${peerId}`, { error });
+    };
+
+    dataChannel.onclose = () => {
+      postLogToBackend(
+        `[Firefox Debug] DataChannel closed for peer: ${peerId}`
+      );
       this.log("log", `Data channel with ${peerId} closed.`);
+    };
   }
   // Join a room. sendInitiatorOnline indicates whether to send "initiator online" message after joining.
   public async joinRoom(
@@ -434,10 +481,25 @@ export default class BaseWebRTC {
   protected sendToPeer(data: any, peerId: string): boolean {
     const dataChannel = this.dataChannels.get(peerId);
     if (dataChannel?.readyState === "open") {
-      dataChannel.send(data);
-      return true;
+      try {
+        // Firefox兼容性调试：记录发送详细信息
+        const dataType = typeof data === "string" ? "string" : data instanceof ArrayBuffer ? "ArrayBuffer" : typeof data;
+        const dataSize = typeof data === "string" ? data.length : data instanceof ArrayBuffer ? data.byteLength : 0;
+        
+        postLogToBackend(`[Firefox Debug] sendToPeer - type: ${dataType}, size: ${dataSize}, bufferedAmount: ${dataChannel.bufferedAmount}`);
+        
+        dataChannel.send(data);
+        
+        postLogToBackend(`[Firefox Debug] sendToPeer success - bufferedAmount after: ${dataChannel.bufferedAmount}`);
+        return true;
+      } catch (error) {
+        postLogToBackend(`[Firefox Debug] sendToPeer error: ${error}`);
+        this.log("error", `Error sending data to peer ${peerId}`, { error });
+        return false;
+      }
     }
 
+    postLogToBackend(`[Firefox Debug] DataChannel not ready - peerId: ${peerId}, state: ${dataChannel?.readyState || 'undefined'}`);
     this.log("warn", `Data channel not ready for peer ${peerId}. Retrying...`);
     return this.retryDataSend(data, peerId);
   }

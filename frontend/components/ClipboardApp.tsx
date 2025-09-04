@@ -51,39 +51,15 @@ const ClipboardApp = () => {
 
   // 简化的 WebRTC 连接初始化
   const {
-    sharePeerCount,
-    retrievePeerCount,
-    broadcastDataToAllPeers,
     requestFile,
     requestFolder,
     setReceiverDirectoryHandle,
     getReceiverSaveType,
-    senderDisconnected,
-    resetReceiverConnection,
-    resetSenderConnection,
     manualSafeSave,
   } = useWebRTCConnection({
     messages,
     putMessageInMs,
   });
-
-  const resetAppState = useCallback(async () => {
-    try {
-      // Reset file transfer state
-      useFileTransferStore.getState().resetReceiverState();
-
-      // Reset WebRTC connection state
-      await resetReceiverConnection();
-
-      // Reset room input
-      setRetrieveRoomIdInput("");
-
-      console.log("Application state reset successfully");
-    } catch (error) {
-      console.error("Error during state reset:", error);
-      window.location.reload();
-    }
-  }, [resetReceiverConnection, setRetrieveRoomIdInput]);
 
   // 大大简化的房间管理 - 不再需要传递任何 WebRTC 依赖
   const {

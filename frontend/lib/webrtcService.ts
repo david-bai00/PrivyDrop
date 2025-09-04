@@ -9,6 +9,7 @@ import {
 } from "@/app/config/environment";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import type { CustomFile } from "@/types/webrtc";
+import { postLogToBackend } from "@/app/config/api";
 
 class WebRTCService {
   public sender: WebRTC_Initiator;
@@ -123,6 +124,9 @@ class WebRTCService {
     };
 
     this.fileReceiver.onFileReceived = async (file) => {
+      // 调试日志：记录文件接收回调被调用
+      postLogToBackend(`[Firefox Debug] onFileReceived callback called - fileName: ${file.name}, size: ${file.size}, type: ${file.type}`);
+      
       // 🔧 Enhanced fix: Ensure Store state updates are fully synchronized with multiple verifications
       const store = useFileTransferStore.getState();
 
@@ -132,7 +136,10 @@ class WebRTCService {
       );
 
       if (!existingFile) {
+        postLogToBackend(`[Firefox Debug] Adding file to store - no existing file found`);
         store.addRetrievedFile(file);
+      } else {
+        postLogToBackend(`[Firefox Debug] File already exists in store - skipping duplicate`);
       }
 
       // 🔧 Additional ensure: Immediately verify if state update was successful with retry mechanism
@@ -146,9 +153,16 @@ class WebRTCService {
           (f) => f.name === file.name && f.size === file.size
         );
 
+        postLogToBackend(`[Firefox Debug] Verification attempt ${verificationAttempts}: fileExists: ${fileExists}, retrievedFiles.length: ${updatedStore.retrievedFiles.length}`);
+
         if (!fileExists && verificationAttempts < maxVerificationAttempts) {
+          postLogToBackend(`[Firefox Debug] File not found in store, attempting to add again...`);
           updatedStore.addRetrievedFile(file);
           setTimeout(verifyFileAdded, 10);
+        } else if (fileExists) {
+          postLogToBackend(`[Firefox Debug] File successfully added to store!`);
+        } else {
+          postLogToBackend(`[Firefox Debug] ERROR: Failed to add file to store after ${maxVerificationAttempts} attempts!`);
         }
       };
 

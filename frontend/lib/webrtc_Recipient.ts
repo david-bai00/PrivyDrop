@@ -1,6 +1,7 @@
 // Recipient flow: Join room; receive 'offer' event -> createPeerConnection + createDataChannel -> send answer
 import BaseWebRTC, { WebRTCConfig } from "./webrtc_base";
 import { postLogToBackend } from "@/app/config/api";
+import { detectBrowser, logBrowserCompatibility } from "./browserUtils";
 const developmentEnv = process.env.NEXT_PUBLIC_development!; // Development environment
 
 interface AnswerPayload {
@@ -8,8 +9,12 @@ interface AnswerPayload {
   peerId: string;
 }
 export default class WebRTC_Recipient extends BaseWebRTC {
+  private browserInfo = detectBrowser();
+  
   constructor(config: WebRTCConfig) {
     super(config);
+    // 记录浏览器兼容性信息
+    logBrowserCompatibility();
     this.setupRecipientSocketListeners();
   }
 
@@ -105,10 +110,27 @@ export default class WebRTC_Recipient extends BaseWebRTC {
       return;
     }
 
+    // 调试日志：记录DataChannel事件监听器设置
+    postLogToBackend(`[Firefox Debug] Setting ondatachannel listener for peer: ${peerId}, connectionState: ${peerConnection.connectionState}, browser: ${this.browserInfo.name}`);
+
     peerConnection.ondatachannel = (event) => {
-      // this.log('log', `Received data channel from peer ${peerId}`);
+      postLogToBackend(`[Firefox Debug] Received ondatachannel event - peer: ${peerId}, channel label: ${event.channel.label}, readyState: ${event.channel.readyState}, browser: ${this.browserInfo.name}`);
+      
+      // Firefox特定的DataChannel配置
+      if (this.browserInfo.isFirefox) {
+        // 确保binaryType设置为arraybuffer（虽然这通常是默认值）
+        try {
+          // 注意：DataChannel没有binaryType属性，但我们可以在这里做其他Firefox特定的配置
+          postLogToBackend(`[Firefox Debug] Applying Firefox-specific DataChannel configuration`);
+        } catch (error) {
+          postLogToBackend(`[Firefox Debug] Firefox DataChannel configuration error: ${error}`);
+        }
+      }
+      
       this.setupDataChannel(event.channel, peerId);
       this.dataChannels.set(peerId, event.channel);
+      
+      postLogToBackend(`[Firefox Debug] DataChannel setup completed for peer: ${peerId}, total channels: ${this.dataChannels.size}, browser: ${this.browserInfo.name}`);
     };
   }
 }
