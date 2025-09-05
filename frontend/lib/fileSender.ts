@@ -1,6 +1,6 @@
 // 🚀 新流程 - 接收端主导的文件传输：
 // 1. 发送文件元数据 (fileMetadata)
-// 2. 接收文件请求 (fileRequest) 
+// 2. 接收文件请求 (fileRequest)
 // 3. 发送所有数据块，完成后等待接收端确认
 // 4. 收到接收端确认 (fileReceiveComplete/folderReceiveComplete) 后设置进度100%
 // 发送端不再主动发送完成信号，完全由接收端控制完成时机
@@ -113,6 +113,7 @@ class FileSender {
 
   private handleSignalingMessage(message: WebRTCMessage, peerId: string): void {
     const peerState = this.getPeerState(peerId);
+    postLogToBackend(`debug Message:${message.type}`);
     switch (message.type) {
       case "fileRequest":
         this.handleFileRequest(message as FileRequest, peerId);
@@ -121,7 +122,10 @@ class FileSender {
         this.handleFileReceiveComplete(message as FileReceiveComplete, peerId);
         break;
       case "folderReceiveComplete":
-        this.handleFolderReceiveComplete(message as FolderReceiveComplete, peerId);
+        this.handleFolderReceiveComplete(
+          message as FolderReceiveComplete,
+          peerId
+        );
         break;
       default:
         this.log("warn", `Unknown signaling message type received`, {
@@ -146,7 +150,7 @@ class FileSender {
     peerId: string
   ): void {
     const peerState = this.getPeerState(peerId);
-    
+
     postLogToBackend(
       `[Firefox Debug] 📥 Received fileReceiveComplete - fileId: ${message.fileId}, receivedSize: ${message.receivedSize}, receivedChunks: ${message.receivedChunks}, storeUpdated: ${message.storeUpdated}`
     );
@@ -181,7 +185,7 @@ class FileSender {
     peerId: string
   ): void {
     const peerState = this.getPeerState(peerId);
-    
+
     postLogToBackend(
       `[Firefox Debug] 📥 Received folderReceiveComplete - folderName: ${message.folderName}, completedFiles: ${message.completedFileIds.length}, allStoreUpdated: ${message.allStoreUpdated}`
     );
@@ -211,13 +215,15 @@ class FileSender {
       "log",
       `Handling file request for ${request.fileId} from ${peerId} with offset ${offset}`
     );
-    
+
     // 🔧 Firefox兼容性修复：添加稍长延迟确保接收端完全准备好
     // 根据[[memory:7549586]]，这个延迟解决了时序竞态条件
-    await new Promise(resolve => setTimeout(resolve, 10));
-    
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
     if (file) {
-      postLogToBackend(`[Firefox Debug] Starting file send - fileName: ${file.name}, fileSize: ${file.size}, offset: ${offset}`);
+      postLogToBackend(
+        `[Firefox Debug] Starting file send - fileName: ${file.name}, fileSize: ${file.size}, offset: ${offset}`
+      );
       await this.sendSingleFile(file, peerId, offset);
     } else {
       this.fireError(`File not found for request`, {
@@ -317,7 +323,7 @@ class FileSender {
 
     try {
       await this.processSendQueue(file, peerId);
-      
+
       // 🚀 新流程：不再主动发送fileEnd，等待接收端的fileReceiveComplete确认
       postLogToBackend(
         `[Firefox Debug] 📤 File sending completed, waiting for receiver confirmation - ${file.name}`
@@ -459,7 +465,9 @@ class FileSender {
 
       // Send fragment
       await this.sendSingleData(chunk, peerId);
-
+      postLogToBackend(
+        `[sender Debug] chunk idx:${fragmentIndex} ,size:${chunkSize}`
+      );
       offset += chunkSize;
       fragmentIndex++;
     }
@@ -474,21 +482,27 @@ class FileSender {
     if (!dataChannel) {
       throw new Error("Data channel not found");
     }
-    
+
     // Firefox兼容性调试：记录发送前的数据信息
-    const dataType = typeof data === "string" ? "string" : data instanceof ArrayBuffer ? "ArrayBuffer" : "unknown";
-    const dataSize = typeof data === "string" ? data.length : data instanceof ArrayBuffer ? data.byteLength : 0;
-    
-    postLogToBackend(`[Firefox Debug] Sending data - type: ${dataType}, size: ${dataSize}, channelState: ${dataChannel.readyState}`);
-    
+    const dataType =
+      typeof data === "string"
+        ? "string"
+        : data instanceof ArrayBuffer
+        ? "ArrayBuffer"
+        : "unknown";
+    const dataSize =
+      typeof data === "string"
+        ? data.length
+        : data instanceof ArrayBuffer
+        ? data.byteLength
+        : 0;
+
     // Intelligent send control - decide sending strategy based on buffer status
     await this.smartBufferControl(dataChannel, peerId);
 
     // Send data
     const sendResult = this.webrtcConnection.sendData(data, peerId);
-    
-    postLogToBackend(`[Firefox Debug] Data send result: ${sendResult ? 'success' : 'failed'} - type: ${dataType}, size: ${dataSize}`);
-    
+
     if (!sendResult) {
       const errorMessage = `sendData failed for ${dataType} data of size ${dataSize}`;
       postLogToBackend(`[Firefox Debug] ❌ ${errorMessage}`);
@@ -751,10 +765,6 @@ class FileSender {
     // Initialize network performance monitoring
     this.initializeNetworkPerformance(peerId);
 
-    postLogToBackend(
-      `[Firefox Debug] 🚀 processSendQueue started - fileName: ${file.name}, fileSize: ${file.size}, startOffset: ${offset}`
-    );
-
     try {
       let loopCount = 0;
       // Use batch reading + loop instead of traditional recursion to greatly improve performance
@@ -772,23 +782,22 @@ class FileSender {
 
         if (chunks.length === 0) break;
 
-        postLogToBackend(
-          `[Firefox Debug] 📦 Loop ${loopCount} - read ${chunks.length} chunks, totalSize: ${chunks.reduce((sum, c) => sum + c.byteLength, 0)}`
-        );
-
         for (const chunk of chunks) {
           if (!peerState.isSending || offset >= file.size) break;
-          
+
           // 🔧 修复：检查发送是否成功
           let sendSuccessful = false;
           try {
             await this.sendWithBackpressure(chunk, peerId);
             sendSuccessful = true;
+
             totalChunksSent++;
             totalBytesSentInLoop += chunk.byteLength;
           } catch (error) {
             postLogToBackend(
-              `[Firefox Debug] ❌ Failed to send chunk ${totalChunksSent + 1}: ${error}`
+              `[Firefox Debug] ❌ Failed to send chunk ${
+                totalChunksSent + 1
+              }: ${error}`
             );
             sendSuccessful = false;
             // 不更新统计，但继续尝试发送下一个chunk
@@ -807,14 +816,6 @@ class FileSender {
               peerId,
               true // 明确标记为发送成功
             );
-            
-            // 每50个chunk记录一次进度
-            if (totalChunksSent % 50 === 0) {
-              const progress = ((offset / file.size) * 100).toFixed(2);
-              postLogToBackend(
-                `[Firefox Debug] 📊 Progress: ${totalChunksSent} chunks sent, ${totalBytesSentInLoop} bytes, ${progress}% complete`
-              );
-            }
           } else {
             // 发送失败但不中止传输，记录失败信息
             postLogToBackend(
@@ -823,25 +824,7 @@ class FileSender {
           }
         }
       }
-      
-      // File sending completed - final statistics using actual sent bytes
-      const actualBytesSent = peerState.totalBytesSent[fileId] || 0;
-      postLogToBackend(
-        `[Firefox Debug] 🏁 Send completed - totalChunks: ${totalChunksSent}, loopBytes: ${totalBytesSentInLoop}, actualBytes: ${actualBytesSent}, finalOffset: ${offset}, expected: ${file.size}`
-      );
-      
-      // 验证统计一致性
-      if (totalBytesSentInLoop !== actualBytesSent) {
-        postLogToBackend(
-          `[Firefox Debug] ⚠️ Statistics mismatch! Loop counted ${totalBytesSentInLoop} bytes but progress tracked ${actualBytesSent} bytes`
-        );
-      }
-      
-      // 🚀 新流程：不再在这里设置进度100%，等待接收端确认
-      // if (offset >= file.size && !peerState.currentFolderName) {
-      //   peerState.progressCallback?.(fileId, 1, 0);
-      // }
-      
+
       postLogToBackend(
         `[Firefox Debug] 🏁 All data sent, waiting for receiver to confirm completion...`
       );
@@ -860,7 +843,6 @@ class FileSender {
       throw error;
     }
   }
-
 
   private abortFileSend(fileId: string, peerId: string): void {
     this.log("warn", `Aborting file send for ${fileId} to ${peerId}`);

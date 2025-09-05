@@ -1,5 +1,5 @@
 // 🚀 新流程 - 接收端主导的文件传输：
-// 1. 接收文件元数据 (fileMetadata) 
+// 1. 接收文件元数据 (fileMetadata)
 // 2. 用户点击下载，发送文件请求 (fileRequest)
 // 3. 接收所有数据块，自动检测完整性
 // 4. 完成Store同步后，主动发送完成确认 (fileReceiveComplete/folderReceiveComplete)
@@ -187,7 +187,7 @@ class FileReceiver {
 
     const receptionPromise = new Promise<void>((resolve, reject) => {
       const expectedChunksCount = Math.ceil((fileInfo.size - offset) / 65536); // 计算预期chunk数量
-      
+
       this.activeFileReception = {
         meta: fileInfo,
         chunks: [],
@@ -284,7 +284,7 @@ class FileReceiver {
 
     // 🚀 新流程：发送文件夹接收完成确认
     // 收集所有成功完成的文件ID
-    const completedFileIds = folderProgress.fileIds.filter(fileId => {
+    const completedFileIds = folderProgress.fileIds.filter((fileId) => {
       // 这里可以添加更复杂的验证逻辑，现在简单假设都成功了
       return true;
     });
@@ -299,21 +299,23 @@ class FileReceiver {
   // endregion
 
   // region WebRTC Data Handlers
-  
+
   /**
    * 将各种二进制数据格式转换为ArrayBuffer
    * 支持Firefox的Blob、Uint8Array等格式
    */
   private async convertToArrayBuffer(data: any): Promise<ArrayBuffer | null> {
     const originalType = Object.prototype.toString.call(data);
-    
+
     if (data instanceof ArrayBuffer) {
       return data;
     } else if (data instanceof Blob) {
       try {
         const arrayBuffer = await data.arrayBuffer();
         if (data.size !== arrayBuffer.byteLength) {
-          postLogToBackend(`[DEBUG] ⚠️ Blob size mismatch: ${data.size}→${arrayBuffer.byteLength}`);
+          postLogToBackend(
+            `[DEBUG] ⚠️ Blob size mismatch: ${data.size}→${arrayBuffer.byteLength}`
+          );
         }
         return arrayBuffer;
       } catch (error) {
@@ -322,9 +324,10 @@ class FileReceiver {
       }
     } else if (data instanceof Uint8Array || ArrayBuffer.isView(data)) {
       try {
-        const uint8Array = data instanceof Uint8Array 
-          ? data 
-          : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+        const uint8Array =
+          data instanceof Uint8Array
+            ? data
+            : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
         const newArrayBuffer = new ArrayBuffer(uint8Array.length);
         new Uint8Array(newArrayBuffer).set(uint8Array);
         return newArrayBuffer;
@@ -333,7 +336,9 @@ class FileReceiver {
         return null;
       }
     } else {
-      postLogToBackend(`[DEBUG] ❌ Unknown data type: ${Object.prototype.toString.call(data)}`);
+      postLogToBackend(
+        `[DEBUG] ❌ Unknown data type: ${Object.prototype.toString.call(data)}`
+      );
       return null;
     }
   }
@@ -363,13 +368,8 @@ class FileReceiver {
     } else {
       // 处理各种格式的二进制数据 - Firefox兼容性修复
       const arrayBuffer = await this.convertToArrayBuffer(data);
-      
-      if (arrayBuffer) {
-        // 调试日志：记录接收到二进制数据
-        postLogToBackend(
-          `[Firefox Debug] Received binary data - originalType: ${Object.prototype.toString.call(data)}, convertedSize: ${arrayBuffer.byteLength}, peerId: ${peerId}`
-        );
 
+      if (arrayBuffer) {
         if (!this.activeFileReception) {
           postLogToBackend(
             `[Firefox Debug] ERROR: Received file chunk but no active file reception!`
@@ -381,9 +381,6 @@ class FileReceiver {
           return;
         }
 
-        postLogToBackend(
-          `[Firefox Debug] Processing chunk for file: ${this.activeFileReception.meta.name}`
-        );
         this.updateProgress(arrayBuffer.byteLength);
         await this.handleFileChunk(arrayBuffer);
       } else {
@@ -392,7 +389,7 @@ class FileReceiver {
         );
         this.fireError("Received unsupported binary data format", {
           dataType: Object.prototype.toString.call(data),
-          peerId
+          peerId,
         });
       }
     }
@@ -460,35 +457,49 @@ class FileReceiver {
 
     // 🐛 DEBUG: 记录接收到的原始chunk信息
     const currentChunkIndex = this.activeFileReception.receivedChunksCount;
-    postLogToBackend(
-      `[DEBUG] 📥 RECEIVE chunk#${currentChunkIndex} - size: ${chunk.byteLength} bytes`
-    );
 
     // 更新统计信息
     this.activeFileReception.receivedChunksCount++;
-    this.activeFileReception.lastChunkIndex = Math.max(this.activeFileReception.lastChunkIndex, currentChunkIndex);
-    
+    this.activeFileReception.lastChunkIndex = Math.max(
+      this.activeFileReception.lastChunkIndex,
+      currentChunkIndex
+    );
+
     // 更新进度统计
     this.updateProgress(chunk.byteLength);
-    
+
     if (this.activeFileReception.writeStream) {
       await this.writeLargeFileChunk(chunk);
     } else {
       // 存储chunk到内存
       this.activeFileReception.chunks.push(chunk);
-      
+
       // 🐛 DEBUG: 验证存储结果
-      const storedChunk = this.activeFileReception.chunks[this.activeFileReception.chunks.length - 1];
-      const currentTotalSize = this.activeFileReception.chunks.reduce((sum, c) => sum + (c?.byteLength || 0), 0);
-      
-      postLogToBackend(
-        `[DEBUG] 📦 STORED chunk#${currentChunkIndex} - original: ${chunk.byteLength}, stored: ${storedChunk?.byteLength || 'null'}, total: ${currentTotalSize}`
+      const storedChunk =
+        this.activeFileReception.chunks[
+          this.activeFileReception.chunks.length - 1
+        ];
+      const currentTotalSize = this.activeFileReception.chunks.reduce(
+        (sum, c) => sum + (c?.byteLength || 0),
+        0
       );
-      
+
+      postLogToBackend(
+        `[DEBUG] 📦 STORED chunk#${currentChunkIndex} - original: ${
+          chunk.byteLength
+        }, stored: ${
+          storedChunk?.byteLength || "null"
+        }, total: ${currentTotalSize}`
+      );
+
       // 🐛 DEBUG: 特别关注最后几个chunks
       if (currentChunkIndex >= 65) {
         postLogToBackend(
-          `[DEBUG] 🔍 CRITICAL_CHUNK#${currentChunkIndex} - input: ${chunk.byteLength}, stored: ${storedChunk?.byteLength}, isLast: ${currentChunkIndex >= 67}`
+          `[DEBUG] 🔍 CRITICAL_CHUNK#${currentChunkIndex} - input: ${
+            chunk.byteLength
+          }, stored: ${storedChunk?.byteLength}, isLast: ${
+            currentChunkIndex >= 67
+          }`
         );
       }
     }
@@ -506,44 +517,41 @@ class FileReceiver {
     const reception = this.activeFileReception;
     const receivedChunks = reception.receivedChunksCount;
     const expectedChunks = reception.expectedChunksCount;
-    
+
     // 计算当前实际接收的总大小
     const currentTotalSize = reception.chunks.reduce((sum, chunk) => {
       return sum + (chunk instanceof ArrayBuffer ? chunk.byteLength : 0);
     }, 0);
     const expectedSize = reception.meta.size;
-    
-    const chunksComplete = (receivedChunks >= expectedChunks);
-    const sizeComplete = (currentTotalSize >= expectedSize);
+
+    const chunksComplete = receivedChunks >= expectedChunks;
+    const sizeComplete = currentTotalSize >= expectedSize;
     const isDataComplete = chunksComplete && sizeComplete;
-    
-    // 🐛 DEBUG: 完成状态检查
-    if (receivedChunks % 10 === 0 || receivedChunks >= expectedChunks - 5) {
-      postLogToBackend(
-        `[DEBUG] 🔄 Progress check - chunks: ${receivedChunks}/${expectedChunks}, size: ${currentTotalSize}/${expectedSize}, complete: ${isDataComplete}`
-      );
-    }
-    
+
+    postLogToBackend(
+      `[DEBUG] 🔄 Progress check - chunks: ${receivedChunks}/${expectedChunks}, size: ${currentTotalSize}/${expectedSize}, complete: ${isDataComplete}, isFinalized:${reception.isFinalized}`
+    );
+
     // 防止重复finalize
     if (reception.isFinalized) {
       return;
     }
-    
+
     if (isDataComplete) {
       postLogToBackend(
         `[DEBUG] 🎯 TRIGGERING finalize - chunks: ${receivedChunks}/${expectedChunks}, size: ${currentTotalSize}/${expectedSize}`
       );
-      
+
       reception.isFinalized = true;
-      
+
       try {
         await this.finalizeFileReceive();
-        
+
         if (reception.completionNotifier) {
           reception.completionNotifier.resolve();
         }
         this.activeFileReception = null;
-        
+
         postLogToBackend(`[DEBUG] ✅ Auto-finalize SUCCESS`);
       } catch (error) {
         postLogToBackend(`[DEBUG] ❌ Auto-finalize ERROR: ${error}`);
@@ -693,56 +701,79 @@ class FileReceiver {
     let totalChunkSize = 0;
     let validChunks = 0;
     const chunkDetails: string[] = [];
-    
+
     reception.chunks.forEach((chunk, index) => {
       if (chunk instanceof ArrayBuffer) {
         validChunks++;
         totalChunkSize += chunk.byteLength;
-        
+
         // 🐛 DEBUG: 特别关注最后几个chunks
         if (index >= reception.chunks.length - 5) {
           chunkDetails.push(`chunk#${index}: ${chunk.byteLength}bytes`);
           postLogToBackend(
-            `[DEBUG] 🔍 FINAL_CHUNK_ANALYSIS - index: ${index}, size: ${chunk.byteLength}, isLast: ${index === reception.chunks.length - 1}`
+            `[DEBUG] 🔍 FINAL_CHUNK_ANALYSIS - index: ${index}, size: ${
+              chunk.byteLength
+            }, isLast: ${index === reception.chunks.length - 1}`
           );
         }
-        
+
         // 检测异常大小
         if (chunk.byteLength !== 65536 && index < reception.chunks.length - 1) {
-          postLogToBackend(`[DEBUG] ⚠️ UNEXPECTED_SIZE - chunk#${index}: ${chunk.byteLength} (should be 65536)`);
+          postLogToBackend(
+            `[DEBUG] ⚠️ UNEXPECTED_SIZE - chunk#${index}: ${chunk.byteLength} (should be 65536)`
+          );
         }
       } else {
-        postLogToBackend(`[DEBUG] ❌ INVALID_CHUNK - index: ${index}, type: ${Object.prototype.toString.call(chunk)}`);
+        postLogToBackend(
+          `[DEBUG] ❌ INVALID_CHUNK - index: ${index}, type: ${Object.prototype.toString.call(
+            chunk
+          )}`
+        );
       }
     });
 
     // 🐛 DEBUG: 总体分析
     postLogToBackend(
-      `[DEBUG] 📊 CHUNK_SUMMARY - valid: ${validChunks}/${reception.chunks.length}, totalSize: ${totalChunkSize}, expected: ${reception.meta.size}, diff: ${reception.meta.size - totalChunkSize}`
+      `[DEBUG] 📊 CHUNK_SUMMARY - valid: ${validChunks}/${
+        reception.chunks.length
+      }, totalSize: ${totalChunkSize}, expected: ${
+        reception.meta.size
+      }, diff: ${reception.meta.size - totalChunkSize}`
     );
-    
+
     if (chunkDetails.length > 0) {
-      postLogToBackend(`[DEBUG] 🔍 FINAL_CHUNKS: ${chunkDetails.join(', ')}`);
+      postLogToBackend(`[DEBUG] 🔍 FINAL_CHUNKS: ${chunkDetails.join(", ")}`);
     }
 
     // 最终验证
     const sizeDifference = reception.meta.size - totalChunkSize;
     if (sizeDifference !== 0) {
-      postLogToBackend(`[DEBUG] ❌ SIZE_MISMATCH - missing: ${sizeDifference} bytes`);
+      postLogToBackend(
+        `[DEBUG] ❌ SIZE_MISMATCH - missing: ${sizeDifference} bytes`
+      );
     } else {
       postLogToBackend(`[DEBUG] ✅ SIZE_VERIFIED - ${totalChunkSize} bytes`);
     }
-    
+
     // 创建文件
-    const fileBlob = new Blob(reception.chunks.filter(chunk => chunk instanceof ArrayBuffer) as ArrayBuffer[], {
-      type: reception.meta.fileType,
-    });
-    
+    const fileBlob = new Blob(
+      reception.chunks.filter(
+        (chunk) => chunk instanceof ArrayBuffer
+      ) as ArrayBuffer[],
+      {
+        type: reception.meta.fileType,
+      }
+    );
+
     const file = new File([fileBlob], reception.meta.name, {
       type: reception.meta.fileType,
     });
-    
-    postLogToBackend(`[DEBUG] 📄 FILE_CREATED - size: ${file.size}, expected: ${reception.meta.size}, match: ${file.size === reception.meta.size}`);
+
+    postLogToBackend(
+      `[DEBUG] 📄 FILE_CREATED - size: ${file.size}, expected: ${
+        reception.meta.size
+      }, match: ${file.size === reception.meta.size}`
+    );
 
     const customFile = Object.assign(file, {
       fullName: reception.meta.fullName,
@@ -755,7 +786,7 @@ class FileReceiver {
       await Promise.resolve();
       await new Promise<void>((resolve) => setTimeout(() => resolve(), 0));
       storeUpdated = true;
-      
+
       postLogToBackend(`[DEBUG] ✅ STORE_UPDATED - ${reception.meta.name}`);
     }
 
@@ -781,7 +812,7 @@ class FileReceiver {
     storeUpdated: boolean
   ): void {
     if (!this.peerId) return;
-    
+
     const completeMessage: FileReceiveComplete = {
       type: "fileReceiveComplete",
       fileId,
@@ -789,9 +820,12 @@ class FileReceiver {
       receivedChunks,
       storeUpdated,
     };
-    
-    const success = this.webrtcConnection.sendData(JSON.stringify(completeMessage), this.peerId);
-    
+
+    const success = this.webrtcConnection.sendData(
+      JSON.stringify(completeMessage),
+      this.peerId
+    );
+
     postLogToBackend(
       `[DEBUG] 📤 SENT fileReceiveComplete - size: ${receivedSize}, chunks: ${receivedChunks}, success: ${success}`
     );
@@ -806,16 +840,19 @@ class FileReceiver {
     allStoreUpdated: boolean
   ): void {
     if (!this.peerId) return;
-    
+
     const completeMessage: FolderReceiveComplete = {
       type: "folderReceiveComplete",
       folderName,
       completedFileIds,
       allStoreUpdated,
     };
-    
-    const success = this.webrtcConnection.sendData(JSON.stringify(completeMessage), this.peerId);
-    
+
+    const success = this.webrtcConnection.sendData(
+      JSON.stringify(completeMessage),
+      this.peerId
+    );
+
     postLogToBackend(
       `[Firefox Debug] 📤 Sent folderReceiveComplete - folderName: ${folderName}, completedFiles: ${completedFileIds.length}, allStoreUpdated: ${allStoreUpdated}, success: ${success}`
     );
