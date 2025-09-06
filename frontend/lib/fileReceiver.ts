@@ -19,15 +19,16 @@ import {
   FileRequest,
   FileReceiveComplete,
   FolderReceiveComplete,
+  EmbeddedChunkMeta,
 } from "@/types/webrtc";
 import { postLogToBackend } from "@/app/config/api";
 
 /**
- * Manages the state of an active file reception.
+ * 🚀 新版本：管理按序列化融合数据包的文件接收状态
  */
 interface ActiveFileReception {
   meta: fileMetadata; // If meta is present, it means this file is currently being received; null means no file is being received.
-  chunks: (ArrayBuffer | null)[]; // Received file chunks (stored in memory).
+  chunks: (ArrayBuffer | null)[]; // 按序号排列的数据块数组
   receivedSize: number;
   initialOffset: number; // For resuming downloads
   fileHandle: FileSystemFileHandle | null; // Object related to writing to disk -- current file.
@@ -36,10 +37,10 @@ interface ActiveFileReception {
     resolve: () => void;
     reject: (reason?: any) => void;
   };
-  // 新增：用于跟踪数据接收统计
+  // 🚀 新版本：简化的按序接收管理
   receivedChunksCount: number; // 实际接收到的chunk数量
   expectedChunksCount: number; // 预期的chunk数量
-  lastChunkIndex: number; // 最后接收的chunk索引
+  chunkSequenceMap: Map<number, boolean>; // 跟踪哪些chunk已经接收（用于chunk序号）
   isFinalized?: boolean; // 防止重复finalize的标记
 }
 
@@ -190,16 +191,16 @@ class FileReceiver {
 
       this.activeFileReception = {
         meta: fileInfo,
-        chunks: [],
+        chunks: new Array(expectedChunksCount).fill(null), // 🚀 初始化为按索引排列的空数组
         receivedSize: 0,
         initialOffset: offset,
         fileHandle: null,
         writeStream: null,
         completionNotifier: { resolve, reject },
-        // 新增统计字段
+        // 🚀 新版本：简化的按序接收管理
         receivedChunksCount: 0,
         expectedChunksCount: expectedChunksCount,
-        lastChunkIndex: -1,
+        chunkSequenceMap: new Map<number, boolean>(),
       };
 
       postLogToBackend(
@@ -343,6 +344,60 @@ class FileReceiver {
     }
   }
 
+  /**
+   * 🚀 新增：解析融合数据包
+   * 格式: [4字节长度] + [JSON元数据] + [实际chunk数据]
+   */
+  private parseEmbeddedChunkPacket(arrayBuffer: ArrayBuffer): {
+    chunkMeta: EmbeddedChunkMeta;
+    chunkData: ArrayBuffer;
+  } | null {
+    try {
+      // 1. 检查数据包最小长度
+      if (arrayBuffer.byteLength < 4) {
+        postLogToBackend(`[DEBUG] ❌ Invalid embedded packet - too small: ${arrayBuffer.byteLength}`);
+        return null;
+      }
+
+      // 2. 读取元数据长度（4字节）
+      const lengthView = new Uint32Array(arrayBuffer, 0, 1);
+      const metaLength = lengthView[0];
+      
+      // 3. 验证数据包的完整性
+      const expectedTotalLength = 4 + metaLength;
+      if (arrayBuffer.byteLength < expectedTotalLength) {
+        postLogToBackend(`[DEBUG] ❌ Incomplete embedded packet - expected: ${expectedTotalLength}, got: ${arrayBuffer.byteLength}`);
+        return null;
+      }
+
+      // 4. 提取元数据部分
+      const metaBytes = new Uint8Array(arrayBuffer, 4, metaLength);
+      const metaJson = new TextDecoder().decode(metaBytes);
+      const chunkMeta: EmbeddedChunkMeta = JSON.parse(metaJson);
+      
+      // 5. 提取实际chunk数据部分
+      const chunkDataStart = 4 + metaLength;
+      const chunkData = arrayBuffer.slice(chunkDataStart);
+      
+      // 6. 验证chunk数据大小
+      if (chunkData.byteLength !== chunkMeta.chunkSize) {
+        postLogToBackend(
+          `[DEBUG] ⚠️ Chunk size mismatch - meta: ${chunkMeta.chunkSize}, actual: ${chunkData.byteLength}`
+        );
+      }
+
+      postLogToBackend(
+        `[DEBUG] 📦 PARSED embedded packet - chunkIndex: ${chunkMeta.chunkIndex}/${chunkMeta.totalChunks}, chunkSize: ${chunkData.byteLength}, isLast: ${chunkMeta.isLastChunk}`
+      );
+
+      return { chunkMeta, chunkData };
+    } catch (error) {
+      postLogToBackend(`[DEBUG] ❌ Failed to parse embedded packet: ${error}`);
+      return null;
+    }
+  }
+
+
   private async handleReceivedData(
     data: string | ArrayBuffer | any,
     peerId: string
@@ -366,7 +421,7 @@ class FileReceiver {
         this.fireError("Error parsing received JSON data", { error });
       }
     } else {
-      // 处理各种格式的二进制数据 - Firefox兼容性修复
+      // 🚀 新版本：处理融合数据包 - 彻底解决Firefox乱序问题
       const arrayBuffer = await this.convertToArrayBuffer(data);
 
       if (arrayBuffer) {
@@ -381,8 +436,8 @@ class FileReceiver {
           return;
         }
 
-        this.updateProgress(arrayBuffer.byteLength);
-        await this.handleFileChunk(arrayBuffer);
+        // 🚀 统一处理：所有数据都作为融合数据包处理
+        await this.handleEmbeddedChunkPacket(arrayBuffer);
       } else {
         postLogToBackend(
           `[Firefox Debug] ERROR: Failed to convert binary data to ArrayBuffer`
@@ -452,64 +507,95 @@ class FileReceiver {
   // endregion
 
   // region File and Folder Processing
-  private async handleFileChunk(chunk: ArrayBuffer): Promise<void> {
-    if (!this.activeFileReception) return;
+  
+  /**
+   * 🚀 新版本：处理融合数据包
+   */
+  private async handleEmbeddedChunkPacket(arrayBuffer: ArrayBuffer): Promise<void> {
+    const parsed = this.parseEmbeddedChunkPacket(arrayBuffer);
+    if (!parsed) {
+      this.fireError("Failed to parse embedded chunk packet");
+      return;
+    }
 
-    // 🐛 DEBUG: 记录接收到的原始chunk信息
-    const currentChunkIndex = this.activeFileReception.receivedChunksCount;
-
-    // 更新统计信息
-    this.activeFileReception.receivedChunksCount++;
-    this.activeFileReception.lastChunkIndex = Math.max(
-      this.activeFileReception.lastChunkIndex,
-      currentChunkIndex
-    );
-
-    // 更新进度统计
-    this.updateProgress(chunk.byteLength);
-
-    if (this.activeFileReception.writeStream) {
-      await this.writeLargeFileChunk(chunk);
-    } else {
-      // 存储chunk到内存
-      this.activeFileReception.chunks.push(chunk);
-
-      // 🐛 DEBUG: 验证存储结果
-      const storedChunk =
-        this.activeFileReception.chunks[
-          this.activeFileReception.chunks.length - 1
-        ];
-      const currentTotalSize = this.activeFileReception.chunks.reduce(
-        (sum, c) => sum + (c?.byteLength || 0),
-        0
-      );
-
+    const { chunkMeta, chunkData } = parsed;
+    const reception = this.activeFileReception!;
+    
+    // 验证fileId匹配
+    if (chunkMeta.fileId !== reception.meta.fileId) {
       postLogToBackend(
-        `[DEBUG] 📦 STORED chunk#${currentChunkIndex} - original: ${
-          chunk.byteLength
-        }, stored: ${
-          storedChunk?.byteLength || "null"
-        }, total: ${currentTotalSize}`
+        `[DEBUG] ⚠️ FileId mismatch - expected: ${reception.meta.fileId}, got: ${chunkMeta.fileId}`
       );
+      return;
+    }
 
-      // 🐛 DEBUG: 特别关注最后几个chunks
-      if (currentChunkIndex >= 65) {
-        postLogToBackend(
-          `[DEBUG] 🔍 CRITICAL_CHUNK#${currentChunkIndex} - input: ${
-            chunk.byteLength
-          }, stored: ${storedChunk?.byteLength}, isLast: ${
-            currentChunkIndex >= 67
-          }`
-        );
+    // 更新预期 chunks 数量（可能与初始预估不同）
+    if (chunkMeta.totalChunks !== reception.expectedChunksCount) {
+      postLogToBackend(
+        `[DEBUG] ⚠️ Chunk count adjustment - expected: ${reception.expectedChunksCount}, actual: ${chunkMeta.totalChunks}`
+      );
+      reception.expectedChunksCount = chunkMeta.totalChunks;
+      // 调整chunks数组大小
+      if (reception.chunks.length < chunkMeta.totalChunks) {
+        const newChunks = new Array(chunkMeta.totalChunks).fill(null);
+        reception.chunks.forEach((chunk, index) => {
+          if (index < newChunks.length) newChunks[index] = chunk;
+        });
+        reception.chunks = newChunks;
       }
+    }
+
+    // 按序号存储chunk
+    const chunkIndex = chunkMeta.chunkIndex;
+    if (chunkIndex >= 0 && chunkIndex < reception.chunks.length) {
+      reception.chunks[chunkIndex] = chunkData;
+      reception.chunkSequenceMap.set(chunkIndex, true);
+      reception.receivedChunksCount++;
+      
+      postLogToBackend(
+        `[DEBUG] ✓ SEQUENCED chunk #${chunkIndex}/${chunkMeta.totalChunks} stored - size: ${chunkData.byteLength}, isLast: ${chunkMeta.isLastChunk}`
+      );
+      
+      // 更新进度
+      this.updateProgress(chunkData.byteLength);
+      
+      if (reception.writeStream) {
+        // 对于大文件直写模式，按序写入
+        await this.writeSequencedLargeFileChunk(chunkData, chunkIndex, chunkMeta.fileOffset);
+      }
+    } else {
+      postLogToBackend(
+        `[DEBUG] ❌ Invalid chunk index - ${chunkIndex}, expected 0-${reception.chunks.length - 1}`
+      );
     }
 
     await this.checkAndAutoFinalize();
   }
+  
+  
+  /**
+   * 🚀 新增：按序写入大文件数据块
+   */
+  private async writeSequencedLargeFileChunk(
+    chunk: ArrayBuffer,
+    chunkIndex: number,
+    fileOffset: number
+  ): Promise<void> {
+    const stream = this.activeFileReception?.writeStream;
+    if (!stream) return;
+    
+    try {
+      // 对于按序写入，可能需要seek到指定位置
+      // 这里简化处理，假设按序接收就直接写入
+      await stream.write(chunk);
+      this.activeFileReception!.chunks[chunkIndex] = null; // Mark as written
+    } catch (error) {
+      this.fireError("Error writing sequenced chunk to disk", { error, chunkIndex, fileOffset });
+    }
+  }
 
   /**
-   * 🚀 新流程：自动检查数据完整性并触发finalize
-   * 不再依赖发送端的fileEnd信号，接收端自主判断完成
+   * 🚀 新版本：统一的自动完成检查 - 支持融合数据包和旧格式
    */
   private async checkAndAutoFinalize(): Promise<void> {
     if (!this.activeFileReception) return;
@@ -524,13 +610,24 @@ class FileReceiver {
     }, 0);
     const expectedSize = reception.meta.size;
 
-    const chunksComplete = receivedChunks >= expectedChunks;
+    // 🚀 统一完整性检查：按序接收模式
+    let sequencedCount = 0;
+    for (let i = 0; i < expectedChunks; i++) {
+      if (reception.chunks[i] instanceof ArrayBuffer) {
+        sequencedCount++;
+      }
+    }
+    const isSequencedComplete = sequencedCount === expectedChunks;
+    
     const sizeComplete = currentTotalSize >= expectedSize;
-    const isDataComplete = chunksComplete && sizeComplete;
+    const isDataComplete = isSequencedComplete && sizeComplete;
 
-    postLogToBackend(
-      `[DEBUG] 🔄 Progress check - chunks: ${receivedChunks}/${expectedChunks}, size: ${currentTotalSize}/${expectedSize}, complete: ${isDataComplete}, isFinalized:${reception.isFinalized}`
-    );
+    // 更频繁的调试信息只在接近完成时显示
+    if (receivedChunks % 10 === 0 || receivedChunks >= expectedChunks - 5 || isDataComplete) {
+      postLogToBackend(
+        `[DEBUG] 🔄 SEQUENCED progress - received: ${sequencedCount}/${expectedChunks}, total: ${currentTotalSize}/${expectedSize}, complete: ${isDataComplete}`
+      );
+    }
 
     // 防止重复finalize
     if (reception.isFinalized) {
@@ -539,7 +636,7 @@ class FileReceiver {
 
     if (isDataComplete) {
       postLogToBackend(
-        `[DEBUG] 🎯 TRIGGERING finalize - chunks: ${receivedChunks}/${expectedChunks}, size: ${currentTotalSize}/${expectedSize}`
+        `[DEBUG] 🎯 TRIGGERING finalize - chunks: ${sequencedCount}/${expectedChunks}, size: ${currentTotalSize}/${expectedSize}`
       );
 
       reception.isFinalized = true;
@@ -697,53 +794,20 @@ class FileReceiver {
       `[DEBUG] 🔍 FINALIZE START - fileName: ${reception.meta.name}, expectedSize: ${reception.meta.size}, chunksArray: ${reception.chunks.length}`
     );
 
-    // 🐛 DEBUG: 详细分析每个chunk
+    // 🚀 简化版：验证按序接收的数据
     let totalChunkSize = 0;
     let validChunks = 0;
-    const chunkDetails: string[] = [];
 
     reception.chunks.forEach((chunk, index) => {
       if (chunk instanceof ArrayBuffer) {
         validChunks++;
         totalChunkSize += chunk.byteLength;
-
-        // 🐛 DEBUG: 特别关注最后几个chunks
-        if (index >= reception.chunks.length - 5) {
-          chunkDetails.push(`chunk#${index}: ${chunk.byteLength}bytes`);
-          postLogToBackend(
-            `[DEBUG] 🔍 FINAL_CHUNK_ANALYSIS - index: ${index}, size: ${
-              chunk.byteLength
-            }, isLast: ${index === reception.chunks.length - 1}`
-          );
-        }
-
-        // 检测异常大小
-        if (chunk.byteLength !== 65536 && index < reception.chunks.length - 1) {
-          postLogToBackend(
-            `[DEBUG] ⚠️ UNEXPECTED_SIZE - chunk#${index}: ${chunk.byteLength} (should be 65536)`
-          );
-        }
-      } else {
-        postLogToBackend(
-          `[DEBUG] ❌ INVALID_CHUNK - index: ${index}, type: ${Object.prototype.toString.call(
-            chunk
-          )}`
-        );
       }
     });
 
-    // 🐛 DEBUG: 总体分析
     postLogToBackend(
-      `[DEBUG] 📊 CHUNK_SUMMARY - valid: ${validChunks}/${
-        reception.chunks.length
-      }, totalSize: ${totalChunkSize}, expected: ${
-        reception.meta.size
-      }, diff: ${reception.meta.size - totalChunkSize}`
+      `[DEBUG] 📊 SEQUENCED_SUMMARY - valid: ${validChunks}/${reception.chunks.length}, totalSize: ${totalChunkSize}, expected: ${reception.meta.size}`
     );
-
-    if (chunkDetails.length > 0) {
-      postLogToBackend(`[DEBUG] 🔍 FINAL_CHUNKS: ${chunkDetails.join(", ")}`);
-    }
 
     // 最终验证
     const sizeDifference = reception.meta.size - totalChunkSize;

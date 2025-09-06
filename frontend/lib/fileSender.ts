@@ -16,6 +16,7 @@ import {
   FileRequest,
   FileReceiveComplete,
   FolderReceiveComplete,
+  EmbeddedChunkMeta,
 } from "@/types/webrtc";
 import { postLogToBackend } from "@/app/config/api";
 
@@ -441,6 +442,68 @@ class FileSender {
     }
   }
 
+  // 🚀 新版本：构建融合元数据的数据包
+  private createEmbeddedChunkPacket(
+    chunkData: ArrayBuffer,
+    chunkMeta: EmbeddedChunkMeta
+  ): ArrayBuffer {
+    // 1. 将元数据序列化为JSON
+    const metaJson = JSON.stringify(chunkMeta);
+    const metaBytes = new TextEncoder().encode(metaJson);
+
+    // 2. 元数据长度（4字节）
+    const metaLengthBuffer = new ArrayBuffer(4);
+    const metaLengthView = new Uint32Array(metaLengthBuffer);
+    metaLengthView[0] = metaBytes.length;
+
+    // 3. 构建最终的融合数据包
+    const totalLength = 4 + metaBytes.length + chunkData.byteLength;
+    const finalPacket = new Uint8Array(totalLength);
+
+    // 拼接: [4字节长度] + [元数据] + [原始chunk数据]
+    finalPacket.set(new Uint8Array(metaLengthBuffer), 0);
+    finalPacket.set(metaBytes, 4);
+    finalPacket.set(new Uint8Array(chunkData), 4 + metaBytes.length);
+
+    postLogToBackend(
+      `[DEBUG] 📦 EMBEDDED packet created - chunkIndex: ${chunkMeta.chunkIndex}, metaSize: ${metaBytes.length}, chunkSize: ${chunkData.byteLength}, totalSize: ${totalLength}`
+    );
+
+    return finalPacket.buffer;
+  }
+
+  // 🚀 新版本：发送带序号的融合数据包
+  private async sendEmbeddedChunk(
+    chunkData: ArrayBuffer,
+    fileId: string,
+    chunkIndex: number,
+    totalChunks: number,
+    fileOffset: number,
+    peerId: string
+  ): Promise<void> {
+    const isLastChunk = chunkIndex === totalChunks - 1;
+
+    // 1. 创建元数据
+    const chunkMeta: EmbeddedChunkMeta = {
+      chunkIndex,
+      totalChunks,
+      chunkSize: chunkData.byteLength,
+      isLastChunk,
+      fileOffset,
+      fileId,
+    };
+
+    // 2. 构建融合数据包
+    const embeddedPacket = this.createEmbeddedChunkPacket(chunkData, chunkMeta);
+
+    // 3. 🔧 关键修复：融合数据包不能被分片，直接发送
+    await this.sendSingleData(embeddedPacket, peerId);
+
+    postLogToBackend(
+      `[DEBUG] ✓ EMBEDDED chunk #${chunkIndex}/${totalChunks} sent - ${chunkData.byteLength} bytes, packet: ${embeddedPacket.byteLength} bytes, isLast: ${isLastChunk}`
+    );
+  }
+
   // New: Send large ArrayBuffer in fragments
   private async sendLargeArrayBuffer(
     data: ArrayBuffer,
@@ -473,7 +536,7 @@ class FileSender {
     }
   }
 
-  // New: Send single data packet with active polling backpressure control
+  // 🚀 修复版本：发送单个数据包（禁止分片）
   private async sendSingleData(
     data: string | ArrayBuffer,
     peerId: string
@@ -497,10 +560,18 @@ class FileSender {
         ? data.byteLength
         : 0;
 
+    // 🚀 关键修复：检查数据包大小，如果超过64KB则需要警告
+    const maxSafeSize = 64 * 1024; // 64KB
+    if (data instanceof ArrayBuffer && data.byteLength > maxSafeSize) {
+      postLogToBackend(
+        `[DEBUG] ⚠️ Large embedded packet detected: ${data.byteLength} bytes, this may cause issues`
+      );
+    }
+
     // Intelligent send control - decide sending strategy based on buffer status
     await this.smartBufferControl(dataChannel, peerId);
 
-    // Send data
+    // 🚀 直接发送，不分片
     const sendResult = this.webrtcConnection.sendData(data, peerId);
 
     if (!sendResult) {
@@ -748,7 +819,7 @@ class FileSender {
     return chunks;
   }
 
-  // Unified optimized version - uses batch reading + loop, suitable for all devices
+  // 🚀 修复版本：在网络传输层面正确添加序号 - 彻底解决Firefox乱序问题
   private async processSendQueue(
     file: CustomFile,
     peerId: string
@@ -757,87 +828,95 @@ class FileSender {
     const peerState = this.getPeerState(peerId);
     const fileReader = new FileReader();
 
-    let offset = peerState.readOffset || 0;
+    let fileOffset = peerState.readOffset || 0;
     const batchSize = FileSender.OPTIMIZED_CONFIG.BATCH_SIZE;
-    let totalChunksSent = 0;
     let totalBytesSentInLoop = 0;
+
+    // 🔧 关键修复：使用网络传输块大小计算totalChunks
+    const networkChunkSize = FileSender.OPTIMIZED_CONFIG.NETWORK_CHUNK_SIZE; // 64KB
+    const remainingSize = file.size - fileOffset;
+    const totalNetworkChunks = Math.ceil(remainingSize / networkChunkSize);
+
+    postLogToBackend(
+      `[DEBUG] 🚀 Starting NETWORK-LEVEL EMBEDDED transfer - file: ${file.name}, totalNetworkChunks: ${totalNetworkChunks}, chunkSize: ${networkChunkSize}, startOffset: ${fileOffset}`
+    );
 
     // Initialize network performance monitoring
     this.initializeNetworkPerformance(peerId);
 
     try {
-      let loopCount = 0;
-      // Use batch reading + loop instead of traditional recursion to greatly improve performance
-      while (offset < file.size && peerState.isSending) {
-        loopCount++;
+      let networkChunkIndex = 0; // 网络块序号
+      let currentFileOffset = fileOffset;
 
-        // Batch read multiple large chunks - fully utilize memory advantages
-        const chunks = await this.readMultipleChunks(
-          fileReader,
-          file,
-          offset,
-          this.chunkSize,
-          batchSize
+      // 按网络块大小逐个发送
+      while (currentFileOffset < file.size && peerState.isSending) {
+        // 计算当前网络块的实际大小
+        const currentNetworkChunkSize = Math.min(
+          networkChunkSize,
+          file.size - currentFileOffset
         );
 
-        if (chunks.length === 0) break;
+        // 读取当前网络块
+        const networkChunk = await this.readSingleChunk(
+          fileReader,
+          file,
+          currentFileOffset,
+          currentNetworkChunkSize
+        );
 
-        for (const chunk of chunks) {
-          if (!peerState.isSending || offset >= file.size) break;
+        // 发送带序号的融合数据包
+        let sendSuccessful = false;
+        try {
+          await this.sendEmbeddedChunk(
+            networkChunk,
+            fileId,
+            networkChunkIndex,
+            totalNetworkChunks,
+            currentFileOffset,
+            peerId
+          );
+          sendSuccessful = true;
+          totalBytesSentInLoop += networkChunk.byteLength;
 
-          // 🔧 修复：检查发送是否成功
-          let sendSuccessful = false;
-          try {
-            await this.sendWithBackpressure(chunk, peerId);
-            sendSuccessful = true;
+          postLogToBackend(
+            `[DEBUG] ✓ Network chunk #${networkChunkIndex}/${totalNetworkChunks} sent - ${networkChunk.byteLength} bytes`
+          );
+        } catch (error) {
+          postLogToBackend(
+            `[Firefox Debug] ❌ Failed to send network chunk #${networkChunkIndex}: ${error}`
+          );
+          throw error;
+        }
 
-            totalChunksSent++;
-            totalBytesSentInLoop += chunk.byteLength;
-          } catch (error) {
-            postLogToBackend(
-              `[Firefox Debug] ❌ Failed to send chunk ${
-                totalChunksSent + 1
-              }: ${error}`
-            );
-            sendSuccessful = false;
-            // 不更新统计，但继续尝试发送下一个chunk
-          }
+        // 更新进度和位置
+        if (sendSuccessful) {
+          currentFileOffset += networkChunk.byteLength;
+          peerState.readOffset = currentFileOffset;
+          networkChunkIndex++;
 
-          // Update progress only if send was successful
-          if (sendSuccessful) {
-            offset += chunk.byteLength;
-            peerState.readOffset = offset;
-
-            // Update file and folder progress with success flag
-            await this.updateProgress(
-              chunk.byteLength,
-              fileId,
-              file.size,
-              peerId,
-              true // 明确标记为发送成功
-            );
-          } else {
-            // 发送失败但不中止传输，记录失败信息
-            postLogToBackend(
-              `[Firefox Debug] 🔄 Chunk send failed but continuing... failed chunks will be missing from total`
-            );
-          }
+          // Update file and folder progress
+          await this.updateProgress(
+            networkChunk.byteLength,
+            fileId,
+            file.size,
+            peerId,
+            true
+          );
         }
       }
 
       postLogToBackend(
-        `[Firefox Debug] 🏁 All data sent, waiting for receiver to confirm completion...`
+        `[Firefox Debug] 🏁 All network chunks sent (${networkChunkIndex}/${totalNetworkChunks}), waiting for receiver confirmation...`
       );
     } catch (error: any) {
-      const errorMessage = `Error in hybrid optimized transfer: ${error.message}`;
+      const errorMessage = `Error in network-level embedded transfer: ${error.message}`;
       postLogToBackend(
-        `[Firefox Debug] ❌ Send error after ${totalChunksSent} chunks, ${totalBytesSentInLoop} bytes: ${errorMessage}`
+        `[Firefox Debug] ❌ Network embedded send error: ${errorMessage}`
       );
       this.fireError(errorMessage, {
         fileId,
         peerId,
-        offset,
-        totalChunksSent,
+        currentFileOffset: peerState.readOffset,
         totalBytesSentInLoop,
       });
       throw error;

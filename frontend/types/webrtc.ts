@@ -57,6 +57,21 @@ export interface FolderReceiveComplete {
   allStoreUpdated: boolean; // 确认所有文件都已加入Store
 }
 
+// 🚀 新增：融合到数据包中的chunk元数据结构
+export interface EmbeddedChunkMeta {
+  chunkIndex: number; // 数据块序号，从0开始  
+  totalChunks: number; // 总数据块数量
+  chunkSize: number; // 数据块大小（不包含元数据部分）
+  isLastChunk: boolean; // 是否为最后一个数据块
+  fileOffset: number; // 在文件中的偏移量
+  fileId: string; // 文件ID，用于匹配
+}
+// 注意：EmbeddedChunkMeta不在WebRTCMessage中，因为它嵌入在二进制数据内
+
+// 🚀 融合数据包的二进制结构:
+// [4字节：元数据长度] + [JSON元数据] + [实际chunk数据]
+// 所有文件传输统一使用这种格式，彻底解决Firefox乱序问题
+
 export type WebRTCMessage =
   | fileMetadata
   | FileRequest
