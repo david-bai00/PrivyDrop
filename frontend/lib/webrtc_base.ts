@@ -363,7 +363,7 @@ export default class BaseWebRTC {
       // 增强的数据类型检测 - 支持Firefox的多种二进制数据格式
       let dataType = "Unknown";
       let dataSize = 0;
-      
+
       if (typeof event.data === "string") {
         dataType = "String";
         dataSize = event.data.length;
@@ -382,12 +382,13 @@ export default class BaseWebRTC {
       } else {
         // 详细的未知类型调试信息
         dataType = `Unknown(${Object.prototype.toString.call(event.data)})`;
-        dataSize = event.data?.length || event.data?.size || event.data?.byteLength || 0;
+        dataSize =
+          event.data?.length || event.data?.size || event.data?.byteLength || 0;
       }
 
-      postLogToBackend(
-        `[Firefox Debug] DataChannel onmessage - peer: ${peerId}, dataType: ${dataType}, size: ${dataSize}`
-      );
+      // postLogToBackend(
+      //   `[Firefox Debug] DataChannel onmessage - peer: ${peerId}, dataType: ${dataType}, size: ${dataSize}`
+      // );
 
       if (this.onDataReceived) {
         this.onDataReceived(event.data, peerId);
@@ -483,14 +484,22 @@ export default class BaseWebRTC {
     if (dataChannel?.readyState === "open") {
       try {
         // Firefox兼容性调试：记录发送详细信息
-        const dataType = typeof data === "string" ? "string" : data instanceof ArrayBuffer ? "ArrayBuffer" : typeof data;
-        const dataSize = typeof data === "string" ? data.length : data instanceof ArrayBuffer ? data.byteLength : 0;
-        
-        postLogToBackend(`[Firefox Debug] sendToPeer - type: ${dataType}, size: ${dataSize}, bufferedAmount: ${dataChannel.bufferedAmount}`);
-        
+        const dataType =
+          typeof data === "string"
+            ? "string"
+            : data instanceof ArrayBuffer
+            ? "ArrayBuffer"
+            : typeof data;
+        const dataSize =
+          typeof data === "string"
+            ? data.length
+            : data instanceof ArrayBuffer
+            ? data.byteLength
+            : 0;
+
+        // postLogToBackend(`[Firefox Debug] sendToPeer - type: ${dataType}, size: ${dataSize}, bufferedAmount: ${dataChannel.bufferedAmount}`);
+
         dataChannel.send(data);
-        
-        postLogToBackend(`[Firefox Debug] sendToPeer success - bufferedAmount after: ${dataChannel.bufferedAmount}`);
         return true;
       } catch (error) {
         postLogToBackend(`[Firefox Debug] sendToPeer error: ${error}`);
@@ -499,7 +508,11 @@ export default class BaseWebRTC {
       }
     }
 
-    postLogToBackend(`[Firefox Debug] DataChannel not ready - peerId: ${peerId}, state: ${dataChannel?.readyState || 'undefined'}`);
+    postLogToBackend(
+      `[Firefox Debug] DataChannel not ready - peerId: ${peerId}, state: ${
+        dataChannel?.readyState || "undefined"
+      }`
+    );
     this.log("warn", `Data channel not ready for peer ${peerId}. Retrying...`);
     return this.retryDataSend(data, peerId);
   }
