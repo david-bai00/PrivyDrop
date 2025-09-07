@@ -114,14 +114,14 @@ export function useFileTransferHandler({
           );
 
           if (fileToDownload) {
-            // 检查文件是否为空
+            // Check if file is empty
             if (fileToDownload.size === 0) {
               postLogToBackend(
                 `[Firefox Debug] ERROR: File has 0 size! This explains the 0-byte download.`
               );
             }
 
-            // 检查文件是否为有效的Blob
+            // Check if file is a valid Blob
             if (!(fileToDownload instanceof Blob)) {
               postLogToBackend(
                 `[Firefox Debug] WARNING: File is not a Blob object, type: ${typeof fileToDownload}`
@@ -131,7 +131,7 @@ export function useFileTransferHandler({
             downloadAs(fileToDownload, fileToDownload.name);
             return true;
           } else {
-            // 调试日志：记录未找到文件的情况
+            // Debug log: Record the case where file is not found
             const availableFileNames = latestRetrievedFiles.map((f) => f.name);
             postLogToBackend(
               `[Firefox Debug] File NOT found! Looking for: "${

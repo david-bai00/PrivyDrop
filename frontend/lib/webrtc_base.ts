@@ -352,7 +352,7 @@ export default class BaseWebRTC {
     };
 
     dataChannel.onmessage = (event) => {
-      // 增强的数据类型检测 - 支持Firefox的多种二进制数据格式
+      // Enhanced data type detection - supports multiple binary data formats in Firefox
       let dataType = "Unknown";
       let dataSize = 0;
 
@@ -372,7 +372,7 @@ export default class BaseWebRTC {
         dataType = "TypedArray";
         dataSize = event.data.byteLength;
       } else {
-        // 详细的未知类型调试信息
+        // Detailed unknown type debug information
         dataType = `Unknown(${Object.prototype.toString.call(event.data)})`;
         dataSize =
           event.data?.length || event.data?.size || event.data?.byteLength || 0;
@@ -477,7 +477,7 @@ export default class BaseWebRTC {
     const dataChannel = this.dataChannels.get(peerId);
     if (dataChannel?.readyState === "open") {
       try {
-        // Firefox兼容性调试：记录发送详细信息
+        // Firefox compatibility debugging: Log sending details
         const dataType =
           typeof data === "string"
             ? "string"

@@ -16,8 +16,8 @@ import WebRTC_Initiator from "../webrtc_Initiator";
 import { postLogToBackend } from "@/app/config/api";
 const developmentEnv = process.env.NEXT_PUBLIC_development!;
 /**
- * 🚀 文件传输编排器
- * 整合所有组件，提供统一的文件传输服务
+ * 🚀 File transfer orchestrator
+ * Integrates all components to provide unified file transfer services
  */
 export class FileTransferOrchestrator implements MessageHandlerDelegate {
   private stateManager: StateManager;
@@ -26,7 +26,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   private progressTracker: ProgressTracker;
 
   constructor(private webrtcConnection: WebRTC_Initiator) {
-    // 初始化所有组件
+    // Initialize all components
     this.stateManager = new StateManager();
     this.networkTransmitter = new NetworkTransmitter(
       webrtcConnection,
@@ -35,19 +35,19 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     this.progressTracker = new ProgressTracker(this.stateManager);
     this.messageHandler = new MessageHandler(this.stateManager, this);
 
-    // 设置数据处理器
+    // Set up data handler
     this.setupDataHandler();
 
     this.log("log", "FileTransferOrchestrator initialized");
   }
 
-  // ===== 公共API - 简化的接口 =====
+  // ===== Public API - Simplified interface =====
 
   /**
-   * 🎯 发送文件元数据
+   * 🎯 Send file metadata
    */
   public sendFileMeta(files: CustomFile[], peerId?: string): void {
-    // 记录属于文件夹的文件大小，用于进度计算
+    // Record file sizes belonging to folders for progress calculation
     files.forEach((file) => {
       if (file.folderName) {
         const fileId = generateFileId(file);
@@ -55,7 +55,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       }
     });
 
-    // 循环发送所有文件的元数据
+    // Loop to send metadata for all files
     const peers = peerId
       ? [peerId]
       : Array.from(this.webrtcConnection.peerConnections.keys());
@@ -80,7 +80,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   }
 
   /**
-   * 🎯 发送字符串内容
+   * 🎯 Send string content
    */
   public async sendString(content: string, peerId: string): Promise<void> {
     const chunkSize = TransferConfig.FILE_CONFIG.CHUNK_SIZE;
@@ -90,7 +90,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       chunks.push(content.slice(i, i + chunkSize));
     }
 
-    // 首先发送元数据
+    // First send metadata
     await this.networkTransmitter.sendWithBackpressure(
       JSON.stringify({
         type: "stringMetadata",
@@ -99,7 +99,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       peerId
     );
 
-    // 逐块发送，使用背压控制
+    // Send chunks one by one using backpressure control
     for (let i = 0; i < chunks.length; i++) {
       const data = JSON.stringify({
         type: "string",
@@ -118,16 +118,16 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   }
 
   /**
-   * 🎯 设置进度回调
+   * 🎯 Set progress callback
    */
   public setProgressCallback(callback: ProgressCallback, peerId: string): void {
     this.progressTracker.setProgressCallback(callback, peerId);
   }
 
-  // ===== MessageHandlerDelegate 实现 =====
+  // ===== MessageHandlerDelegate Implementation =====
 
   /**
-   * 📄 处理文件请求（来自MessageHandler的委托）
+   * 📄 Handle file request (delegated from MessageHandler)
    */
   async handleFileRequest(request: FileRequest, peerId: string): Promise<void> {
     const file = this.stateManager.getPendingFile(request.fileId);
@@ -145,7 +145,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   }
 
   /**
-   * 📝 日志记录（来自MessageHandler的委托）
+   * 📝 Logging (delegated from MessageHandler)
    */
   public log(
     level: "log" | "warn" | "error",
@@ -156,10 +156,10 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     console[level](prefix, message, context || "");
   }
 
-  // ===== 内部编排方法 =====
+  // ===== Internal Orchestration Methods =====
 
   /**
-   * 🎯 发送单个文件
+   * 🎯 Send single file
    */
   private async sendSingleFile(
     file: CustomFile,
@@ -174,7 +174,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       return;
     }
 
-    // 初始化发送状态
+    // Initialize sending state
     this.stateManager.updatePeerState(peerId, {
       isSending: true,
       currentFolderName: file.folderName,
@@ -183,7 +183,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       isReading: false,
     });
 
-    // 初始化进度统计
+    // Initialize progress statistics
     const currentSent = this.stateManager.getFileBytesSent(peerId, fileId);
     this.stateManager.updateFileBytesSent(peerId, fileId, offset - currentSent);
 
@@ -200,7 +200,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   }
 
   /**
-   * 🚀 处理发送队列 - 使用StreamingFileReader
+   * 🚀 Process send queue - Using StreamingFileReader
    */
   private async processSendQueue(
     file: CustomFile,
@@ -210,7 +210,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     const peerState = this.stateManager.getPeerState(peerId);
     const transferStartTime = performance.now();
 
-    // 1. 初始化流式文件读取器
+    // 1. Initialize streaming file reader
     const streamReader = new StreamingFileReader(
       file,
       peerState.readOffset || 0
@@ -234,20 +234,20 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       let totalProgressTime = 0;
       let lastProgressTime = performance.now();
 
-      // 2. 流式处理：逐个获取64KB网络块并发送
+      // 2. Stream processing: Get 64KB network chunks one by one and send
       while (peerState.isSending) {
-        // 获取下一个网络块
+        // Get next network chunk
         const readStartTime = performance.now();
         const chunkInfo = await streamReader.getNextNetworkChunk();
         const readTime = performance.now() - readStartTime;
         totalReadTime += readTime;
 
-        // 检查是否已完成
+        // Check if completed
         if (chunkInfo.chunk === null) {
           break;
         }
 
-        // 构建嵌入式元数据
+        // Build embedded metadata
         const embeddedMeta: EmbeddedChunkMeta = {
           chunkIndex: chunkInfo.chunkIndex,
           totalChunks: chunkInfo.totalChunks,
@@ -257,7 +257,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
           fileId,
         };
 
-        // 发送带嵌入元数据的网络块
+        // Send network chunk with embedded metadata
         let sendSuccessful = false;
         const sendStartTime = performance.now();
         try {
@@ -280,7 +280,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
         const sendTime = performance.now() - sendStartTime;
         totalSendTime += sendTime;
 
-        // 更新状态和进度
+        // Update state and progress
         if (sendSuccessful) {
           this.stateManager.updatePeerState(peerId, {
             readOffset: chunkInfo.fileOffset + chunkInfo.chunk.byteLength,
@@ -300,7 +300,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
 
         networkChunkIndex++;
 
-        // 检查是否为最后一块
+        // Check if it's the last chunk
         if (chunkInfo.isLastChunk) {
           break;
         }
@@ -329,13 +329,13 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       });
       throw error;
     } finally {
-      // 清理资源
+      // Clean up resources
       streamReader.cleanup();
     }
   }
 
   /**
-   * ⏳ 等待传输完成确认
+   * ⏳ Wait for transfer completion confirmation
    */
   private async waitForTransferComplete(peerId: string): Promise<void> {
     const peerState = this.stateManager.getPeerState(peerId);
@@ -345,7 +345,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   }
 
   /**
-   * 📋 获取文件元数据
+   * 📋 Get file metadata
    */
   private getFileMeta(file: CustomFile): fileMetadata {
     const fileId = generateFileId(file);
@@ -361,7 +361,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   }
 
   /**
-   * ❌ 中止文件发送
+   * ❌ Abort file sending
    */
   private abortFileSend(fileId: string, peerId: string): void {
     this.log("warn", `Aborting file send for ${fileId} to ${peerId}`);
@@ -369,7 +369,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   }
 
   /**
-   * 🔧 设置数据处理器
+   * 🔧 Set up data handler
    */
   private setupDataHandler(): void {
     this.webrtcConnection.onDataReceived = (data, peerId) => {
@@ -385,7 +385,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   }
 
   /**
-   * 🔥 错误处理
+   * 🔥 Error handling
    */
   private fireError(message: string, context?: Record<string, any>) {
     this.webrtcConnection.fireError(message, {
@@ -394,10 +394,10 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     });
   }
 
-  // ===== 状态查询和调试 =====
+  // ===== State Query and Debugging =====
 
   /**
-   * 📊 获取传输统计信息
+   * 📊 Get transfer statistics
    */
   public getTransferStats(peerId?: string) {
     const stats = {
@@ -414,7 +414,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   }
 
   /**
-   * 🧹 清理所有资源
+   * 🧹 Clean up all resources
    */
   public cleanup(): void {
     this.stateManager.cleanup();

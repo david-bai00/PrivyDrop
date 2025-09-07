@@ -4,8 +4,8 @@ import WebRTC_Initiator from "../webrtc_Initiator";
 import { postLogToBackend } from "@/app/config/api";
 const developmentEnv = process.env.NEXT_PUBLIC_development!;
 /**
- * 🚀 网络传输器 - 简化版
- * 使用WebRTC原生bufferedAmountLowThreshold进行背压控制
+ * 🚀 Network transmitter - Simplified version
+ * Uses WebRTC native bufferedAmountLowThreshold for backpressure control
  */
 export class NetworkTransmitter {
   constructor(
@@ -14,7 +14,7 @@ export class NetworkTransmitter {
   ) {}
 
   /**
-   * 🎯 发送带序号的融合数据包
+   * 🎯 Send embedded chunk packet with sequence number
    */
   async sendEmbeddedChunk(
     chunkData: ArrayBuffer,
@@ -22,16 +22,16 @@ export class NetworkTransmitter {
     peerId: string
   ): Promise<boolean> {
     try {
-      // 1. 构建融合数据包
+      // 1. Build fused data packet
       const embeddedPacket = this.createEmbeddedChunkPacket(
         chunkData,
         metadata
       );
 
-      // 2. 发送完整的融合数据包（不可分片）
+      // 2. Send complete fused data packet (no fragmentation)
       await this.sendSingleData(embeddedPacket, peerId);
 
-      // 关键节点日志（仅开发环境）
+      // Key node logs (development environment only)
 
       if (
         developmentEnv === "true" &&
@@ -58,26 +58,26 @@ export class NetworkTransmitter {
   }
 
   /**
-   * 🚀 构建融合元数据的数据包
+   * 🚀 Build data packet with embedded metadata
    */
   private createEmbeddedChunkPacket(
     chunkData: ArrayBuffer,
     chunkMeta: EmbeddedChunkMeta
   ): ArrayBuffer {
-    // 1. 将元数据序列化为JSON
+    // 1. Serialize metadata to JSON
     const metaJson = JSON.stringify(chunkMeta);
     const metaBytes = new TextEncoder().encode(metaJson);
 
-    // 2. 元数据长度（4字节）
+    // 2. Metadata length (4 bytes)
     const metaLengthBuffer = new ArrayBuffer(4);
     const metaLengthView = new Uint32Array(metaLengthBuffer);
     metaLengthView[0] = metaBytes.length;
 
-    // 3. 构建最终的融合数据包
+    // 3. Build final fused packet
     const totalLength = 4 + metaBytes.length + chunkData.byteLength;
     const finalPacket = new Uint8Array(totalLength);
 
-    // 拼接: [4字节长度] + [元数据] + [原始chunk数据]
+    // Concatenate: [4-byte length] + [metadata] + [original chunk data]
     finalPacket.set(new Uint8Array(metaLengthBuffer), 0);
     finalPacket.set(metaBytes, 4);
     finalPacket.set(new Uint8Array(chunkData), 4 + metaBytes.length);
@@ -86,7 +86,7 @@ export class NetworkTransmitter {
   }
 
   /**
-   * 🚀 发送单个数据包（禁止分片）
+   * 🚀 Send single data packet (no fragmentation)
    */
   private async sendSingleData(
     data: string | ArrayBuffer,
@@ -97,10 +97,10 @@ export class NetworkTransmitter {
       throw new Error("Data channel not found");
     }
 
-    // 简化背压控制
+    // Simplified backpressure control
     await this.simpleBufferControl(dataChannel, peerId);
 
-    // 直接发送，不分片
+    // Send directly, no fragmentation
     const sendResult = this.webrtcConnection.sendData(data, peerId);
 
     if (!sendResult) {
@@ -114,21 +114,21 @@ export class NetworkTransmitter {
   }
 
   /**
-   * 🎯 原生背压控制 - 使用WebRTC标准机制
+   * 🎯 Native backpressure control - Using WebRTC standard mechanism
    */
   private async simpleBufferControl(
     dataChannel: RTCDataChannel,
     peerId: string
   ): Promise<void> {
-    const maxBuffer = 3 * 1024 * 1024; // 3MB最大缓冲
-    const lowThreshold = 512 * 1024; // 512KB低阈值
+    const maxBuffer = 3 * 1024 * 1024; // 3MB maximum buffer
+    const lowThreshold = 512 * 1024; // 512KB low threshold
 
-    // 设置原生低阈值
+    // Set native low threshold
     if (dataChannel.bufferedAmountLowThreshold !== lowThreshold) {
       dataChannel.bufferedAmountLowThreshold = lowThreshold;
     }
 
-    // 如果缓冲区超过最大值，等待降到低阈值
+    // If buffer exceeds maximum, wait until it drops to low threshold
     if (dataChannel.bufferedAmount > maxBuffer) {
       const startTime = performance.now();
       const initialBuffered = dataChannel.bufferedAmount;
@@ -140,14 +140,14 @@ export class NetworkTransmitter {
         };
         dataChannel.addEventListener("bufferedamountlow", onLow);
 
-        // 添加超时保护，避免无限等待
+        // Add timeout protection to avoid infinite waiting
         setTimeout(() => {
           dataChannel.removeEventListener("bufferedamountlow", onLow);
           resolve();
-        }, 5000); // 5秒超时
+        }, 5000); // 5 second timeout
       });
 
-      // 仅在开发环境输出背压日志
+      // Only output backpressure logs in development environment
       if (developmentEnv === "true") {
         const waitTime = performance.now() - startTime;
         postLogToBackend(
@@ -162,7 +162,7 @@ export class NetworkTransmitter {
   }
 
   /**
-   * 🚀 发送带背压控制的数据
+   * 🚀 Send data with backpressure control
    */
   async sendWithBackpressure(
     data: string | ArrayBuffer,
@@ -174,7 +174,7 @@ export class NetworkTransmitter {
     }
 
     try {
-      // 对于ArrayBuffer，如果超过64KB，需要分片发送（修复sendData failed）
+      // For ArrayBuffer, if larger than 64KB, needs to be fragmented (fix sendData failed)
       if (data instanceof ArrayBuffer) {
         await this.sendLargeArrayBuffer(data, peerId);
       } else {
@@ -190,7 +190,7 @@ export class NetworkTransmitter {
   }
 
   /**
-   * 🚀 发送大型ArrayBuffer（分片处理）
+   * 🚀 Send large ArrayBuffer (fragmentation processing)
    */
   private async sendLargeArrayBuffer(
     data: ArrayBuffer,
@@ -199,13 +199,13 @@ export class NetworkTransmitter {
     const networkChunkSize = 65536; // 64KB
     const totalSize = data.byteLength;
 
-    // 如果数据小于64KB，直接发送
+    // If data is less than 64KB, send directly
     if (totalSize <= networkChunkSize) {
       await this.sendSingleData(data, peerId);
       return;
     }
 
-    // 大块数据分片发送
+    // Fragment large data for sending
     let offset = 0;
     let fragmentIndex = 0;
 
@@ -213,7 +213,7 @@ export class NetworkTransmitter {
       const chunkSize = Math.min(networkChunkSize, totalSize - offset);
       const chunk = data.slice(offset, offset + chunkSize);
 
-      // 发送分片
+      // Send fragment
       await this.sendSingleData(chunk, peerId);
 
       offset += chunkSize;
@@ -222,7 +222,7 @@ export class NetworkTransmitter {
   }
 
   /**
-   * 📊 获取传输统计信息
+   * 📊 Get transmission statistics
    */
   public getTransmissionStats(peerId: string) {
     const dataChannel = this.webrtcConnection.dataChannels.get(peerId);
@@ -236,7 +236,7 @@ export class NetworkTransmitter {
   }
 
   /**
-   * 🧹 清理资源
+   * 🧹 Clean up resources
    */
   public cleanup(): void {
     if (developmentEnv === "true") {

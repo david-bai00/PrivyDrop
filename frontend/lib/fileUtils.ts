@@ -27,7 +27,7 @@ export const downloadAs = async (
   file: Blob | File,
   saveName: string
 ): Promise<void> => {
-  // 检查文件是否为空
+  // Check if file is empty
   if (file.size === 0) {
     postLogToBackend(
       `[Firefox Debug] CRITICAL ERROR: downloadAs received a file with 0 size! This is the root cause of the 0-byte download issue.`

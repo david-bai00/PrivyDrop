@@ -8,7 +8,7 @@ import { StateManager } from "./StateManager";
 import { postLogToBackend } from "@/app/config/api";
 const developmentEnv = process.env.NEXT_PUBLIC_development!;
 /**
- * 🚀 消息处理接口 - 与主编排器通信
+ * 🚀 Message handling interface - Communicate with main orchestrator
  */
 export interface MessageHandlerDelegate {
   handleFileRequest(request: FileRequest, peerId: string): Promise<void>;
@@ -20,8 +20,8 @@ export interface MessageHandlerDelegate {
 }
 
 /**
- * 🚀 消息处理器
- * 负责WebRTC消息的路由和处理逻辑
+ * 🚀 Message handler
+ * Responsible for WebRTC message routing and processing logic
  */
 export class MessageHandler {
   constructor(
@@ -30,10 +30,10 @@ export class MessageHandler {
   ) {}
 
   /**
-   * 🎯 处理接收到的信令消息
+   * 🎯 Handle received signaling message
    */
   handleSignalingMessage(message: WebRTCMessage, peerId: string): void {
-    // 删除频繁的消息接收日志
+    // Delete frequent message reception logs
 
     switch (message.type) {
       case "fileRequest":
@@ -57,7 +57,7 @@ export class MessageHandler {
   }
 
   /**
-   * 📄 处理文件请求消息
+   * 📄 Handle file request message
    */
   private async handleFileRequest(
     request: FileRequest,
@@ -70,10 +70,10 @@ export class MessageHandler {
       `Handling file request for ${request.fileId} from ${peerId} with offset ${offset}`
     );
 
-    // Firefox兼容性修复：添加稍长延迟确保接收端完全准备好
+    // Firefox compatibility fix: Add slightly longer delay to ensure receiver is fully ready
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    // 委托给主编排器处理具体的文件传输
+    // Delegate to main orchestrator for specific file transfer
     try {
       await this.delegate.handleFileRequest(request, peerId);
     } catch (error) {
@@ -86,24 +86,24 @@ export class MessageHandler {
   }
 
   /**
-   * ✅ 处理文件接收完成确认消息
+   * ✅ Handle file receive completion confirmation message
    */
   private handleFileReceiveComplete(
     message: FileReceiveComplete,
     peerId: string
   ): void {
-    // 清理发送状态
+    // Clean up sending state
     this.stateManager.updatePeerState(peerId, { isSending: false });
 
-    // 获取peer状态以触发进度回调
+    // Get peer state to trigger progress callback
     const peerState = this.stateManager.getPeerState(peerId);
 
-    // 触发单文件100%进度（只有非文件夹情况）
+    // Trigger single file 100% progress (only for non-folder cases)
     if (!peerState.currentFolderName) {
-      // 删除频繁的进度日志
+      // Delete frequent progress logs
       peerState.progressCallback?.(message.fileId, 1, 0);
     } else {
-      // 删除频繁的文件夹进度日志
+      // Delete frequent folder progress logs
     }
 
     this.delegate.log("log", `File reception confirmed by peer ${peerId}`, {
@@ -114,7 +114,7 @@ export class MessageHandler {
   }
 
   /**
-   * 📁 处理文件夹接收完成确认消息
+   * 📁 Handle folder receive completion confirmation message
    */
   private handleFolderReceiveComplete(
     message: FolderReceiveComplete,
@@ -126,10 +126,10 @@ export class MessageHandler {
       );
     }
 
-    // 获取peer状态以触发进度回调
+    // Get peer state to trigger progress callback
     const peerState = this.stateManager.getPeerState(peerId);
 
-    // 触发文件夹100%进度
+    // Trigger folder 100% progress
     const folderMeta = this.stateManager.getFolderMeta(message.folderName);
     if (folderMeta) {
       postLogToBackend(
@@ -155,21 +155,21 @@ export class MessageHandler {
   }
 
   /**
-   * 📊 获取消息处理统计信息
+   * 📊 Get message handling statistics
    */
   public getMessageStats(): {
     handledMessages: number;
     lastMessageTime: number | null;
   } {
-    // 这里可以添加消息统计逻辑，如果需要的话
+    // Message statistics logic can be added here if needed
     return {
-      handledMessages: 0, // TODO: 实现消息计数
-      lastMessageTime: null, // TODO: 记录最后消息时间
+      handledMessages: 0, // TODO: Implement message counting
+      lastMessageTime: null, // TODO: Record last message time
     };
   }
 
   /**
-   * 🧹 清理资源
+   * 🧹 Clean up resources
    */
   public cleanup(): void {
     postLogToBackend("[DEBUG] 🧹 MessageHandler cleaned up");

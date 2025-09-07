@@ -3,7 +3,7 @@ import { StateManager } from "./StateManager";
 import { postLogToBackend } from "@/app/config/api";
 
 /**
- * 🚀 进度回调类型定义
+ * 🚀 Progress callback type definition
  */
 export type ProgressCallback = (
   fileId: string,
@@ -12,8 +12,8 @@ export type ProgressCallback = (
 ) => void;
 
 /**
- * 🚀 进度跟踪器
- * 负责文件和文件夹的进度计算、速度统计、回调触发
+ * 🚀 Progress tracker
+ * Responsible for file and folder progress calculation, speed statistics, and callback triggering
  */
 export class ProgressTracker {
   private speedCalculator = new SpeedCalculator();
@@ -21,7 +21,7 @@ export class ProgressTracker {
   constructor(private stateManager: StateManager) {}
 
   /**
-   * 🎯 更新文件传输进度
+   * 🎯 Update file transfer progress
    */
   async updateFileProgress(
     byteLength: number,
@@ -33,20 +33,20 @@ export class ProgressTracker {
     const peerState = this.stateManager.getPeerState(peerId);
     if (!peerState) return;
 
-    // 重要修复：只有成功发送的数据才更新统计
+    // Important fix: Only update statistics for successfully sent data
     if (!wasActuallySent) {
       return;
     }
 
-    // 更新文件已发送字节数
+    // Update file sent bytes
     this.stateManager.updateFileBytesSent(peerId, fileId, byteLength);
 
-    // 计算进度ID和统计数据
+    // Calculate progress ID and statistics
     let progressFileId = fileId;
     let currentBytes = this.stateManager.getFileBytesSent(peerId, fileId);
     let totalSize = fileSize;
 
-    // 如果文件属于文件夹，重新计算文件夹进度
+    // If file belongs to a folder, recalculate folder progress
     if (peerState.currentFolderName) {
       const folderName = peerState.currentFolderName;
       const folderMeta = this.stateManager.getFolderMeta(folderName);
@@ -54,24 +54,24 @@ export class ProgressTracker {
       progressFileId = folderName;
       totalSize = folderMeta?.totalSize || 0;
 
-      // 重新计算文件夹进度（从其所有文件的进度总和）
-      // 这对于断点续传更加健壮和正确
+      // Recalculate folder progress (sum of progress from all its files)
+      // This is more robust and correct for resume downloads
       currentBytes = this.stateManager.getFolderBytesSent(peerId, folderName);
 
-      // 删除频繁的文件夹进度日志
+      // Delete frequent folder progress logs
     }
 
-    // 更新速度计算器
+    // Update speed calculator
     this.speedCalculator.updateSendSpeed(peerId, currentBytes);
     const speed = this.speedCalculator.getSendSpeed(peerId);
     const progress = totalSize > 0 ? currentBytes / totalSize : 0;
 
-    // 触发进度回调
+    // Trigger progress callback
     this.triggerProgressCallback(peerId, progressFileId, progress, speed);
   }
 
   /**
-   * 🎯 更新文件夹传输进度
+   * 🎯 Update folder transfer progress
    */
   async updateFolderProgress(
     folderName: string,
@@ -84,7 +84,7 @@ export class ProgressTracker {
       return;
     }
 
-    // 计算文件夹总进度
+    // Calculate total folder progress
     let totalSentBytes = 0;
     folderMeta.fileIds.forEach((fileId) => {
       totalSentBytes += this.stateManager.getFileBytesSent(peerId, fileId);
@@ -94,7 +94,7 @@ export class ProgressTracker {
       folderMeta.totalSize > 0 ? totalSentBytes / folderMeta.totalSize : 0;
     const speed = this.speedCalculator.getSendSpeed(peerId);
 
-    // 触发文件夹进度回调
+    // Trigger folder progress callback
     this.triggerProgressCallback(peerId, folderName, progress, speed);
 
     postLogToBackend(
@@ -107,14 +107,14 @@ export class ProgressTracker {
   }
 
   /**
-   * 🎯 设置进度回调函数
+   * 🎯 Set progress callback function
    */
   setProgressCallback(callback: ProgressCallback, peerId: string): void {
     this.stateManager.updatePeerState(peerId, { progressCallback: callback });
   }
 
   /**
-   * 🎯 触发进度回调
+   * 🎯 Trigger progress callback
    */
   private triggerProgressCallback(
     peerId: string,
@@ -135,14 +135,14 @@ export class ProgressTracker {
   }
 
   /**
-   * 🎯 计算当前传输速度
+   * 🎯 Calculate current transfer speed
    */
   getCurrentSpeed(peerId: string): number {
     return this.speedCalculator.getSendSpeed(peerId);
   }
 
   /**
-   * 🎯 完成文件传输进度（设置为100%）
+   * 🎯 Complete file transfer progress (set to 100%)
    */
   completeFileProgress(fileId: string, peerId: string): void {
     this.triggerProgressCallback(peerId, fileId, 1.0, 0);
@@ -151,7 +151,7 @@ export class ProgressTracker {
   }
 
   /**
-   * 🎯 完成文件夹传输进度（设置为100%）
+   * 🎯 Complete folder transfer progress (set to 100%)
    */
   completeFolderProgress(folderName: string, peerId: string): void {
     this.triggerProgressCallback(peerId, folderName, 1.0, 0);
@@ -160,13 +160,13 @@ export class ProgressTracker {
   }
 
   /**
-   * 📊 获取详细的进度统计信息
+   * 📊 Get detailed progress statistics
    */
   getProgressStats(peerId: string) {
     const peerState = this.stateManager.getPeerState(peerId);
     const currentSpeed = this.getCurrentSpeed(peerId);
 
-    // 计算总的已发送字节数
+    // Calculate total sent bytes
     let totalBytesSent = 0;
     Object.values(peerState.totalBytesSent).forEach((bytes) => {
       totalBytesSent += bytes;
@@ -184,7 +184,7 @@ export class ProgressTracker {
   }
 
   /**
-   * 📊 获取文件夹的详细进度信息
+   * 📊 Get detailed folder progress information
    */
   getFolderProgressDetails(folderName: string, peerId: string) {
     const folderMeta = this.stateManager.getFolderMeta(folderName);
@@ -198,8 +198,8 @@ export class ProgressTracker {
 
     folderMeta.fileIds.forEach((fileId) => {
       const sent = this.stateManager.getFileBytesSent(peerId, fileId);
-      // 注意：这里需要从pendingFiles获取文件大小，暂时使用0
-      const total = 0; // TODO: 需要从StateManager获取文件大小
+      // Note: Need to get file size from pendingFiles, temporarily using 0
+      const total = 0; // TODO: Need to get file size from StateManager
       totalSent += sent;
 
       fileProgresses[fileId] = {
@@ -221,10 +221,10 @@ export class ProgressTracker {
   }
 
   /**
-   * 🧹 清理进度跟踪资源
+   * 🧹 Clean up progress tracking resources
    */
   cleanup(): void {
-    // SpeedCalculator 内部会自动清理过期数据
+    // SpeedCalculator internally automatically cleans up expired data
     postLogToBackend("[DEBUG] 🧹 ProgressTracker cleaned up");
   }
 }

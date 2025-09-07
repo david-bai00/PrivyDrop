@@ -1,18 +1,18 @@
-// 🚀 新流程 - 接收端主导的文件传输
-// 重构后的FileSender - 使用模块化架构
+// 🚀 New process - Receiver-initiated file transfer
+// Refactored FileSender - Using modular architecture
 
 import WebRTC_Initiator from "./webrtc_Initiator";
 import { CustomFile } from "@/types/webrtc";
 import { FileTransferOrchestrator } from "./transfer/FileTransferOrchestrator";
 
 /**
- * 🚀 FileSender - 向后兼容包装层
+ * 🚀 FileSender - Backward compatible wrapper layer
  *
- * 重构说明：
- * - 原875行单体类重构为模块化架构
- * - 内部使用FileTransferOrchestrator统一编排
- * - 保持100%向后兼容的公共API
- * - 获得高性能文件读取、智能背压控制等优势
+ * Refactoring notes:
+ * - Original 875-line monolithic class refactored into modular architecture
+ * - Internally uses FileTransferOrchestrator for unified orchestration
+ * - Maintains 100% backward compatible public API
+ * - Gains advantages such as high-performance file reading and intelligent backpressure control
  */
 class FileSender {
   private orchestrator: FileTransferOrchestrator;
@@ -21,8 +21,6 @@ class FileSender {
     this.orchestrator = new FileTransferOrchestrator(webrtcConnection);
     console.log("[FileSender] ✅ Initialized with modular architecture");
   }
-
-  // ===== 向后兼容的公共API =====
 
   public sendFileMeta(files: CustomFile[], peerId?: string): void {
     return this.orchestrator.sendFileMeta(files, peerId);
@@ -38,8 +36,6 @@ class FileSender {
   ): void {
     return this.orchestrator.setProgressCallback(callback, peerId);
   }
-
-  // ===== 新增API =====
 
   public getTransferStats(peerId?: string) {
     return this.orchestrator.getTransferStats(peerId);

@@ -1,9 +1,9 @@
-// 🚀 新流程 - 接收端主导的文件传输：
-// 1. 接收文件元数据 (fileMetadata)
-// 2. 用户点击下载，发送文件请求 (fileRequest)
-// 3. 接收所有数据块，自动检测完整性
-// 4. 完成Store同步后，主动发送完成确认 (fileReceiveComplete/folderReceiveComplete)
-// 文件夹传输：重复单文件流程，最后发送文件夹完成确认
+// 🚀 New Process - Receiver-Dominated File Transfer:
+// 1. Receive file metadata (fileMetadata)
+// 2. User clicks download, send file request (fileRequest)
+// 3. Receive all data chunks, automatically detect integrity
+// 4. After completing Store synchronization, proactively send completion confirmation (fileReceiveComplete/folderReceiveComplete)
+// Folder Transfer: Repeat single file process, finally send folder completion confirmation
 import { SpeedCalculator } from "@/lib/speedCalculator";
 import WebRTC_Recipient from "./webrtc_Recipient";
 import {
@@ -22,14 +22,14 @@ import {
   EmbeddedChunkMeta,
 } from "@/types/webrtc";
 import { postLogToBackend } from "@/app/config/api";
-
+const developmentEnv = process.env.NEXT_PUBLIC_development!;
 /**
- * 🚀 严格按序缓冲写入管理器 - 优化大文件磁盘I/O性能
+ * 🚀 Strict Sequential Buffering Writer - Optimizes large file disk I/O performance
  */
 class SequencedDiskWriter {
   private writeQueue = new Map<number, ArrayBuffer>();
   private nextWriteIndex = 0;
-  private readonly maxBufferSize = 100; // 最多缓冲100个chunk（约6.4MB）
+  private readonly maxBufferSize = 100; // Buffer up to 100 chunks (approximately 6.4MB)
   private readonly stream: FileSystemWritableFileStream;
   private totalWritten = 0;
 
@@ -38,55 +38,61 @@ class SequencedDiskWriter {
     this.nextWriteIndex = startIndex;
   }
 
-  /**
-   * 写入一个chunk，自动管理顺序和缓冲
-   */
+  /**\n   * Write a chunk, automatically managing order and buffering\n   */
   async writeChunk(chunkIndex: number, chunk: ArrayBuffer): Promise<void> {
-    // 1. 如果是期待的下一个chunk，立即写入
+    // 1. If it is the expected next chunk, write immediately
     if (chunkIndex === this.nextWriteIndex) {
       await this.flushSequentialChunks(chunk);
       return;
     }
 
-    // 2. 如果是未来的chunk，缓冲起来
+    // 2. If it's a future chunk, buffer it
     if (chunkIndex > this.nextWriteIndex) {
       if (this.writeQueue.size < this.maxBufferSize) {
         this.writeQueue.set(chunkIndex, chunk);
-        postLogToBackend(
-          `[DEBUG] 📦 BUFFERED chunk #${chunkIndex} (waiting for #${this.nextWriteIndex}), queue: ${this.writeQueue.size}/${this.maxBufferSize}`
-        );
+        if (developmentEnv === "true") {
+          postLogToBackend(
+            `[DEBUG] 📦 BUFFERED chunk #${chunkIndex} (waiting for #${this.nextWriteIndex}), queue: ${this.writeQueue.size}/${this.maxBufferSize}`
+          );
+        }
       } else {
-        // 缓冲区满，强制处理最早的chunk以释放空间
+        // Buffer full, forcing processing of the earliest chunk to free up space
         await this.forceFlushOldest();
         this.writeQueue.set(chunkIndex, chunk);
-        postLogToBackend(
-          `[DEBUG] ⚠️ BUFFER_FULL, forced flush and buffered chunk #${chunkIndex}`
-        );
+        if (developmentEnv === "true") {
+          postLogToBackend(
+            `[DEBUG] ⚠️ BUFFER_FULL, forced flush and buffered chunk #${chunkIndex}`
+          );
+        }
       }
       return;
     }
 
-    // 3. 如果是过期的chunk，记录警告但忽略（已写入）
-    postLogToBackend(
-      `[DEBUG] ⚠️ DUPLICATE chunk #${chunkIndex} ignored (already written #${this.nextWriteIndex})`
-    );
+    // 3. If the chunk is expired, log a warning but ignore (already written)
+    if (developmentEnv === "true") {
+      postLogToBackend(
+        `[DEBUG] ⚠️ DUPLICATE chunk #${chunkIndex} ignored (already written #${this.nextWriteIndex})`
+      );
+    }
   }
 
   /**
-   * 写入当前chunk并尝试连续写入后续的chunk
+   * Write current chunk and attempt to sequentially write subsequent chunks
    */
   private async flushSequentialChunks(firstChunk: ArrayBuffer): Promise<void> {
-    // 写入当前chunk
+    // Write current chunk
     await this.stream.write(firstChunk);
     this.totalWritten += firstChunk.byteLength;
 
-    postLogToBackend(
-      `[DEBUG] ✓ DISK_WRITE chunk #${this.nextWriteIndex} - ${firstChunk.byteLength} bytes, total: ${this.totalWritten}`
-    );
+    if (developmentEnv === "true") {
+      postLogToBackend(
+        `[DEBUG] ✓ DISK_WRITE chunk #${this.nextWriteIndex} - ${firstChunk.byteLength} bytes, total: ${this.totalWritten}`
+      );
+    }
 
     this.nextWriteIndex++;
 
-    // 尝试连续写入缓冲中的chunk
+    // Try to sequentially write chunks from buffer
     let flushCount = 0;
     while (this.writeQueue.has(this.nextWriteIndex)) {
       const chunk = this.writeQueue.get(this.nextWriteIndex)!;
@@ -99,14 +105,16 @@ class SequencedDiskWriter {
     }
 
     if (flushCount > 0) {
-      postLogToBackend(
-        `[DEBUG] 🔥 SEQUENTIAL_FLUSH ${flushCount} chunks, now at #${this.nextWriteIndex}, queue: ${this.writeQueue.size}`
-      );
+      if (developmentEnv === "true") {
+        postLogToBackend(
+          `[DEBUG] 🔥 SEQUENTIAL_FLUSH ${flushCount} chunks, now at #${this.nextWriteIndex}, queue: ${this.writeQueue.size}`
+        );
+      }
     }
   }
 
   /**
-   * 强制刷新最早的chunk以释放缓冲区空间
+   * Force refresh the earliest chunk to release buffer space
    */
   private async forceFlushOldest(): Promise<void> {
     if (this.writeQueue.size === 0) return;
@@ -114,24 +122,26 @@ class SequencedDiskWriter {
     const oldestIndex = Math.min(...Array.from(this.writeQueue.keys()));
     const chunk = this.writeQueue.get(oldestIndex)!;
 
-    // 警告：非序写入
-    postLogToBackend(
-      `[DEBUG] ⚠️ FORCE_FLUSH out-of-order chunk #${oldestIndex} (expected #${this.nextWriteIndex})`
-    );
+    // Warning: Unordered write
+    if (developmentEnv === "true") {
+      postLogToBackend(
+        `[DEBUG] ⚠️ FORCE_FLUSH out-of-order chunk #${oldestIndex} (expected #${this.nextWriteIndex})`
+      );
+    }
 
-    // 使用seek在正确位置写入（降级处理）
-    const fileOffset = oldestIndex * 65536; // 假设每个chunk 64KB
+    // Use seek to write at the correct position (fallback handling)
+    const fileOffset = oldestIndex * 65536; // Assume each chunk is 64KB
     await this.stream.seek(fileOffset);
     await this.stream.write(chunk);
     this.writeQueue.delete(oldestIndex);
 
-    // 恢复到当前位置
+    // Return to current position
     const currentOffset = this.nextWriteIndex * 65536;
     await this.stream.seek(currentOffset);
   }
 
   /**
-   * 获取缓冲区状态
+   * Get buffer status
    */
   getBufferStatus(): {
     queueSize: number;
@@ -146,10 +156,10 @@ class SequencedDiskWriter {
   }
 
   /**
-   * 关闭并清理资源
+   * Close and clean up resources
    */
   async close(): Promise<void> {
-    // 尝试刷新所有剩余的chunk
+    // Try to flush all remaining chunks
     const remainingIndexes = Array.from(this.writeQueue.keys()).sort(
       (a, b) => a - b
     );
@@ -158,35 +168,35 @@ class SequencedDiskWriter {
       const fileOffset = chunkIndex * 65536;
       await this.stream.seek(fileOffset);
       await this.stream.write(chunk);
-      postLogToBackend(
-        `[DEBUG] 💾 FINAL_FLUSH chunk #${chunkIndex} at cleanup`
-      );
+      if (developmentEnv === "true") {
+        postLogToBackend(
+          `[DEBUG] 💾 FINAL_FLUSH chunk #${chunkIndex} at cleanup`
+        );
+      }
     }
 
     this.writeQueue.clear();
   }
 }
 
-/**
- * 🚀 新版本：管理按序列化融合数据包的文件接收状态
- */
+/**\n * 🚀 New Version: Manage file reception state for serialized embedded packets\n */
 interface ActiveFileReception {
   meta: fileMetadata; // If meta is present, it means this file is currently being received; null means no file is being received.
-  chunks: (ArrayBuffer | null)[]; // 按序号排列的数据块数组
+  chunks: (ArrayBuffer | null)[]; // Array of data chunks arranged by index
   receivedSize: number;
   initialOffset: number; // For resuming downloads
   fileHandle: FileSystemFileHandle | null; // Object related to writing to disk -- current file.
   writeStream: FileSystemWritableFileStream | null; // Object related to writing to disk.
-  sequencedWriter: SequencedDiskWriter | null; // 🚀 新增：严格按序写入管理器
+  sequencedWriter: SequencedDiskWriter | null; // 🚀 Added: Strict sequential writing manager
   completionNotifier: {
     resolve: () => void;
     reject: (reason?: any) => void;
   };
-  // 🚀 新版本：简化的按序接收管理
-  receivedChunksCount: number; // 实际接收到的chunk数量
-  expectedChunksCount: number; // 预期的chunk数量
-  chunkSequenceMap: Map<number, boolean>; // 跟踪哪些chunk已经接收（用于chunk序号）
-  isFinalized?: boolean; // 防止重复finalize的标记
+  // 🚀 New Version: Simplified sequential reception management
+  receivedChunksCount: number; // Actual number of chunks received
+  expectedChunksCount: number; // Expected number of chunks
+  chunkSequenceMap: Map<number, boolean>; // Track which chunks have been received (for chunk numbering)
+  isFinalized?: boolean; // Flag to prevent duplicate finalize operations
 }
 
 class FileReceiver {
@@ -253,7 +263,7 @@ class FileReceiver {
     }
 
     if (this.activeFileReception) {
-      // 🚀 在错误时也要清理SequencedWriter
+      // 🚀 Also clean up SequencedWriter on error
       if (this.activeFileReception.sequencedWriter) {
         this.activeFileReception.sequencedWriter.close().catch((err) => {
           this.log(
@@ -343,18 +353,18 @@ class FileReceiver {
     }
 
     const receptionPromise = new Promise<void>((resolve, reject) => {
-      const expectedChunksCount = Math.ceil((fileInfo.size - offset) / 65536); // 计算预期chunk数量
+      const expectedChunksCount = Math.ceil((fileInfo.size - offset) / 65536); // Calculate expected chunk count
 
       this.activeFileReception = {
         meta: fileInfo,
-        chunks: new Array(expectedChunksCount).fill(null), // 🚀 初始化为按索引排列的空数组
+        chunks: new Array(expectedChunksCount).fill(null), // 🚀 Initialize as an empty array arranged by index
         receivedSize: 0,
         initialOffset: offset,
         fileHandle: null,
         writeStream: null,
-        sequencedWriter: null, // 🚀 新增：严格按序写入管理器
+        sequencedWriter: null, // 🚀 Added: Strict sequential writing manager
         completionNotifier: { resolve, reject },
-        // 🚀 新版本：简化的按序接收管理
+        // 🚀 New Version: Simplified sequential reception management
         receivedChunksCount: 0,
         expectedChunksCount: expectedChunksCount,
         chunkSequenceMap: new Map<number, boolean>(),
@@ -370,9 +380,11 @@ class FileReceiver {
       this.webrtcConnection.sendData(JSON.stringify(request), this.peerId);
       this.log("log", "Sent fileRequest", { request });
     } else {
-      postLogToBackend(
-        `[Firefox Debug] ERROR: Cannot send fileRequest - no peerId available!`
-      );
+      if (developmentEnv === "true") {
+        postLogToBackend(
+          `[DEBUG] ERROR: Cannot send fileRequest - no peerId available!`
+        );
+      }
     }
 
     return receptionPromise;
@@ -433,18 +445,20 @@ class FileReceiver {
     }
     this.currentFolderName = null;
 
-    // 🚀 新流程：发送文件夹接收完成确认
-    // 收集所有成功完成的文件ID
+    // 🚀 New Process: Send folder reception completion confirmation
+    // Collect all successfully completed file IDs
     const completedFileIds = folderProgress.fileIds.filter((fileId) => {
-      // 这里可以添加更复杂的验证逻辑，现在简单假设都成功了
+      // More complex validation logic can be added here, now simply assume all succeeded
       return true;
     });
 
-    postLogToBackend(
-      `[Firefox Debug] 📁 All files in folder completed - ${folderName}, files: ${completedFileIds.length}/${folderProgress.fileIds.length}`
-    );
+    if (developmentEnv === "true") {
+      postLogToBackend(
+        `[DEBUG] 📁 All files in folder completed - ${folderName}, files: ${completedFileIds.length}/${folderProgress.fileIds.length}`
+      );
+    }
 
-    // 发送文件夹完成消息
+    // Send folder completion message
     this.sendFolderReceiveComplete(folderName, completedFileIds, true);
   }
   // endregion
@@ -452,8 +466,8 @@ class FileReceiver {
   // region WebRTC Data Handlers
 
   /**
-   * 将各种二进制数据格式转换为ArrayBuffer
-   * 支持Firefox的Blob、Uint8Array等格式
+   * Convert various binary data formats to ArrayBuffer
+   * Supports Blob, Uint8Array, and other formats for Firefox
    */
   private async convertToArrayBuffer(data: any): Promise<ArrayBuffer | null> {
     const originalType = Object.prototype.toString.call(data);
@@ -464,13 +478,17 @@ class FileReceiver {
       try {
         const arrayBuffer = await data.arrayBuffer();
         if (data.size !== arrayBuffer.byteLength) {
-          postLogToBackend(
-            `[DEBUG] ⚠️ Blob size mismatch: ${data.size}→${arrayBuffer.byteLength}`
-          );
+          if (developmentEnv === "true") {
+            postLogToBackend(
+              `[DEBUG] ⚠️ Blob size mismatch: ${data.size}→${arrayBuffer.byteLength}`
+            );
+          }
         }
         return arrayBuffer;
       } catch (error) {
-        postLogToBackend(`[DEBUG] ❌ Blob conversion failed: ${error}`);
+        if (developmentEnv === "true") {
+          postLogToBackend(`[DEBUG] ❌ Blob conversion failed: ${error}`);
+        }
         return null;
       }
     } else if (data instanceof Uint8Array || ArrayBuffer.isView(data)) {
@@ -483,66 +501,82 @@ class FileReceiver {
         new Uint8Array(newArrayBuffer).set(uint8Array);
         return newArrayBuffer;
       } catch (error) {
-        postLogToBackend(`[DEBUG] ❌ TypedArray conversion failed: ${error}`);
+        if (developmentEnv === "true") {
+          postLogToBackend(`[DEBUG] ❌ TypedArray conversion failed: ${error}`);
+        }
         return null;
       }
     } else {
-      postLogToBackend(
-        `[DEBUG] ❌ Unknown data type: ${Object.prototype.toString.call(data)}`
-      );
+      if (developmentEnv === "true") {
+        postLogToBackend(
+          `[DEBUG] ❌ Unknown data type: ${Object.prototype.toString.call(
+            data
+          )}`
+        );
+      }
       return null;
     }
   }
 
   /**
-   * 🚀 新增：解析融合数据包
-   * 格式: [4字节长度] + [JSON元数据] + [实际chunk数据]
+   * 🚀 Parsing fusion packets
+   * Format: [4 bytes length] + [JSON metadata] + [actual chunk data]
    */
   private parseEmbeddedChunkPacket(arrayBuffer: ArrayBuffer): {
     chunkMeta: EmbeddedChunkMeta;
     chunkData: ArrayBuffer;
   } | null {
     try {
-      // 1. 检查数据包最小长度
+      // 1. Check minimum packet length
       if (arrayBuffer.byteLength < 4) {
-        postLogToBackend(
-          `[DEBUG] ❌ Invalid embedded packet - too small: ${arrayBuffer.byteLength}`
-        );
+        if (developmentEnv === "true") {
+          postLogToBackend(
+            `[DEBUG] ❌ Invalid embedded packet - too small: ${arrayBuffer.byteLength}`
+          );
+        }
         return null;
       }
 
-      // 2. 读取元数据长度（4字节）
+      // 2. Read metadata length (4 bytes)
       const lengthView = new Uint32Array(arrayBuffer, 0, 1);
       const metaLength = lengthView[0];
 
-      // 3. 验证数据包的完整性
+      // 3. Verify packet integrity
       const expectedTotalLength = 4 + metaLength;
       if (arrayBuffer.byteLength < expectedTotalLength) {
-        postLogToBackend(
-          `[DEBUG] ❌ Incomplete embedded packet - expected: ${expectedTotalLength}, got: ${arrayBuffer.byteLength}`
-        );
+        if (developmentEnv === "true") {
+          postLogToBackend(
+            `[DEBUG] ❌ Incomplete embedded packet - expected: ${expectedTotalLength}, got: ${arrayBuffer.byteLength}`
+          );
+        }
         return null;
       }
 
-      // 4. 提取元数据部分
+      // 4. Extract metadata section
       const metaBytes = new Uint8Array(arrayBuffer, 4, metaLength);
       const metaJson = new TextDecoder().decode(metaBytes);
       const chunkMeta: EmbeddedChunkMeta = JSON.parse(metaJson);
 
-      // 5. 提取实际chunk数据部分
+      // 5. Extract actual chunk data section
       const chunkDataStart = 4 + metaLength;
       const chunkData = arrayBuffer.slice(chunkDataStart);
 
-      // 6. 验证chunk数据大小
+      // 6. Verify chunk data size
       if (chunkData.byteLength !== chunkMeta.chunkSize) {
-        postLogToBackend(
-          `[DEBUG] ⚠️ Chunk size mismatch - meta: ${chunkMeta.chunkSize}, actual: ${chunkData.byteLength}`
-        );
+        if (developmentEnv === "true") {
+          postLogToBackend(
+            `[DEBUG] ⚠️ Chunk size mismatch - meta: ${chunkMeta.chunkSize}, actual: ${chunkData.byteLength}`
+          );
+        }
       }
 
       return { chunkMeta, chunkData };
     } catch (error) {
-      postLogToBackend(`[DEBUG] ❌ Failed to parse embedded packet: ${error}`);
+      if (developmentEnv === "true") {
+        postLogToBackend(
+          `[DEBUG] ❌ Failed to parse embedded packet: ${error}`
+        );
+      }
       return null;
     }
   }
@@ -570,14 +604,16 @@ class FileReceiver {
         this.fireError("Error parsing received JSON data", { error });
       }
     } else {
-      // 🚀 新版本：处理融合数据包 - 彻底解决Firefox乱序问题
+      // 🚀 New Version: Process embedded packets - Completely solve Firefox out-of-order issue
       const arrayBuffer = await this.convertToArrayBuffer(data);
 
       if (arrayBuffer) {
         if (!this.activeFileReception) {
-          postLogToBackend(
-            `[Firefox Debug] ERROR: Received file chunk but no active file reception!`
-          );
+          if (developmentEnv === "true") {
+            postLogToBackend(
+              `[DEBUG] ERROR: Received file chunk but no active file reception!`
+            );
+          }
           this.fireError(
             "Received a file chunk without an active file reception.",
             { peerId }
@@ -585,12 +621,14 @@ class FileReceiver {
           return;
         }
 
-        // 🚀 统一处理：所有数据都作为融合数据包处理
+        // 🚀 Unified processing: All data is processed as embedded packets
         await this.handleEmbeddedChunkPacket(arrayBuffer);
       } else {
-        postLogToBackend(
-          `[Firefox Debug] ERROR: Failed to convert binary data to ArrayBuffer`
-        );
+        if (developmentEnv === "true") {
+          postLogToBackend(
+            `[DEBUG] ERROR: Failed to convert binary data to ArrayBuffer`
+          );
+        }
         this.fireError("Received unsupported binary data format", {
           dataType: Object.prototype.toString.call(data),
           peerId,
@@ -653,12 +691,10 @@ class FileReceiver {
     }
   }
 
-  // endregion
-
   // region File and Folder Processing
 
   /**
-   * 🚀 新版本：处理融合数据包
+   * 🚀 New Version: Process embedded packets
    */
   private async handleEmbeddedChunkPacket(
     arrayBuffer: ArrayBuffer
@@ -672,21 +708,25 @@ class FileReceiver {
     const { chunkMeta, chunkData } = parsed;
     const reception = this.activeFileReception!;
 
-    // 验证fileId匹配
+    // Verify fileId match
     if (chunkMeta.fileId !== reception.meta.fileId) {
-      postLogToBackend(
-        `[DEBUG] ⚠️ FileId mismatch - expected: ${reception.meta.fileId}, got: ${chunkMeta.fileId}`
-      );
+      if (developmentEnv === "true") {
+        postLogToBackend(
+          `[DEBUG] ⚠️ FileId mismatch - expected: ${reception.meta.fileId}, got: ${chunkMeta.fileId}`
+        );
+      }
       return;
     }
 
-    // 更新预期 chunks 数量（可能与初始预估不同）
+    // Update expected chunks count (may differ from initial estimate)
     if (chunkMeta.totalChunks !== reception.expectedChunksCount) {
-      postLogToBackend(
-        `[DEBUG] ⚠️ Chunk count adjustment - expected: ${reception.expectedChunksCount}, actual: ${chunkMeta.totalChunks}`
-      );
+      if (developmentEnv === "true") {
+        postLogToBackend(
+          `[DEBUG] ⚠️ Chunk count adjustment - expected: ${reception.expectedChunksCount}, actual: ${chunkMeta.totalChunks}`
+        );
+      }
       reception.expectedChunksCount = chunkMeta.totalChunks;
-      // 调整chunks数组大小
+      // Adjust chunks array size
       if (reception.chunks.length < chunkMeta.totalChunks) {
         const newChunks = new Array(chunkMeta.totalChunks).fill(null);
         reception.chunks.forEach((chunk, index) => {
@@ -696,33 +736,35 @@ class FileReceiver {
       }
     }
 
-    // 按序号存储chunk
+    // Store chunk by index
     const chunkIndex = chunkMeta.chunkIndex;
     if (chunkIndex >= 0 && chunkIndex < reception.chunks.length) {
       reception.chunks[chunkIndex] = chunkData;
       reception.chunkSequenceMap.set(chunkIndex, true);
       reception.receivedChunksCount++;
 
-      // 更新进度
+      // Update progress
       this.updateProgress(chunkData.byteLength);
 
       if (reception.sequencedWriter) {
-        // 🚀 使用严格按序写入管理器
+        // 🚀 Use strict sequential write management
         await reception.sequencedWriter.writeChunk(chunkIndex, chunkData);
       }
     } else {
-      postLogToBackend(
-        `[DEBUG] ❌ Invalid chunk index - ${chunkIndex}, expected 0-${
-          reception.chunks.length - 1
-        }`
-      );
+      if (developmentEnv === "true") {
+        postLogToBackend(
+          `[DEBUG] ❌ Invalid chunk index - ${chunkIndex}, expected 0-${
+            reception.chunks.length - 1
+          }`
+        );
+      }
     }
 
     await this.checkAndAutoFinalize();
   }
 
   /**
-   * 🚀 新版本：统一的自动完成检查 - 支持融合数据包和旧格式
+   * 🚀 Unified auto-complete check
    */
   private async checkAndAutoFinalize(): Promise<void> {
     if (!this.activeFileReception) return;
@@ -731,13 +773,13 @@ class FileReceiver {
     const receivedChunks = reception.receivedChunksCount;
     const expectedChunks = reception.expectedChunksCount;
 
-    // 计算当前实际接收的总大小
+    // Calculate current actual total received size
     const currentTotalSize = reception.chunks.reduce((sum, chunk) => {
       return sum + (chunk instanceof ArrayBuffer ? chunk.byteLength : 0);
     }, 0);
     const expectedSize = reception.meta.size;
 
-    // 🚀 统一完整性检查：按序接收模式
+    // 🚀 Unified integrity check: sequential reception mode
     let sequencedCount = 0;
     for (let i = 0; i < expectedChunks; i++) {
       if (reception.chunks[i] instanceof ArrayBuffer) {
@@ -749,7 +791,7 @@ class FileReceiver {
     const sizeComplete = currentTotalSize >= expectedSize;
     const isDataComplete = isSequencedComplete && sizeComplete;
 
-    // 防止重复finalize
+    // Prevent duplicate finalize
     if (reception.isFinalized) {
       return;
     }
@@ -765,7 +807,9 @@ class FileReceiver {
         }
         this.activeFileReception = null;
       } catch (error) {
-        postLogToBackend(`[DEBUG] ❌ Auto-finalize ERROR: ${error}`);
+        if (developmentEnv === "true") {
+          postLogToBackend(`[DEBUG] ❌ Auto-finalize ERROR: ${error}`);
+        }
         if (reception.completionNotifier) {
           reception.completionNotifier.reject(error);
         }
@@ -844,16 +888,18 @@ class FileReceiver {
       this.activeFileReception.fileHandle = fileHandle;
       this.activeFileReception.writeStream = writeStream;
 
-      // 🚀 创建严格按序写入管理器
-      const startChunkIndex = Math.floor(offset / 65536); // 计算起始块索引
+      // 🚀 Create a strictly sequential write manager
+      const startChunkIndex = Math.floor(offset / 65536); // Calculate starting chunk index
       this.activeFileReception.sequencedWriter = new SequencedDiskWriter(
         writeStream,
         startChunkIndex
       );
 
-      postLogToBackend(
-        `[DEBUG] 📢 SEQUENCED_WRITER created - startIndex: ${startChunkIndex}, offset: ${offset}`
-      );
+      if (developmentEnv === "true") {
+        postLogToBackend(
+          `[DEBUG] 📢 SEQUENCED_WRITER created - startIndex: ${startChunkIndex}, offset: ${offset}`
+        );
+      }
     } catch (err) {
       this.fireError("Failed to create file on disk", {
         err,
@@ -888,20 +934,24 @@ class FileReceiver {
     if (!reception?.writeStream || !reception.fileHandle) return;
 
     try {
-      // 🚀 先关闭严格按序写入管理器（刷新所有缓冲）
+      // 🚀 First close the strict sequential writing manager (flush all buffers)
       if (reception.sequencedWriter) {
         await reception.sequencedWriter.close();
         const status = reception.sequencedWriter.getBufferStatus();
-        postLogToBackend(
-          `[DEBUG] 💾 SEQUENCED_WRITER closed - totalWritten: ${status.totalWritten}, finalQueue: ${status.queueSize}`
-        );
+        if (developmentEnv === "true") {
+          postLogToBackend(
+            `[DEBUG] 💾 SEQUENCED_WRITER closed - totalWritten: ${status.totalWritten}, finalQueue: ${status.queueSize}`
+          );
+        }
         reception.sequencedWriter = null;
       }
 
-      // 然后关闭文件流
+      // Then close the file stream
       await reception.writeStream.close();
 
-      postLogToBackend(`[DEBUG] ✅ LARGE_FILE finalized successfully`);
+      if (developmentEnv === "true") {
+        postLogToBackend(`[DEBUG] ✅ LARGE_FILE finalized successfully`);
+      }
     } catch (error) {
       this.fireError("Error finalizing large file", { error });
     }
@@ -913,7 +963,7 @@ class FileReceiver {
     const reception = this.activeFileReception;
     if (!reception) return;
 
-    // 🚀 简化版：验证按序接收的数据
+    // 🚀 Simplified: Verify sequentially received data
     let totalChunkSize = 0;
     let validChunks = 0;
 
@@ -924,15 +974,17 @@ class FileReceiver {
       }
     });
 
-    // 最终验证
+    // Final verification
     const sizeDifference = reception.meta.size - totalChunkSize;
     if (sizeDifference !== 0) {
-      postLogToBackend(
-        `[DEBUG] ❌ SIZE_MISMATCH - missing: ${sizeDifference} bytes`
-      );
+      if (developmentEnv === "true") {
+        postLogToBackend(
+          `[DEBUG] ❌ SIZE_MISMATCH - missing: ${sizeDifference} bytes`
+        );
+      }
     }
 
-    // 创建文件
+    // Create file
     const fileBlob = new Blob(
       reception.chunks.filter(
         (chunk) => chunk instanceof ArrayBuffer
@@ -959,7 +1011,7 @@ class FileReceiver {
       storeUpdated = true;
     }
 
-    // 发送完成确认
+    // Send completion confirmation
     this.sendFileReceiveComplete(
       reception.meta.fileId,
       totalChunkSize,
@@ -967,12 +1019,10 @@ class FileReceiver {
       storeUpdated
     );
   }
-  // endregion
-
   // region Communication
 
   /**
-   * 发送文件接收完成确认 - 新的接收端主导流程
+   * Send file reception completion confirmation - New receiver-dominated process
    */
   private sendFileReceiveComplete(
     fileId: string,
@@ -997,7 +1047,7 @@ class FileReceiver {
   }
 
   /**
-   * 发送文件夹接收完成确认
+   * Send folder reception completion confirmation
    */
   private sendFolderReceiveComplete(
     folderName: string,
@@ -1018,9 +1068,11 @@ class FileReceiver {
       this.peerId
     );
 
-    postLogToBackend(
-      `[Firefox Debug] 📤 Sent folderReceiveComplete - folderName: ${folderName}, completedFiles: ${completedFileIds.length}, allStoreUpdated: ${allStoreUpdated}, success: ${success}`
-    );
+    if (developmentEnv === "true") {
+      postLogToBackend(
+        `[DEBUG] 📤 Sent folderReceiveComplete - folderName: ${folderName}, completedFiles: ${completedFileIds.length}, allStoreUpdated: ${allStoreUpdated}, success: ${success}`
+      );
+    }
   }
   // endregion
 
@@ -1030,7 +1082,7 @@ class FileReceiver {
         "log",
         "Attempting to gracefully close sequenced writer on page unload."
       );
-      // 🚀 先关闭严格按序写入管理器
+      // 🚀 First close the strict sequential writing manager
       this.activeFileReception.sequencedWriter.close().catch((err) => {
         this.log(
           "error",

@@ -1,19 +1,19 @@
 import { PeerState, CustomFile, FolderMeta } from "@/types/webrtc";
-// 简化版不再依赖TransferConfig的复杂配置
+// Simplified version no longer depends on TransferConfig's complex configuration
 
 /**
- * 🚀 网络性能监控指标接口
+ * 🚀 Network performance monitoring metrics interface
  */
 export interface NetworkPerformanceMetrics {
-  avgClearingRate: number; // 平均网络清理速度 KB/s
-  optimalThreshold: number; // 动态优化的阈值
-  avgWaitTime: number; // 平均等待时间
-  sampleCount: number; // 样本计数
+  avgClearingRate: number; // Average network clearing speed KB/s
+  optimalThreshold: number; // Dynamically optimized threshold
+  avgWaitTime: number; // Average waiting time
+  sampleCount: number; // Sample count
 }
 
 /**
- * 🚀 状态管理类
- * 集中管理所有传输相关的状态数据
+ * 🚀 State management class
+ * Centrally manages all transfer-related state data
  */
 export class StateManager {
   private peerStates = new Map<string, PeerState>();
@@ -21,10 +21,10 @@ export class StateManager {
   private pendingFolderMeta: Record<string, FolderMeta> = {};
   private networkPerformance = new Map<string, NetworkPerformanceMetrics>();
 
-  // ===== Peer状态管理 =====
+  // ===== Peer state management =====
 
   /**
-   * 获取或创建peer状态
+   * Get or create peer state
    */
   public getPeerState(peerId: string): PeerState {
     if (!this.peerStates.has(peerId)) {
@@ -42,7 +42,7 @@ export class StateManager {
   }
 
   /**
-   * 更新peer状态
+   * Update peer state
    */
   public updatePeerState(peerId: string, updates: Partial<PeerState>): void {
     const currentState = this.getPeerState(peerId);
@@ -50,7 +50,7 @@ export class StateManager {
   }
 
   /**
-   * 重置peer状态（传输完成或出错时）
+   * Reset peer state (when transfer is complete or error occurs)
    */
   public resetPeerState(peerId: string): void {
     const peerState = this.getPeerState(peerId);
@@ -58,51 +58,51 @@ export class StateManager {
     peerState.readOffset = 0;
     peerState.bufferQueue = [];
     peerState.isReading = false;
-    // 保留 currentFolderName, totalBytesSent, progressCallback
+    // Preserve currentFolderName, totalBytesSent, progressCallback
   }
 
   /**
-   * 删除peer状态（peer断开连接时）
+   * Remove peer state (when peer disconnects)
    */
   public removePeerState(peerId: string): void {
     this.peerStates.delete(peerId);
     this.networkPerformance.delete(peerId);
   }
 
-  // ===== 文件管理 =====
+  // ===== File management =====
 
   /**
-   * 添加待发送文件
+   * Add pending file to send
    */
   public addPendingFile(fileId: string, file: CustomFile): void {
     this.pendingFiles.set(fileId, file);
   }
 
   /**
-   * 获取待发送文件
+   * Get pending file to send
    */
   public getPendingFile(fileId: string): CustomFile | undefined {
     return this.pendingFiles.get(fileId);
   }
 
   /**
-   * 删除待发送文件
+   * Remove pending file to send
    */
   public removePendingFile(fileId: string): void {
     this.pendingFiles.delete(fileId);
   }
 
   /**
-   * 获取所有待发送文件
+   * Get all pending files to send
    */
   public getAllPendingFiles(): Map<string, CustomFile> {
     return new Map(this.pendingFiles);
   }
 
-  // ===== 文件夹元数据管理 =====
+  // ===== Folder metadata management =====
 
   /**
-   * 添加或更新文件夹元数据
+   * Add or update folder metadata
    */
   public addFileToFolder(folderName: string, fileId: string, fileSize: number): void {
     if (!this.pendingFolderMeta[folderName]) {
@@ -117,22 +117,22 @@ export class StateManager {
   }
 
   /**
-   * 获取文件夹元数据
+   * Get folder metadata
    */
   public getFolderMeta(folderName: string): FolderMeta | undefined {
     return this.pendingFolderMeta[folderName];
   }
 
   /**
-   * 获取所有文件夹元数据
+   * Get all folder metadata
    */
   public getAllFolderMeta(): Record<string, FolderMeta> {
     return { ...this.pendingFolderMeta };
   }
-  // ===== 进度跟踪相关状态 =====
+  // ===== Progress tracking related state =====
 
   /**
-   * 更新文件发送字节数
+   * Update file sent bytes
    */
   public updateFileBytesSent(peerId: string, fileId: string, bytes: number): void {
     const peerState = this.getPeerState(peerId);
@@ -143,7 +143,7 @@ export class StateManager {
   }
 
   /**
-   * 获取文件已发送字节数
+   * Get file sent bytes
    */
   public getFileBytesSent(peerId: string, fileId: string): number {
     const peerState = this.peerStates.get(peerId);
@@ -151,7 +151,7 @@ export class StateManager {
   }
 
   /**
-   * 计算文件夹总发送字节数
+   * Calculate folder total sent bytes
    */
   public getFolderBytesSent(peerId: string, folderName: string): number {
     const folderMeta = this.getFolderMeta(folderName);
@@ -167,10 +167,10 @@ export class StateManager {
     return totalSent;
   }
 
-  // ===== 清理和重置 =====
+  // ===== Cleanup and reset =====
 
   /**
-   * 清理所有状态（系统重置时）
+   * Clean up all states (when system resets)
    */
   public cleanup(): void {
     this.peerStates.clear();
@@ -180,7 +180,7 @@ export class StateManager {
   }
 
   /**
-   * 获取状态统计信息（调试用）
+   * Get state statistics (for debugging)
    */
   public getStateStats() {
     return {

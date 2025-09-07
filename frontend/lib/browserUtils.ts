@@ -1,26 +1,27 @@
 /**
- * 浏览器检测工具函数
- * 扩展以支持Firefox WebRTC兼容性处理
+ * Browser detection utility functions
+ * Extended to support Firefox WebRTC compatibility handling
  */
 
 /**
- * 检测是否为 Chrome 浏览器
- * @returns {boolean} 如果是 Chrome 返回 true，否则返回 false
+ * Detect if the browser is Chrome
+ * @returns {boolean} Returns true if it's Chrome, otherwise false
  */
 export const isChrome = (): boolean => {
-  // 检测 Chrome 浏览器，排除基于 Chromium 的 Edge
+  // Detect Chrome browser, excluding Chromium-based Edge
   const userAgent = navigator.userAgent;
 
   return (
-    userAgent.includes("Chrome") && !userAgent.includes("Edg") // 排除 Edge
+    userAgent.includes("Chrome") && !userAgent.includes("Edg") // Exclude Edge
   );
 };
 
 /**
- * 检测是否支持程序化下载
- * Chrome 支持长时间传输后的自动下载，其他浏览器可能有限制
- * @returns {boolean} 如果支持自动下载返回 true
+ * Detect if programmatic download is supported
+ * Chrome supports automatic download after long transfers, other browsers may have limitations
+ * @returns {boolean} Returns true if automatic download is supported
  */
+
 export const supportsAutoDownload = (): boolean => {
   return isChrome();
 };

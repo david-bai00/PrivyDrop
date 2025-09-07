@@ -3,7 +3,7 @@ import { TransferConfig } from "./TransferConfig";
 import { postLogToBackend } from "@/app/config/api";
 const developmentEnv = process.env.NEXT_PUBLIC_development!;
 /**
- * 🚀 网络块信息接口
+ * 🚀 Network chunk interface
  */
 export interface NetworkChunk {
   chunk: ArrayBuffer | null;
@@ -14,33 +14,33 @@ export interface NetworkChunk {
 }
 
 /**
- * 🚀 高性能流式文件读取器
- * 使用双层缓冲架构：大块批量读取 + 小块网络发送
- * 解决文件读取性能瓶颈问题
+ * 🚀 High-performance streaming file reader
+ * Uses a two-layer buffering architecture: large batch reading + small network chunk sending
+ * Solves file reading performance bottleneck issues
  */
 export class StreamingFileReader {
-  // 配置参数
+  // Configuration parameters
   private readonly BATCH_SIZE =
     TransferConfig.FILE_CONFIG.CHUNK_SIZE *
-    TransferConfig.FILE_CONFIG.BATCH_SIZE; // 32MB批次
+    TransferConfig.FILE_CONFIG.BATCH_SIZE; // 32MB batches
   private readonly NETWORK_CHUNK_SIZE =
-    TransferConfig.FILE_CONFIG.NETWORK_CHUNK_SIZE; // 64KB网络块
-  private readonly CHUNKS_PER_BATCH = this.BATCH_SIZE / this.NETWORK_CHUNK_SIZE; // 512块
+    TransferConfig.FILE_CONFIG.NETWORK_CHUNK_SIZE; // 64KB network chunks
+  private readonly CHUNKS_PER_BATCH = this.BATCH_SIZE / this.NETWORK_CHUNK_SIZE; // 512 chunks
 
-  // 文件状态
+  // File state
   private file: File;
   private fileReader: FileReader;
   private totalFileSize: number;
 
-  // 批次缓冲状态
-  private currentBatch: ArrayBuffer | null = null; // 当前32MB批次数据
-  private currentBatchStartOffset = 0; // 当前批次在文件中的起始位置
-  private currentChunkIndexInBatch = 0; // 当前网络块在批次中的索引
+  // Batch buffering state
+  private currentBatch: ArrayBuffer | null = null; // Current 32MB batch data
+  private currentBatchStartOffset = 0; // Starting position of current batch in file
+  private currentChunkIndexInBatch = 0; // Index of current network chunk in batch
 
-  // 全局状态
-  private totalFileOffset = 0; // 当前在整个文件中的位置
+  // Global state
+  private totalFileOffset = 0; // Current position in the entire file
   private isFinished = false;
-  private isReading = false; // 防止并发读取
+  private isReading = false; // Prevent concurrent reading
 
   constructor(file: CustomFile, startOffset: number = 0) {
     this.file = file;
@@ -60,15 +60,15 @@ export class StreamingFileReader {
   }
 
   /**
-   * 🎯 核心方法：获取下一个64KB网络块
+   * 🎯 Core method: Get next 64KB network chunk
    */
   async getNextNetworkChunk(): Promise<NetworkChunk> {
-    // 1. 检查是否需要加载新批次
+    // 1. Check if new batch needs to be loaded
     if (this.needsNewBatch()) {
       await this.loadNextBatch();
     }
 
-    // 2. 检查是否已到文件末尾
+    // 2. Check if end of file has been reached
     if (this.isFinished || !this.currentBatch) {
       return {
         chunk: null,
@@ -79,15 +79,15 @@ export class StreamingFileReader {
       };
     }
 
-    // 3. 从当前批次中切片出64KB网络块
+    // 3. Slice 64KB network chunk from current batch
     const networkChunk = this.sliceNetworkChunkFromBatch();
     const globalChunkIndex = this.calculateGlobalChunkIndex();
     const isLast = this.isLastNetworkChunk(networkChunk);
 
-    // 4. 更新状态
+    // 4. Update state
     this.updateChunkState(networkChunk);
 
-    // 删除频繁的chunk进度日志
+    // Delete frequent chunk progress logs
 
     return {
       chunk: networkChunk,
@@ -99,18 +99,18 @@ export class StreamingFileReader {
   }
 
   /**
-   * 🔍 判断是否需要加载新批次
+   * 🔍 Determine if new batch needs to be loaded
    */
   private needsNewBatch(): boolean {
     return (
-      this.currentBatch === null || // 还未加载任何批次
-      this.currentChunkIndexInBatch >= this.CHUNKS_PER_BATCH || // 当前批次用完
-      this.isCurrentBatchEmpty() // 当前批次已无数据
+      this.currentBatch === null || // No batch loaded yet
+      this.currentChunkIndexInBatch >= this.CHUNKS_PER_BATCH || // Current batch exhausted
+      this.isCurrentBatchEmpty() // Current batch has no data
     );
   }
 
   /**
-   * 🔍 判断当前批次是否为空
+   * 🔍 Check if current batch is empty
    */
   private isCurrentBatchEmpty(): boolean {
     if (!this.currentBatch) return true;
@@ -120,11 +120,11 @@ export class StreamingFileReader {
   }
 
   /**
-   * 📥 加载下一个32MB批次到内存
+   * 📥 Load next 32MB batch into memory
    */
   private async loadNextBatch(): Promise<void> {
     if (this.isReading) {
-      // 防止并发读取
+      // Prevent concurrent reading
       while (this.isReading) {
         await new Promise((resolve) => setTimeout(resolve, 10));
       }
@@ -135,10 +135,10 @@ export class StreamingFileReader {
     const startTime = performance.now();
 
     try {
-      // 1. 清理旧批次内存
+      // 1. Clean up old batch memory
       this.currentBatch = null;
 
-      // 2. 计算本次要读取的大小
+      // 2. Calculate size to read this time
       const remainingFileSize = this.totalFileSize - this.totalFileOffset;
       const batchSize = Math.min(this.BATCH_SIZE, remainingFileSize);
 
@@ -147,7 +147,7 @@ export class StreamingFileReader {
         return;
       }
 
-      // 3. 执行大块文件读取
+      // 3. Perform large chunk file reading
       const sliceStartTime = performance.now();
       const fileSlice = this.file.slice(
         this.totalFileOffset,
@@ -155,7 +155,7 @@ export class StreamingFileReader {
       );
       const sliceTime = performance.now() - sliceStartTime;
 
-      // 4. 异步读取文件数据
+      // 4. Asynchronously read file data
       const readStartTime = performance.now();
       this.currentBatch = await this.readFileSlice(fileSlice);
       const readTime = performance.now() - readStartTime;
@@ -163,7 +163,7 @@ export class StreamingFileReader {
       this.currentBatchStartOffset = this.totalFileOffset;
       this.currentChunkIndexInBatch = 0;
 
-      // 仅在开发环境输出批次读取日志
+      // Only output batch reading logs in development environment
       if (developmentEnv === "true") {
         const totalTime = performance.now() - startTime;
         const speedMBps = batchSize / 1024 / 1024 / (totalTime / 1000);
@@ -186,7 +186,7 @@ export class StreamingFileReader {
   }
 
   /**
-   * 📄 执行文件读取操作
+   * 📄 Perform file reading operation
    */
   private async readFileSlice(fileSlice: Blob): Promise<ArrayBuffer> {
     return new Promise((resolve, reject) => {
@@ -214,7 +214,7 @@ export class StreamingFileReader {
   }
 
   /**
-   * ✂️ 从32MB批次中切片出64KB网络块
+   * ✂️ Slice 64KB network chunk from 32MB batch
    */
   private sliceNetworkChunkFromBatch(): ArrayBuffer {
     if (!this.currentBatch) {
@@ -235,12 +235,12 @@ export class StreamingFileReader {
       chunkStartInBatch + chunkSize
     );
 
-    // 删除频繁的slice日志，只在需要时输出
+    // Delete frequent slice logs, only output when needed
     return networkChunk;
   }
 
   /**
-   * 📊 计算全局网络块索引
+   * 📊 Calculate global network chunk index
    */
   private calculateGlobalChunkIndex(): number {
     const batchesBefore = Math.floor(
@@ -251,34 +251,34 @@ export class StreamingFileReader {
   }
 
   /**
-   * 📈 计算总网络块数量
+   * 📈 Calculate total network chunk count
    */
   private calculateTotalNetworkChunks(): number {
     return Math.ceil(this.totalFileSize / this.NETWORK_CHUNK_SIZE);
   }
 
   /**
-   * ⏭️ 更新当前处理状态
+   * ⏭️ Update current processing state
    */
   private updateChunkState(chunk: ArrayBuffer): void {
     this.currentChunkIndexInBatch++;
     this.totalFileOffset += chunk.byteLength;
 
-    // 检查是否到达文件末尾
+    // Check if end of file has been reached
     if (this.totalFileOffset >= this.totalFileSize) {
       this.isFinished = true;
     }
   }
 
   /**
-   * 🏁 判断是否为最后一个网络块
+   * 🏁 Check if this is the last network chunk
    */
   private isLastNetworkChunk(chunk: ArrayBuffer): boolean {
     return this.totalFileOffset + chunk.byteLength >= this.totalFileSize;
   }
 
   /**
-   * 📊 获取读取进度信息
+   * 📊 Get reading progress information
    */
   public getProgress(): {
     readBytes: number;
@@ -317,7 +317,7 @@ export class StreamingFileReader {
   }
 
   /**
-   * 🔄 重置读取器状态（用于重新开始读取）
+   * 🔄 Reset reader state (for restarting reading)
    */
   public reset(startOffset: number = 0): void {
     this.totalFileOffset = startOffset;
@@ -332,22 +332,22 @@ export class StreamingFileReader {
   }
 
   /**
-   * 🧹 清理和释放资源
+   * 🧹 Cleanup and release resources
    */
   public cleanup(): void {
-    // 中断正在进行的文件读取
+    // Abort ongoing file reading
     if (this.isReading) {
       this.fileReader.abort();
     }
 
-    // 清理内存
+    // Clean up memory
     this.currentBatch = null;
     this.isFinished = true;
     this.isReading = false;
   }
 
   /**
-   * 🔍 获取调试信息
+   * 🔍 Get debug information
    */
   public getDebugInfo() {
     return {

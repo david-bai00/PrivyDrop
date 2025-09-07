@@ -1,35 +1,35 @@
 /**
- * 🚀 文件传输模块统一导出
- * 提供模块化的文件传输服务
+ * 🚀 File transfer module unified export
+ * Provides modular file transfer services
  */
 
-// 配置管理
+// Configuration management
 export { TransferConfig } from "./TransferConfig";
 
-// 状态管理
+// State management
 export { StateManager } from "./StateManager";
 export type { NetworkPerformanceMetrics } from "./StateManager";
 
-// 高性能文件读取
+// High-performance file reading
 export { StreamingFileReader } from "./StreamingFileReader";
 export type { NetworkChunk } from "./StreamingFileReader";
 
-// 网络传输
+// Network transmission
 export { NetworkTransmitter } from "./NetworkTransmitter";
 
-// 消息处理
+// Message handling
 export { MessageHandler } from "./MessageHandler";
 export type { MessageHandlerDelegate } from "./MessageHandler";
 
-// 进度跟踪
+// Progress tracking
 export { ProgressTracker } from "./ProgressTracker";
 export type { ProgressCallback } from "./ProgressTracker";
 
-// 主编排器
+// Main orchestrator
 export { FileTransferOrchestrator } from "./FileTransferOrchestrator";
 
 /**
- * 🎯 便捷创建函数 - 快速初始化文件传输服务
+ * 🎯 Convenience creation function - Quick initialization of file transfer services
  */
 import WebRTC_Initiator from "../webrtc_Initiator";
 import { FileTransferOrchestrator } from "./FileTransferOrchestrator";
