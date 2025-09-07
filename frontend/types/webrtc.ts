@@ -41,36 +41,36 @@ export interface StringChunk {
   total: number;
 }
 
-// 接收端主导的完成确认消息
+// Receiver-initiated completion confirmation message
 export interface FileReceiveComplete {
   type: "fileReceiveComplete";
   fileId: string;
   receivedSize: number;
   receivedChunks: number;
-  storeUpdated: boolean; // 确认Store已更新
+  storeUpdated: boolean; // Confirm Store has been updated
 }
 
 export interface FolderReceiveComplete {
   type: "folderReceiveComplete";
   folderName: string;
   completedFileIds: string[];
-  allStoreUpdated: boolean; // 确认所有文件都已加入Store
+  allStoreUpdated: boolean; // Confirm all files have been added to Store
 }
 
-// 🚀 新增：融合到数据包中的chunk元数据结构
+// 🚀 New: Chunk metadata structure embedded in data packets
 export interface EmbeddedChunkMeta {
-  chunkIndex: number; // 数据块序号，从0开始  
-  totalChunks: number; // 总数据块数量
-  chunkSize: number; // 数据块大小（不包含元数据部分）
-  isLastChunk: boolean; // 是否为最后一个数据块
-  fileOffset: number; // 在文件中的偏移量
-  fileId: string; // 文件ID，用于匹配
+  chunkIndex: number; // Data chunk index, starting from 0  
+  totalChunks: number; // Total number of data chunks
+  chunkSize: number; // Data chunk size (excluding metadata portion)
+  isLastChunk: boolean; // Whether this is the last data chunk
+  fileOffset: number; // Offset in the file
+  fileId: string; // File ID, used for matching
 }
-// 注意：EmbeddedChunkMeta不在WebRTCMessage中，因为它嵌入在二进制数据内
+// Note: EmbeddedChunkMeta is not in WebRTCMessage as it is embedded within binary data
 
-// 🚀 融合数据包的二进制结构:
-// [4字节：元数据长度] + [JSON元数据] + [实际chunk数据]
-// 所有文件传输统一使用这种格式，彻底解决Firefox乱序问题
+// 🚀 Binary structure of fused packets:
+// [4 bytes: metadata length] + [JSON metadata] + [actual chunk data]
+// All file transfers use this format uniformly to completely solve Firefox out-of-order issues
 
 export type WebRTCMessage =
   | fileMetadata

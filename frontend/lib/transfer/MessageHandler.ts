@@ -6,13 +6,17 @@ import {
 } from "@/types/webrtc";
 import { StateManager } from "./StateManager";
 import { postLogToBackend } from "@/app/config/api";
-
+const developmentEnv = process.env.NEXT_PUBLIC_development!;
 /**
  * 🚀 消息处理接口 - 与主编排器通信
  */
 export interface MessageHandlerDelegate {
   handleFileRequest(request: FileRequest, peerId: string): Promise<void>;
-  log(level: "log" | "warn" | "error", message: string, context?: Record<string, any>): void;
+  log(
+    level: "log" | "warn" | "error",
+    message: string,
+    context?: Record<string, any>
+  ): void;
 }
 
 /**
@@ -30,7 +34,7 @@ export class MessageHandler {
    */
   handleSignalingMessage(message: WebRTCMessage, peerId: string): void {
     // 删除频繁的消息接收日志
-    
+
     switch (message.type) {
       case "fileRequest":
         this.handleFileRequest(message as FileRequest, peerId);
@@ -39,7 +43,10 @@ export class MessageHandler {
         this.handleFileReceiveComplete(message as FileReceiveComplete, peerId);
         break;
       case "folderReceiveComplete":
-        this.handleFolderReceiveComplete(message as FolderReceiveComplete, peerId);
+        this.handleFolderReceiveComplete(
+          message as FolderReceiveComplete,
+          peerId
+        );
         break;
       default:
         this.delegate.log("warn", `Unknown signaling message type received`, {
@@ -52,9 +59,12 @@ export class MessageHandler {
   /**
    * 📄 处理文件请求消息
    */
-  private async handleFileRequest(request: FileRequest, peerId: string): Promise<void> {
+  private async handleFileRequest(
+    request: FileRequest,
+    peerId: string
+  ): Promise<void> {
     const offset = request.offset || 0;
-    
+
     this.delegate.log(
       "log",
       `Handling file request for ${request.fileId} from ${peerId} with offset ${offset}`
@@ -82,16 +92,12 @@ export class MessageHandler {
     message: FileReceiveComplete,
     peerId: string
   ): void {
-    postLogToBackend(
-      `[PERF] ✅ FILE_COMPLETE - fileId: ${message.fileId}, size: ${(message.receivedSize/1024/1024).toFixed(1)}MB, chunks: ${message.receivedChunks}`
-    );
-
     // 清理发送状态
     this.stateManager.updatePeerState(peerId, { isSending: false });
 
     // 获取peer状态以触发进度回调
     const peerState = this.stateManager.getPeerState(peerId);
-    
+
     // 触发单文件100%进度（只有非文件夹情况）
     if (!peerState.currentFolderName) {
       // 删除频繁的进度日志
@@ -114,13 +120,15 @@ export class MessageHandler {
     message: FolderReceiveComplete,
     peerId: string
   ): void {
-    postLogToBackend(
-      `[DEBUG] 📥 Received folderReceiveComplete - folderName: ${message.folderName}, completedFiles: ${message.completedFileIds.length}, allStoreUpdated: ${message.allStoreUpdated}`
-    );
+    if (developmentEnv === "true") {
+      postLogToBackend(
+        `[DEBUG] 📥 Folder complete - folderName: ${message.folderName}, files: ${message.completedFileIds.length}`
+      );
+    }
 
     // 获取peer状态以触发进度回调
     const peerState = this.stateManager.getPeerState(peerId);
-    
+
     // 触发文件夹100%进度
     const folderMeta = this.stateManager.getFolderMeta(message.folderName);
     if (folderMeta) {
@@ -129,10 +137,14 @@ export class MessageHandler {
       );
       peerState.progressCallback?.(message.folderName, 1, 0);
     } else {
-      this.delegate.log("warn", `Folder metadata not found for completed folder`, {
-        folderName: message.folderName,
-        peerId,
-      });
+      this.delegate.log(
+        "warn",
+        `Folder metadata not found for completed folder`,
+        {
+          folderName: message.folderName,
+          peerId,
+        }
+      );
     }
 
     this.delegate.log("log", `Folder reception confirmed by peer ${peerId}`, {

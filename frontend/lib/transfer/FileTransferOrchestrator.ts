@@ -14,7 +14,7 @@ import { StreamingFileReader } from "./StreamingFileReader";
 import { TransferConfig } from "./TransferConfig";
 import WebRTC_Initiator from "../webrtc_Initiator";
 import { postLogToBackend } from "@/app/config/api";
-
+const developmentEnv = process.env.NEXT_PUBLIC_development!;
 /**
  * 🚀 文件传输编排器
  * 整合所有组件，提供统一的文件传输服务
@@ -28,7 +28,10 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   constructor(private webrtcConnection: WebRTC_Initiator) {
     // 初始化所有组件
     this.stateManager = new StateManager();
-    this.networkTransmitter = new NetworkTransmitter(webrtcConnection, this.stateManager);
+    this.networkTransmitter = new NetworkTransmitter(
+      webrtcConnection,
+      this.stateManager
+    );
     this.progressTracker = new ProgressTracker(this.stateManager);
     this.messageHandler = new MessageHandler(this.stateManager, this);
 
@@ -61,7 +64,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       files.forEach((file) => {
         const fileId = generateFileId(file);
         this.stateManager.addPendingFile(fileId, file);
-        
+
         const fileMeta = this.getFileMeta(file);
         const metaDataString = JSON.stringify(fileMeta);
 
@@ -82,7 +85,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   public async sendString(content: string, peerId: string): Promise<void> {
     const chunkSize = TransferConfig.FILE_CONFIG.CHUNK_SIZE;
     const chunks: string[] = [];
-    
+
     for (let i = 0; i < content.length; i += chunkSize) {
       chunks.push(content.slice(i, i + chunkSize));
     }
@@ -107,7 +110,11 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       await this.networkTransmitter.sendWithBackpressure(data, peerId);
     }
 
-    this.log("log", `String sent successfully - length: ${content.length}, chunks: ${chunks.length}`, { peerId });
+    this.log(
+      "log",
+      `String sent successfully - length: ${content.length}, chunks: ${chunks.length}`,
+      { peerId }
+    );
   }
 
   /**
@@ -133,10 +140,6 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       });
       return;
     }
-
-    postLogToBackend(
-      `[DEBUG] 🚀 Starting file send - fileName: ${file.name}, fileSize: ${file.size}, offset: ${offset}`
-    );
 
     await this.sendSingleFile(file, peerId, offset);
   }
@@ -208,11 +211,20 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     const transferStartTime = performance.now();
 
     // 1. 初始化流式文件读取器
-    const streamReader = new StreamingFileReader(file, peerState.readOffset || 0);
-
-    postLogToBackend(
-      `[PERF] 🚀 TRANSFER_START - file: ${file.name}, size: ${(file.size/1024/1024).toFixed(1)}MB, startOffset: ${peerState.readOffset || 0}`
+    const streamReader = new StreamingFileReader(
+      file,
+      peerState.readOffset || 0
     );
+
+    if (developmentEnv === "true") {
+      postLogToBackend(
+        `[DEBUG] 🚀 Starting transfer - file: ${file.name}, size: ${(
+          file.size /
+          1024 /
+          1024
+        ).toFixed(1)}MB`
+      );
+    }
 
     try {
       let totalBytesSent = 0;
@@ -259,7 +271,10 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
             totalBytesSent += chunkInfo.chunk.byteLength;
           }
         } catch (error) {
-          this.log("warn", `Chunk send failed #${chunkInfo.chunkIndex}: ${error}`);
+          this.log(
+            "warn",
+            `Chunk send failed #${chunkInfo.chunkIndex}: ${error}`
+          );
           sendSuccessful = false;
         }
         const sendTime = performance.now() - sendStartTime;
@@ -267,8 +282,8 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
 
         // 更新状态和进度
         if (sendSuccessful) {
-          this.stateManager.updatePeerState(peerId, { 
-            readOffset: chunkInfo.fileOffset + chunkInfo.chunk.byteLength 
+          this.stateManager.updatePeerState(peerId, {
+            readOffset: chunkInfo.fileOffset + chunkInfo.chunk.byteLength,
           });
 
           const progressStartTime = performance.now();
@@ -284,20 +299,6 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
         }
 
         networkChunkIndex++;
-        
-        // 每100个chunk输出一次进度
-        if (networkChunkIndex % 100 === 0 || chunkInfo.isLastChunk) {
-          const currentTime = performance.now();
-          const intervalTime = currentTime - lastProgressTime;
-          const recentChunks = Math.min(100, networkChunkIndex);
-          const recentMB = (recentChunks * 64) / 1024; // 假设每个chunk 64KB
-          const speedMBps = recentMB / (intervalTime / 1000);
-          
-          postLogToBackend(
-            `[PERF] 📊 PROGRESS #${networkChunkIndex}/${chunkInfo.totalChunks} - speed: ${speedMBps.toFixed(1)}MB/s, read: ${readTime.toFixed(1)}ms, send: ${sendTime.toFixed(1)}ms`
-          );
-          lastProgressTime = currentTime;
-        }
 
         // 检查是否为最后一块
         if (chunkInfo.isLastChunk) {
@@ -305,27 +306,27 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
         }
       }
 
-      const totalTime = performance.now() - transferStartTime;
-      const avgSpeedMBps = (totalBytesSent / 1024 / 1024) / (totalTime / 1000);
-      const avgReadTimePer100 = totalReadTime / Math.max(1, networkChunkIndex / 100);
-      const avgSendTimePer100 = totalSendTime / Math.max(1, networkChunkIndex / 100);
-      const avgProgressTimePer100 = totalProgressTime / Math.max(1, networkChunkIndex / 100);
-      
-      postLogToBackend(
-        `[PERF] ✅ TRANSFER_COMPLETE - file: ${file.name}, time: ${(totalTime/1000).toFixed(1)}s, speed: ${avgSpeedMBps.toFixed(1)}MB/s, chunks: ${networkChunkIndex}`
-      );
-      
-      postLogToBackend(
-        `[PERF] 🖼️ TIME_BREAKDOWN - read: ${avgReadTimePer100.toFixed(1)}ms/100chunks, send: ${avgSendTimePer100.toFixed(1)}ms/100chunks, progress: ${avgProgressTimePer100.toFixed(1)}ms/100chunks`
-      );
-
+      if (developmentEnv === "true") {
+        const totalTime = performance.now() - transferStartTime;
+        const avgSpeedMBps = totalBytesSent / 1024 / 1024 / (totalTime / 1000);
+        postLogToBackend(
+          `[DEBUG] ✅ Transfer complete - file: ${file.name}, time: ${(
+            totalTime / 1000
+          ).toFixed(1)}s, speed: ${avgSpeedMBps.toFixed(
+            1
+          )}MB/s, chunks: ${networkChunkIndex}`
+        );
+      }
     } catch (error: any) {
       const errorMessage = `Streaming send error: ${error.message}`;
-      const totalTime = performance.now() - transferStartTime;
-      postLogToBackend(
-        `[PERF] ❌ TRANSFER_ERROR after ${(totalTime/1000).toFixed(1)}s: ${errorMessage}`
-      );
-      this.fireError(errorMessage, { fileId, peerId, offset: peerState.readOffset });
+      if (developmentEnv === "true") {
+        postLogToBackend(`[DEBUG] ❌ Transfer error: ${errorMessage}`);
+      }
+      this.fireError(errorMessage, {
+        fileId,
+        peerId,
+        offset: peerState.readOffset,
+      });
       throw error;
     } finally {
       // 清理资源
@@ -401,8 +402,12 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   public getTransferStats(peerId?: string) {
     const stats = {
       stateManager: this.stateManager.getStateStats(),
-      progressTracker: peerId ? this.progressTracker.getProgressStats(peerId) : null,
-      networkTransmitter: peerId ? this.networkTransmitter.getTransmissionStats(peerId) : null,
+      progressTracker: peerId
+        ? this.progressTracker.getProgressStats(peerId)
+        : null,
+      networkTransmitter: peerId
+        ? this.networkTransmitter.getTransmissionStats(peerId)
+        : null,
     };
 
     return stats;
@@ -416,7 +421,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     this.networkTransmitter.cleanup();
     this.progressTracker.cleanup();
     this.messageHandler.cleanup();
-    
+
     this.log("log", "FileTransferOrchestrator cleaned up");
   }
 }

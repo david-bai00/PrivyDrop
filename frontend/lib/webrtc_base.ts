@@ -392,9 +392,11 @@ export default class BaseWebRTC {
     };
 
     dataChannel.onclose = () => {
-      postLogToBackend(
-        `[Firefox Debug] DataChannel closed for peer: ${peerId}`
-      );
+      if (developmentEnv === "true") {
+        postLogToBackend(
+          `[Firefox Debug] DataChannel closed for peer: ${peerId}`
+        );
+      }
       this.log("log", `Data channel with ${peerId} closed.`);
     };
   }

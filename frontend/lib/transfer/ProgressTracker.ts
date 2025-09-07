@@ -5,7 +5,11 @@ import { postLogToBackend } from "@/app/config/api";
 /**
  * 🚀 进度回调类型定义
  */
-export type ProgressCallback = (fileId: string, progress: number, speed: number) => void;
+export type ProgressCallback = (
+  fileId: string,
+  progress: number,
+  speed: number
+) => void;
 
 /**
  * 🚀 进度跟踪器
@@ -46,7 +50,7 @@ export class ProgressTracker {
     if (peerState.currentFolderName) {
       const folderName = peerState.currentFolderName;
       const folderMeta = this.stateManager.getFolderMeta(folderName);
-      
+
       progressFileId = folderName;
       totalSize = folderMeta?.totalSize || 0;
 
@@ -64,13 +68,6 @@ export class ProgressTracker {
 
     // 触发进度回调
     this.triggerProgressCallback(peerId, progressFileId, progress, speed);
-
-    // 只在关键进度节点输出日志（每10%）
-    if (Math.floor(progress * 10) !== Math.floor((progress - 0.1) * 10)) {
-      postLogToBackend(
-        `[PERF] 📊 PROGRESS ${progressFileId}: ${(progress * 100).toFixed(0)}%, speed: ${speed.toFixed(1)} KB/s`
-      );
-    }
   }
 
   /**
@@ -93,24 +90,26 @@ export class ProgressTracker {
       totalSentBytes += this.stateManager.getFileBytesSent(peerId, fileId);
     });
 
-    const progress = folderMeta.totalSize > 0 ? totalSentBytes / folderMeta.totalSize : 0;
+    const progress =
+      folderMeta.totalSize > 0 ? totalSentBytes / folderMeta.totalSize : 0;
     const speed = this.speedCalculator.getSendSpeed(peerId);
 
     // 触发文件夹进度回调
     this.triggerProgressCallback(peerId, folderName, progress, speed);
 
     postLogToBackend(
-      `[DEBUG] 📁 Folder progress - ${folderName}: ${(progress * 100).toFixed(2)}%, speed: ${speed.toFixed(2)} KB/s, bytes: ${totalSentBytes}/${folderMeta.totalSize}`
+      `[DEBUG] 📁 Folder progress - ${folderName}: ${(progress * 100).toFixed(
+        2
+      )}%, speed: ${speed.toFixed(2)} KB/s, bytes: ${totalSentBytes}/${
+        folderMeta.totalSize
+      }`
     );
   }
 
   /**
    * 🎯 设置进度回调函数
    */
-  setProgressCallback(
-    callback: ProgressCallback,
-    peerId: string
-  ): void {
+  setProgressCallback(callback: ProgressCallback, peerId: string): void {
     this.stateManager.updatePeerState(peerId, { progressCallback: callback });
   }
 
@@ -147,7 +146,7 @@ export class ProgressTracker {
    */
   completeFileProgress(fileId: string, peerId: string): void {
     this.triggerProgressCallback(peerId, fileId, 1.0, 0);
-    
+
     postLogToBackend(`[DEBUG] ✅ File progress completed: ${fileId}`);
   }
 
@@ -156,7 +155,7 @@ export class ProgressTracker {
    */
   completeFolderProgress(folderName: string, peerId: string): void {
     this.triggerProgressCallback(peerId, folderName, 1.0, 0);
-    
+
     postLogToBackend(`[DEBUG] ✅ Folder progress completed: ${folderName}`);
   }
 
@@ -166,10 +165,10 @@ export class ProgressTracker {
   getProgressStats(peerId: string) {
     const peerState = this.stateManager.getPeerState(peerId);
     const currentSpeed = this.getCurrentSpeed(peerId);
-    
+
     // 计算总的已发送字节数
     let totalBytesSent = 0;
-    Object.values(peerState.totalBytesSent).forEach(bytes => {
+    Object.values(peerState.totalBytesSent).forEach((bytes) => {
       totalBytesSent += bytes;
     });
 
@@ -191,15 +190,18 @@ export class ProgressTracker {
     const folderMeta = this.stateManager.getFolderMeta(folderName);
     if (!folderMeta) return null;
 
-    const fileProgresses: Record<string, { sent: number; total: number; progress: number }> = {};
+    const fileProgresses: Record<
+      string,
+      { sent: number; total: number; progress: number }
+    > = {};
     let totalSent = 0;
 
-    folderMeta.fileIds.forEach(fileId => {
+    folderMeta.fileIds.forEach((fileId) => {
       const sent = this.stateManager.getFileBytesSent(peerId, fileId);
       // 注意：这里需要从pendingFiles获取文件大小，暂时使用0
       const total = 0; // TODO: 需要从StateManager获取文件大小
       totalSent += sent;
-      
+
       fileProgresses[fileId] = {
         sent,
         total,
@@ -211,7 +213,8 @@ export class ProgressTracker {
       folderName,
       totalSize: folderMeta.totalSize,
       totalSent,
-      overallProgress: folderMeta.totalSize > 0 ? totalSent / folderMeta.totalSize : 0,
+      overallProgress:
+        folderMeta.totalSize > 0 ? totalSent / folderMeta.totalSize : 0,
       fileCount: folderMeta.fileIds.length,
       fileProgresses,
     };

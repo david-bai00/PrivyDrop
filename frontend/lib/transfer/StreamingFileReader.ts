@@ -1,7 +1,7 @@
 import { CustomFile } from "@/types/webrtc";
 import { TransferConfig } from "./TransferConfig";
 import { postLogToBackend } from "@/app/config/api";
-
+const developmentEnv = process.env.NEXT_PUBLIC_development!;
 /**
  * 🚀 网络块信息接口
  */
@@ -48,9 +48,15 @@ export class StreamingFileReader {
     this.totalFileOffset = startOffset;
     this.fileReader = new FileReader();
 
-    postLogToBackend(
-      `[DEBUG] 📖 StreamingFileReader created - file: ${file.name}, size: ${this.totalFileSize}, startOffset: ${startOffset}`
-    );
+    if (developmentEnv === "true") {
+      postLogToBackend(
+        `[DEBUG] 📖 StreamingFileReader created - file: ${file.name}, size: ${(
+          this.totalFileSize /
+          1024 /
+          1024
+        ).toFixed(1)}MB`
+      );
+    }
   }
 
   /**
@@ -81,14 +87,7 @@ export class StreamingFileReader {
     // 4. 更新状态
     this.updateChunkState(networkChunk);
 
-    // 只在关键节点输出日志
-    if (globalChunkIndex % 100 === 0 || isLast) {
-      postLogToBackend(
-        `[PERF] ✂️ CHUNK progress #${globalChunkIndex}/${this.calculateTotalNetworkChunks()} - size: ${
-          networkChunk.byteLength
-        }, isLast: ${isLast}`
-      );
-    }
+    // 删除频繁的chunk进度日志
 
     return {
       chunk: networkChunk,
@@ -164,24 +163,22 @@ export class StreamingFileReader {
       this.currentBatchStartOffset = this.totalFileOffset;
       this.currentChunkIndexInBatch = 0;
 
-      const totalTime = performance.now() - startTime;
-      const speedMBps = batchSize / 1024 / 1024 / (totalTime / 1000);
-
-      postLogToBackend(
-        `[PERF] 📖 BATCH_READ - size: ${(batchSize / 1024 / 1024).toFixed(
-          1
-        )}MB, total: ${totalTime.toFixed(1)}ms, slice: ${sliceTime.toFixed(
-          1
-        )}ms, read: ${readTime.toFixed(1)}ms, speed: ${speedMBps.toFixed(
-          1
-        )}MB/s`
-      );
+      // 仅在开发环境输出批次读取日志
+      if (developmentEnv === "true") {
+        const totalTime = performance.now() - startTime;
+        const speedMBps = batchSize / 1024 / 1024 / (totalTime / 1000);
+        postLogToBackend(
+          `[DEBUG] 📖 BATCH_READ - size: ${(batchSize / 1024 / 1024).toFixed(
+            1
+          )}MB, time: ${totalTime.toFixed(0)}ms, speed: ${speedMBps.toFixed(
+            1
+          )}MB/s`
+        );
+      }
     } catch (error) {
-      postLogToBackend(
-        `[PERF] ❌ BATCH_READ failed after ${(
-          performance.now() - startTime
-        ).toFixed(1)}ms: ${error}`
-      );
+      if (developmentEnv === "true") {
+        postLogToBackend(`[DEBUG] ❌ BATCH_READ failed: ${error}`);
+      }
       throw new Error(`Failed to load file batch: ${error}`);
     } finally {
       this.isReading = false;
@@ -270,9 +267,6 @@ export class StreamingFileReader {
     // 检查是否到达文件末尾
     if (this.totalFileOffset >= this.totalFileSize) {
       this.isFinished = true;
-      postLogToBackend(
-        `[DEBUG] 🏁 File reading completed - totalOffset: ${this.totalFileOffset}, fileSize: ${this.totalFileSize}`
-      );
     }
   }
 
@@ -332,10 +326,9 @@ export class StreamingFileReader {
     this.currentBatch = null;
     this.currentBatchStartOffset = 0;
     this.currentChunkIndexInBatch = 0;
-
-    postLogToBackend(
-      `[DEBUG] 🔄 StreamingFileReader reset - startOffset: ${startOffset}`
-    );
+    if (developmentEnv === "true") {
+      postLogToBackend(`[DEBUG] 🔄 StreamingFileReader reset`);
+    }
   }
 
   /**
@@ -351,10 +344,6 @@ export class StreamingFileReader {
     this.currentBatch = null;
     this.isFinished = true;
     this.isReading = false;
-
-    postLogToBackend(
-      `[DEBUG] 🧹 StreamingFileReader cleaned up - file: ${this.file.name}`
-    );
   }
 
   /**

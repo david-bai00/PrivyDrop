@@ -2,7 +2,7 @@ import { EmbeddedChunkMeta } from "@/types/webrtc";
 import { StateManager } from "./StateManager";
 import WebRTC_Initiator from "../webrtc_Initiator";
 import { postLogToBackend } from "@/app/config/api";
-
+const developmentEnv = process.env.NEXT_PUBLIC_development!;
 /**
  * 🚀 网络传输器 - 简化版
  * 使用WebRTC原生bufferedAmountLowThreshold进行背压控制
@@ -21,49 +21,38 @@ export class NetworkTransmitter {
     metadata: EmbeddedChunkMeta,
     peerId: string
   ): Promise<boolean> {
-    const startTime = performance.now();
-
     try {
       // 1. 构建融合数据包
-      const createStartTime = performance.now();
       const embeddedPacket = this.createEmbeddedChunkPacket(
         chunkData,
         metadata
       );
-      const createTime = performance.now() - createStartTime;
 
       // 2. 发送完整的融合数据包（不可分片）
-      const sendStartTime = performance.now();
       await this.sendSingleData(embeddedPacket, peerId);
-      const sendTime = performance.now() - sendStartTime;
 
-      const totalTime = performance.now() - startTime;
+      // 关键节点日志（仅开发环境）
 
-      // 只在关键节点或耗时较长时输出日志
       if (
-        metadata.chunkIndex % 100 === 0 ||
-        metadata.isLastChunk ||
-        totalTime > 50
+        developmentEnv === "true" &&
+        (metadata.chunkIndex % 100 === 0 || metadata.isLastChunk)
       ) {
         postLogToBackend(
-          `[PERF] ✓ CHUNK #${metadata.chunkIndex}/${
+          `[DEBUG] ✓ CHUNK #${metadata.chunkIndex}/${
             metadata.totalChunks
-          } - total: ${totalTime.toFixed(1)}ms, create: ${createTime.toFixed(
+          } sent, size: ${(chunkData.byteLength / 1024).toFixed(
             1
-          )}ms, send: ${sendTime.toFixed(1)}ms, size: ${(
-            chunkData.byteLength / 1024
-          ).toFixed(1)}KB`
+          )}KB, isLast: ${metadata.isLastChunk}`
         );
       }
 
       return true;
     } catch (error) {
-      const totalTime = performance.now() - startTime;
-      postLogToBackend(
-        `[PERF] ❌ CHUNK #${
-          metadata.chunkIndex
-        } FAILED after ${totalTime.toFixed(1)}ms: ${error}`
-      );
+      if (developmentEnv === "true") {
+        postLogToBackend(
+          `[DEBUG] ❌ CHUNK #${metadata.chunkIndex} send failed: ${error}`
+        );
+      }
       return false;
     }
   }
@@ -115,20 +104,11 @@ export class NetworkTransmitter {
     const sendResult = this.webrtcConnection.sendData(data, peerId);
 
     if (!sendResult) {
-      const dataType =
-        typeof data === "string"
-          ? "string"
-          : data instanceof ArrayBuffer
-          ? "ArrayBuffer"
-          : "unknown";
-      const dataSize =
-        typeof data === "string"
-          ? data.length
-          : data instanceof ArrayBuffer
-          ? data.byteLength
-          : 0;
-      const errorMessage = `sendData failed for ${dataType} data of size ${dataSize}`;
-      postLogToBackend(`[PERF] ❌ ${errorMessage}`);
+      const errorMessage = `sendData failed`;
+
+      if (developmentEnv === "true") {
+        postLogToBackend(`[DEBUG] ❌ ${errorMessage}`);
+      }
       throw new Error(errorMessage);
     }
   }
@@ -167,12 +147,17 @@ export class NetworkTransmitter {
         }, 5000); // 5秒超时
       });
 
-      const waitTime = performance.now() - startTime;
-      postLogToBackend(
-        `[PERF] 🚀 BACKPRESSURE - wait: ${waitTime.toFixed(
-          1
-        )}ms, buffered: ${initialBuffered} -> ${dataChannel.bufferedAmount}`
-      );
+      // 仅在开发环境输出背压日志
+      if (developmentEnv === "true") {
+        const waitTime = performance.now() - startTime;
+        postLogToBackend(
+          `[DEBUG] 🚀 BACKPRESSURE - wait: ${waitTime.toFixed(
+            1
+          )}ms, buffered: ${(initialBuffered / 1024).toFixed(0)}KB -> ${(
+            dataChannel.bufferedAmount / 1024
+          ).toFixed(0)}KB`
+        );
+      }
     }
   }
 
@@ -197,7 +182,9 @@ export class NetworkTransmitter {
       }
     } catch (error) {
       const errorMessage = `sendWithBackpressure failed: ${error}`;
-      postLogToBackend(`[PERF] ❌ ${errorMessage}`);
+      if (developmentEnv === "true") {
+        postLogToBackend(`[DEBUG] ❌ ${errorMessage}`);
+      }
       throw new Error(errorMessage);
     }
   }
@@ -252,6 +239,8 @@ export class NetworkTransmitter {
    * 🧹 清理资源
    */
   public cleanup(): void {
-    postLogToBackend("[PERF] 🧹 NetworkTransmitter cleaned up");
+    if (developmentEnv === "true") {
+      postLogToBackend("[DEBUG] 🧹 NetworkTransmitter cleaned up");
+    }
   }
 }

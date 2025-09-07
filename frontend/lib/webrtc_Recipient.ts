@@ -1,7 +1,5 @@
 // Recipient flow: Join room; receive 'offer' event -> createPeerConnection + createDataChannel -> send answer
 import BaseWebRTC, { WebRTCConfig } from "./webrtc_base";
-import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NEXT_PUBLIC_development!; // Development environment
 
 interface AnswerPayload {
   answer: RTCSessionDescriptionInit;

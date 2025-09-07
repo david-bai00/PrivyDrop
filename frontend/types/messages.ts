@@ -174,11 +174,11 @@ export type FileTransferButton = {
   CurrentFileTransferring_tips: string;
   OtherFileTransferring_tips: string;
   download_tips: string;
-  PendingSave_tips: string; // 新增：待保存状态提示
+  PendingSave_tips: string;
   Saved_dis: string;
   Waiting_dis: string;
   Download_dis: string;
-  Save_dis: string; // 新增：保存按钮文字
+  Save_dis: string;
 };
 
 export type FileListDisplay = {

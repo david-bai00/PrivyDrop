@@ -13,6 +13,7 @@ import type { Messages } from "@/types/messages";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { supportsAutoDownload } from "@/lib/browserUtils";
 import { postLogToBackend } from "@/app/config/api";
+const developmentEnv = process.env.NEXT_PUBLIC_development!;
 
 function formatFolderDis(template: string, num: number, size: string) {
   return template.replace("{num}", num.toString()).replace("{size}", size);
@@ -262,24 +263,30 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
           // 根据浏览器能力决定下载行为
           if (isAutoDownloadSupported) {
             // Chrome等支持自动下载的浏览器：直接下载
-            postLogToBackend(
-              `[Firefox Debug] Auto-downloading file: ${item.name}`
-            );
+            if (developmentEnv === "true") {
+              postLogToBackend(
+                `[Firefox Debug] Auto-downloading file: ${item.name}`
+              );
+            }
             onDownload(item);
           } else {
             // 非Chrome浏览器：设置为待保存状态，等待用户手动点击
-            postLogToBackend(
-              `[Firefox Debug] Setting pendingSave for non-Chrome browser: ${item.name}`
-            );
+            if (developmentEnv === "true") {
+              postLogToBackend(
+                `[Firefox Debug] Setting pendingSave for non-Chrome browser: ${item.name}`
+              );
+            }
             setPendingSave((prev) => ({
               ...prev,
               [item.fileId]: true,
             }));
           }
         } else {
-          postLogToBackend(
-            `[Firefox Debug] Skipping download logic - isSaveToDisk: ${isSaveToDisk}, onDownload: ${!!onDownload}`
-          );
+          if (developmentEnv === "true") {
+            postLogToBackend(
+              `[Firefox Debug] Skipping download logic - isSaveToDisk: ${isSaveToDisk}, onDownload: ${!!onDownload}`
+            );
+          }
         }
 
         // Increase download count - 文件传输完成时增加下载次数 (只计算一次)
