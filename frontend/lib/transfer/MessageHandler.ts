@@ -29,7 +29,7 @@ export class MessageHandler {
    * 🎯 处理接收到的信令消息
    */
   handleSignalingMessage(message: WebRTCMessage, peerId: string): void {
-    postLogToBackend(`[DEBUG] 📨 Message received - type: ${message.type}, peerId: ${peerId}`);
+    // 删除频繁的消息接收日志
     
     switch (message.type) {
       case "fileRequest":
@@ -83,7 +83,7 @@ export class MessageHandler {
     peerId: string
   ): void {
     postLogToBackend(
-      `[DEBUG] 📥 Received fileReceiveComplete - fileId: ${message.fileId}, receivedSize: ${message.receivedSize}, receivedChunks: ${message.receivedChunks}, storeUpdated: ${message.storeUpdated}`
+      `[PERF] ✅ FILE_COMPLETE - fileId: ${message.fileId}, size: ${(message.receivedSize/1024/1024).toFixed(1)}MB, chunks: ${message.receivedChunks}`
     );
 
     // 清理发送状态
@@ -94,14 +94,10 @@ export class MessageHandler {
     
     // 触发单文件100%进度（只有非文件夹情况）
     if (!peerState.currentFolderName) {
-      postLogToBackend(
-        `[DEBUG] 🎯 Setting single file progress to 100% - ${message.fileId}`
-      );
+      // 删除频繁的进度日志
       peerState.progressCallback?.(message.fileId, 1, 0);
     } else {
-      postLogToBackend(
-        `[DEBUG] 📁 File in folder completed, not setting progress yet - ${message.fileId} (folder: ${peerState.currentFolderName})`
-      );
+      // 删除频繁的文件夹进度日志
     }
 
     this.delegate.log("log", `File reception confirmed by peer ${peerId}`, {

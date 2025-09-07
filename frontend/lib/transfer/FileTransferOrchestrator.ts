@@ -205,31 +205,33 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   ): Promise<void> {
     const fileId = generateFileId(file);
     const peerState = this.stateManager.getPeerState(peerId);
+    const transferStartTime = performance.now();
 
     // 1. 初始化流式文件读取器
     const streamReader = new StreamingFileReader(file, peerState.readOffset || 0);
 
     postLogToBackend(
-      `[DEBUG] 🚀 STREAMING_SEND start - file: ${file.name}, size: ${file.size}, startOffset: ${peerState.readOffset || 0}`
+      `[PERF] 🚀 TRANSFER_START - file: ${file.name}, size: ${(file.size/1024/1024).toFixed(1)}MB, startOffset: ${peerState.readOffset || 0}`
     );
-
-    // 初始化网络性能监控
-    this.stateManager.initializeNetworkPerformance(peerId);
 
     try {
       let totalBytesSent = 0;
       let networkChunkIndex = 0;
+      let totalReadTime = 0;
+      let totalSendTime = 0;
+      let totalProgressTime = 0;
+      let lastProgressTime = performance.now();
 
       // 2. 流式处理：逐个获取64KB网络块并发送
       while (peerState.isSending) {
         // 获取下一个网络块
+        const readStartTime = performance.now();
         const chunkInfo = await streamReader.getNextNetworkChunk();
+        const readTime = performance.now() - readStartTime;
+        totalReadTime += readTime;
 
         // 检查是否已完成
         if (chunkInfo.chunk === null) {
-          postLogToBackend(
-            `[DEBUG] 🏁 STREAMING_SEND completed - totalChunks: ${networkChunkIndex}, totalBytes: ${totalBytesSent}`
-          );
           break;
         }
 
@@ -245,6 +247,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
 
         // 发送带嵌入元数据的网络块
         let sendSuccessful = false;
+        const sendStartTime = performance.now();
         try {
           sendSuccessful = await this.networkTransmitter.sendEmbeddedChunk(
             chunkInfo.chunk,
@@ -254,16 +257,13 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
 
           if (sendSuccessful) {
             totalBytesSent += chunkInfo.chunk.byteLength;
-            postLogToBackend(
-              `[DEBUG] ✓ STREAMING_CHUNK sent #${chunkInfo.chunkIndex}/${chunkInfo.totalChunks} - size: ${chunkInfo.chunk.byteLength}, isLast: ${chunkInfo.isLastChunk}`
-            );
           }
         } catch (error) {
-          postLogToBackend(
-            `[DEBUG] ❌ STREAMING_CHUNK failed #${chunkInfo.chunkIndex}: ${error}`
-          );
+          this.log("warn", `Chunk send failed #${chunkInfo.chunkIndex}: ${error}`);
           sendSuccessful = false;
         }
+        const sendTime = performance.now() - sendStartTime;
+        totalSendTime += sendTime;
 
         // 更新状态和进度
         if (sendSuccessful) {
@@ -271,6 +271,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
             readOffset: chunkInfo.fileOffset + chunkInfo.chunk.byteLength 
           });
 
+          const progressStartTime = performance.now();
           await this.progressTracker.updateFileProgress(
             chunkInfo.chunk.byteLength,
             fileId,
@@ -278,40 +279,57 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
             peerId,
             true
           );
-        } else {
-          this.log("warn", `Send failed, continuing with next chunk...`, {
-            chunkIndex: chunkInfo.chunkIndex,
-            fileId,
-            peerId
-          });
+          const progressTime = performance.now() - progressStartTime;
+          totalProgressTime += progressTime;
         }
 
         networkChunkIndex++;
+        
+        // 每100个chunk输出一次进度
+        if (networkChunkIndex % 100 === 0 || chunkInfo.isLastChunk) {
+          const currentTime = performance.now();
+          const intervalTime = currentTime - lastProgressTime;
+          const recentChunks = Math.min(100, networkChunkIndex);
+          const recentMB = (recentChunks * 64) / 1024; // 假设每个chunk 64KB
+          const speedMBps = recentMB / (intervalTime / 1000);
+          
+          postLogToBackend(
+            `[PERF] 📊 PROGRESS #${networkChunkIndex}/${chunkInfo.totalChunks} - speed: ${speedMBps.toFixed(1)}MB/s, read: ${readTime.toFixed(1)}ms, send: ${sendTime.toFixed(1)}ms`
+          );
+          lastProgressTime = currentTime;
+        }
 
         // 检查是否为最后一块
         if (chunkInfo.isLastChunk) {
-          postLogToBackend(
-            `[DEBUG] 🏁 Last chunk sent, waiting for receiver confirmation...`
-          );
           break;
         }
       }
 
+      const totalTime = performance.now() - transferStartTime;
+      const avgSpeedMBps = (totalBytesSent / 1024 / 1024) / (totalTime / 1000);
+      const avgReadTimePer100 = totalReadTime / Math.max(1, networkChunkIndex / 100);
+      const avgSendTimePer100 = totalSendTime / Math.max(1, networkChunkIndex / 100);
+      const avgProgressTimePer100 = totalProgressTime / Math.max(1, networkChunkIndex / 100);
+      
       postLogToBackend(
-        `[DEBUG] ✅ File send completed - ${file.name}, totalChunks: ${networkChunkIndex}, totalBytes: ${totalBytesSent}`
+        `[PERF] ✅ TRANSFER_COMPLETE - file: ${file.name}, time: ${(totalTime/1000).toFixed(1)}s, speed: ${avgSpeedMBps.toFixed(1)}MB/s, chunks: ${networkChunkIndex}`
+      );
+      
+      postLogToBackend(
+        `[PERF] 🖼️ TIME_BREAKDOWN - read: ${avgReadTimePer100.toFixed(1)}ms/100chunks, send: ${avgSendTimePer100.toFixed(1)}ms/100chunks, progress: ${avgProgressTimePer100.toFixed(1)}ms/100chunks`
       );
 
     } catch (error: any) {
       const errorMessage = `Streaming send error: ${error.message}`;
+      const totalTime = performance.now() - transferStartTime;
       postLogToBackend(
-        `[DEBUG] ❌ STREAMING_ERROR: ${errorMessage}`
+        `[PERF] ❌ TRANSFER_ERROR after ${(totalTime/1000).toFixed(1)}s: ${errorMessage}`
       );
       this.fireError(errorMessage, { fileId, peerId, offset: peerState.readOffset });
       throw error;
     } finally {
       // 清理资源
       streamReader.cleanup();
-      postLogToBackend(`[DEBUG] 🧹 StreamingFileReader cleaned up`);
     }
   }
 

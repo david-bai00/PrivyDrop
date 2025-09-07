@@ -31,9 +31,6 @@ export class ProgressTracker {
 
     // 重要修复：只有成功发送的数据才更新统计
     if (!wasActuallySent) {
-      postLogToBackend(
-        `[DEBUG] ⚠️ Data send failed, not updating progress - fileId: ${fileId}, size: ${byteLength}`
-      );
       return;
     }
 
@@ -57,9 +54,7 @@ export class ProgressTracker {
       // 这对于断点续传更加健壮和正确
       currentBytes = this.stateManager.getFolderBytesSent(peerId, folderName);
 
-      postLogToBackend(
-        `[DEBUG] 📁 Folder progress update - folder: ${folderName}, file: ${fileId}, currentBytes: ${currentBytes}, totalSize: ${totalSize}`
-      );
+      // 删除频繁的文件夹进度日志
     }
 
     // 更新速度计算器
@@ -67,15 +62,15 @@ export class ProgressTracker {
     const speed = this.speedCalculator.getSendSpeed(peerId);
     const progress = totalSize > 0 ? currentBytes / totalSize : 0;
 
-    // 持续更新网络性能（从传输速度学习）
-    this.stateManager.updateNetworkFromSpeed(peerId, speed);
-
     // 触发进度回调
     this.triggerProgressCallback(peerId, progressFileId, progress, speed);
 
-    postLogToBackend(
-      `[DEBUG] 📊 Progress updated - ${progressFileId}: ${(progress * 100).toFixed(2)}%, speed: ${speed.toFixed(2)} KB/s, bytes: ${currentBytes}/${totalSize}`
-    );
+    // 只在关键进度节点输出日志（每10%）
+    if (Math.floor(progress * 10) !== Math.floor((progress - 0.1) * 10)) {
+      postLogToBackend(
+        `[PERF] 📊 PROGRESS ${progressFileId}: ${(progress * 100).toFixed(0)}%, speed: ${speed.toFixed(1)} KB/s`
+      );
+    }
   }
 
   /**

@@ -1,17 +1,11 @@
 import { EmbeddedChunkMeta } from "@/types/webrtc";
 import { StateManager } from "./StateManager";
-import { TransferConfig } from "./TransferConfig";
 import WebRTC_Initiator from "../webrtc_Initiator";
 import { postLogToBackend } from "@/app/config/api";
 
 /**
- * 🚀 发送策略枚举
- */
-type SendStrategy = "AGGRESSIVE" | "NORMAL" | "CAUTIOUS" | "WAIT";
-
-/**
- * 🚀 网络传输器
- * 负责所有WebRTC数据传输、背压控制、自适应性能调整
+ * 🚀 网络传输器 - 简化版
+ * 使用WebRTC原生bufferedAmountLowThreshold进行背压控制
  */
 export class NetworkTransmitter {
   constructor(
@@ -27,21 +21,48 @@ export class NetworkTransmitter {
     metadata: EmbeddedChunkMeta,
     peerId: string
   ): Promise<boolean> {
+    const startTime = performance.now();
+
     try {
       // 1. 构建融合数据包
-      const embeddedPacket = this.createEmbeddedChunkPacket(chunkData, metadata);
+      const createStartTime = performance.now();
+      const embeddedPacket = this.createEmbeddedChunkPacket(
+        chunkData,
+        metadata
+      );
+      const createTime = performance.now() - createStartTime;
 
       // 2. 发送完整的融合数据包（不可分片）
+      const sendStartTime = performance.now();
       await this.sendSingleData(embeddedPacket, peerId);
+      const sendTime = performance.now() - sendStartTime;
 
-      postLogToBackend(
-        `[DEBUG] ✓ EMBEDDED chunk #${metadata.chunkIndex}/${metadata.totalChunks} sent - size: ${chunkData.byteLength}, packet: ${embeddedPacket.byteLength} bytes, isLast: ${metadata.isLastChunk}`
-      );
+      const totalTime = performance.now() - startTime;
+
+      // 只在关键节点或耗时较长时输出日志
+      if (
+        metadata.chunkIndex % 100 === 0 ||
+        metadata.isLastChunk ||
+        totalTime > 50
+      ) {
+        postLogToBackend(
+          `[PERF] ✓ CHUNK #${metadata.chunkIndex}/${
+            metadata.totalChunks
+          } - total: ${totalTime.toFixed(1)}ms, create: ${createTime.toFixed(
+            1
+          )}ms, send: ${sendTime.toFixed(1)}ms, size: ${(
+            chunkData.byteLength / 1024
+          ).toFixed(1)}KB`
+        );
+      }
 
       return true;
     } catch (error) {
+      const totalTime = performance.now() - startTime;
       postLogToBackend(
-        `[DEBUG] ❌ EMBEDDED chunk #${metadata.chunkIndex} send failed: ${error}`
+        `[PERF] ❌ CHUNK #${
+          metadata.chunkIndex
+        } FAILED after ${totalTime.toFixed(1)}ms: ${error}`
       );
       return false;
     }
@@ -72,10 +93,6 @@ export class NetworkTransmitter {
     finalPacket.set(metaBytes, 4);
     finalPacket.set(new Uint8Array(chunkData), 4 + metaBytes.length);
 
-    postLogToBackend(
-      `[DEBUG] 📦 EMBEDDED packet created - chunkIndex: ${chunkMeta.chunkIndex}, metaSize: ${metaBytes.length}, chunkSize: ${chunkData.byteLength}, totalSize: ${totalLength}`
-    );
-
     return finalPacket.buffer;
   }
 
@@ -91,25 +108,72 @@ export class NetworkTransmitter {
       throw new Error("Data channel not found");
     }
 
-    // 调试信息
-    const dataType = typeof data === "string" ? "string" : data instanceof ArrayBuffer ? "ArrayBuffer" : "unknown";
-    const dataSize = typeof data === "string" ? data.length : data instanceof ArrayBuffer ? data.byteLength : 0;
-
-    // 智能背压控制
-    await this.smartBufferControl(dataChannel, peerId);
+    // 简化背压控制
+    await this.simpleBufferControl(dataChannel, peerId);
 
     // 直接发送，不分片
     const sendResult = this.webrtcConnection.sendData(data, peerId);
 
     if (!sendResult) {
+      const dataType =
+        typeof data === "string"
+          ? "string"
+          : data instanceof ArrayBuffer
+          ? "ArrayBuffer"
+          : "unknown";
+      const dataSize =
+        typeof data === "string"
+          ? data.length
+          : data instanceof ArrayBuffer
+          ? data.byteLength
+          : 0;
       const errorMessage = `sendData failed for ${dataType} data of size ${dataSize}`;
-      postLogToBackend(`[DEBUG] ❌ ${errorMessage}`);
+      postLogToBackend(`[PERF] ❌ ${errorMessage}`);
       throw new Error(errorMessage);
     }
+  }
 
-    postLogToBackend(
-      `[DEBUG] 📤 Data sent successfully - type: ${dataType}, size: ${dataSize}`
-    );
+  /**
+   * 🎯 原生背压控制 - 使用WebRTC标准机制
+   */
+  private async simpleBufferControl(
+    dataChannel: RTCDataChannel,
+    peerId: string
+  ): Promise<void> {
+    const maxBuffer = 3 * 1024 * 1024; // 3MB最大缓冲
+    const lowThreshold = 512 * 1024; // 512KB低阈值
+
+    // 设置原生低阈值
+    if (dataChannel.bufferedAmountLowThreshold !== lowThreshold) {
+      dataChannel.bufferedAmountLowThreshold = lowThreshold;
+    }
+
+    // 如果缓冲区超过最大值，等待降到低阈值
+    if (dataChannel.bufferedAmount > maxBuffer) {
+      const startTime = performance.now();
+      const initialBuffered = dataChannel.bufferedAmount;
+
+      await new Promise<void>((resolve) => {
+        const onLow = () => {
+          dataChannel.removeEventListener("bufferedamountlow", onLow);
+          resolve();
+        };
+        dataChannel.addEventListener("bufferedamountlow", onLow);
+
+        // 添加超时保护，避免无限等待
+        setTimeout(() => {
+          dataChannel.removeEventListener("bufferedamountlow", onLow);
+          resolve();
+        }, 5000); // 5秒超时
+      });
+
+      const waitTime = performance.now() - startTime;
+      postLogToBackend(
+        `[PERF] 🚀 BACKPRESSURE - wait: ${waitTime.toFixed(
+          1
+        )}ms, buffered: ${initialBuffered} -> ${dataChannel.bufferedAmount}`
+      );
+    }
   }
 
   /**
@@ -133,7 +197,7 @@ export class NetworkTransmitter {
       }
     } catch (error) {
       const errorMessage = `sendWithBackpressure failed: ${error}`;
-      postLogToBackend(`[DEBUG] ${errorMessage}`);
+      postLogToBackend(`[PERF] ❌ ${errorMessage}`);
       throw new Error(errorMessage);
     }
   }
@@ -145,7 +209,7 @@ export class NetworkTransmitter {
     data: ArrayBuffer,
     peerId: string
   ): Promise<void> {
-    const networkChunkSize = TransferConfig.FILE_CONFIG.NETWORK_CHUNK_SIZE;
+    const networkChunkSize = 65536; // 64KB
     const totalSize = data.byteLength;
 
     // 如果数据小于64KB，直接发送
@@ -164,146 +228,23 @@ export class NetworkTransmitter {
 
       // 发送分片
       await this.sendSingleData(chunk, peerId);
-      postLogToBackend(
-        `[DEBUG] 📦 Fragment sent #${fragmentIndex} - size: ${chunkSize}`
-      );
-      
+
       offset += chunkSize;
       fragmentIndex++;
     }
   }
 
   /**
-   * 🎯 智能缓冲控制策略
-   */
-  private async smartBufferControl(
-    dataChannel: RTCDataChannel,
-    peerId: string
-  ): Promise<void> {
-    const strategy = await this.intelligentSendControl(dataChannel, peerId);
-
-    switch (strategy) {
-      case "AGGRESSIVE":
-        // 积极模式：立即发送
-        return;
-      
-      case "NORMAL":
-        // 正常模式：轻微等待
-        await new Promise<void>((resolve) => setTimeout(resolve, 5));
-        return;
-      
-      case "CAUTIOUS":
-        // 谨慎模式：短暂等待
-        await new Promise<void>((resolve) => setTimeout(resolve, 10));
-        return;
-      
-      case "WAIT":
-        // 等待模式：主动轮询等待
-        await this.activePollingWait(dataChannel, peerId);
-        return;
-    }
-  }
-
-  /**
-   * 🎯 自适应智能发送控制策略
-   */
-  private async intelligentSendControl(
-    dataChannel: RTCDataChannel,
-    peerId: string
-  ): Promise<SendStrategy> {
-    const bufferedAmount = dataChannel.bufferedAmount;
-    const adaptiveThreshold = this.stateManager.getAdaptiveThreshold(peerId);
-    const utilizationRate = bufferedAmount / adaptiveThreshold;
-
-    // 根据网络性能动态调整策略阈值
-    const perf = this.stateManager.getNetworkPerformance(peerId);
-    const networkQuality = this.getNetworkQuality(perf?.avgClearingRate || 0);
-
-    let thresholds = TransferConfig.getAdaptiveThresholds(perf?.avgClearingRate || 0).strategy;
-
-    if (utilizationRate < thresholds.aggressive) {
-      return "AGGRESSIVE";
-    } else if (utilizationRate < thresholds.normal) {
-      return "NORMAL";
-    } else if (utilizationRate < (thresholds.cautious || TransferConfig.SEND_STRATEGY_CONFIG.CAUTIOUS_THRESHOLD)) {
-      return "CAUTIOUS";
-    } else {
-      return "WAIT";
-    }
-  }
-
-  /**
-   * 🔍 获取网络质量评级
-   */
-  private getNetworkQuality(avgClearingRate: number): "good" | "average" | "poor" {
-    const config = TransferConfig.QUALITY_CONFIG;
-    if (avgClearingRate > config.GOOD_NETWORK_SPEED) {
-      return "good";
-    } else if (avgClearingRate > config.AVERAGE_NETWORK_SPEED) {
-      return "average";
-    } else {
-      return "poor";
-    }
-  }
-
-  /**
-   * 🔄 主动轮询等待（WAIT模式）
-   */
-  private async activePollingWait(
-    dataChannel: RTCDataChannel,
-    peerId: string
-  ): Promise<void> {
-    const config = TransferConfig.SEND_STRATEGY_CONFIG;
-    const startTime = Date.now();
-    const adaptiveThreshold = this.stateManager.getAdaptiveThreshold(peerId);
-    const threshold_low = adaptiveThreshold * 0.3;
-    const initialBuffered = dataChannel.bufferedAmount;
-    let pollCount = 0;
-
-    while (dataChannel.bufferedAmount > threshold_low) {
-      pollCount++;
-
-      if (Date.now() - startTime > config.MAX_WAIT_TIME) {
-        postLogToBackend(
-          `[DEBUG] ⚠️ Buffer wait timeout - buffered: ${dataChannel.bufferedAmount}, threshold: ${adaptiveThreshold}, waitTime: ${Date.now() - startTime}ms`
-        );
-        break;
-      }
-
-      await new Promise<void>((resolve) => 
-        setTimeout(resolve, config.POLLING_INTERVAL)
-      );
-    }
-
-    // 记录等待结束状态并更新网络性能
-    const waitTime = Date.now() - startTime;
-    const finalBuffered = dataChannel.bufferedAmount;
-    const clearedBytes = initialBuffered - finalBuffered;
-    const clearingRate = waitTime > 0 ? clearedBytes / 1024 / (waitTime / 1000) : 0;
-
-    // 更新网络性能学习
-    if (clearingRate > 0) {
-      this.stateManager.updateNetworkPerformance(peerId, clearingRate, waitTime);
-    }
-
-    postLogToBackend(
-      `[DEBUG] 📊 Wait completed - cleared: ${clearedBytes} bytes, rate: ${clearingRate.toFixed(2)} KB/s, time: ${waitTime}ms, polls: ${pollCount}`
-    );
-  }
-
-  /**
    * 📊 获取传输统计信息
    */
   public getTransmissionStats(peerId: string) {
-    const networkPerf = this.stateManager.getNetworkPerformance(peerId);
     const dataChannel = this.webrtcConnection.dataChannels.get(peerId);
-    
+
     return {
       peerId,
-      networkPerformance: networkPerf || null,
       currentBufferedAmount: dataChannel?.bufferedAmount || 0,
-      adaptiveThreshold: this.stateManager.getAdaptiveThreshold(peerId),
-      channelState: dataChannel?.readyState || 'unknown',
+      bufferedAmountLowThreshold: dataChannel?.bufferedAmountLowThreshold || 0,
+      channelState: dataChannel?.readyState || "unknown",
     };
   }
 
@@ -311,8 +252,6 @@ export class NetworkTransmitter {
    * 🧹 清理资源
    */
   public cleanup(): void {
-    // NetworkTransmitter本身没有需要清理的资源
-    // 实际的清理工作由StateManager和WebRTC_Initiator处理
-    postLogToBackend("[DEBUG] 🧹 NetworkTransmitter cleaned up");
+    postLogToBackend("[PERF] 🧹 NetworkTransmitter cleaned up");
   }
 }

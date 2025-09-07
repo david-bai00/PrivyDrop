@@ -33,20 +33,7 @@ export { FileTransferOrchestrator } from "./FileTransferOrchestrator";
  */
 import WebRTC_Initiator from "../webrtc_Initiator";
 import { FileTransferOrchestrator } from "./FileTransferOrchestrator";
-import { TransferConfig } from "./TransferConfig";
 
 export function createFileTransferService(webrtcConnection: WebRTC_Initiator): FileTransferOrchestrator {
   return new FileTransferOrchestrator(webrtcConnection);
-}
-
-/**
- * 📋 版本信息
- */
-export const TRANSFER_MODULE_VERSION = "1.0.0";
-
-/**
- * 🔍 模块验证 - 确保所有配置都是有效的
- */
-export function validateTransferModule(): boolean {
-  return TransferConfig.validateConfig();
 }

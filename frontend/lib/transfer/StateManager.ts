@@ -1,5 +1,5 @@
 import { PeerState, CustomFile, FolderMeta } from "@/types/webrtc";
-import { TransferConfig } from "./TransferConfig";
+// 简化版不再依赖TransferConfig的复杂配置
 
 /**
  * 🚀 网络性能监控指标接口
@@ -129,96 +129,6 @@ export class StateManager {
   public getAllFolderMeta(): Record<string, FolderMeta> {
     return { ...this.pendingFolderMeta };
   }
-
-  // ===== 网络性能监控管理 =====
-
-  /**
-   * 初始化网络性能监控
-   */
-  public initializeNetworkPerformance(peerId: string): void {
-    if (!this.networkPerformance.has(peerId)) {
-      this.networkPerformance.set(peerId, {
-        avgClearingRate: TransferConfig.PERFORMANCE_CONFIG.INITIAL_CLEARING_RATE,
-        optimalThreshold: TransferConfig.NETWORK_CONFIG.BUFFER_THRESHOLD,
-        avgWaitTime: TransferConfig.PERFORMANCE_CONFIG.INITIAL_WAIT_TIME,
-        sampleCount: 0,
-      });
-    }
-  }
-
-  /**
-   * 更新网络性能指标
-   */
-  public updateNetworkPerformance(
-    peerId: string, 
-    clearingRate: number, 
-    waitTime: number
-  ): void {
-    const perf = this.getNetworkPerformance(peerId);
-    if (!perf) return;
-
-    perf.sampleCount++;
-    // 指数移动平均，对新数据给予更高权重
-    const alpha = 0.3;
-    perf.avgClearingRate = perf.avgClearingRate * (1 - alpha) + clearingRate * alpha;
-    perf.avgWaitTime = perf.avgWaitTime * (1 - alpha) + waitTime * alpha;
-    
-    // 调整最优阈值
-    this.adjustOptimalThreshold(perf);
-  }
-
-  /**
-   * 从传输速度更新网络性能
-   */
-  public updateNetworkFromSpeed(peerId: string, currentSpeed: number): void {
-    if (currentSpeed <= 0) return;
-    
-    const perf = this.getNetworkPerformance(peerId);
-    if (!perf) return;
-
-    perf.avgClearingRate = currentSpeed;
-    perf.sampleCount++;
-
-    // 每10次速度更新调整一次阈值
-    if (perf.sampleCount % 10 === 0) {
-      this.adjustOptimalThreshold(perf);
-    }
-  }
-
-  /**
-   * 获取网络性能指标
-   */
-  public getNetworkPerformance(peerId: string): NetworkPerformanceMetrics | undefined {
-    return this.networkPerformance.get(peerId);
-  }
-
-  /**
-   * 获取自适应阈值
-   */
-  public getAdaptiveThreshold(peerId: string): number {
-    const perf = this.networkPerformance.get(peerId);
-    return perf ? perf.optimalThreshold : TransferConfig.NETWORK_CONFIG.BUFFER_THRESHOLD;
-  }
-
-  /**
-   * 调整最优阈值（私有方法）
-   */
-  private adjustOptimalThreshold(perf: NetworkPerformanceMetrics): void {
-    const config = TransferConfig.QUALITY_CONFIG;
-    const bufferThreshold = TransferConfig.NETWORK_CONFIG.BUFFER_THRESHOLD;
-
-    if (perf.avgClearingRate > config.GOOD_NETWORK_SPEED) {
-      // >8MB/s 好网络
-      perf.optimalThreshold = Math.max(bufferThreshold, 6291456); // 6MB
-    } else if (perf.avgClearingRate > config.AVERAGE_NETWORK_SPEED) {
-      // >4MB/s 平均网络  
-      perf.optimalThreshold = bufferThreshold; // 3MB
-    } else {
-      // 差网络
-      perf.optimalThreshold = Math.min(bufferThreshold, 1572864); // 1.5MB
-    }
-  }
-
   // ===== 进度跟踪相关状态 =====
 
   /**
