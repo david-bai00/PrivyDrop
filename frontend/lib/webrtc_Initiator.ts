@@ -1,16 +1,11 @@
 // Initiator flow: Join room; receive 'ready' event (this event is triggered by the socket server after a new recipient enters) -> createPeerConnection + createDataChannel -> createAndSendOffer
 import BaseWebRTC, { WebRTCConfig } from "./webrtc_base";
 import { postLogToBackend } from "@/app/config/api";
-import { detectBrowser, getDataChannelConfig, logBrowserCompatibility } from "./browserUtils";
 const developmentEnv = process.env.NEXT_PUBLIC_development!; // Development environment
 
 export default class WebRTC_Initiator extends BaseWebRTC {
-  private browserInfo = detectBrowser();
-  
   constructor(config: WebRTCConfig) {
     super(config);
-    // 记录浏览器兼容性信息
-    logBrowserCompatibility();
     this.setupInitiatorSocketListeners();
   }
 
@@ -80,29 +75,14 @@ export default class WebRTC_Initiator extends BaseWebRTC {
       return;
     }
     try {
-      // 使用浏览器特定的DataChannel配置
-      const dataChannelConfig = getDataChannelConfig(this.browserInfo.name);
-      
-      postLogToBackend(
-        `[Firefox Debug] Creating DataChannel with config - browser: ${this.browserInfo.name}, config: ${JSON.stringify(dataChannelConfig)}`
-      );
-      
-      const dataChannel = peerConnection.createDataChannel("dataChannel", dataChannelConfig);
-      
-      // Firefox特定的缓冲区阈值优化
-      if (this.browserInfo.isFirefox) {
-        dataChannel.bufferedAmountLowThreshold = 131072; // 128KB for Firefox
-        postLogToBackend(`[Firefox Debug] Set Firefox-specific bufferedAmountLowThreshold: 128KB`);
-      } else {
-        dataChannel.bufferedAmountLowThreshold = 262144; // 256KB for others
-      }
-      
+      const dataChannel = peerConnection.createDataChannel("dataChannel", {
+        ordered: true,
+      });
+
+      dataChannel.bufferedAmountLowThreshold = 262144; // 256KB for others
+
       this.setupDataChannel(dataChannel, peerId);
       this.dataChannels.set(peerId, dataChannel);
-      
-      postLogToBackend(
-        `[Firefox Debug] DataChannel created successfully - peer: ${peerId}, label: dataChannel, browser: ${this.browserInfo.name}`
-      );
     } catch (error) {
       postLogToBackend(
         `[Firefox Debug] Error creating DataChannel - peer: ${peerId}, error: ${error}`

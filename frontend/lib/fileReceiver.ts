@@ -359,10 +359,6 @@ class FileReceiver {
         expectedChunksCount: expectedChunksCount,
         chunkSequenceMap: new Map<number, boolean>(),
       };
-
-      postLogToBackend(
-        `[DEBUG] 🚀 FILE_INIT - ${fileInfo.name}, size: ${fileInfo.size}, chunks: ${expectedChunksCount}`
-      );
     });
 
     if (shouldSaveToDisk) {
@@ -373,9 +369,6 @@ class FileReceiver {
     if (this.peerId) {
       this.webrtcConnection.sendData(JSON.stringify(request), this.peerId);
       this.log("log", "Sent fileRequest", { request });
-
-      // 调试日志：记录发送完成
-      postLogToBackend(`[DEBUG] 📤 FILE_REQUEST sent`);
     } else {
       postLogToBackend(
         `[Firefox Debug] ERROR: Cannot send fileRequest - no peerId available!`
@@ -547,10 +540,6 @@ class FileReceiver {
         );
       }
 
-      postLogToBackend(
-        `[DEBUG] 📦 PARSED embedded packet - chunkIndex: ${chunkMeta.chunkIndex}/${chunkMeta.totalChunks}, chunkSize: ${chunkData.byteLength}, isLast: ${chunkMeta.isLastChunk}`
-      );
-
       return { chunkMeta, chunkData };
     } catch (error) {
       postLogToBackend(`[DEBUG] ❌ Failed to parse embedded packet: ${error}`);
@@ -714,18 +703,12 @@ class FileReceiver {
       reception.chunkSequenceMap.set(chunkIndex, true);
       reception.receivedChunksCount++;
 
-      postLogToBackend(
-        `[DEBUG] ✓ SEQUENCED chunk #${chunkIndex}/${chunkMeta.totalChunks} stored - size: ${chunkData.byteLength}, isLast: ${chunkMeta.isLastChunk}`
-      );
-
       // 更新进度
       this.updateProgress(chunkData.byteLength);
 
       if (reception.sequencedWriter) {
         // 🚀 使用严格按序写入管理器
         await reception.sequencedWriter.writeChunk(chunkIndex, chunkData);
-      } else {
-        postLogToBackend(`[DEBUG] ❌ Error - no sequencedWriter available`);
       }
     } else {
       postLogToBackend(
@@ -766,27 +749,12 @@ class FileReceiver {
     const sizeComplete = currentTotalSize >= expectedSize;
     const isDataComplete = isSequencedComplete && sizeComplete;
 
-    // 更频繁的调试信息只在接近完成时显示
-    if (
-      receivedChunks % 10 === 0 ||
-      receivedChunks >= expectedChunks - 5 ||
-      isDataComplete
-    ) {
-      postLogToBackend(
-        `[DEBUG] 🔄 SEQUENCED progress - received: ${sequencedCount}/${expectedChunks}, total: ${currentTotalSize}/${expectedSize}, complete: ${isDataComplete}`
-      );
-    }
-
     // 防止重复finalize
     if (reception.isFinalized) {
       return;
     }
 
     if (isDataComplete) {
-      postLogToBackend(
-        `[DEBUG] 🎯 TRIGGERING finalize - chunks: ${sequencedCount}/${expectedChunks}, size: ${currentTotalSize}/${expectedSize}`
-      );
-
       reception.isFinalized = true;
 
       try {
@@ -796,8 +764,6 @@ class FileReceiver {
           reception.completionNotifier.resolve();
         }
         this.activeFileReception = null;
-
-        postLogToBackend(`[DEBUG] ✅ Auto-finalize SUCCESS`);
       } catch (error) {
         postLogToBackend(`[DEBUG] ❌ Auto-finalize ERROR: ${error}`);
         if (reception.completionNotifier) {
@@ -947,10 +913,6 @@ class FileReceiver {
     const reception = this.activeFileReception;
     if (!reception) return;
 
-    postLogToBackend(
-      `[DEBUG] 🔍 FINALIZE START - fileName: ${reception.meta.name}, expectedSize: ${reception.meta.size}, chunksArray: ${reception.chunks.length}`
-    );
-
     // 🚀 简化版：验证按序接收的数据
     let totalChunkSize = 0;
     let validChunks = 0;
@@ -962,18 +924,12 @@ class FileReceiver {
       }
     });
 
-    postLogToBackend(
-      `[DEBUG] 📊 SEQUENCED_SUMMARY - valid: ${validChunks}/${reception.chunks.length}, totalSize: ${totalChunkSize}, expected: ${reception.meta.size}`
-    );
-
     // 最终验证
     const sizeDifference = reception.meta.size - totalChunkSize;
     if (sizeDifference !== 0) {
       postLogToBackend(
         `[DEBUG] ❌ SIZE_MISMATCH - missing: ${sizeDifference} bytes`
       );
-    } else {
-      postLogToBackend(`[DEBUG] ✅ SIZE_VERIFIED - ${totalChunkSize} bytes`);
     }
 
     // 创建文件
@@ -990,12 +946,6 @@ class FileReceiver {
       type: reception.meta.fileType,
     });
 
-    postLogToBackend(
-      `[DEBUG] 📄 FILE_CREATED - size: ${file.size}, expected: ${
-        reception.meta.size
-      }, match: ${file.size === reception.meta.size}`
-    );
-
     const customFile = Object.assign(file, {
       fullName: reception.meta.fullName,
       folderName: this.currentFolderName,
@@ -1007,8 +957,6 @@ class FileReceiver {
       await Promise.resolve();
       await new Promise<void>((resolve) => setTimeout(() => resolve(), 0));
       storeUpdated = true;
-
-      postLogToBackend(`[DEBUG] ✅ STORE_UPDATED - ${reception.meta.name}`);
     }
 
     // 发送完成确认
@@ -1045,10 +993,6 @@ class FileReceiver {
     const success = this.webrtcConnection.sendData(
       JSON.stringify(completeMessage),
       this.peerId
-    );
-
-    postLogToBackend(
-      `[DEBUG] 📤 SENT fileReceiveComplete - size: ${receivedSize}, chunks: ${receivedChunks}, success: ${success}`
     );
   }
 

@@ -344,15 +344,7 @@ export default class BaseWebRTC {
     dataChannel: RTCDataChannel,
     peerId: string
   ): void {
-    // 调试日志：记录DataChannel设置
-    postLogToBackend(
-      `[Firefox Debug] Setting up DataChannel for peer: ${peerId}, label: ${dataChannel.label}, readyState: ${dataChannel.readyState}`
-    );
-
     dataChannel.onopen = () => {
-      postLogToBackend(
-        `[Firefox Debug] DataChannel opened for peer: ${peerId}, readyState: ${dataChannel.readyState}`
-      );
       // this.log('log',`Data channel opened for peer ${peerId}`);
       setTimeout(() => {
         this.onDataChannelOpen?.(peerId);

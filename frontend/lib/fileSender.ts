@@ -114,7 +114,6 @@ class FileSender {
 
   private handleSignalingMessage(message: WebRTCMessage, peerId: string): void {
     const peerState = this.getPeerState(peerId);
-    postLogToBackend(`debug Message:${message.type}`);
     switch (message.type) {
       case "fileRequest":
         this.handleFileRequest(message as FileRequest, peerId);
@@ -151,31 +150,13 @@ class FileSender {
     peerId: string
   ): void {
     const peerState = this.getPeerState(peerId);
-
-    postLogToBackend(
-      `[Firefox Debug] 📥 Received fileReceiveComplete - fileId: ${message.fileId}, receivedSize: ${message.receivedSize}, receivedChunks: ${message.receivedChunks}, storeUpdated: ${message.storeUpdated}`
-    );
-
     // 清理发送状态
     peerState.isSending = false;
 
     // 触发单文件100%进度（只有非文件夹情况）
     if (!peerState.currentFolderName) {
-      postLogToBackend(
-        `[Firefox Debug] 🎯 Setting single file progress to 100% - ${message.fileId}`
-      );
       peerState.progressCallback?.(message.fileId, 1, 0);
-    } else {
-      postLogToBackend(
-        `[Firefox Debug] 📁 File in folder completed, not setting progress yet - ${message.fileId} (folder: ${peerState.currentFolderName})`
-      );
     }
-
-    this.log("log", `File reception confirmed by peer ${peerId}`, {
-      fileId: message.fileId,
-      receivedSize: message.receivedSize,
-      storeUpdated: message.storeUpdated,
-    });
   }
 
   /**
@@ -216,15 +197,7 @@ class FileSender {
       "log",
       `Handling file request for ${request.fileId} from ${peerId} with offset ${offset}`
     );
-
-    // 🔧 Firefox兼容性修复：添加稍长延迟确保接收端完全准备好
-    // 根据[[memory:7549586]]，这个延迟解决了时序竞态条件
-    await new Promise((resolve) => setTimeout(resolve, 10));
-
     if (file) {
-      postLogToBackend(
-        `[Firefox Debug] Starting file send - fileName: ${file.name}, fileSize: ${file.size}, offset: ${offset}`
-      );
       await this.sendSingleFile(file, peerId, offset);
     } else {
       this.fireError(`File not found for request`, {
@@ -324,14 +297,6 @@ class FileSender {
 
     try {
       await this.processSendQueue(file, peerId);
-
-      // 🚀 新流程：不再主动发送fileEnd，等待接收端的fileReceiveComplete确认
-      postLogToBackend(
-        `[Firefox Debug] 📤 File sending completed, waiting for receiver confirmation - ${file.name}`
-      );
-
-      // 新流程：让接收端主导完成流程，不再主动发送fileEnd
-
       await this.waitForTransferComplete(peerId); // Wait for receiver's fileReceiveComplete confirmation
     } catch (error: any) {
       this.fireError(`Error sending file ${file.name}: ${error.message}`, {
@@ -465,10 +430,6 @@ class FileSender {
     finalPacket.set(metaBytes, 4);
     finalPacket.set(new Uint8Array(chunkData), 4 + metaBytes.length);
 
-    postLogToBackend(
-      `[DEBUG] 📦 EMBEDDED packet created - chunkIndex: ${chunkMeta.chunkIndex}, metaSize: ${metaBytes.length}, chunkSize: ${chunkData.byteLength}, totalSize: ${totalLength}`
-    );
-
     return finalPacket.buffer;
   }
 
@@ -498,10 +459,6 @@ class FileSender {
 
     // 3. 🔧 关键修复：融合数据包不能被分片，直接发送
     await this.sendSingleData(embeddedPacket, peerId);
-
-    postLogToBackend(
-      `[DEBUG] ✓ EMBEDDED chunk #${chunkIndex}/${totalChunks} sent - ${chunkData.byteLength} bytes, packet: ${embeddedPacket.byteLength} bytes, isLast: ${isLastChunk}`
-    );
   }
 
   // New: Send large ArrayBuffer in fragments
@@ -559,14 +516,6 @@ class FileSender {
         : data instanceof ArrayBuffer
         ? data.byteLength
         : 0;
-
-    // 🚀 关键修复：检查数据包大小，如果超过64KB则需要警告
-    const maxSafeSize = 64 * 1024; // 64KB
-    if (data instanceof ArrayBuffer && data.byteLength > maxSafeSize) {
-      postLogToBackend(
-        `[DEBUG] ⚠️ Large embedded packet detected: ${data.byteLength} bytes, this may cause issues`
-      );
-    }
 
     // Intelligent send control - decide sending strategy based on buffer status
     await this.smartBufferControl(dataChannel, peerId);
@@ -837,10 +786,6 @@ class FileSender {
     const remainingSize = file.size - fileOffset;
     const totalNetworkChunks = Math.ceil(remainingSize / networkChunkSize);
 
-    postLogToBackend(
-      `[DEBUG] 🚀 Starting NETWORK-LEVEL EMBEDDED transfer - file: ${file.name}, totalNetworkChunks: ${totalNetworkChunks}, chunkSize: ${networkChunkSize}, startOffset: ${fileOffset}`
-    );
-
     // Initialize network performance monitoring
     this.initializeNetworkPerformance(peerId);
 
@@ -877,10 +822,6 @@ class FileSender {
           );
           sendSuccessful = true;
           totalBytesSentInLoop += networkChunk.byteLength;
-
-          postLogToBackend(
-            `[DEBUG] ✓ Network chunk #${networkChunkIndex}/${totalNetworkChunks} sent - ${networkChunk.byteLength} bytes`
-          );
         } catch (error) {
           postLogToBackend(
             `[Firefox Debug] ❌ Failed to send network chunk #${networkChunkIndex}: ${error}`
@@ -904,10 +845,6 @@ class FileSender {
           );
         }
       }
-
-      postLogToBackend(
-        `[Firefox Debug] 🏁 All network chunks sent (${networkChunkIndex}/${totalNetworkChunks}), waiting for receiver confirmation...`
-      );
     } catch (error: any) {
       const errorMessage = `Error in network-level embedded transfer: ${error.message}`;
       postLogToBackend(

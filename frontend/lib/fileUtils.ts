@@ -27,35 +27,25 @@ export const downloadAs = async (
   file: Blob | File,
   saveName: string
 ): Promise<void> => {
-  // 调试日志：记录downloadAs函数被调用
-  postLogToBackend(`[Firefox Debug] downloadAs called - fileName: ${saveName}, fileSize: ${file.size}, fileType: ${file.type}`);
-  
   // 检查文件是否为空
   if (file.size === 0) {
-    postLogToBackend(`[Firefox Debug] CRITICAL ERROR: downloadAs received a file with 0 size! This is the root cause of the 0-byte download issue.`);
+    postLogToBackend(
+      `[Firefox Debug] CRITICAL ERROR: downloadAs received a file with 0 size! This is the root cause of the 0-byte download issue.`
+    );
   }
-  
+
   try {
-    // 调试日志：记录URL创建过程
-    postLogToBackend(`[Firefox Debug] Creating object URL for file...`);
     const url = URL.createObjectURL(file);
-    postLogToBackend(`[Firefox Debug] Object URL created successfully: ${url}`);
-    
+
     const a = document.createElement("a");
     a.href = url;
     a.download = saveName;
-    
-    // 调试日志：记录DOM操作
-    postLogToBackend(`[Firefox Debug] Adding anchor element to DOM and triggering click...`);
+
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    
-    // 调试日志：记录清理过程
-    postLogToBackend(`[Firefox Debug] Download triggered, cleaning up object URL...`);
+
     URL.revokeObjectURL(url);
-    
-    postLogToBackend(`[Firefox Debug] downloadAs completed successfully`);
   } catch (error) {
     postLogToBackend(`[Firefox Debug] ERROR in downloadAs: ${error}`);
     throw error;

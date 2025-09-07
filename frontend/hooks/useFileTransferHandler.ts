@@ -122,9 +122,7 @@ export function useFileTransferHandler({
             }
 
             // 检查文件是否为有效的Blob
-            if (fileToDownload instanceof Blob) {
-              postLogToBackend(`[Firefox Debug] File is a valid Blob object`);
-            } else {
+            if (!(fileToDownload instanceof Blob)) {
               postLogToBackend(
                 `[Firefox Debug] WARNING: File is not a Blob object, type: ${typeof fileToDownload}`
               );
