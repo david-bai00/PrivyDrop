@@ -73,7 +73,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
   const locale = useLocale();
   const [messages, setMessages] = useState<Messages | null>(null);
 
-  // 获取store的清理方法
+  // Get the cleaning method of the store
   const { clearSendProgress, clearReceiveProgress } = useFileTransferStore();
   const [showFinished, setShowFinished] = useState<{
     [fileId: string]: boolean;
@@ -81,7 +81,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
   // Add a ref to store the previous showFinished state
   const prevShowFinishedRef = useRef<{ [fileId: string]: boolean }>({});
 
-  // 添加待保存状态 - 用于非Chrome浏览器的手动保存
+  // Add save pending status - Used for manual saving on non-Chrome browsers
   const [pendingSave, setPendingSave] = useState<{
     [fileId: string]: boolean;
   }>({});
@@ -100,11 +100,11 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
     [fileId: string]: number;
   }>({});
 
-  // 处理手动保存 - 用于非Chrome浏览器
+  // Handling manual save - for non-Chrome browsers
   const handleManualSave = (item: FileMeta) => {
     if (onDownload) {
       onDownload(item);
-      // 清除待保存状态，让UI显示为"已完成"
+      // Clear the pending save state to display UI as "Completed"
       setPendingSave((prev) => {
         const updated = { ...prev };
         delete updated[item.fileId];
@@ -206,7 +206,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
               delete updated[fileId];
               return updated;
             });
-            // 根据模式清理对应的progress数据
+            // Clean the corresponding progress data according to the pattern
             if (mode === "sender") {
               clearSendProgress(fileId, activePeerId);
             } else {
@@ -249,7 +249,6 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
       const prevShowFinished = prevShowFinishedRef.current[item.fileId];
       const isSaveToDisk = saveType ? saveType[item.fileId] : false;
 
-      // 添加详细调试信息
       const fileProgress = fileProgresses[item.fileId];
       const activePeerId = activeTransfers[item.fileId];
       const currentProgress = activePeerId
@@ -260,20 +259,19 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
         if (!isSaveToDisk && onDownload) {
           const isAutoDownloadSupported = supportsAutoDownload();
 
-          // 根据浏览器能力决定下载行为
           if (isAutoDownloadSupported) {
-            // Chrome等支持自动下载的浏览器：直接下载
+            // Browsers that support automatic downloads like Chrome: Download directly
             if (developmentEnv === "true") {
               postLogToBackend(
-                `[Firefox Debug] Auto-downloading file: ${item.name}`
+                `[Download Debug] Auto-downloading file: ${item.name}`
               );
             }
             onDownload(item);
           } else {
-            // 非Chrome浏览器：设置为待保存状态，等待用户手动点击
+            // Non-Chrome browsers: Set to save status, wait for user manual click
             if (developmentEnv === "true") {
               postLogToBackend(
-                `[Firefox Debug] Setting pendingSave for non-Chrome browser: ${item.name}`
+                `[Download Debug] Setting pendingSave for non-Chrome browser: ${item.name}`
               );
             }
             setPendingSave((prev) => ({
@@ -289,7 +287,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
           }
         }
 
-        // Increase download count - 文件传输完成时增加下载次数 (只计算一次)
+        // Increase download count - Increment download count upon completion of file transfer (counted only once)
         setDownloadCounts((prevCounts) => ({
           ...prevCounts,
           [item.fileId]: (prevCounts[item.fileId] || 0) + 1,
@@ -307,7 +305,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
     const activePeerId = activeTransfers[item.fileId];
     const progress = activePeerId ? fileProgress?.[activePeerId] : null;
     const showCompletion =
-      showFinished[item.fileId] && !pendingSave[item.fileId]; // 只有传输完成且不在待保存状态时才显示完成
+      showFinished[item.fileId] && !pendingSave[item.fileId]; // Only display completed when the transfer is finished and not in the save pending state
     const isSaveToDisk = saveType ? saveType[item.fileId] : false;
     const isPendingSave = pendingSave[item.fileId] || false;
     // Get download count

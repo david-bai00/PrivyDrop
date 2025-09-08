@@ -30,25 +30,40 @@ export const downloadAs = async (
   // Check if file is empty
   if (file.size === 0) {
     postLogToBackend(
-      `[Firefox Debug] CRITICAL ERROR: downloadAs received a file with 0 size! This is the root cause of the 0-byte download issue.`
+      `[Download Debug] CRITICAL ERROR: downloadAs received a file with 0 size! This is the root cause of the 0-byte download issue.`
     );
+    throw new Error("Cannot download file with 0 size");
   }
 
   try {
-    const url = URL.createObjectURL(file);
+    return await standardDownload(file, saveName);
+  } catch (error) {
+    postLogToBackend(`[Download Debug] ERROR in downloadAs: ${error}`);
+    throw error;
+  }
+};
 
+/**
+ * Standard download mechanism for all browsers
+ */
+const standardDownload = async (
+  file: Blob | File,
+  saveName: string
+): Promise<void> => {
+  const url = URL.createObjectURL(file);
+
+  try {
     const a = document.createElement("a");
     a.href = url;
     a.download = saveName;
+    a.style.display = "none";
 
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-
-    URL.revokeObjectURL(url);
-  } catch (error) {
-    postLogToBackend(`[Firefox Debug] ERROR in downloadAs: ${error}`);
-    throw error;
+  } finally {
+    // Clean up the object URL after a delay to ensure download starts
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 };
 
