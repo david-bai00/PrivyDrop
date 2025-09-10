@@ -1,0 +1,56 @@
+# Git相关
+.git
+.gitignore
+
+# 环境变量文件
+.env*
+!.env.docker.example
+
+# 日志文件
+logs/
+*.log
+
+# 依赖目录
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# 构建目录
+.next/
+dist/
+build/
+
+# 缓存目录
+.npm
+.pnpm-store
+
+# 临时文件
+*.tmp
+*.temp
+
+# 编辑器配置
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# Docker相关
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# 文档文件
+*.md
+docs/
+
+# 测试文件
+coverage/
+.nyc_output/
+
+# 其他
+.eslintcache
+tsconfig.tsbuildinfo

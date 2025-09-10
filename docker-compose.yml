@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  # Redis缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: privydrop-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - privydrop-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # 后端信令服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: privydrop-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - BACKEND_PORT=3001
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - privydrop-network
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 前端应用
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: privydrop-frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - privydrop-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Nginx反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: privydrop-nginx
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - privydrop-network
+    profiles:
+      - nginx
+
+  # TURN/STUN服务器 (可选，用于NAT穿透)
+  coturn:
+    image: coturn/coturn:4.6.2
+    container_name: privydrop-coturn
+    restart: unless-stopped
+    ports:
+      - "3478:3478/tcp"
+      - "3478:3478/udp" 
+      - "5349:5349/tcp"
+      - "5349:5349/udp"
+      - "49152-65535:49152-65535/udp"
+    volumes:
+      - ./docker/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+      - ./docker/ssl:/etc/ssl/certs:ro
+      - ./logs/coturn:/var/log
+    networks:
+      - privydrop-network
+    profiles:
+      - turn
+    command: ["-c", "/etc/coturn/turnserver.conf"]
+
+  # 自动更新服务 (可选)
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: privydrop-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=86400  # 24小时检查一次
+      - WATCHTOWER_INCLUDE_STOPPED=true
+      - WATCHTOWER_REVIVE_STOPPED=false
+    profiles:
+      - auto-update
+
+networks:
+  privydrop-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  redis_data:
+    driver: local

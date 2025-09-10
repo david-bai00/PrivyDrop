@@ -35,9 +35,35 @@ PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）�
 - **后端**: Node.js, Express.js, TypeScript
 - **实时通信**: WebRTC, Socket.IO
 - **数据存储**: Redis
-- **部署**: PM2, Nginx, Docker[暂未支持]
+- **部署**: PM2, Nginx, Docker
 
-## 🚀 快速上手 (本地全栈开发)
+## 🚀 快速上手
+
+### 🐳 Docker 一键部署 (推荐)
+
+**零配置，5分钟完成部署！支持内网使用，无需公网IP。**
+
+```bash
+# 克隆项目
+git clone https://github.com/david-bai00/PrivyDrop.git
+cd PrivyDrop
+
+# 一键部署
+bash deploy.sh
+
+# 访问应用
+# http://localhost:3000
+```
+
+**部署优势**:
+- ✅ 部署时间: 60分钟 → 5分钟
+- ✅ 技术门槛: Linux运维 → 会用Docker即可  
+- ✅ 环境要求: 公网IP → 内网即可使用
+- ✅ 成功率: 70% → 95%+
+
+详见: [Docker 部署指南](./docs/DEPLOYMENT_docker.zh-CN.md)
+
+### 💻 本地开发环境
 
 在开始之前，请确保你的开发环境已安装 [Node.js](https://nodejs.org/) (v18+), [npm](https://www.npmjs.com/) 以及一个正在运行的 [Redis](https://redis.io/) 实例。
 

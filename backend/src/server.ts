@@ -5,6 +5,7 @@ import { Server } from "socket.io"; // socket.io: A library for real-time web ap
 import { CONFIG } from "./config/env";
 import { corsOptions, corsWSOptions } from "./config/server";
 import apiRouter from "./routes/api";
+import healthRouter from "./routes/health";
 import { setupSocketHandlers } from "./socket/handlers";
 
 const app = express(); // Create an Express application
@@ -19,6 +20,10 @@ setupSocketHandlers(io);
 // Make io instance available to routes
 app.set('io', io);
 
+// Register health check routes first (for Docker health checks)
+app.use(healthRouter);
+
+// Register API routes
 app.use(apiRouter);
 
 server.listen(CONFIG.BACKEND_PORT, () => {
