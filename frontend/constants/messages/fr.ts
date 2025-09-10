@@ -298,6 +298,9 @@ export const fr: Messages = {
         failMsg: "Échec de la connexion à la salle :",
       },
       pickSaveMsg: "Enregistrer directement sur le disque ?",
+      pickSaveUnsupported: "Sélecteur de répertoire non pris en charge.",
+      pickSaveSuccess: "Emplacement de sauvegarde défini.",
+      pickSaveError: "Impossible de définir l'emplacement de sauvegarde.",
       roomStatus: {
         senderEmptyMsg: "La salle est vide",
         receiverEmptyMsg:

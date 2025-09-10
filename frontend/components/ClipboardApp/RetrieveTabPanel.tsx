@@ -69,8 +69,7 @@ export function RetrieveTabPanel({
     if (!messages) return false; // Should not happen if panel is rendered
     if (!window.showDirectoryPicker) {
       putMessageInMs(
-        // messages.text.ClipboardApp.pickSaveUnsupported ||
-        "Directory picker not supported.",
+        messages.text.ClipboardApp.pickSaveUnsupported,
         false
       );
       return false;
@@ -80,8 +79,7 @@ export function RetrieveTabPanel({
       const directoryHandle = await window.showDirectoryPicker();
       await setReceiverDirectoryHandle(directoryHandle);
       putMessageInMs(
-        // messages.text.ClipboardApp.pickSaveSuccess ||
-        "Save location set.",
+        messages.text.ClipboardApp.pickSaveSuccess,
         false
       );
       return true;
@@ -89,8 +87,7 @@ export function RetrieveTabPanel({
       if (err.name !== "AbortError") {
         console.error("Failed to set up folder receive:", err);
         putMessageInMs(
-          // messages.text.ClipboardApp.pickSaveError ||
-          "Could not set save location.",
+          messages.text.ClipboardApp.pickSaveError,
           false
         );
       }

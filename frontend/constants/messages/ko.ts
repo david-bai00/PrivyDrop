@@ -283,6 +283,9 @@ export const ko: Messages = {
         failMsg: "방 참여 실패:",
       },
       pickSaveMsg: "직접 디스크에 저장하시겠습니까?",
+      pickSaveUnsupported: "디렉토리 선택기가 지원되지 않습니다.",
+      pickSaveSuccess: "저장 위치가 설정되었습니다.",
+      pickSaveError: "저장 위치를 설정할 수 없습니다.",
       roomStatus: {
         senderEmptyMsg: "방이 비어 있습니다",
         receiverEmptyMsg: "초대를 수락하여 방에 참여할 수 있습니다",

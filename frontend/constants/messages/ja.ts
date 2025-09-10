@@ -285,6 +285,9 @@ export const ja: Messages = {
         failMsg: "ルームへの参加に失敗しました：",
       },
       pickSaveMsg: "ディスクに直接保存しますか？",
+      pickSaveUnsupported: "ディレクトリピッカーはサポートされていません。",
+      pickSaveSuccess: "保存場所が設定されました。",
+      pickSaveError: "保存場所を設定できませんでした。",
       roomStatus: {
         senderEmptyMsg: "ルームは空です",
         receiverEmptyMsg: "招待を受けてルームに参加できます",

@@ -292,6 +292,9 @@ export const es: Messages = {
         failMsg: "Error al unirse a la sala:",
       },
       pickSaveMsg: "¿Guardar Directamente en Disco?",
+      pickSaveUnsupported: "Selector de directorio no compatible.",
+      pickSaveSuccess: "Ubicación de guardado establecida.",
+      pickSaveError: "No se pudo establecer la ubicación de guardado.",
       roomStatus: {
         senderEmptyMsg: "La sala está vacía",
         receiverEmptyMsg: "Puedes aceptar una invitación para unirte a la sala",

@@ -270,6 +270,9 @@ export const zh: Messages = {
         failMsg: "加入房间失败：",
       },
       pickSaveMsg: "直接保存到磁盘？",
+      pickSaveUnsupported: "不支持目录选择器。",
+      pickSaveSuccess: "保存位置已设置。",
+      pickSaveError: "无法设置保存位置。",
       roomStatus: {
         senderEmptyMsg: "房间为空",
         receiverEmptyMsg: "您可以接受邀请加入房间",

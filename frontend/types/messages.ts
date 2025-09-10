@@ -266,6 +266,9 @@ export type ClipboardApp = {
   waitting_tips: string;
   joinRoom: JoinRoom;
   pickSaveMsg: string;
+  pickSaveUnsupported: string;
+  pickSaveSuccess: string;
+  pickSaveError: string;
   roomStatus: RoomStatus;
   html: ClipboardAppHtml;
   fileExistMsg?: string;

@@ -298,6 +298,9 @@ export const de: Messages = {
         failMsg: "Fehler beim Beitreten zum Raum:",
       },
       pickSaveMsg: "Direkt auf Festplatte speichern?",
+      pickSaveUnsupported: "Verzeichnisauswahl nicht unterstützt.",
+      pickSaveSuccess: "Speicherort festgelegt.",
+      pickSaveError: "Speicherort konnte nicht festgelegt werden.",
       roomStatus: {
         senderEmptyMsg: "Raum ist leer",
         receiverEmptyMsg:

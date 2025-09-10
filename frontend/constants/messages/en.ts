@@ -232,11 +232,11 @@ export const en: Messages = {
       OtherFileTransferring_tips:
         "Please wait for current transfer to complete",
       download_tips: "Click to download file",
-      PendingSave_tips: "Click to save file locally", // 新增
+      PendingSave_tips: "Click to save file locally",
       Saved_dis: "Saved",
       Waiting_dis: "Waiting",
       Download_dis: "Download",
-      Save_dis: "Save", // 新增
+      Save_dis: "Save",
     },
     FileListDisplay: {
       sending_dis: "Sending",
@@ -291,6 +291,9 @@ export const en: Messages = {
         failMsg: "Failed to join room:",
       },
       pickSaveMsg: "Save Directly to Disk ?",
+      pickSaveUnsupported: "Directory picker not supported.",
+      pickSaveSuccess: "Save location set.",
+      pickSaveError: "Could not set save location.",
       roomStatus: {
         senderEmptyMsg: "Room is empty",
         receiverEmptyMsg: "You can accept an invitation to join the room",
