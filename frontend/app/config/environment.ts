@@ -11,29 +11,43 @@ export const config = {
 };
 
 export const getIceServers = () => {
-  // Default public STUN server
-  const iceServers: RTCIceServer[] = [
-    {
+  const iceServers: RTCIceServer[] = [];
+
+  if (config.USE_HTTPS) {
+    // Check if TURN server configuration is complete
+    if (!config.TURN_HOST || !config.TURN_USERNAME || !config.TURN_CREDENTIAL) {
+      console.warn(
+        "TURN server configuration incomplete in HTTPS environment. " +
+        "Please set NEXT_PUBLIC_TURN_HOST, NEXT_PUBLIC_TURN_USERNAME, and NEXT_PUBLIC_TURN_PASSWORD " +
+        "environment variables for better connectivity. Falling back to Google STUN server."
+      );
+      
+      // Fallback to Google STUN server
+      iceServers.push({
+        urls: "stun:stun.l.google.com:19302",
+      });
+    } else {
+      // Add self-hosted STUN and TURN servers
+      iceServers.push(
+        {
+          urls: `stun:${config.TURN_HOST}:3478`,
+        },
+        {
+          urls: `turns:${config.TURN_HOST}:443`,
+          username: config.TURN_USERNAME,
+          credential: config.TURN_CREDENTIAL,
+        },
+        {
+          urls: `turn:${config.TURN_HOST}:3478`,
+          username: config.TURN_USERNAME,
+          credential: config.TURN_CREDENTIAL,
+        }
+      );
+    }
+  } else {
+    // Development environment uses Google's public STUN server
+    iceServers.push({
       urls: "stun:stun.l.google.com:19302",
-    },
-  ];
-
-  // Add self-hosted TURN/STUN server if configured through environment variables
-  if (config.TURN_HOST && config.TURN_USERNAME && config.TURN_CREDENTIAL) {
-    const turnUrls = config.USE_HTTPS
-      ? [`turns:${config.TURN_HOST}:443`, `turn:${config.TURN_HOST}:3478`]
-      : [`turn:${config.TURN_HOST}:3478`];
-
-    // Add STUN from the self-hosted server
-    iceServers.push({
-      urls: `stun:${config.TURN_HOST}:3478`,
-    });
-
-    // Add TURN from the self-hosted server
-    iceServers.push({
-      urls: turnUrls,
-      username: config.TURN_USERNAME,
-      credential: config.TURN_CREDENTIAL,
     });
   }
 
