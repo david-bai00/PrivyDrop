@@ -22,7 +22,7 @@ import {
   EmbeddedChunkMeta,
 } from "@/types/webrtc";
 import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NEXT_PUBLIC_development!;
+const developmentEnv = process.env.NODE_ENV;
 /**
  * 🚀 Strict Sequential Buffering Writer - Optimizes large file disk I/O performance
  */
@@ -40,6 +40,18 @@ class SequencedDiskWriter {
 
   /**\n   * Write a chunk, automatically managing order and buffering\n   */
   async writeChunk(chunkIndex: number, chunk: ArrayBuffer): Promise<void> {
+    // 🔍 调试writeChunk调用
+    if (
+      developmentEnv === "development" &&
+      (chunkIndex <= 5 || chunkIndex === this.nextWriteIndex)
+    ) {
+      postLogToBackend(
+        `[DEBUG-RESUME] 🎯 WriteChunk called - received:${chunkIndex}, expected:${
+          this.nextWriteIndex
+        }, match:${chunkIndex === this.nextWriteIndex}`
+      );
+    }
+
     // 1. If it is the expected next chunk, write immediately
     if (chunkIndex === this.nextWriteIndex) {
       await this.flushSequentialChunks(chunk);
@@ -50,26 +62,26 @@ class SequencedDiskWriter {
     if (chunkIndex > this.nextWriteIndex) {
       if (this.writeQueue.size < this.maxBufferSize) {
         this.writeQueue.set(chunkIndex, chunk);
-        if (developmentEnv === "true") {
-          postLogToBackend(
-            `[DEBUG] 📦 BUFFERED chunk #${chunkIndex} (waiting for #${this.nextWriteIndex}), queue: ${this.writeQueue.size}/${this.maxBufferSize}`
-          );
-        }
+        // if (developmentEnv === "development") {
+        //   postLogToBackend(
+        //     `[DEBUG] 📦 BUFFERED chunk #${chunkIndex} (waiting for #${this.nextWriteIndex}), queue: ${this.writeQueue.size}/${this.maxBufferSize}`
+        //   );
+        // }
       } else {
         // Buffer full, forcing processing of the earliest chunk to free up space
         await this.forceFlushOldest();
         this.writeQueue.set(chunkIndex, chunk);
-        if (developmentEnv === "true") {
-          postLogToBackend(
-            `[DEBUG] ⚠️ BUFFER_FULL, forced flush and buffered chunk #${chunkIndex}`
-          );
-        }
+        // if (developmentEnv === "development") {
+        //   postLogToBackend(
+        //     `[DEBUG] ⚠️ BUFFER_FULL, forced flush and buffered chunk #${chunkIndex}`
+        //   );
+        // }
       }
       return;
     }
 
     // 3. If the chunk is expired, log a warning but ignore (already written)
-    if (developmentEnv === "true") {
+    if (developmentEnv === "development") {
       postLogToBackend(
         `[DEBUG] ⚠️ DUPLICATE chunk #${chunkIndex} ignored (already written #${this.nextWriteIndex})`
       );
@@ -87,7 +99,7 @@ class SequencedDiskWriter {
       await this.stream.write(firstChunk);
       this.totalWritten += firstChunk.byteLength;
 
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(
           `[DEBUG] ✓ DISK_WRITE chunk #${this.nextWriteIndex} - ${firstChunk.byteLength} bytes, total: ${this.totalWritten}`
         );
@@ -123,12 +135,19 @@ class SequencedDiskWriter {
     }
 
     if (flushCount > 0) {
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(
           `[DEBUG] 🔥 SEQUENTIAL_FLUSH ${flushCount} chunks, now at #${this.nextWriteIndex}, queue: ${this.writeQueue.size}`
         );
       }
     }
+  }
+
+  /**
+   * Get the next expected write index
+   */
+  get expectedIndex(): number {
+    return this.nextWriteIndex;
   }
 
   /**
@@ -142,11 +161,11 @@ class SequencedDiskWriter {
       const chunk = this.writeQueue.get(oldestIndex)!;
 
       // Warning: Unordered write
-      if (developmentEnv === "true") {
-        postLogToBackend(
-          `[DEBUG] ⚠️ FORCE_FLUSH out-of-order chunk #${oldestIndex} (expected #${this.nextWriteIndex})`
-        );
-      }
+      // if (developmentEnv === "development") {
+      //   postLogToBackend(
+      //     `[DEBUG] ⚠️ FORCE_FLUSH out-of-order chunk #${oldestIndex} (expected #${this.nextWriteIndex})`
+      //   );
+      // }
 
       // Use seek to write at the correct position (fallback handling)
       const fileOffset = oldestIndex * 65536; // Assume each chunk is 64KB
@@ -204,7 +223,7 @@ class SequencedDiskWriter {
         const fileOffset = chunkIndex * 65536;
         await this.stream.seek(fileOffset);
         await this.stream.write(chunk);
-        if (developmentEnv === "true") {
+        if (developmentEnv === "development") {
           postLogToBackend(
             `[DEBUG] 💾 FINAL_FLUSH chunk #${chunkIndex} at cleanup`
           );
@@ -410,6 +429,38 @@ class FileReceiver {
     const receptionPromise = new Promise<void>((resolve, reject) => {
       const expectedChunksCount = Math.ceil((fileInfo.size - offset) / 65536); // Calculate expected chunk count
 
+      // 🔍 调试expectedChunksCount计算
+      if (developmentEnv === "development") {
+        const totalChunks = Math.ceil(fileInfo.size / 65536);
+        const startChunkIndex = Math.floor(offset / 65536);
+        const calculatedExpected = totalChunks - startChunkIndex;
+
+        postLogToBackend(`[DEBUG-CHUNKS] File: ${fileInfo.name}`);
+        postLogToBackend(
+          `[DEBUG-CHUNKS] File size: ${fileInfo.size}, offset: ${offset}`
+        );
+        postLogToBackend(
+          `[DEBUG-CHUNKS] Total chunks in file: ${totalChunks} (0-${
+            totalChunks - 1
+          })`
+        );
+        postLogToBackend(
+          `[DEBUG-CHUNKS] Start chunk index: ${startChunkIndex}`
+        );
+        postLogToBackend(
+          `[DEBUG-CHUNKS] Expected chunks calculation: (${fileInfo.size} - ${offset}) / 65536 = ${expectedChunksCount}`
+        );
+        postLogToBackend(
+          `[DEBUG-CHUNKS] Alternative calculation: ${totalChunks} - ${startChunkIndex} = ${calculatedExpected}`
+        );
+
+        if (expectedChunksCount !== calculatedExpected) {
+          postLogToBackend(
+            `[DEBUG-CHUNKS] ⚠️ MISMATCH: ${expectedChunksCount} vs ${calculatedExpected}`
+          );
+        }
+      }
+
       this.activeFileReception = {
         meta: fileInfo,
         chunks: new Array(expectedChunksCount).fill(null), // 🚀 Initialize as an empty array arranged by index
@@ -435,7 +486,7 @@ class FileReceiver {
       this.webrtcConnection.sendData(JSON.stringify(request), this.peerId);
       this.log("log", "Sent fileRequest", { request });
     } else {
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(
           `[DEBUG] ERROR: Cannot send fileRequest - no peerId available!`
         );
@@ -507,7 +558,7 @@ class FileReceiver {
       return true;
     });
 
-    if (developmentEnv === "true") {
+    if (developmentEnv === "development") {
       postLogToBackend(
         `[DEBUG] 📁 All files in folder completed - ${folderName}, files: ${completedFileIds.length}/${folderProgress.fileIds.length}`
       );
@@ -533,7 +584,7 @@ class FileReceiver {
       try {
         const arrayBuffer = await data.arrayBuffer();
         if (data.size !== arrayBuffer.byteLength) {
-          if (developmentEnv === "true") {
+          if (developmentEnv === "development") {
             postLogToBackend(
               `[DEBUG] ⚠️ Blob size mismatch: ${data.size}→${arrayBuffer.byteLength}`
             );
@@ -541,7 +592,7 @@ class FileReceiver {
         }
         return arrayBuffer;
       } catch (error) {
-        if (developmentEnv === "true") {
+        if (developmentEnv === "development") {
           postLogToBackend(`[DEBUG] ❌ Blob conversion failed: ${error}`);
         }
         return null;
@@ -556,13 +607,13 @@ class FileReceiver {
         new Uint8Array(newArrayBuffer).set(uint8Array);
         return newArrayBuffer;
       } catch (error) {
-        if (developmentEnv === "true") {
+        if (developmentEnv === "development") {
           postLogToBackend(`[DEBUG] ❌ TypedArray conversion failed: ${error}`);
         }
         return null;
       }
     } else {
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(
           `[DEBUG] ❌ Unknown data type: ${Object.prototype.toString.call(
             data
@@ -584,7 +635,7 @@ class FileReceiver {
     try {
       // 1. Check minimum packet length
       if (arrayBuffer.byteLength < 4) {
-        if (developmentEnv === "true") {
+        if (developmentEnv === "development") {
           postLogToBackend(
             `[DEBUG] ❌ Invalid embedded packet - too small: ${arrayBuffer.byteLength}`
           );
@@ -599,7 +650,7 @@ class FileReceiver {
       // 3. Verify packet integrity
       const expectedTotalLength = 4 + metaLength;
       if (arrayBuffer.byteLength < expectedTotalLength) {
-        if (developmentEnv === "true") {
+        if (developmentEnv === "development") {
           postLogToBackend(
             `[DEBUG] ❌ Incomplete embedded packet - expected: ${expectedTotalLength}, got: ${arrayBuffer.byteLength}`
           );
@@ -618,7 +669,7 @@ class FileReceiver {
 
       // 6. Verify chunk data size
       if (chunkData.byteLength !== chunkMeta.chunkSize) {
-        if (developmentEnv === "true") {
+        if (developmentEnv === "development") {
           postLogToBackend(
             `[DEBUG] ⚠️ Chunk size mismatch - meta: ${chunkMeta.chunkSize}, actual: ${chunkData.byteLength}`
           );
@@ -627,7 +678,7 @@ class FileReceiver {
 
       return { chunkMeta, chunkData };
     } catch (error) {
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(
           `[DEBUG] ❌ Failed to parse embedded packet: ${error}`
         );
@@ -664,7 +715,7 @@ class FileReceiver {
 
       if (arrayBuffer) {
         if (!this.activeFileReception) {
-          if (developmentEnv === "true") {
+          if (developmentEnv === "development") {
             postLogToBackend(
               `[DEBUG] ERROR: Received file chunk but no active file reception!`
             );
@@ -679,7 +730,7 @@ class FileReceiver {
         // 🚀 Unified processing: All data is processed as embedded packets
         await this.handleEmbeddedChunkPacket(arrayBuffer);
       } else {
-        if (developmentEnv === "true") {
+        if (developmentEnv === "development") {
           postLogToBackend(
             `[DEBUG] ERROR: Failed to convert binary data to ArrayBuffer`
           );
@@ -773,7 +824,7 @@ class FileReceiver {
 
     // Verify fileId match
     if (chunkMeta.fileId !== reception.meta.fileId) {
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(
           `[DEBUG] ⚠️ FileId mismatch - expected: ${reception.meta.fileId}, got: ${chunkMeta.fileId}`
         );
@@ -781,44 +832,74 @@ class FileReceiver {
       return;
     }
 
-    // Update expected chunks count (may differ from initial estimate)
+    // 🔧 修复：续传时不要调整expectedChunksCount
+    // chunkMeta.totalChunks是文件总chunk数，但续传时我们只接收部分chunks
     if (chunkMeta.totalChunks !== reception.expectedChunksCount) {
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
+        const startChunkIndex = Math.floor(reception.initialOffset / 65536);
+        const calculatedExpected = chunkMeta.totalChunks - startChunkIndex;
         postLogToBackend(
-          `[DEBUG] ⚠️ Chunk count adjustment - expected: ${reception.expectedChunksCount}, actual: ${chunkMeta.totalChunks}`
+          `[DEBUG-CHUNKS] Chunk count info - fileTotal: ${chunkMeta.totalChunks}, currentExpected: ${reception.expectedChunksCount}, calculatedExpected: ${calculatedExpected}, startChunk: ${startChunkIndex}`
         );
-      }
-      reception.expectedChunksCount = chunkMeta.totalChunks;
-      // Adjust chunks array size
-      if (reception.chunks.length < chunkMeta.totalChunks) {
-        const newChunks = new Array(chunkMeta.totalChunks).fill(null);
-        reception.chunks.forEach((chunk, index) => {
-          if (index < newChunks.length) newChunks[index] = chunk;
-        });
-        reception.chunks = newChunks;
+
+        // 🚫 不再调整expectedChunksCount，保持续传时的正确数量
+        // reception.expectedChunksCount = chunkMeta.totalChunks; // 这行导致了问题！
+
+        if (reception.expectedChunksCount !== calculatedExpected) {
+          postLogToBackend(
+            `[DEBUG-CHUNKS] ⚠️ Expected chunks mismatch, should be ${calculatedExpected}`
+          );
+        }
       }
     }
 
-    // Store chunk by index
-    const chunkIndex = chunkMeta.chunkIndex;
-    if (chunkIndex >= 0 && chunkIndex < reception.chunks.length) {
-      reception.chunks[chunkIndex] = chunkData;
-      reception.chunkSequenceMap.set(chunkIndex, true);
+    // Store chunk by index - 🔧 修复：将绝对索引映射到相对索引
+    const absoluteChunkIndex = chunkMeta.chunkIndex; // 发送端的绝对索引（如967-3650）
+    const startChunkIndex = Math.floor(reception.initialOffset / 65536); // 续传起始索引（如967）
+    const relativeChunkIndex = absoluteChunkIndex - startChunkIndex; // 在chunks数组中的相对索引（如0-2683）
+
+    if (developmentEnv === "development" && absoluteChunkIndex <= 970) {
+      postLogToBackend(
+        `[DEBUG-CHUNKS] Index mapping - absolute:${absoluteChunkIndex}, start:${startChunkIndex}, relative:${relativeChunkIndex}, arraySize:${reception.chunks.length}`
+      );
+    }
+
+    if (
+      relativeChunkIndex >= 0 &&
+      relativeChunkIndex < reception.chunks.length
+    ) {
+      reception.chunks[relativeChunkIndex] = chunkData;
+      reception.chunkSequenceMap.set(absoluteChunkIndex, true); // 序列映射仍使用绝对索引
       reception.receivedChunksCount++;
 
       // Update progress
       this.updateProgress(chunkData.byteLength);
 
       if (reception.sequencedWriter) {
-        // 🚀 Use strict sequential write management
-        await reception.sequencedWriter.writeChunk(chunkIndex, chunkData);
+        // 🔍 调试chunk接收匹配 (前5个和后5个chunks)
+        const lastFewChunks =
+          relativeChunkIndex >= reception.expectedChunksCount - 5;
+        if (
+          developmentEnv === "development" &&
+          (absoluteChunkIndex <= 970 || lastFewChunks)
+        ) {
+          postLogToBackend(
+            `[DEBUG-CHUNKS] 📦 Chunk #${absoluteChunkIndex} received - relative:${relativeChunkIndex}, size:${chunkData.byteLength}, writerExpects:${reception.sequencedWriter.expectedIndex}, isLastFew:${lastFewChunks}`
+          );
+        }
+
+        // 🚀 Use strict sequential write management - 使用绝对索引
+        await reception.sequencedWriter.writeChunk(
+          absoluteChunkIndex,
+          chunkData
+        );
       }
     } else {
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(
-          `[DEBUG] ❌ Invalid chunk index - ${chunkIndex}, expected 0-${
-            reception.chunks.length - 1
-          }`
+          `[DEBUG-CHUNKS] ❌ Invalid relative chunk index - absolute:${absoluteChunkIndex}, relative:${relativeChunkIndex}, arraySize:${
+            reception.chunks.length
+          }, expected:0-${reception.chunks.length - 1}`
         );
       }
     }
@@ -840,7 +921,8 @@ class FileReceiver {
     const currentTotalSize = reception.chunks.reduce((sum, chunk) => {
       return sum + (chunk instanceof ArrayBuffer ? chunk.byteLength : 0);
     }, 0);
-    const expectedSize = reception.meta.size;
+    // 🔧 修复：续传时应该比较的是剩余文件大小，不是整个文件大小
+    const expectedSize = reception.meta.size - reception.initialOffset;
 
     // 🚀 Unified integrity check: sequential reception mode
     let sequencedCount = 0;
@@ -850,9 +932,54 @@ class FileReceiver {
       }
     }
     const isSequencedComplete = sequencedCount === expectedChunks;
-
     const sizeComplete = currentTotalSize >= expectedSize;
     const isDataComplete = isSequencedComplete && sizeComplete;
+
+    // 🔍 详细调试完成检查 (减少频率，只在关键时刻输出)
+    if (
+      developmentEnv === "development" &&
+      (isDataComplete ||
+        sequencedCount % 500 === 0 ||
+        sequencedCount > expectedChunks - 10)
+    ) {
+      // 检查最后几个chunks的状态 (显示相对索引)
+      const lastChunkIndex = expectedChunks - 1;
+      const lastFewChunks = [];
+      const startChunkIndex = Math.floor(reception.initialOffset / 65536);
+
+      for (let i = Math.max(0, lastChunkIndex - 3); i <= lastChunkIndex; i++) {
+        const chunk = reception.chunks[i];
+        const exists = chunk instanceof ArrayBuffer;
+        const size = exists ? (chunk as ArrayBuffer).byteLength : 0;
+        const absoluteIndex = startChunkIndex + i; // 对应的绝对索引
+        lastFewChunks.push(`rel#${i}(abs#${absoluteIndex}):${exists}(${size})`);
+      }
+
+      postLogToBackend(
+        `[DEBUG-COMPLETE] Check completion - file:${reception.meta.name}`
+      );
+      postLogToBackend(
+        `[DEBUG-COMPLETE] Chunks: received:${sequencedCount}/${expectedChunks}, isSequenceComplete:${isSequencedComplete}`
+      );
+      postLogToBackend(
+        `[DEBUG-COMPLETE] Size: current:${currentTotalSize}, expected:${expectedSize}, sizeComplete:${sizeComplete}, diff:${
+          expectedSize - currentTotalSize
+        }`
+      );
+      postLogToBackend(
+        `[DEBUG-COMPLETE] LastChunks: ${lastFewChunks.join(", ")}`
+      );
+      postLogToBackend(
+        `[DEBUG-COMPLETE] IsDataComplete: ${isDataComplete}, isFinalized: ${reception.isFinalized}`
+      );
+
+      if (reception.sequencedWriter) {
+        const writerStatus = reception.sequencedWriter.getBufferStatus();
+        postLogToBackend(
+          `[DEBUG-COMPLETE] SequencedWriter: nextIndex:${writerStatus.nextIndex}, totalWritten:${writerStatus.totalWritten}, queueSize:${writerStatus.queueSize}`
+        );
+      }
+    }
 
     // Prevent duplicate finalize
     if (reception.isFinalized) {
@@ -862,6 +989,12 @@ class FileReceiver {
     if (isDataComplete) {
       reception.isFinalized = true;
 
+      if (developmentEnv === "development") {
+        postLogToBackend(
+          `[DEBUG-COMPLETE] ✅ Starting finalization - isDataComplete:${isDataComplete}`
+        );
+      }
+
       try {
         await this.finalizeFileReceive();
 
@@ -870,7 +1003,7 @@ class FileReceiver {
         }
         this.activeFileReception = null;
       } catch (error) {
-        if (developmentEnv === "true") {
+        if (developmentEnv === "development") {
           postLogToBackend(`[DEBUG] ❌ Auto-finalize ERROR: ${error}`);
         }
         if (reception.completionNotifier) {
@@ -958,9 +1091,13 @@ class FileReceiver {
         startChunkIndex
       );
 
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(
           `[DEBUG] 📢 SEQUENCED_WRITER created - startIndex: ${startChunkIndex}, offset: ${offset}`
+        );
+        // 🔍 调试续传接收期望
+        postLogToBackend(
+          `[DEBUG-RESUME] 🎯 SequencedWriter expects - startIndex:${startChunkIndex}, offset:${offset}, calculatedFrom:${offset}/65536`
         );
       }
     } catch (err) {
@@ -994,28 +1131,59 @@ class FileReceiver {
 
   private async finalizeLargeFileReceive(): Promise<void> {
     const reception = this.activeFileReception;
-    if (!reception?.writeStream || !reception.fileHandle) return;
+    if (!reception?.writeStream || !reception.fileHandle) {
+      if (developmentEnv === "development") {
+        postLogToBackend(
+          `[DEBUG-FINALIZE] ❌ Cannot finalize - missing writeStream:${!!reception?.writeStream} or fileHandle:${!!reception?.fileHandle}`
+        );
+      }
+      return;
+    }
 
     try {
+      if (developmentEnv === "development") {
+        postLogToBackend(
+          `[DEBUG-FINALIZE] 🚀 Starting finalization for ${reception.meta.name}`
+        );
+      }
+
       // 🚀 First close the strict sequential writing manager (flush all buffers)
       if (reception.sequencedWriter) {
+        if (developmentEnv === "development") {
+          postLogToBackend(`[DEBUG-FINALIZE] Closing SequencedWriter...`);
+        }
         await reception.sequencedWriter.close();
         const status = reception.sequencedWriter.getBufferStatus();
-        if (developmentEnv === "true") {
+        if (developmentEnv === "development") {
           postLogToBackend(
-            `[DEBUG] 💾 SEQUENCED_WRITER closed - totalWritten: ${status.totalWritten}, finalQueue: ${status.queueSize}`
+            `[DEBUG-FINALIZE] 💾 SEQUENCED_WRITER closed - totalWritten: ${status.totalWritten}, finalQueue: ${status.queueSize}`
           );
         }
         reception.sequencedWriter = null;
       }
 
       // Then close the file stream
+      if (developmentEnv === "development") {
+        postLogToBackend(
+          `[DEBUG-FINALIZE] About to close writeStream for ${reception.meta.name}`
+        );
+      }
       await reception.writeStream.close();
+      if (developmentEnv === "development") {
+        postLogToBackend(`[DEBUG-FINALIZE] ✅ WriteStream closed successfully`);
+      }
 
-      if (developmentEnv === "true") {
-        postLogToBackend(`[DEBUG] ✅ LARGE_FILE finalized successfully`);
+      if (developmentEnv === "development") {
+        postLogToBackend(
+          `[DEBUG-FINALIZE] ✅ LARGE_FILE finalized successfully - ${reception.meta.name}`
+        );
       }
     } catch (error) {
+      if (developmentEnv === "development") {
+        postLogToBackend(
+          `[DEBUG-FINALIZE] ❌ Error during finalization: ${error}`
+        );
+      }
       this.fireError("Error finalizing large file", { error });
     }
   }
@@ -1040,7 +1208,7 @@ class FileReceiver {
     // Final verification
     const sizeDifference = reception.meta.size - totalChunkSize;
     if (sizeDifference !== 0) {
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(
           `[DEBUG] ❌ SIZE_MISMATCH - missing: ${sizeDifference} bytes`
         );
@@ -1131,7 +1299,7 @@ class FileReceiver {
       this.peerId
     );
 
-    if (developmentEnv === "true") {
+    if (developmentEnv === "development") {
       postLogToBackend(
         `[DEBUG] 📤 Sent folderReceiveComplete - folderName: ${folderName}, completedFiles: ${completedFileIds.length}, allStoreUpdated: ${allStoreUpdated}, success: ${success}`
       );

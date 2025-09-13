@@ -1,7 +1,7 @@
 import { SpeedCalculator } from "@/lib/speedCalculator";
 import { StateManager } from "./StateManager";
 import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NEXT_PUBLIC_development!;
+const developmentEnv = process.env.NODE_ENV;
 /**
  * 🚀 Progress callback type definition
  */
@@ -225,7 +225,7 @@ export class ProgressTracker {
    */
   cleanup(): void {
     // SpeedCalculator internally automatically cleans up expired data
-    if (developmentEnv === "true")
+    if (developmentEnv === "development")
       postLogToBackend("[DEBUG] 🧹 ProgressTracker cleaned up");
   }
 }

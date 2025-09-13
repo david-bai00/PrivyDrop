@@ -1,7 +1,7 @@
 import { CustomFile } from "@/types/webrtc";
 import { TransferConfig } from "./TransferConfig";
 import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NEXT_PUBLIC_development!;
+const developmentEnv = process.env.NODE_ENV;
 /**
  * 🚀 Network chunk interface
  */
@@ -46,15 +46,24 @@ export class StreamingFileReader {
     this.file = file;
     this.totalFileSize = file.size;
     this.totalFileOffset = startOffset;
+    // 🔧 修复：续传时currentBatchStartOffset应该从startOffset开始
+    this.currentBatchStartOffset = startOffset;
     this.fileReader = new FileReader();
 
-    if (developmentEnv === "true") {
+    if (developmentEnv === "development") {
       postLogToBackend(
         `[DEBUG] 📖 StreamingFileReader created - file: ${file.name}, size: ${(
           this.totalFileSize /
           1024 /
           1024
         ).toFixed(1)}MB`
+      );
+      // 🔍 调试续传初始化
+      const expectedGlobalChunk = Math.floor(
+        startOffset / this.NETWORK_CHUNK_SIZE
+      );
+      postLogToBackend(
+        `[DEBUG-RESUME] 🏗️ StreamingFileReader created - totalFileOffset:${this.totalFileOffset}, currentBatchStartOffset:${this.currentBatchStartOffset}, expectedGlobalChunk:${expectedGlobalChunk}`
       );
     }
   }
@@ -88,6 +97,15 @@ export class StreamingFileReader {
     this.updateChunkState(networkChunk);
 
     // Delete frequent chunk progress logs
+
+    // 🔍 调试chunk发送 (前5个和最后5个chunks)
+    const totalChunks = this.calculateTotalNetworkChunks();
+    const isLastFew = globalChunkIndex >= (totalChunks - 5);
+    if (developmentEnv === "development" && (globalChunkIndex <= 5 || isLastFew || isLast)) {
+      postLogToBackend(
+        `[DEBUG-CHUNKS] 📤 Send chunk #${globalChunkIndex}/${totalChunks} - size:${networkChunk.byteLength}, isLast:${isLast}, fileOffset:${this.totalFileOffset - networkChunk.byteLength}`
+      );
+    }
 
     return {
       chunk: networkChunk,
@@ -160,11 +178,24 @@ export class StreamingFileReader {
       this.currentBatch = await this.readFileSlice(fileSlice);
       const readTime = performance.now() - readStartTime;
 
-      this.currentBatchStartOffset = this.totalFileOffset;
-      this.currentChunkIndexInBatch = 0;
+      const batchStartOffset = this.totalFileOffset;
+      this.currentBatchStartOffset = batchStartOffset;
+
+      // 🔧 修复：如果不是从batch边界开始，说明是续传情况，需要计算正确的batch内索引
+      if (batchStartOffset % this.BATCH_SIZE !== 0) {
+        // 续传情况：不是从batch边界开始
+        const globalChunkIndex = Math.floor(
+          batchStartOffset / this.NETWORK_CHUNK_SIZE
+        );
+        this.currentChunkIndexInBatch =
+          globalChunkIndex % this.CHUNKS_PER_BATCH;
+      } else {
+        // 正常情况：从batch边界开始
+        this.currentChunkIndexInBatch = 0;
+      }
 
       // Only output batch reading logs in development environment
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         const totalTime = performance.now() - startTime;
         const speedMBps = batchSize / 1024 / 1024 / (totalTime / 1000);
         postLogToBackend(
@@ -174,9 +205,15 @@ export class StreamingFileReader {
             1
           )}MB/s`
         );
+        // 🔍 调试batch内索引设置
+        postLogToBackend(
+          `[DEBUG-RESUME] 📖 BATCH loaded - batchStartOffset:${batchStartOffset}, currentChunkIndexInBatch:${
+            this.currentChunkIndexInBatch
+          }, isResume:${batchStartOffset % this.BATCH_SIZE !== 0}`
+        );
       }
     } catch (error) {
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(`[DEBUG] ❌ BATCH_READ failed: ${error}`);
       }
       throw new Error(`Failed to load file batch: ${error}`);
@@ -247,7 +284,19 @@ export class StreamingFileReader {
       this.currentBatchStartOffset / this.BATCH_SIZE
     );
     const chunksInPreviousBatches = batchesBefore * this.CHUNKS_PER_BATCH;
-    return chunksInPreviousBatches + this.currentChunkIndexInBatch;
+    const result = chunksInPreviousBatches + this.currentChunkIndexInBatch;
+
+    // 🔍 调试chunk索引计算
+    if (
+      developmentEnv === "development" &&
+      this.currentChunkIndexInBatch <= 5
+    ) {
+      postLogToBackend(
+        `[DEBUG-RESUME] 🧮 calculateGlobalChunkIndex - batchStartOffset:${this.currentBatchStartOffset}, batchesBefore:${batchesBefore}, chunksInPrev:${chunksInPreviousBatches}, chunkInBatch:${this.currentChunkIndexInBatch}, result:${result}`
+      );
+    }
+
+    return result;
   }
 
   /**
@@ -324,10 +373,14 @@ export class StreamingFileReader {
     this.isFinished = false;
     this.isReading = false;
     this.currentBatch = null;
-    this.currentBatchStartOffset = 0;
-    this.currentChunkIndexInBatch = 0;
-    if (developmentEnv === "true") {
-      postLogToBackend(`[DEBUG] 🔄 StreamingFileReader reset`);
+    // 🔧 修复：reset时也要正确设置currentBatchStartOffset
+    this.currentBatchStartOffset = startOffset;
+    this.currentChunkIndexInBatch = 0; // 重置为0，loadNextBatch会重新计算
+
+    if (developmentEnv === "development") {
+      postLogToBackend(
+        `[DEBUG] 🔄 StreamingFileReader reset - startOffset:${startOffset}`
+      );
     }
   }
 

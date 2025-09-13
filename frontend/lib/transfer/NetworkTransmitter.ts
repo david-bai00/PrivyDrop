@@ -2,7 +2,7 @@ import { EmbeddedChunkMeta } from "@/types/webrtc";
 import { StateManager } from "./StateManager";
 import WebRTC_Initiator from "../webrtc_Initiator";
 import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NEXT_PUBLIC_development!;
+const developmentEnv = process.env.NODE_ENV;
 /**
  * 🚀 Network transmitter - Simplified version
  * Uses WebRTC native bufferedAmountLowThreshold for backpressure control
@@ -34,7 +34,7 @@ export class NetworkTransmitter {
       // Key node logs (development environment only)
 
       if (
-        developmentEnv === "true" &&
+        developmentEnv === "development" &&
         (metadata.chunkIndex % 100 === 0 || metadata.isLastChunk)
       ) {
         postLogToBackend(
@@ -48,7 +48,7 @@ export class NetworkTransmitter {
 
       return true;
     } catch (error) {
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(
           `[DEBUG] ❌ CHUNK #${metadata.chunkIndex} send failed: ${error}`
         );
@@ -106,7 +106,7 @@ export class NetworkTransmitter {
     if (!sendResult) {
       const errorMessage = `sendData failed`;
 
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(`[DEBUG] ❌ ${errorMessage}`);
       }
       throw new Error(errorMessage);
@@ -148,7 +148,7 @@ export class NetworkTransmitter {
       });
 
       // Only output backpressure logs in development environment
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         const waitTime = performance.now() - startTime;
         postLogToBackend(
           `[DEBUG] 🚀 BACKPRESSURE - wait: ${waitTime.toFixed(
@@ -182,7 +182,7 @@ export class NetworkTransmitter {
       }
     } catch (error) {
       const errorMessage = `sendWithBackpressure failed: ${error}`;
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(`[DEBUG] ❌ ${errorMessage}`);
       }
       throw new Error(errorMessage);
@@ -239,7 +239,7 @@ export class NetworkTransmitter {
    * 🧹 Clean up resources
    */
   public cleanup(): void {
-    if (developmentEnv === "true") {
+    if (developmentEnv === "development") {
       postLogToBackend("[DEBUG] 🧹 NetworkTransmitter cleaned up");
     }
   }

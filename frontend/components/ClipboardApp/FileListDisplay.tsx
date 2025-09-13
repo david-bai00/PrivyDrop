@@ -13,7 +13,7 @@ import type { Messages } from "@/types/messages";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { supportsAutoDownload } from "@/lib/browserUtils";
 import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NEXT_PUBLIC_development!;
+const developmentEnv = process.env.NODE_ENV;
 
 function formatFolderDis(template: string, num: number, size: string) {
   return template.replace("{num}", num.toString()).replace("{size}", size);
@@ -261,7 +261,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
 
           if (isAutoDownloadSupported) {
             // Browsers that support automatic downloads like Chrome: Download directly
-            if (developmentEnv === "true") {
+            if (developmentEnv === "development") {
               postLogToBackend(
                 `[Download Debug] Auto-downloading file: ${item.name}`
               );
@@ -269,7 +269,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
             onDownload(item);
           } else {
             // Non-Chrome browsers: Set to save status, wait for user manual click
-            if (developmentEnv === "true") {
+            if (developmentEnv === "development") {
               postLogToBackend(
                 `[Download Debug] Setting pendingSave for non-Chrome browser: ${item.name}`
               );
@@ -280,7 +280,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
             }));
           }
         } else {
-          if (developmentEnv === "true") {
+          if (developmentEnv === "development") {
             postLogToBackend(
               `Skipping download logic - isSaveToDisk: ${isSaveToDisk}, onDownload: ${!!onDownload}`
             );
