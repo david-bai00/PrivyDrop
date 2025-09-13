@@ -238,14 +238,7 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
   setRetrieveMessage: (message) => set({ retrieveMessage: message }),
 
   resetReceiverState: () => {
-    // 🔧 Clean up FileReceiver's internal state (via Service layer)
-    try {
-      const { webrtcService } = require("@/lib/webrtcService");
-      webrtcService.fileReceiver.gracefulShutdown();
-    } catch (error) {
-      console.warn(`[DEBUG] ⚠️ Failed to clean up FileReceiver state:`, error);
-    }
-
+    // 🔧 Only reset Store state - FileReceiver cleanup is handled by webrtcService.leaveRoom()
     set({
       retrievedContent: "",
       retrievedFiles: [],

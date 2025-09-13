@@ -11,7 +11,6 @@ import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import AnimatedButton from "@/components/ui/AnimatedButton";
 import type { Messages } from "@/types/messages";
 import type { CustomFile, FileMeta } from "@/types/webrtc";
-import type { ProgressState } from "@/hooks/useWebRTCConnection";
 
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 
@@ -55,7 +54,7 @@ export function SendTabPanel({
   currentValidatedShareRoomId,
   handleLeaveSenderRoom,
 }: SendTabPanelProps) {
-  // 从 store 中获取状态
+  // Get the status from the store
   const {
     shareContent,
     sendFiles,
@@ -212,12 +211,14 @@ export function SendTabPanel({
             {messages.text.ClipboardApp.html.SyncSending_dis}
           </AnimatedButton>
           <Button
-            variant="outline"
+            variant={isAnyFileTransferring ? "destructive" : "outline"}
             onClick={handleLeaveSenderRoom}
-            disabled={!isSenderInRoom || isAnyFileTransferring}
+            disabled={!isSenderInRoom}
             className="w-full sm:w-auto px-4 order-2"
           >
-            {messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
+            {isAnyFileTransferring
+              ? messages.text.ClipboardApp.roomStatus.leaveRoomBtn + " ⚠️"
+              : messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
           </Button>
         </div>
       </div>

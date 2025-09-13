@@ -308,6 +308,8 @@ export const en: Messages = {
       noFilesForFolderMsg: "No files found for folder '{folderName}'.",
       zipError: "Error creating ZIP.",
       fileNotFoundMsg: "File '{fileName}' not found for download.",
+      confirmLeaveWhileTransferring: "Files are currently transferring. Leaving will interrupt the transfer. Are you sure?",
+      leaveWhileTransferringSuccess: "Left room, transfer interrupted",
       html: {
         senderTab: "Send",
         retrieveTab: "Retrieve",

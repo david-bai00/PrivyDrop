@@ -85,7 +85,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
       this.dataChannels.set(peerId, dataChannel);
     } catch (error) {
       postLogToBackend(
-        `[Firefox Debug] Error creating DataChannel - peer: ${peerId}, error: ${error}`
+        `Error creating DataChannel - peer: ${peerId}, error: ${error}`
       );
       this.fireError(`Error creating data channel for peer ${peerId}`, {
         error,

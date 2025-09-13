@@ -40,9 +40,6 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
 
     this.log("log", "FileTransferOrchestrator initialized");
   }
-
-  // ===== Public API - Simplified interface =====
-
   /**
    * 🎯 Send file metadata
    */
@@ -168,7 +165,6 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   ): Promise<void> {
     const fileId = generateFileId(file);
     const peerState = this.stateManager.getPeerState(peerId);
-
     if (peerState.isSending) {
       this.log("warn", `Already sending file to peer ${peerId}`, { fileId });
       return;
@@ -182,7 +178,6 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       bufferQueue: [],
       isReading: false,
     });
-
     // Initialize progress statistics
     const currentSent = this.stateManager.getFileBytesSent(peerId, fileId);
     this.stateManager.updateFileBytesSent(peerId, fileId, offset - currentSent);
@@ -338,9 +333,23 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
    * ⏳ Wait for transfer completion confirmation
    */
   private async waitForTransferComplete(peerId: string): Promise<void> {
-    const peerState = this.stateManager.getPeerState(peerId);
-    while (peerState?.isSending) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
+    while (true) {
+      const currentPeerState = this.stateManager.getPeerState(peerId);
+
+      // Check if it has been cleaned up or does not exist
+      if (!currentPeerState || !currentPeerState.isSending) {
+        this.log("log", `Transfer completed or peer disconnected: ${peerId}`);
+        break;
+      }
+
+      // Check if the WebRTC connection is still valid
+      if (!this.webrtcConnection.peerConnections.has(peerId)) {
+        this.log("log", `Peer connection lost: ${peerId}, stopping transfer`);
+        this.stateManager.updatePeerState(peerId, { isSending: false });
+        break;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
@@ -414,6 +423,19 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   }
 
   /**
+   * 🔄 Handle peer reconnection
+   */
+  public handlePeerReconnection(peerId: string): void {
+    // Clear all transfer states for this peer
+    this.stateManager.clearPeerState(peerId);
+    if (developmentEnv === "true")
+      this.log(
+        "log",
+        `Successfully reset transfer state for reconnected peer ${peerId}`
+      );
+  }
+
+  /**
    * 🧹 Clean up all resources
    */
   public cleanup(): void {
@@ -421,7 +443,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     this.networkTransmitter.cleanup();
     this.progressTracker.cleanup();
     this.messageHandler.cleanup();
-
-    this.log("log", "FileTransferOrchestrator cleaned up");
+    if (developmentEnv === "true")
+      this.log("log", "FileTransferOrchestrator cleaned up");
   }
 }

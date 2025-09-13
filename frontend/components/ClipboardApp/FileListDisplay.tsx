@@ -282,7 +282,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
         } else {
           if (developmentEnv === "true") {
             postLogToBackend(
-              `[Firefox Debug] Skipping download logic - isSaveToDisk: ${isSaveToDisk}, onDownload: ${!!onDownload}`
+              `Skipping download logic - isSaveToDisk: ${isSaveToDisk}, onDownload: ${!!onDownload}`
             );
           }
         }

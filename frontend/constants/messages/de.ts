@@ -316,6 +316,8 @@ export const de: Messages = {
       noFilesForFolderMsg: "Keine Dateien im Ordner '{folderName}' gefunden.",
       zipError: "Fehler beim Erstellen der ZIP-Datei.",
       fileNotFoundMsg: "Datei '{fileName}' zum Herunterladen nicht gefunden.",
+      confirmLeaveWhileTransferring: "Dateien werden derzeit übertragen. Das Verlassen wird die Übertragung unterbrechen. Sind Sie sicher?",
+      leaveWhileTransferringSuccess: "Raum verlassen, Übertragung unterbrochen",
       html: {
         senderTab: "Senden",
         retrieveTab: "Abrufen",

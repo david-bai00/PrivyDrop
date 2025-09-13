@@ -2,7 +2,7 @@ import {
   WebRTCMessage,
   FileRequest,
   FileReceiveComplete,
-  FolderReceiveComplete,
+  FolderReceiveComplete
 } from "@/types/webrtc";
 import { StateManager } from "./StateManager";
 import { postLogToBackend } from "@/app/config/api";
@@ -172,6 +172,7 @@ export class MessageHandler {
    * 🧹 Clean up resources
    */
   public cleanup(): void {
-    postLogToBackend("[DEBUG] 🧹 MessageHandler cleaned up");
+    if (developmentEnv === "true")
+      postLogToBackend("[DEBUG] 🧹 MessageHandler cleaned up");
   }
 }

@@ -8,8 +8,6 @@ import {
   config,
 } from "@/app/config/environment";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
-import type { CustomFile } from "@/types/webrtc";
-import { postLogToBackend } from "@/app/config/api";
 
 class WebRTCService {
   public sender: WebRTC_Initiator;
@@ -44,17 +42,21 @@ class WebRTCService {
   private initializeEventHandlers(): void {
     // Sender event handling
     this.sender.onConnectionStateChange = (state, peerId) => {
+      console.log(`[WebRTC Service] Sender connection state: ${state} for peer ${peerId}`);
+      
       useFileTransferStore.getState().setShareConnectionState(state as any);
-      useFileTransferStore
-        .getState()
-        .setSharePeerCount(this.sender.peerConnections.size);
-
       if (state === "connected") {
+        // update share peer count
+        useFileTransferStore.getState().setSharePeerCount(this.sender.peerConnections.size);
+        console.log(`[WebRTC Service] Sender connected, peer count: ${this.sender.peerConnections.size}`);
+        
         this.fileSender.setProgressCallback((fileId, progress, speed) => {
           useFileTransferStore
             .getState()
             .updateSendProgress(fileId, peerId, { progress, speed });
         }, peerId);
+      } else if (state === "failed" || state === "closed") {
+        this.handleConnectionDisconnect(peerId, true, `CONNECTION_${state.toUpperCase()}`);
       }
     };
 
@@ -65,49 +67,46 @@ class WebRTCService {
     };
 
     this.sender.onPeerDisconnected = (peerId) => {
-      setTimeout(() => {
-        useFileTransferStore
-          .getState()
-          .setSharePeerCount(this.sender.peerConnections.size);
-      }, 0);
+      console.log(`[WebRTC Service] Sender peer disconnected: ${peerId}`);
+      this.handleConnectionDisconnect(peerId, true, "PEER_DISCONNECTED");
     };
 
     this.sender.onError = (error) => {
       console.error("[WebRTC Service] Sender error:", error.message);
+      // Clear all states on error
+      this.clearAllTransferProgress();
     };
 
     // Receiver event handling
     this.receiver.onConnectionStateChange = (state, peerId) => {
+      console.log(`[WebRTC Service] Receiver connection state: ${state} for peer ${peerId}`);
+      
       useFileTransferStore.getState().setRetrieveConnectionState(state as any);
-      useFileTransferStore
-        .getState()
-        .setRetrievePeerCount(this.receiver.peerConnections.size);
 
       if (state === "connected") {
+        // update retrieve peer count
+        useFileTransferStore.getState().setRetrievePeerCount(this.receiver.peerConnections.size);
+        console.log(`[WebRTC Service] Receiver connected, peer count: ${this.receiver.peerConnections.size}`);
+        
         this.fileReceiver.setProgressCallback((fileId, progress, speed) => {
           useFileTransferStore
             .getState()
             .updateReceiveProgress(fileId, peerId, { progress, speed });
         });
-      } else if (state === "failed" || state === "disconnected") {
-        const { isAnyFileTransferring } = useFileTransferStore.getState();
-        if (isAnyFileTransferring) {
-          this.fileReceiver.gracefulShutdown();
-        }
+      } else if (state === "failed" || state === "closed") {
+        this.handleConnectionDisconnect(peerId, false, `CONNECTION_${state.toUpperCase()}`);
       }
     };
 
     this.receiver.onConnectionEstablished = (peerId) => {
-      const store = useFileTransferStore.getState();
+      this.fileSender.handlePeerReconnection(peerId);
       useFileTransferStore.getState().setSenderDisconnected(false);
       useFileTransferStore.getState().setIsReceiverInRoom(true);
     };
 
     this.receiver.onPeerDisconnected = (peerId) => {
-      const store = useFileTransferStore.getState();
-
-      useFileTransferStore.getState().setSenderDisconnected(true);
-      useFileTransferStore.getState().setRetrievePeerCount(0);
+      console.log(`[WebRTC Service] Receiver peer disconnected: ${peerId}`);
+      this.handleConnectionDisconnect(peerId, false, "PEER_DISCONNECTED");
     };
 
     this.fileReceiver.onStringReceived = (data) => {
@@ -140,6 +139,12 @@ class WebRTCService {
 
   // Business methods
   public async joinRoom(roomId: string, isSender: boolean): Promise<void> {
+    // Ensure clean state before joining
+    if (!isSender) {
+      // Force reset FileReceiver state to prevent "already in progress" errors
+      this.fileReceiver.forceReset();
+    }
+
     const peer = isSender ? this.sender : this.receiver;
     await peer.joinRoom(roomId, isSender);
 
@@ -149,12 +154,17 @@ class WebRTCService {
     setInRoom(true);
   }
 
+
   public async leaveRoom(isSender: boolean): Promise<void> {
     if (isSender) {
+      // Clean up sender
+      this.fileSender.cleanup();
       await this.sender.leaveRoomAndCleanup();
       useFileTransferStore.getState().setIsSenderInRoom(false);
       useFileTransferStore.getState().setSharePeerCount(0);
     } else {
+      // Clean up receiver - force reset to ensure complete cleanup
+      this.fileReceiver.forceReset();
       await this.receiver.leaveRoomAndCleanup();
       useFileTransferStore.getState().setIsReceiverInRoom(false);
       useFileTransferStore.getState().setRetrievePeerCount(0);
@@ -207,6 +217,106 @@ class WebRTCService {
 
   public manualSafeSave(): void {
     this.fileReceiver.gracefulShutdown();
+  }
+
+  private handleConnectionDisconnect(peerId: string, isSender: boolean, reason: string): void {
+    console.log(`[WebRTC Service] Connection disconnect: ${reason}, peer: ${peerId}, sender: ${isSender}`);
+    
+    // Immediately clean up the transfer status to avoid UI freezing
+    this.immediateTransferCleanup(peerId, isSender, reason);
+    
+    // update connection state
+    this.updateConnectionState(peerId, isSender);
+  }
+
+  // Immediately clean up the transfer status
+  private immediateTransferCleanup(peerId: string, isSender: boolean, reason: string): void {
+    const store = useFileTransferStore.getState();
+    
+    if (isSender) {
+      // Sender disconnected: clean up the sender related status
+      this.clearPeerTransferProgress(peerId, true);
+    } else {
+      // Receiver side: sender disconnected, need to clean up the receiver status
+      const { isAnyFileTransferring } = store;
+      
+      if (isAnyFileTransferring) {
+        console.log(`[WebRTC Service] Force cleaning receiver due to sender disconnect: ${reason}`);
+        
+        // Catch the error that gracefulShutdown may throw
+        try {
+          this.fileReceiver.gracefulShutdown(`SENDER_${reason}`);
+        } catch (error) {
+          console.log(`[WebRTC Service] Expected error during graceful shutdown:`, error instanceof Error ? error.message : String(error));
+        }
+      }
+      
+      this.clearPeerTransferProgress(peerId, false);
+    }
+  }
+
+  // update connection state
+  private updateConnectionState(peerId: string, isSender: boolean): void {
+    const store = useFileTransferStore.getState();
+    
+    if (isSender) {
+      // Sender disconnected: clean up the sender related status
+      const currentShareCount = store.sharePeerCount;
+      store.setSharePeerCount(Math.max(0, currentShareCount - 1));
+      console.log(`[WebRTC Service] Sender peer count: ${currentShareCount} → ${Math.max(0, currentShareCount - 1)}`);
+    } else {
+      // Receiver side: sender disconnected, need to clean up the receiver status
+      store.setRetrievePeerCount(0);
+      store.setSenderDisconnected(true);
+      console.log(`[WebRTC Service] Receiver peer count set to 0`);
+    }
+  }
+
+  // Clear all transfer progress
+  private clearAllTransferProgress(): void {
+    const store = useFileTransferStore.getState();
+    store.setSendProgress({});
+    store.setReceiveProgress({});
+    store.setIsAnyFileTransferring(false);
+    console.log(`[WebRTC Service] Cleared all transfer progress`);
+  }
+
+  private clearPeerTransferProgress(peerId: string, isSender: boolean): void {
+    const store = useFileTransferStore.getState();
+    const progressState = isSender ? store.sendProgress : store.receiveProgress;
+
+    // Clear transfer progress for this peer
+    const newProgress = { ...progressState };
+    Object.keys(newProgress).forEach((fileId) => {
+      if (newProgress[fileId][peerId]) {
+        delete newProgress[fileId][peerId];
+        // If no other peers are transferring this file, remove the file record
+        if (Object.keys(newProgress[fileId]).length === 0) {
+          delete newProgress[fileId];
+        }
+      }
+    });
+
+    if (isSender) {
+      store.setSendProgress(newProgress);
+    } else {
+      store.setReceiveProgress(newProgress);
+    }
+
+    // Recalculate isAnyFileTransferring status
+    const allProgress = [
+      ...Object.values(isSender ? newProgress : store.sendProgress),
+      ...Object.values(isSender ? store.receiveProgress : newProgress),
+    ];
+    const hasActiveTransfers = allProgress.some((fileProgress: any) => {
+      return Object.values(fileProgress).some((progress: any) => {
+        return progress.progress > 0 && progress.progress < 1;
+      });
+    });
+
+    if (!hasActiveTransfers) {
+      store.setIsAnyFileTransferring(false);
+    }
   }
 
   public async cleanup(): Promise<void> {

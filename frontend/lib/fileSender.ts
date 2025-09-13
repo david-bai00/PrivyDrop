@@ -41,6 +41,11 @@ class FileSender {
     return this.orchestrator.getTransferStats(peerId);
   }
 
+  public handlePeerReconnection(peerId: string): void {
+    this.orchestrator.handlePeerReconnection(peerId);
+    console.log(`[FileSender] Handled peer reconnection for ${peerId}`);
+  }
+
   public cleanup(): void {
     return this.orchestrator.cleanup();
   }

@@ -318,6 +318,8 @@ export const fr: Messages = {
       zipError: "Erreur lors de la création du fichier ZIP.",
       fileNotFoundMsg:
         "Fichier '{fileName}' introuvable pour le téléchargement.",
+      confirmLeaveWhileTransferring: "Des fichiers sont actuellement en cours de transfert. Quitter interrompra le transfert. Êtes-vous sûr?",
+      leaveWhileTransferringSuccess: "Salle quittée, transfert interrompu",
       html: {
         senderTab: "Envoyer",
         retrieveTab: "Récupérer",

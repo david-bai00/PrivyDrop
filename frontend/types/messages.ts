@@ -275,6 +275,8 @@ export type ClipboardApp = {
   noFilesForFolderMsg?: string;
   zipError?: string;
   fileNotFoundMsg?: string;
+  confirmLeaveWhileTransferring: string;
+  leaveWhileTransferringSuccess: string;
 };
 
 export type Home = {

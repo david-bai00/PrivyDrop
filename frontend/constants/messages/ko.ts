@@ -300,6 +300,8 @@ export const ko: Messages = {
       noFilesForFolderMsg: "폴더 '{folderName}'에서 파일을 찾을 수 없습니다.",
       zipError: "ZIP 파일 생성 중 오류가 발생했습니다.",
       fileNotFoundMsg: "다운로드할 파일 '{fileName}'을(를) 찾을 수 없습니다.",
+      confirmLeaveWhileTransferring: "현재 파일이 전송 중입니다. 나가면 전송이 중단됩니다. 확실합니까?",
+      leaveWhileTransferringSuccess: "방을 나갔습니다. 전송이 중단되었습니다",
       html: {
         senderTab: "보내기",
         retrieveTab: "검색",

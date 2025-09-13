@@ -117,14 +117,14 @@ export function useFileTransferHandler({
             // Check if file is empty
             if (fileToDownload.size === 0) {
               postLogToBackend(
-                `[Firefox Debug] ERROR: File has 0 size! This explains the 0-byte download.`
+                `ERROR: File has 0 size! This explains the 0-byte download.`
               );
             }
 
             // Check if file is a valid Blob
             if (!(fileToDownload instanceof Blob)) {
               postLogToBackend(
-                `[Firefox Debug] WARNING: File is not a Blob object, type: ${typeof fileToDownload}`
+                `WARNING: File is not a Blob object, type: ${typeof fileToDownload}`
               );
             }
 
@@ -134,7 +134,7 @@ export function useFileTransferHandler({
             // Debug log: Record the case where file is not found
             const availableFileNames = latestRetrievedFiles.map((f) => f.name);
             postLogToBackend(
-              `[Firefox Debug] File NOT found! Looking for: "${
+              `File NOT found! Looking for: "${
                 meta.name
               }", Available files: [${availableFileNames.join(", ")}]`
             );

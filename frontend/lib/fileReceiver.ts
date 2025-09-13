@@ -80,28 +80,46 @@ class SequencedDiskWriter {
    * Write current chunk and attempt to sequentially write subsequent chunks
    */
   private async flushSequentialChunks(firstChunk: ArrayBuffer): Promise<void> {
-    // Write current chunk
-    await this.stream.write(firstChunk);
-    this.totalWritten += firstChunk.byteLength;
+    let flushCount = 0; // 声明移到外部
 
-    if (developmentEnv === "true") {
-      postLogToBackend(
-        `[DEBUG] ✓ DISK_WRITE chunk #${this.nextWriteIndex} - ${firstChunk.byteLength} bytes, total: ${this.totalWritten}`
-      );
-    }
+    try {
+      // Write current chunk
+      await this.stream.write(firstChunk);
+      this.totalWritten += firstChunk.byteLength;
 
-    this.nextWriteIndex++;
+      if (developmentEnv === "true") {
+        postLogToBackend(
+          `[DEBUG] ✓ DISK_WRITE chunk #${this.nextWriteIndex} - ${firstChunk.byteLength} bytes, total: ${this.totalWritten}`
+        );
+      }
 
-    // Try to sequentially write chunks from buffer
-    let flushCount = 0;
-    while (this.writeQueue.has(this.nextWriteIndex)) {
-      const chunk = this.writeQueue.get(this.nextWriteIndex)!;
-      await this.stream.write(chunk);
-      this.totalWritten += chunk.byteLength;
-      this.writeQueue.delete(this.nextWriteIndex);
-
-      flushCount++;
       this.nextWriteIndex++;
+
+      // Try to sequentially write chunks from buffer
+      while (this.writeQueue.has(this.nextWriteIndex)) {
+        const chunk = this.writeQueue.get(this.nextWriteIndex)!;
+        await this.stream.write(chunk);
+        this.totalWritten += chunk.byteLength;
+        this.writeQueue.delete(this.nextWriteIndex);
+
+        flushCount++;
+        this.nextWriteIndex++;
+      }
+    } catch (error) {
+      // 🔒 防御性处理：如果流已关闭，静默忽略
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes("closing writable stream") ||
+        errorMessage.includes("stream is closed")
+      ) {
+        console.log(
+          `[SequencedDiskWriter] Stream closed during write - ignoring remaining chunks`
+        );
+        return;
+      }
+      // 重新抛出其他类型的错误
+      throw error;
     }
 
     if (flushCount > 0) {
@@ -117,27 +135,44 @@ class SequencedDiskWriter {
    * Force refresh the earliest chunk to release buffer space
    */
   private async forceFlushOldest(): Promise<void> {
-    if (this.writeQueue.size === 0) return;
+    try {
+      if (this.writeQueue.size === 0) return;
 
-    const oldestIndex = Math.min(...Array.from(this.writeQueue.keys()));
-    const chunk = this.writeQueue.get(oldestIndex)!;
+      const oldestIndex = Math.min(...Array.from(this.writeQueue.keys()));
+      const chunk = this.writeQueue.get(oldestIndex)!;
 
-    // Warning: Unordered write
-    if (developmentEnv === "true") {
-      postLogToBackend(
-        `[DEBUG] ⚠️ FORCE_FLUSH out-of-order chunk #${oldestIndex} (expected #${this.nextWriteIndex})`
-      );
+      // Warning: Unordered write
+      if (developmentEnv === "true") {
+        postLogToBackend(
+          `[DEBUG] ⚠️ FORCE_FLUSH out-of-order chunk #${oldestIndex} (expected #${this.nextWriteIndex})`
+        );
+      }
+
+      // Use seek to write at the correct position (fallback handling)
+      const fileOffset = oldestIndex * 65536; // Assume each chunk is 64KB
+      await this.stream.seek(fileOffset);
+      await this.stream.write(chunk);
+      this.writeQueue.delete(oldestIndex);
+
+      // Return to current position
+      const currentOffset = this.nextWriteIndex * 65536;
+      await this.stream.seek(currentOffset);
+    } catch (error) {
+      // 🔒 防御性处理：如果流已关闭，静默忽略
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes("closing writable stream") ||
+        errorMessage.includes("stream is closed")
+      ) {
+        console.log(
+          `[SequencedDiskWriter] Stream closed during write - ignoring remaining chunks`
+        );
+        return;
+      }
+      // 重新抛出其他类型的错误
+      throw error;
     }
-
-    // Use seek to write at the correct position (fallback handling)
-    const fileOffset = oldestIndex * 65536; // Assume each chunk is 64KB
-    await this.stream.seek(fileOffset);
-    await this.stream.write(chunk);
-    this.writeQueue.delete(oldestIndex);
-
-    // Return to current position
-    const currentOffset = this.nextWriteIndex * 65536;
-    await this.stream.seek(currentOffset);
   }
 
   /**
@@ -159,19 +194,39 @@ class SequencedDiskWriter {
    * Close and clean up resources
    */
   async close(): Promise<void> {
-    // Try to flush all remaining chunks
-    const remainingIndexes = Array.from(this.writeQueue.keys()).sort(
-      (a, b) => a - b
-    );
-    for (const chunkIndex of remainingIndexes) {
-      const chunk = this.writeQueue.get(chunkIndex)!;
-      const fileOffset = chunkIndex * 65536;
-      await this.stream.seek(fileOffset);
-      await this.stream.write(chunk);
-      if (developmentEnv === "true") {
-        postLogToBackend(
-          `[DEBUG] 💾 FINAL_FLUSH chunk #${chunkIndex} at cleanup`
+    try {
+      // Try to flush all remaining chunks
+      const remainingIndexes = Array.from(this.writeQueue.keys()).sort(
+        (a, b) => a - b
+      );
+      for (const chunkIndex of remainingIndexes) {
+        const chunk = this.writeQueue.get(chunkIndex)!;
+        const fileOffset = chunkIndex * 65536;
+        await this.stream.seek(fileOffset);
+        await this.stream.write(chunk);
+        if (developmentEnv === "true") {
+          postLogToBackend(
+            `[DEBUG] 💾 FINAL_FLUSH chunk #${chunkIndex} at cleanup`
+          );
+        }
+      }
+    } catch (error) {
+      // 🔒 防御性处理：关闭时如果流已不可写，静默处理
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes("closing writable stream") ||
+        errorMessage.includes("stream is closed")
+      ) {
+        console.log(
+          `[SequencedDiskWriter] Stream closed during final flush - data may be incomplete`
         );
+      } else {
+        console.warn(
+          `[SequencedDiskWriter] Error during final flush:`,
+          errorMessage
+        );
+        throw error; // 重新抛出其他错误
       }
     }
 
@@ -594,7 +649,7 @@ class FileReceiver {
         const handler =
           this.fileHandlers[parsedData.type as keyof FileHandlers];
         if (handler) {
-          await handler(parsedData, peerId);
+          await handler(parsedData as any, peerId);
         } else {
           console.warn(
             `[DEBUG] ⚠️ FileReceiver Handler not found: ${parsedData.type}`
@@ -706,7 +761,15 @@ class FileReceiver {
     }
 
     const { chunkMeta, chunkData } = parsed;
-    const reception = this.activeFileReception!;
+
+    // 🔒 防御性检查：确保文件接收还在活跃状态
+    const reception = this.activeFileReception;
+    if (!reception) {
+      console.log(
+        `[FileReceiver] Ignoring chunk ${chunkMeta.chunkIndex} - file reception already closed`
+      );
+      return;
+    }
 
     // Verify fileId match
     if (chunkMeta.fileId !== reception.meta.fileId) {
@@ -1076,7 +1139,9 @@ class FileReceiver {
   }
   // endregion
 
-  public gracefulShutdown(): void {
+  public gracefulShutdown(reason: string = "CONNECTION_LOST"): void {
+    this.log("log", `Graceful shutdown initiated: ${reason}`);
+
     if (this.activeFileReception?.sequencedWriter) {
       this.log(
         "log",
@@ -1115,6 +1180,33 @@ class FileReceiver {
     this.activeFileReception = null;
     this.activeStringReception = null;
     this.currentFolderName = null;
+
+    this.log("log", "Graceful shutdown completed");
+  }
+
+  /**
+   * Force reset all internal states - used when rejoining rooms
+   */
+  public forceReset(): void {
+    this.log("log", "Force resetting FileReceiver state");
+
+    // Close any active streams first
+    if (this.activeFileReception?.sequencedWriter) {
+      this.activeFileReception.sequencedWriter.close().catch(console.error);
+    }
+    if (this.activeFileReception?.writeStream) {
+      this.activeFileReception.writeStream.close().catch(console.error);
+    }
+
+    // Clear all states
+    this.pendingFilesMeta.clear();
+    this.folderProgresses = {};
+    this.saveType = {};
+    this.activeFileReception = null;
+    this.activeStringReception = null;
+    this.currentFolderName = null;
+
+    this.log("log", "FileReceiver state force reset completed");
   }
 }
 

@@ -1,7 +1,6 @@
 import React, { useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import RichTextEditor from "@/components/Editor/RichTextEditor";
 import {
   ReadClipboardButton,
   WriteClipboardButton,
@@ -9,7 +8,6 @@ import {
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import type { Messages } from "@/types/messages";
 import type { FileMeta } from "@/types/webrtc";
-import type { ProgressState } from "@/hooks/useWebRTCConnection"; // Assuming this type is exported
 
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 
@@ -53,7 +51,7 @@ export function RetrieveTabPanel({
   retrieveMessage,
   handleLeaveRoom,
 }: RetrieveTabPanelProps) {
-  // 从 store 中获取状态
+  // Get the status from the store
   const {
     retrieveRoomStatusText,
     retrieveRoomIdInput,
@@ -61,35 +59,25 @@ export function RetrieveTabPanel({
     retrievedFileMetas,
     receiveProgress,
     isAnyFileTransferring,
-    senderDisconnected,
     isReceiverInRoom,
   } = useFileTransferStore();
 
   const onLocationPick = useCallback(async (): Promise<boolean> => {
     if (!messages) return false; // Should not happen if panel is rendered
     if (!window.showDirectoryPicker) {
-      putMessageInMs(
-        messages.text.ClipboardApp.pickSaveUnsupported,
-        false
-      );
+      putMessageInMs(messages.text.ClipboardApp.pickSaveUnsupported, false);
       return false;
     }
     if (!window.confirm(messages.text.ClipboardApp.pickSaveMsg)) return false;
     try {
       const directoryHandle = await window.showDirectoryPicker();
       await setReceiverDirectoryHandle(directoryHandle);
-      putMessageInMs(
-        messages.text.ClipboardApp.pickSaveSuccess,
-        false
-      );
+      putMessageInMs(messages.text.ClipboardApp.pickSaveSuccess, false);
       return true;
     } catch (err: any) {
       if (err.name !== "AbortError") {
         console.error("Failed to set up folder receive:", err);
-        putMessageInMs(
-          messages.text.ClipboardApp.pickSaveError,
-          false
-        );
+        putMessageInMs(messages.text.ClipboardApp.pickSaveError, false);
       }
       return false;
     }
@@ -148,12 +136,14 @@ export function RetrieveTabPanel({
             {messages.text.ClipboardApp.html.joinRoom_dis}
           </Button>
           <Button
-            variant="outline"
+            variant={isAnyFileTransferring ? "destructive" : "outline"}
             onClick={handleLeaveRoom}
-            disabled={!isReceiverInRoom || isAnyFileTransferring}
+            disabled={!isReceiverInRoom}
             className="w-full sm:w-auto px-4 order-2"
           >
-            {messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
+            {isAnyFileTransferring
+              ? messages.text.ClipboardApp.roomStatus.leaveRoomBtn + " ⚠️"
+              : messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
           </Button>
         </div>
       </div>

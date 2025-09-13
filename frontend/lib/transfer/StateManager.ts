@@ -2,16 +2,6 @@ import { PeerState, CustomFile, FolderMeta } from "@/types/webrtc";
 // Simplified version no longer depends on TransferConfig's complex configuration
 
 /**
- * 🚀 Network performance monitoring metrics interface
- */
-export interface NetworkPerformanceMetrics {
-  avgClearingRate: number; // Average network clearing speed KB/s
-  optimalThreshold: number; // Dynamically optimized threshold
-  avgWaitTime: number; // Average waiting time
-  sampleCount: number; // Sample count
-}
-
-/**
  * 🚀 State management class
  * Centrally manages all transfer-related state data
  */
@@ -19,7 +9,6 @@ export class StateManager {
   private peerStates = new Map<string, PeerState>();
   private pendingFiles = new Map<string, CustomFile>();
   private pendingFolderMeta: Record<string, FolderMeta> = {};
-  private networkPerformance = new Map<string, NetworkPerformanceMetrics>();
 
   // ===== Peer state management =====
 
@@ -62,11 +51,10 @@ export class StateManager {
   }
 
   /**
-   * Remove peer state (when peer disconnects)
+   * Clear peer state immediately (for graceful disconnect)
    */
-  public removePeerState(peerId: string): void {
+  public clearPeerState(peerId: string): void {
     this.peerStates.delete(peerId);
-    this.networkPerformance.delete(peerId);
   }
 
   // ===== File management =====
@@ -104,11 +92,15 @@ export class StateManager {
   /**
    * Add or update folder metadata
    */
-  public addFileToFolder(folderName: string, fileId: string, fileSize: number): void {
+  public addFileToFolder(
+    folderName: string,
+    fileId: string,
+    fileSize: number
+  ): void {
     if (!this.pendingFolderMeta[folderName]) {
       this.pendingFolderMeta[folderName] = { totalSize: 0, fileIds: [] };
     }
-    
+
     const folderMeta = this.pendingFolderMeta[folderName];
     if (!folderMeta.fileIds.includes(fileId)) {
       folderMeta.fileIds.push(fileId);
@@ -134,7 +126,11 @@ export class StateManager {
   /**
    * Update file sent bytes
    */
-  public updateFileBytesSent(peerId: string, fileId: string, bytes: number): void {
+  public updateFileBytesSent(
+    peerId: string,
+    fileId: string,
+    bytes: number
+  ): void {
     const peerState = this.getPeerState(peerId);
     if (!peerState.totalBytesSent[fileId]) {
       peerState.totalBytesSent[fileId] = 0;
@@ -156,14 +152,14 @@ export class StateManager {
   public getFolderBytesSent(peerId: string, folderName: string): number {
     const folderMeta = this.getFolderMeta(folderName);
     const peerState = this.peerStates.get(peerId);
-    
+
     if (!folderMeta || !peerState) return 0;
 
     let totalSent = 0;
     folderMeta.fileIds.forEach((fileId) => {
       totalSent += peerState.totalBytesSent[fileId] || 0;
     });
-    
+
     return totalSent;
   }
 
@@ -176,7 +172,6 @@ export class StateManager {
     this.peerStates.clear();
     this.pendingFiles.clear();
     this.pendingFolderMeta = {};
-    this.networkPerformance.clear();
   }
 
   /**
@@ -187,7 +182,6 @@ export class StateManager {
       peerCount: this.peerStates.size,
       pendingFileCount: this.pendingFiles.size,
       folderCount: Object.keys(this.pendingFolderMeta).length,
-      networkPerfCount: this.networkPerformance.size,
     };
   }
 }
