@@ -1,5 +1,6 @@
 import { CustomFile } from "@/types/webrtc";
 import { TransferConfig } from "./TransferConfig";
+import { ChunkRangeCalculator } from "@/lib/utils/ChunkRangeCalculator";
 import { postLogToBackend } from "@/app/config/api";
 const developmentEnv = process.env.NODE_ENV;
 /**
@@ -51,19 +52,14 @@ export class StreamingFileReader {
     this.fileReader = new FileReader();
 
     if (developmentEnv === "development") {
-      postLogToBackend(
-        `[DEBUG] 📖 StreamingFileReader created - file: ${file.name}, size: ${(
-          this.totalFileSize /
-          1024 /
-          1024
-        ).toFixed(1)}MB`
-      );
-      // 🔍 调试续传初始化
-      const expectedGlobalChunk = Math.floor(
-        startOffset / this.NETWORK_CHUNK_SIZE
+      // 🎯 关键日志1：发送端总结信息 - 使用统一的chunk范围计算逻辑
+      const chunkRange = ChunkRangeCalculator.getChunkRange(
+        this.totalFileSize,
+        startOffset,
+        this.NETWORK_CHUNK_SIZE
       );
       postLogToBackend(
-        `[DEBUG-RESUME] 🏗️ StreamingFileReader created - totalFileOffset:${this.totalFileOffset}, currentBatchStartOffset:${this.currentBatchStartOffset}, expectedGlobalChunk:${expectedGlobalChunk}`
+        `[SEND-SUMMARY] File: ${file.name}, offset: ${startOffset}, startChunk: ${chunkRange.startChunk}, endChunk: ${chunkRange.endChunk}, willSend: ${chunkRange.totalChunks}, absoluteTotal: ${chunkRange.absoluteTotalChunks}`
       );
     }
   }
@@ -96,15 +92,22 @@ export class StreamingFileReader {
     // 4. Update state
     this.updateChunkState(networkChunk);
 
-    // Delete frequent chunk progress logs
-
-    // 🔍 调试chunk发送 (前5个和最后5个chunks)
-    const totalChunks = this.calculateTotalNetworkChunks();
-    const isLastFew = globalChunkIndex >= (totalChunks - 5);
-    if (developmentEnv === "development" && (globalChunkIndex <= 5 || isLastFew || isLast)) {
-      postLogToBackend(
-        `[DEBUG-CHUNKS] 📤 Send chunk #${globalChunkIndex}/${totalChunks} - size:${networkChunk.byteLength}, isLast:${isLast}, fileOffset:${this.totalFileOffset - networkChunk.byteLength}`
+    // 🎯 关键日志：边界chunk验证（临时保留用于验证修复效果）
+    if (developmentEnv === "development") {
+      const totalChunks = this.calculateTotalNetworkChunks();
+      const currentOffset = this.totalFileOffset - networkChunk.byteLength;
+      const firstChunkIndex = Math.floor(
+        currentOffset / this.NETWORK_CHUNK_SIZE
       );
+      const isFirst =
+        globalChunkIndex === firstChunkIndex ||
+        (currentOffset === 0 && globalChunkIndex === 0);
+
+      if (isFirst || isLast) {
+        postLogToBackend(
+          `[BOUNDARY] Chunk #${globalChunkIndex}/${totalChunks}, isFirst: ${isFirst}, isLast: ${isLast}, size: ${networkChunk.byteLength}`
+        );
+      }
     }
 
     return {
@@ -181,35 +184,24 @@ export class StreamingFileReader {
       const batchStartOffset = this.totalFileOffset;
       this.currentBatchStartOffset = batchStartOffset;
 
-      // 🔧 修复：如果不是从batch边界开始，说明是续传情况，需要计算正确的batch内索引
-      if (batchStartOffset % this.BATCH_SIZE !== 0) {
-        // 续传情况：不是从batch边界开始
-        const globalChunkIndex = Math.floor(
-          batchStartOffset / this.NETWORK_CHUNK_SIZE
-        );
-        this.currentChunkIndexInBatch =
-          globalChunkIndex % this.CHUNKS_PER_BATCH;
-      } else {
-        // 正常情况：从batch边界开始
-        this.currentChunkIndexInBatch = 0;
-      }
+      // 🔧 修复：简化batch内索引计算逻辑
+      // 由于calculateGlobalChunkIndex现在直接基于totalFileOffset计算，
+      // batch内索引只需要基于当前batch的起始位置计算即可
+      const chunkOffsetInBatch =
+        batchStartOffset -
+        Math.floor(batchStartOffset / this.BATCH_SIZE) * this.BATCH_SIZE;
+      this.currentChunkIndexInBatch = Math.floor(
+        chunkOffsetInBatch / this.NETWORK_CHUNK_SIZE
+      );
 
-      // Only output batch reading logs in development environment
-      if (developmentEnv === "development") {
+      // Only output essential batch reading logs in development environment
+      if (developmentEnv === "development" && batchSize > this.BATCH_SIZE / 2) {
         const totalTime = performance.now() - startTime;
         const speedMBps = batchSize / 1024 / 1024 / (totalTime / 1000);
         postLogToBackend(
-          `[DEBUG] 📖 BATCH_READ - size: ${(batchSize / 1024 / 1024).toFixed(
+          `[BATCH-READ] 📖 size: ${(batchSize / 1024 / 1024).toFixed(
             1
-          )}MB, time: ${totalTime.toFixed(0)}ms, speed: ${speedMBps.toFixed(
-            1
-          )}MB/s`
-        );
-        // 🔍 调试batch内索引设置
-        postLogToBackend(
-          `[DEBUG-RESUME] 📖 BATCH loaded - batchStartOffset:${batchStartOffset}, currentChunkIndexInBatch:${
-            this.currentChunkIndexInBatch
-          }, isResume:${batchStartOffset % this.BATCH_SIZE !== 0}`
+          )}MB, speed: ${speedMBps.toFixed(1)}MB/s`
         );
       }
     } catch (error) {
@@ -278,25 +270,12 @@ export class StreamingFileReader {
 
   /**
    * 📊 Calculate global network chunk index
+   * 🔧 Simplified logic: directly calculate based on file offset to avoid batch boundary errors
    */
   private calculateGlobalChunkIndex(): number {
-    const batchesBefore = Math.floor(
-      this.currentBatchStartOffset / this.BATCH_SIZE
-    );
-    const chunksInPreviousBatches = batchesBefore * this.CHUNKS_PER_BATCH;
-    const result = chunksInPreviousBatches + this.currentChunkIndexInBatch;
-
-    // 🔍 调试chunk索引计算
-    if (
-      developmentEnv === "development" &&
-      this.currentChunkIndexInBatch <= 5
-    ) {
-      postLogToBackend(
-        `[DEBUG-RESUME] 🧮 calculateGlobalChunkIndex - batchStartOffset:${this.currentBatchStartOffset}, batchesBefore:${batchesBefore}, chunksInPrev:${chunksInPreviousBatches}, chunkInBatch:${this.currentChunkIndexInBatch}, result:${result}`
-      );
-    }
-
-    return result;
+    // 🎯 核心修复：直接基于当前文件偏移量计算chunk索引，避免复杂的batch计算
+    // 这确保了与接收端ReceptionConfig.getChunkIndexFromOffset()完全一致的计算逻辑
+    return Math.floor(this.totalFileOffset / this.NETWORK_CHUNK_SIZE);
   }
 
   /**

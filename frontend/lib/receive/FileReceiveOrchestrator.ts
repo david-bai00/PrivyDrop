@@ -7,6 +7,7 @@ import { StreamingFileWriter, SequencedDiskWriter } from "./StreamingFileWriter"
 import { FileAssembler } from "./FileAssembler";
 import { ProgressReporter, ProgressCallback } from "./ProgressReporter";
 import { ReceptionConfig } from "./ReceptionConfig";
+import { ChunkRangeCalculator } from "@/lib/utils/ChunkRangeCalculator";
 import { postLogToBackend } from "@/app/config/api";
 
 const developmentEnv = process.env.NODE_ENV;
@@ -135,19 +136,15 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     );
 
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-      const totalChunks = ReceptionConfig.calculateTotalChunks(fileInfo.size);
-      const startChunkIndex = ReceptionConfig.getChunkIndexFromOffset(offset);
-
-      postLogToBackend(`[DEBUG-CHUNKS] File: ${fileInfo.name}`);
-      postLogToBackend(
-        `[DEBUG-CHUNKS] File size: ${fileInfo.size}, offset: ${offset}`
+      // 🎯 关键日志2：接收端总结信息 - 使用统一的chunk范围计算逻辑
+      const chunkRange = ChunkRangeCalculator.getChunkRange(
+        fileInfo.size, 
+        offset, 
+        ReceptionConfig.FILE_CONFIG.CHUNK_SIZE
       );
+      
       postLogToBackend(
-        `[DEBUG-CHUNKS] Total chunks in file: ${totalChunks} (0-${totalChunks - 1})`
-      );
-      postLogToBackend(`[DEBUG-CHUNKS] Start chunk index: ${startChunkIndex}`);
-      postLogToBackend(
-        `[DEBUG-CHUNKS] Expected chunks: ${expectedChunksCount}`
+        `[RECV-SUMMARY] File: ${fileInfo.name}, expected: ${expectedChunksCount}, calculated: ${chunkRange.totalChunks}, startChunk: ${chunkRange.startChunk}, endChunk: ${chunkRange.endChunk}, absoluteTotal: ${chunkRange.absoluteTotalChunks}`
       );
     }
 

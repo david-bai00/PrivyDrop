@@ -148,9 +148,10 @@ export class ChunkProcessor {
     const startChunkIndex = ReceptionConfig.getChunkIndexFromOffset(initialOffset); // Resume start index
     const relativeChunkIndex = absoluteChunkIndex - startChunkIndex; // Relative index in chunks array
 
-    if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING && absoluteChunkIndex <= 970) {
+    // 🎯 简化调试：只在边界chunk时记录索引映射
+    if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING && (absoluteChunkIndex <= 2 || relativeChunkIndex <= 2)) {
       postLogToBackend(
-        `[DEBUG-CHUNKS] Index mapping - absolute:${absoluteChunkIndex}, start:${startChunkIndex}, relative:${relativeChunkIndex}`
+        `[INDEX-MAP] abs:${absoluteChunkIndex}, start:${startChunkIndex}, rel:${relativeChunkIndex}`
       );
     }
 
@@ -195,10 +196,11 @@ export class ChunkProcessor {
     const startChunkIndex = ReceptionConfig.getChunkIndexFromOffset(initialOffset);
     const calculatedExpected = chunkMeta.totalChunks - startChunkIndex;
     
+    // 🎯 简化日志：只在数量不匹配时记录关键信息
     if (chunkMeta.totalChunks !== expectedChunksCount && calculatedExpected !== expectedChunksCount) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
         postLogToBackend(
-          `[DEBUG-CHUNKS] Chunk count info - fileTotal: ${chunkMeta.totalChunks}, currentExpected: ${expectedChunksCount}, calculatedExpected: ${calculatedExpected}, startChunk: ${startChunkIndex}`
+          `[CHUNK-COUNT-MISMATCH] fileTotal:${chunkMeta.totalChunks}, expected:${expectedChunksCount}, calculated:${calculatedExpected}`
         );
       }
     }
@@ -231,14 +233,17 @@ export class ChunkProcessor {
       return;
     }
 
+    // 🎯 简化日志：只记录边界chunk和异常情况
     const { chunkMeta, absoluteChunkIndex, relativeChunkIndex } = result;
-    const lastFewChunks = relativeChunkIndex >= expectedChunksCount - 5;
+    const isFirstFew = absoluteChunkIndex <= 3;
+    const isLastFew = relativeChunkIndex >= expectedChunksCount - 3;
+    const hasIndexMismatch = writerExpectedIndex !== undefined && relativeChunkIndex !== writerExpectedIndex;
 
-    if (absoluteChunkIndex <= 970 || lastFewChunks) {
+    if (isFirstFew || isLastFew || hasIndexMismatch) {
       postLogToBackend(
-        `[DEBUG-CHUNKS] 📦 Chunk #${absoluteChunkIndex} received - relative:${relativeChunkIndex}, size:${chunkMeta.chunkSize}${
-          writerExpectedIndex !== undefined ? `, writerExpects:${writerExpectedIndex}` : ''
-        }, isLastFew:${lastFewChunks}`
+        `[CHUNK-DETAIL] #${absoluteChunkIndex} rel:${relativeChunkIndex}${
+          hasIndexMismatch ? ` MISMATCH(expected:${writerExpectedIndex})` : ''
+        } size:${chunkMeta.chunkSize}`
       );
     }
   }
@@ -304,39 +309,20 @@ export class ChunkProcessor {
 
     const { sequencedCount, expectedChunksCount, currentTotalSize, expectedSize, isDataComplete } = stats;
 
-    // Only log at key moments to reduce noise
-    if (
-      isDataComplete ||
-      sequencedCount % ReceptionConfig.DEBUG_CONFIG.PROGRESS_LOG_INTERVAL === 0 ||
-      sequencedCount > expectedChunksCount - 10
-    ) {
-      // Check last few chunks status
-      const lastChunkIndex = expectedChunksCount - 1;
-      const lastFewChunks = [];
+    // 🎯 关键日志3：只在完成时打印最终检查结果
+    if (isDataComplete) {
       const startChunkIndex = ReceptionConfig.getChunkIndexFromOffset(initialOffset);
-
-      for (let i = Math.max(0, lastChunkIndex - 3); i <= lastChunkIndex; i++) {
-        const chunk = chunks[i];
-        const exists = chunk instanceof ArrayBuffer;
-        const size = exists ? (chunk as ArrayBuffer).byteLength : 0;
-        const absoluteIndex = startChunkIndex + i;
-        lastFewChunks.push(`rel#${i}(abs#${absoluteIndex}):${exists}(${size})`);
+      const missingChunks = [];
+      
+      for (let i = 0; i < expectedChunksCount; i++) {
+        if (!chunks[i]) {
+          const absoluteIndex = startChunkIndex + i;
+          missingChunks.push(absoluteIndex);
+        }
       }
-
-      postLogToBackend(`[DEBUG-COMPLETE] Check completion - file:${fileName}`);
+      
       postLogToBackend(
-        `[DEBUG-COMPLETE] Chunks: received:${sequencedCount}/${expectedChunksCount}, isSequenceComplete:${stats.sequencedCount === expectedChunksCount}`
-      );
-      postLogToBackend(
-        `[DEBUG-COMPLETE] Size: current:${currentTotalSize}, expected:${expectedSize}, sizeComplete:${currentTotalSize >= expectedSize}, diff:${
-          expectedSize - currentTotalSize
-        }`
-      );
-      postLogToBackend(
-        `[DEBUG-COMPLETE] LastChunks: ${lastFewChunks.join(", ")}`
-      );
-      postLogToBackend(
-        `[DEBUG-COMPLETE] IsDataComplete: ${isDataComplete}`
+        `[FINAL-CHECK] File: ${fileName}, received: ${sequencedCount}/${expectedChunksCount}, sizeDiff: ${expectedSize - currentTotalSize}, missing: [${missingChunks.join(',')}]`
       );
     }
   }
