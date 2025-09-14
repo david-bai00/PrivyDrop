@@ -205,11 +205,11 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     const peerState = this.stateManager.getPeerState(peerId);
     const transferStartTime = performance.now();
 
+    // 🔧 修复：记录传输开始时的初始offset，用于后续统计计算
+    const initialReadOffset = peerState.readOffset || 0;
+
     // 1. Initialize streaming file reader
-    const streamReader = new StreamingFileReader(
-      file,
-      peerState.readOffset || 0
-    );
+    const streamReader = new StreamingFileReader(file, initialReadOffset);
 
     if (developmentEnv === "development") {
       postLogToBackend(
@@ -304,9 +304,11 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       if (developmentEnv === "development") {
         const totalTime = performance.now() - transferStartTime;
         const avgSpeedMBps = totalBytesSent / 1024 / 1024 / (totalTime / 1000);
+
+        // 🔧 修复：使用正确的初始offset而不是当前readOffset来计算日志统计
+        const initialOffset = initialReadOffset || 0; // 传输开始时的offset
         const expectedTotalChunks = Math.ceil(file.size / 65536);
-        const startOffset = peerState.readOffset || 0;
-        const startChunkIndex = Math.floor(startOffset / 65536);
+        const startChunkIndex = Math.floor(initialOffset / 65536);
         const expectedChunksSent = expectedTotalChunks - startChunkIndex;
 
         postLogToBackend(
@@ -315,7 +317,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
           ).toFixed(1)}s, speed: ${avgSpeedMBps.toFixed(1)}MB/s`
         );
         postLogToBackend(
-          `[DEBUG-CHUNKS] Chunks sent: ${networkChunkIndex}, expected: ${expectedChunksSent}, startChunk: ${startChunkIndex}, totalFileChunks: ${expectedTotalChunks}`
+          `[DEBUG-CHUNKS] Chunks sent: ${networkChunkIndex}, expected: ${expectedChunksSent}, startChunk: ${startChunkIndex}, totalFileChunks: ${expectedTotalChunks}, initialOffset: ${initialOffset}`
         );
 
         if (networkChunkIndex !== expectedChunksSent) {

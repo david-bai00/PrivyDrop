@@ -40,6 +40,7 @@ export class StreamingFileReader {
 
   // Global state
   private totalFileOffset = 0; // Current position in the entire file
+  private startChunkIndex = 0; // 🔧 记录传输起始的chunk索引
   private isFinished = false;
   private isReading = false; // Prevent concurrent reading
 
@@ -50,6 +51,9 @@ export class StreamingFileReader {
     // 🔧 修复：续传时currentBatchStartOffset应该从startOffset开始
     this.currentBatchStartOffset = startOffset;
     this.fileReader = new FileReader();
+
+    // 🔧 记录传输的起始chunk索引，用于边界检测
+    this.startChunkIndex = Math.floor(startOffset / this.NETWORK_CHUNK_SIZE);
 
     if (developmentEnv === "development") {
       // 🎯 关键日志1：发送端总结信息 - 使用统一的chunk范围计算逻辑
@@ -95,17 +99,15 @@ export class StreamingFileReader {
     // 🎯 关键日志：边界chunk验证（临时保留用于验证修复效果）
     if (developmentEnv === "development") {
       const totalChunks = this.calculateTotalNetworkChunks();
-      const currentOffset = this.totalFileOffset - networkChunk.byteLength;
-      const firstChunkIndex = Math.floor(
-        currentOffset / this.NETWORK_CHUNK_SIZE
-      );
-      const isFirst =
-        globalChunkIndex === firstChunkIndex ||
-        (currentOffset === 0 && globalChunkIndex === 0);
+      
+      // 🔧 修复：使用简化的边界检测逻辑
+      const isFirst = globalChunkIndex === this.startChunkIndex;
+      const expectedLastChunk = Math.floor((this.totalFileSize - 1) / this.NETWORK_CHUNK_SIZE);
+      const isRealLast = isLast && globalChunkIndex === expectedLastChunk;
 
-      if (isFirst || isLast) {
+      if (isFirst || isRealLast) {
         postLogToBackend(
-          `[BOUNDARY] Chunk #${globalChunkIndex}/${totalChunks}, isFirst: ${isFirst}, isLast: ${isLast}, size: ${networkChunk.byteLength}`
+          `[BOUNDARY] Chunk #${globalChunkIndex}/${totalChunks}, isFirst: ${isFirst}, isLast: ${isRealLast}, startIdx: ${this.startChunkIndex}, expectedLastIdx: ${expectedLastChunk}, size: ${networkChunk.byteLength}`
         );
       }
     }

@@ -367,12 +367,14 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
 
     // Handle disk writing if needed
     if (reception.sequencedWriter) {
+      // 🔧 修复：SequencedWriter使用绝对索引，确保传递正确的索引
       this.chunkProcessor.logChunkDetails(
         result,
         reception.expectedChunksCount,
         reception.sequencedWriter.expectedIndex
       );
 
+      // ✅ 正确使用绝对索引进行磁盘写入
       await reception.sequencedWriter.writeChunk(
         result.absoluteChunkIndex,
         result.chunkData

@@ -178,42 +178,74 @@ export class SequencedDiskWriter {
    */
   async close(): Promise<void> {
     try {
-      // Try to flush all remaining chunks
+      // 🔧 修复：确保以正确的WriteParams格式写入剩余chunks
       const remainingIndexes = Array.from(this.writeQueue.keys()).sort(
         (a, b) => a - b
       );
-      for (const chunkIndex of remainingIndexes) {
-        const chunk = this.writeQueue.get(chunkIndex)!;
-        const fileOffset = ReceptionConfig.getOffsetFromChunkIndex(chunkIndex);
-        await this.stream.seek(fileOffset);
-        await this.stream.write(chunk);
+      
+      if (remainingIndexes.length > 0) {
         if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
           postLogToBackend(
-            `[DEBUG] 💾 FINAL_FLUSH chunk #${chunkIndex} at cleanup`
+            `[DEBUG-FINALIZE] 💾 Flushing ${remainingIndexes.length} remaining chunks: [${remainingIndexes.join(',')}]`
           );
+        }
+        
+        for (const chunkIndex of remainingIndexes) {
+          const chunk = this.writeQueue.get(chunkIndex)!;
+          const fileOffset = ReceptionConfig.getOffsetFromChunkIndex(chunkIndex);
+          
+          // 🔧 修复：使用正确的WriteParams格式
+          await this.stream.seek(fileOffset);
+          
+          // 确保chunk是有效的ArrayBuffer
+          if (!(chunk instanceof ArrayBuffer) || chunk.byteLength === 0) {
+            if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
+              postLogToBackend(
+                `[DEBUG-FINALIZE] ⚠️ Skipping invalid chunk #${chunkIndex}: ${Object.prototype.toString.call(chunk)}, size: ${chunk.byteLength}`
+              );
+            }
+            continue;
+          }
+          
+          // 使用标准WriteParams格式写入
+          await this.stream.write({
+            type: "write",
+            data: chunk
+          });
+          
+          if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
+            postLogToBackend(
+              `[DEBUG-FINALIZE] ✅ FINAL_FLUSH chunk #${chunkIndex} (${chunk.byteLength} bytes)`
+            );
+          }
         }
       }
     } catch (error) {
-      // Defensive handling: If stream is not writable during close, handle silently
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      // Enhanced error handling with specific error types
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
+        postLogToBackend(
+          `[DEBUG-FINALIZE] ❌ Error during final flush: ${errorMessage}`
+        );
+      }
+      
       if (
         errorMessage.includes("closing writable stream") ||
-        errorMessage.includes("stream is closed")
+        errorMessage.includes("stream is closed") ||
+        errorMessage.includes("The stream is not in a state that permits this operation")
       ) {
         console.log(
-          `[SequencedDiskWriter] Stream closed during final flush - data may be incomplete`
+          `[SequencedDiskWriter] Stream closed during final flush - completing gracefully`
         );
       } else {
-        console.warn(
-          `[SequencedDiskWriter] Error during final flush:`,
-          errorMessage
-        );
+        console.warn(`[SequencedDiskWriter] Unexpected error during final flush:`, errorMessage);
         throw error;
       }
+    } finally {
+      // 无论如何都要清理队列
+      this.writeQueue.clear();
     }
-
-    this.writeQueue.clear();
   }
 }
 

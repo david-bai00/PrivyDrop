@@ -237,12 +237,14 @@ export class ChunkProcessor {
     const { chunkMeta, absoluteChunkIndex, relativeChunkIndex } = result;
     const isFirstFew = absoluteChunkIndex <= 3;
     const isLastFew = relativeChunkIndex >= expectedChunksCount - 3;
-    const hasIndexMismatch = writerExpectedIndex !== undefined && relativeChunkIndex !== writerExpectedIndex;
+    
+    // 🔧 修复：SequencedWriter期望的是绝对索引，不是相对索引
+    const hasIndexMismatch = writerExpectedIndex !== undefined && absoluteChunkIndex !== writerExpectedIndex;
 
     if (isFirstFew || isLastFew || hasIndexMismatch) {
       postLogToBackend(
         `[CHUNK-DETAIL] #${absoluteChunkIndex} rel:${relativeChunkIndex}${
-          hasIndexMismatch ? ` MISMATCH(expected:${writerExpectedIndex})` : ''
+          hasIndexMismatch ? ` MISMATCH(writer expects:${writerExpectedIndex})` : ''
         } size:${chunkMeta.chunkSize}`
       );
     }
