@@ -235,10 +235,6 @@ export const zh: Messages = {
         "我们建议选择一个保存目录来直接将文件保存到磁盘。这样可以更方便地传输大文件和同步文件夹。",
       chooseSavePath_tips: "大文件或文件夹可直接保存到指定目录 👉",
       chooseSavePath_dis: "选择保存位置",
-      safeSave_dis: "安全保存",
-      safeSave_tooltip: "连接中断不要怕，点击这里安全保存文件，方便下次续传",
-      safeSaveSuccessMsg:
-        "文件已安全保存到磁盘，可以安全关闭页面，支持断点续传！",
     },
     RetrieveMethod: {
       P: "恭喜 🎉 共享内容等待接收：",

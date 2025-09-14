@@ -30,7 +30,6 @@ interface RetrieveTabPanelProps {
     directoryHandle: FileSystemDirectoryHandle
   ) => Promise<void>;
   getReceiverSaveType: () => { [fileId: string]: boolean } | undefined;
-  manualSafeSave: () => void; // Add manual safe save function
   retrieveMessage: string;
   handleLeaveRoom: () => void;
 }
@@ -47,7 +46,6 @@ export function RetrieveTabPanel({
   requestFolder,
   setReceiverDirectoryHandle,
   getReceiverSaveType,
-  manualSafeSave,
   retrieveMessage,
   handleLeaveRoom,
 }: RetrieveTabPanelProps) {
@@ -168,7 +166,6 @@ export function RetrieveTabPanel({
         onDownload={handleDownloadFile}
         onRequest={handleFileRequestFromPanel} // Use the panel's own handler
         onLocationPick={onLocationPick} // Use the panel's own handler
-        onSafeSave={manualSafeSave} // Add safe save handler
         saveType={getReceiverSaveType()}
       />
       {retrieveMessage && (

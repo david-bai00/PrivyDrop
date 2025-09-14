@@ -2,18 +2,15 @@ import WebRTC_Recipient from "../webrtc_Recipient";
 import { CustomFile, fileMetadata } from "@/types/webrtc";
 import { ReceptionStateManager } from "./ReceptionStateManager";
 import { MessageProcessor, MessageProcessorDelegate } from "./MessageProcessor";
-import { ChunkProcessor, ChunkProcessingResult } from "./ChunkProcessor";
+import { ChunkProcessor } from "./ChunkProcessor";
 import {
-  StreamingFileWriter,
-  SequencedDiskWriter,
+  StreamingFileWriter
 } from "./StreamingFileWriter";
 import { FileAssembler } from "./FileAssembler";
 import { ProgressReporter, ProgressCallback } from "./ProgressReporter";
 import { ReceptionConfig } from "./ReceptionConfig";
 import { ChunkRangeCalculator } from "@/lib/utils/ChunkRangeCalculator";
 import { postLogToBackend } from "@/app/config/api";
-
-const developmentEnv = process.env.NODE_ENV;
 
 /**
  * 🚀 File receive orchestrator
@@ -145,7 +142,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     );
 
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-      // 🎯 关键日志2：接收端总结信息 - 使用统一的chunk范围计算逻辑
+      // 🎯 Critical log 2: Summary information for receiver - using unified chunk range calculation logic
       const chunkRange = ChunkRangeCalculator.getChunkRange(
         fileInfo.size,
         offset,
@@ -395,14 +392,14 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
 
     // Handle disk writing if needed
     if (reception.sequencedWriter) {
-      // 🔧 修复：SequencedWriter使用绝对索引，确保传递正确的索引
+      // 🔧 Fix: SequencedWriter uses absolute index, ensuring correct index is passed
       this.chunkProcessor.logChunkDetails(
         result,
         reception.expectedChunksCount,
         reception.sequencedWriter.expectedIndex
       );
 
-      // ✅ 正确使用绝对索引进行磁盘写入
+      // ✅ Correctly use absolute index for disk writing
       await reception.sequencedWriter.writeChunk(
         result.absoluteChunkIndex,
         result.chunkData

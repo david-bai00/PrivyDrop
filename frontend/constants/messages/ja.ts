@@ -249,9 +249,6 @@ export const ja: Messages = {
       chooseSavePath_tips:
         "大きなファイルやフォルダを選択したディレクトリに直接保存します。👉",
       chooseSavePath_dis: "保存場所を選択",
-      safeSave_dis: "安全保存",
-      safeSave_tooltip: "接続の中断を恐れる必要はありません。ここをクリックして、次回の再開のためにファイルを安全に保存してください",
-      safeSaveSuccessMsg: "ファイルが安全にディスクに保存されました。ページを安全に閉じることができ、転送の再開をサポートします！",
     },
     RetrieveMethod: {
       P: "おめでとう 🎉 共有コンテンツが取得待ちです：",

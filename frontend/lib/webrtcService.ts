@@ -60,7 +60,7 @@ class WebRTCService {
       }
     };
 
-    this.sender.onDataChannelOpen = (peerId) => {
+    this.sender.onDataChannelOpen = (_peerId) => {
       useFileTransferStore.getState().setIsSenderInRoom(true);
       // Automatically broadcast current content
       this.broadcastDataToAllPeers();
@@ -215,10 +215,6 @@ class WebRTCService {
     return this.fileReceiver.saveType;
   }
 
-  public manualSafeSave(): void {
-    this.fileReceiver.gracefulShutdown();
-  }
-
   private handleConnectionDisconnect(peerId: string, isSender: boolean, reason: string): void {
     console.log(`[WebRTC Service] Connection disconnect: ${reason}, peer: ${peerId}, sender: ${isSender}`);
     
@@ -256,7 +252,7 @@ class WebRTCService {
   }
 
   // update connection state
-  private updateConnectionState(peerId: string, isSender: boolean): void {
+  private updateConnectionState(_peerId: string, isSender: boolean): void {
     const store = useFileTransferStore.getState();
     
     if (isSender) {

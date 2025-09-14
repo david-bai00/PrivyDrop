@@ -2,8 +2,6 @@ import { EmbeddedChunkMeta } from "@/types/webrtc";
 import { ReceptionConfig } from "./ReceptionConfig";
 import { postLogToBackend } from "@/app/config/api";
 
-const developmentEnv = process.env.NODE_ENV;
-
 /**
  * 🚀 Chunk processing result interface
  */
@@ -148,7 +146,7 @@ export class ChunkProcessor {
     const startChunkIndex = ReceptionConfig.getChunkIndexFromOffset(initialOffset); // Resume start index
     const relativeChunkIndex = absoluteChunkIndex - startChunkIndex; // Relative index in chunks array
 
-    // 🎯 简化调试：只在边界chunk时记录索引映射
+    // 🎯 Simplify debugging: Only record index mapping when boundary chunk
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING && (absoluteChunkIndex <= 2 || relativeChunkIndex <= 2)) {
       postLogToBackend(
         `[INDEX-MAP] abs:${absoluteChunkIndex}, start:${startChunkIndex}, rel:${relativeChunkIndex}`
@@ -196,7 +194,7 @@ export class ChunkProcessor {
     const startChunkIndex = ReceptionConfig.getChunkIndexFromOffset(initialOffset);
     const calculatedExpected = chunkMeta.totalChunks - startChunkIndex;
     
-    // 🎯 简化日志：只在数量不匹配时记录关键信息
+    // 🎯 Simplify logging: Only record critical information when the number does not match
     if (chunkMeta.totalChunks !== expectedChunksCount && calculatedExpected !== expectedChunksCount) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
         postLogToBackend(
@@ -233,12 +231,12 @@ export class ChunkProcessor {
       return;
     }
 
-    // 🎯 简化日志：只记录边界chunk和异常情况
+    // 🎯 Simplify logging: Only record boundary chunk and abnormal cases
     const { chunkMeta, absoluteChunkIndex, relativeChunkIndex } = result;
     const isFirstFew = absoluteChunkIndex <= 3;
     const isLastFew = relativeChunkIndex >= expectedChunksCount - 3;
     
-    // 🔧 修复：SequencedWriter期望的是绝对索引，不是相对索引
+    // 🔧 Fix: SequencedWriter expects absolute index, not relative index
     const hasIndexMismatch = writerExpectedIndex !== undefined && absoluteChunkIndex !== writerExpectedIndex;
 
     if (isFirstFew || isLastFew || hasIndexMismatch) {
@@ -311,7 +309,7 @@ export class ChunkProcessor {
 
     const { sequencedCount, expectedChunksCount, currentTotalSize, expectedSize, isDataComplete } = stats;
 
-    // 🎯 关键日志3：只在完成时打印最终检查结果
+    // 🎯 Critical log 3: Only print final check results when complete
     if (isDataComplete) {
       const startChunkIndex = ReceptionConfig.getChunkIndexFromOffset(initialOffset);
       const missingChunks = [];

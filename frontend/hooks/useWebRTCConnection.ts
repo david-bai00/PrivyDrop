@@ -18,8 +18,7 @@ interface UseWebRTCConnectionProps {
 }
 
 export function useWebRTCConnection({
-  messages,
-  putMessageInMs,
+  // Retaining interface compatibility but these are no longer used
 }: UseWebRTCConnectionProps) {
   // Get state from store
   const {
@@ -64,7 +63,6 @@ export function useWebRTCConnection({
     setReceiverDirectoryHandle:
       webrtcService.setReceiverDirectoryHandle.bind(webrtcService),
     getReceiverSaveType: webrtcService.getReceiverSaveType.bind(webrtcService),
-    manualSafeSave: webrtcService.manualSafeSave.bind(webrtcService),
 
     // Reset connection methods
     resetSenderConnection: () => webrtcService.leaveRoom(true),

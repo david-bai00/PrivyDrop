@@ -193,9 +193,6 @@ export type FileListDisplay = {
   PopupDialog_description: string;
   chooseSavePath_tips: string;
   chooseSavePath_dis: string;
-  safeSave_dis: string;
-  safeSave_tooltip: string;
-  safeSaveSuccessMsg: string;
 };
 
 export type RetrieveMethod = {

@@ -40,7 +40,7 @@ export class StreamingFileReader {
 
   // Global state
   private totalFileOffset = 0; // Current position in the entire file
-  private startChunkIndex = 0; // 🔧 记录传输起始的chunk索引
+  private startChunkIndex = 0; // 🔧 Record the chunk index at the start of transmission
   private isFinished = false;
   private isReading = false; // Prevent concurrent reading
 
@@ -48,15 +48,14 @@ export class StreamingFileReader {
     this.file = file;
     this.totalFileSize = file.size;
     this.totalFileOffset = startOffset;
-    // 🔧 修复：续传时currentBatchStartOffset应该从startOffset开始
+    // 🔧 Fix: When resuming, currentBatchStartOffset should start from startOffset
     this.currentBatchStartOffset = startOffset;
     this.fileReader = new FileReader();
 
-    // 🔧 记录传输的起始chunk索引，用于边界检测
+    // 🔧 Record the starting chunk index of the transfer, used for boundary detection
     this.startChunkIndex = Math.floor(startOffset / this.NETWORK_CHUNK_SIZE);
 
     if (developmentEnv === "development") {
-      // 🎯 关键日志1：发送端总结信息 - 使用统一的chunk范围计算逻辑
       const chunkRange = ChunkRangeCalculator.getChunkRange(
         this.totalFileSize,
         startOffset,
@@ -96,11 +95,9 @@ export class StreamingFileReader {
     // 4. Update state
     this.updateChunkState(networkChunk);
 
-    // 🎯 关键日志：边界chunk验证（临时保留用于验证修复效果）
     if (developmentEnv === "development") {
       const totalChunks = this.calculateTotalNetworkChunks();
 
-      // 🔧 修复：使用简化的边界检测逻辑
       const isFirst = globalChunkIndex === this.startChunkIndex;
       const expectedLastChunk = Math.floor(
         (this.totalFileSize - 1) / this.NETWORK_CHUNK_SIZE
@@ -188,9 +185,9 @@ export class StreamingFileReader {
       const batchStartOffset = this.totalFileOffset;
       this.currentBatchStartOffset = batchStartOffset;
 
-      // 🔧 修复：简化batch内索引计算逻辑
-      // 由于calculateGlobalChunkIndex现在直接基于totalFileOffset计算，
-      // batch内索引只需要基于当前batch的起始位置计算即可
+      // 🔧 Fix: Simplify index calculation logic within batch
+      // Since calculateGlobalChunkIndex now directly calculates based on totalFileOffset
+      // Indexing within a batch only needs to be calculated based on the starting position of the current batch
       const chunkOffsetInBatch =
         batchStartOffset -
         Math.floor(batchStartOffset / this.BATCH_SIZE) * this.BATCH_SIZE;
@@ -248,14 +245,14 @@ export class StreamingFileReader {
 
   /**
    * ✂️ Slice 64KB network chunk from 32MB batch
-   * 🆕 修复：直接基于offset在batch中的位置计算，避免复杂的batch内索引计算
+   * 🆕 Fix: Calculate directly based on the position of offset in the batch, avoiding complex batch internal index calculations
    */
   private sliceNetworkChunkFromBatch(): ArrayBuffer {
     if (!this.currentBatch) {
       throw new Error("No current batch available for slicing");
     }
 
-    // 🆕 直接基于offset在batch中的位置计算，避免batch内索引计算错误
+    // 🆕 Calculated directly based on the position of offset in the batch to avoid index calculation errors within the batch
     const offsetInBatch = this.totalFileOffset - this.currentBatchStartOffset;
     const remainingInBatch = this.currentBatch.byteLength - offsetInBatch;
     const chunkSize = Math.min(this.NETWORK_CHUNK_SIZE, remainingInBatch);
@@ -278,8 +275,7 @@ export class StreamingFileReader {
    * 🔧 Simplified logic: directly calculate based on file offset to avoid batch boundary errors
    */
   private calculateGlobalChunkIndex(): number {
-    // 🎯 核心修复：直接基于当前文件偏移量计算chunk索引，避免复杂的batch计算
-    // 这确保了与接收端ReceptionConfig.getChunkIndexFromOffset()完全一致的计算逻辑
+    // Calculate chunk index directly based on current file offset, avoiding complex batch calculations, consistent with receiver
     return Math.floor(this.totalFileOffset / this.NETWORK_CHUNK_SIZE);
   }
 
@@ -357,9 +353,9 @@ export class StreamingFileReader {
     this.isFinished = false;
     this.isReading = false;
     this.currentBatch = null;
-    // 🔧 修复：reset时也要正确设置currentBatchStartOffset
+    // 🔧 Fix: Reset also needs to correctly set currentBatchStartOffset
     this.currentBatchStartOffset = startOffset;
-    this.currentChunkIndexInBatch = 0; // 重置为0，loadNextBatch会重新计算
+    this.currentChunkIndexInBatch = 0; // Reset to 0, loadNextBatch will recalculate
 
     if (developmentEnv === "development") {
       postLogToBackend(
