@@ -3,7 +3,10 @@ import { CustomFile, fileMetadata } from "@/types/webrtc";
 import { ReceptionStateManager } from "./ReceptionStateManager";
 import { MessageProcessor, MessageProcessorDelegate } from "./MessageProcessor";
 import { ChunkProcessor, ChunkProcessingResult } from "./ChunkProcessor";
-import { StreamingFileWriter, SequencedDiskWriter } from "./StreamingFileWriter";
+import {
+  StreamingFileWriter,
+  SequencedDiskWriter,
+} from "./StreamingFileWriter";
 import { FileAssembler } from "./FileAssembler";
 import { ProgressReporter, ProgressCallback } from "./ProgressReporter";
 import { ReceptionConfig } from "./ReceptionConfig";
@@ -25,9 +28,11 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
   private progressReporter: ProgressReporter;
 
   // Callbacks
-  public onFileMetaReceived: ((meta: fileMetadata) => void) | undefined = undefined;
+  public onFileMetaReceived: ((meta: fileMetadata) => void) | undefined =
+    undefined;
   public onStringReceived: ((str: string) => void) | undefined = undefined;
-  public onFileReceived: ((file: CustomFile) => Promise<void>) | undefined = undefined;
+  public onFileReceived: ((file: CustomFile) => Promise<void>) | undefined =
+    undefined;
 
   constructor(private webrtcConnection: WebRTC_Recipient) {
     // Initialize all components
@@ -50,7 +55,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
             this.onStringReceived(str);
           }
         },
-        log: this.log.bind(this)
+        log: this.log.bind(this),
       }
     );
 
@@ -94,7 +99,9 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
 
     const fileInfo = this.stateManager.getFileMetadata(fileId);
     if (!fileInfo) {
-      this.fireError("File info not found for the requested fileId", { fileId });
+      this.fireError("File info not found for the requested fileId", {
+        fileId,
+      });
       return;
     }
 
@@ -125,7 +132,9 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
         }
         this.log("log", `Resuming file from offset: ${offset}`, { fileId });
       } catch (e) {
-        this.log("log", "Partial file not found, starting from scratch.", { fileId });
+        this.log("log", "Partial file not found, starting from scratch.", {
+          fileId,
+        });
         offset = 0;
       }
     }
@@ -138,11 +147,11 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
       // 🎯 关键日志2：接收端总结信息 - 使用统一的chunk范围计算逻辑
       const chunkRange = ChunkRangeCalculator.getChunkRange(
-        fileInfo.size, 
-        offset, 
+        fileInfo.size,
+        offset,
         ReceptionConfig.FILE_CONFIG.CHUNK_SIZE
       );
-      
+
       postLogToBackend(
         `[RECV-SUMMARY] File: ${fileInfo.name}, expected: ${expectedChunksCount}, calculated: ${chunkRange.totalChunks}, startChunk: ${chunkRange.startChunk}, endChunk: ${chunkRange.endChunk}, absoluteTotal: ${chunkRange.absoluteTotalChunks}`
       );
@@ -161,7 +170,9 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     // Send file request
     const success = this.messageProcessor.sendFileRequest(fileId, offset);
     if (!success) {
-      this.stateManager.failFileReception(new Error("Failed to send file request"));
+      this.stateManager.failFileReception(
+        new Error("Failed to send file request")
+      );
       return;
     }
 
@@ -174,7 +185,9 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
   public async requestFolder(folderName: string): Promise<void> {
     const folderProgress = this.stateManager.getFolderProgress(folderName);
     if (!folderProgress || folderProgress.fileIds.length === 0) {
-      this.log("warn", "No files found for the requested folder.", { folderName });
+      this.log("warn", "No files found for the requested folder.", {
+        folderName,
+      });
       return;
     }
 
@@ -185,10 +198,11 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
         const fileInfo = this.stateManager.getFileMetadata(fileId);
         if (fileInfo) {
           try {
-            const partialSize = await this.streamingFileWriter.getPartialFileSize(
-              fileInfo.name,
-              fileInfo.fullName
-            );
+            const partialSize =
+              await this.streamingFileWriter.getPartialFileSize(
+                fileInfo.name,
+                fileInfo.fullName
+              );
             initialFolderReceivedSize += partialSize;
           } catch (e) {
             // File doesn't exist, so its size is 0
@@ -197,7 +211,10 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       }
     }
 
-    this.stateManager.setFolderReceivedSize(folderName, initialFolderReceivedSize);
+    this.stateManager.setFolderReceivedSize(
+      folderName,
+      initialFolderReceivedSize
+    );
     this.log(
       "log",
       `Requesting folder, initial received size: ${initialFolderReceivedSize}`,
@@ -205,7 +222,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     );
 
     this.stateManager.setCurrentFolderName(folderName);
-    
+
     for (const fileId of folderProgress.fileIds) {
       try {
         await this.requestFile(fileId, false);
@@ -217,19 +234,23 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
         break;
       }
     }
-    
+
     this.stateManager.setCurrentFolderName(null);
 
     // Send folder completion message
     const completedFileIds = folderProgress.fileIds.filter(() => true); // Assume all succeeded
-    
+
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
       postLogToBackend(
         `[DEBUG] 📁 All files in folder completed - ${folderName}, files: ${completedFileIds.length}/${folderProgress.fileIds.length}`
       );
     }
 
-    this.messageProcessor.sendFolderReceiveComplete(folderName, completedFileIds, true);
+    this.messageProcessor.sendFolderReceiveComplete(
+      folderName,
+      completedFileIds,
+      true
+    );
   }
 
   // ===== MessageProcessorDelegate Implementation =====
@@ -252,8 +273,11 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
    */
   private setupDataHandler(): void {
     this.webrtcConnection.onDataReceived = async (data, peerId) => {
-      const binaryData = await this.messageProcessor.handleReceivedMessage(data, peerId);
-      
+      const binaryData = await this.messageProcessor.handleReceivedMessage(
+        data,
+        peerId
+      );
+
       if (binaryData) {
         // Handle binary chunk data
         await this.handleBinaryChunkData(binaryData);
@@ -296,7 +320,9 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
   /**
    * Handle embedded chunk packet
    */
-  private async handleEmbeddedChunkPacket(arrayBuffer: ArrayBuffer): Promise<void> {
+  private async handleEmbeddedChunkPacket(
+    arrayBuffer: ArrayBuffer
+  ): Promise<void> {
     const parsed = this.chunkProcessor.parseEmbeddedChunkPacket(arrayBuffer);
     if (!parsed) {
       this.fireError("Failed to parse embedded chunk packet");
@@ -341,10 +367,12 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     }
 
     // Check if chunk index is valid
-    if (!this.chunkProcessor.isChunkIndexValid(
-      result.relativeChunkIndex,
-      reception.expectedChunksCount
-    )) {
+    if (
+      !this.chunkProcessor.isChunkIndexValid(
+        result.relativeChunkIndex,
+        reception.expectedChunksCount
+      )
+    ) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
         postLogToBackend(
           `[DEBUG-CHUNKS] ❌ Invalid relative chunk index - absolute:${result.absoluteChunkIndex}, relative:${result.relativeChunkIndex}, arraySize:${reception.chunks.length}`
@@ -482,6 +510,26 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
           `[DEBUG-FINALIZE] ✅ LARGE_FILE finalized successfully - ${reception.meta.name}`
         );
       }
+
+      // 🆕 Send completion confirmation for large files
+      const stats = this.chunkProcessor.calculateCompletionStats(
+        reception.chunks,
+        reception.expectedChunksCount,
+        reception.meta.size - reception.initialOffset
+      );
+
+      this.messageProcessor.sendFileReceiveComplete(
+        reception.meta.fileId,
+        stats.currentTotalSize,
+        stats.sequencedCount,
+        true
+      );
+
+      if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
+        postLogToBackend(
+          `[DEBUG-FINALIZE] 📤 LARGE_FILE completion confirmation sent - ${reception.meta.fileId}, size: ${stats.currentTotalSize}, chunks: ${stats.sequencedCount}`
+        );
+      }
     } catch (error) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
         postLogToBackend(
@@ -524,7 +572,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     offset: number
   ): Promise<void> {
     try {
-      const { fileHandle, writeStream, sequencedWriter } = 
+      const { fileHandle, writeStream, sequencedWriter } =
         await this.streamingFileWriter.createWriteStream(
           meta.name,
           meta.fullName,
@@ -585,18 +633,21 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
 
     const reception = this.stateManager.getActiveFileReception();
     if (reception?.sequencedWriter && reception?.writeStream) {
-      this.log(
-        "log",
-        "Attempting to gracefully close streams on shutdown."
-      );
+      this.log("log", "Attempting to gracefully close streams on shutdown.");
 
       // Close sequenced writer and write stream
       reception.sequencedWriter.close().catch((err: any) => {
-        this.log("error", "Error closing sequenced writer during graceful shutdown", { err });
+        this.log(
+          "error",
+          "Error closing sequenced writer during graceful shutdown",
+          { err }
+        );
       });
 
       reception.writeStream.close().catch((err: any) => {
-        this.log("error", "Error closing stream during graceful shutdown", { err });
+        this.log("error", "Error closing stream during graceful shutdown", {
+          err,
+        });
       });
     }
 
