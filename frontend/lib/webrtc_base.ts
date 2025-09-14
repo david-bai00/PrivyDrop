@@ -388,9 +388,11 @@ export default class BaseWebRTC {
 
     dataChannel.onerror = (error) => {
       // Check if this is a user-initiated disconnect (not a real error)
-      const isUserDisconnect =
-        error.error?.message?.includes("User-Initiated Abort") ||
-        error.error?.message?.includes("Close called");
+      // The error parameter is an Event object, not an Error object
+      const errorTarget = error.target as RTCDataChannel;
+      const isUserDisconnect = 
+        errorTarget?.readyState === "closed" || 
+        error.type === "error";
 
       if (isUserDisconnect) {
         this.log("log", `Data channel closed by user for peer ${peerId}`, {
@@ -486,13 +488,13 @@ export default class BaseWebRTC {
     if (dataChannel?.readyState === "open") {
       try {
         // Firefox compatibility debugging: Log sending details
-        const dataType =
+        const _dataType =
           typeof data === "string"
             ? "string"
             : data instanceof ArrayBuffer
             ? "ArrayBuffer"
             : typeof data;
-        const dataSize =
+        const _dataSize =
           typeof data === "string"
             ? data.length
             : data instanceof ArrayBuffer
@@ -628,7 +630,7 @@ export default class BaseWebRTC {
     );
   }
   // Abstract method declaration
-  protected createDataChannel(peerId: string) {
+  protected createDataChannel(_peerId: string) {
     throw new Error("createDataChannel must be implemented by subclass");
   }
 }
