@@ -95,21 +95,21 @@ export class StreamingFileReader {
     // 4. Update state
     this.updateChunkState(networkChunk);
 
-    if (developmentEnv === "development") {
-      const totalChunks = this.calculateTotalNetworkChunks();
+    // if (developmentEnv === "development") {
+    //   const totalChunks = this.calculateTotalNetworkChunks();
 
-      const isFirst = globalChunkIndex === this.startChunkIndex;
-      const expectedLastChunk = Math.floor(
-        (this.totalFileSize - 1) / this.NETWORK_CHUNK_SIZE
-      );
-      const isRealLast = isLast && globalChunkIndex === expectedLastChunk;
+    //   const isFirst = globalChunkIndex === this.startChunkIndex;
+    //   const expectedLastChunk = Math.floor(
+    //     (this.totalFileSize - 1) / this.NETWORK_CHUNK_SIZE
+    //   );
+    //   const isRealLast = isLast && globalChunkIndex === expectedLastChunk;
 
-      if (isFirst || isRealLast) {
-        postLogToBackend(
-          `[BOUNDARY] Chunk #${globalChunkIndex}/${totalChunks}, isFirst: ${isFirst}, isLast: ${isRealLast}, startIdx: ${this.startChunkIndex}, expectedLastIdx: ${expectedLastChunk}, size: ${networkChunk.byteLength}`
-        );
-      }
-    }
+    //   if (isFirst || isRealLast) {
+    //     postLogToBackend(
+    //       `[BOUNDARY] Chunk #${globalChunkIndex}/${totalChunks}, isFirst: ${isFirst}, isLast: ${isRealLast}, startIdx: ${this.startChunkIndex}, expectedLastIdx: ${expectedLastChunk}, size: ${networkChunk.byteLength}`
+    //     );
+    //   }
+    // }
 
     return {
       chunk: networkChunk,

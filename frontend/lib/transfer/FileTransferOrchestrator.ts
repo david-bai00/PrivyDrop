@@ -205,7 +205,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     const peerState = this.stateManager.getPeerState(peerId);
     const transferStartTime = performance.now();
 
-    // 🔧 修复：记录传输开始时的初始offset，用于后续统计计算
+    // 🔧 Fix: Record initial offset at the start of transmission, used for subsequent statistics calculation
     const initialReadOffset = peerState.readOffset || 0;
 
     // 1. Initialize streaming file reader
@@ -305,8 +305,8 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
         const totalTime = performance.now() - transferStartTime;
         const avgSpeedMBps = totalBytesSent / 1024 / 1024 / (totalTime / 1000);
 
-        // 🔧 修复：使用正确的初始offset而不是当前readOffset来计算日志统计
-        const initialOffset = initialReadOffset || 0; // 传输开始时的offset
+        // 🔧 Fix: Use correct initial offset instead of current readOffset for log statistics
+        const initialOffset = initialReadOffset || 0; // Initial offset at the start of transmission
         const expectedTotalChunks = Math.ceil(file.size / 65536);
         const startChunkIndex = Math.floor(initialOffset / 65536);
         const expectedChunksSent = expectedTotalChunks - startChunkIndex;
