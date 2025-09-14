@@ -99,10 +99,12 @@ export class StreamingFileReader {
     // 🎯 关键日志：边界chunk验证（临时保留用于验证修复效果）
     if (developmentEnv === "development") {
       const totalChunks = this.calculateTotalNetworkChunks();
-      
+
       // 🔧 修复：使用简化的边界检测逻辑
       const isFirst = globalChunkIndex === this.startChunkIndex;
-      const expectedLastChunk = Math.floor((this.totalFileSize - 1) / this.NETWORK_CHUNK_SIZE);
+      const expectedLastChunk = Math.floor(
+        (this.totalFileSize - 1) / this.NETWORK_CHUNK_SIZE
+      );
       const isRealLast = isLast && globalChunkIndex === expectedLastChunk;
 
       if (isFirst || isRealLast) {
@@ -246,15 +248,16 @@ export class StreamingFileReader {
 
   /**
    * ✂️ Slice 64KB network chunk from 32MB batch
+   * 🆕 修复：直接基于offset在batch中的位置计算，避免复杂的batch内索引计算
    */
   private sliceNetworkChunkFromBatch(): ArrayBuffer {
     if (!this.currentBatch) {
       throw new Error("No current batch available for slicing");
     }
 
-    const chunkStartInBatch =
-      this.currentChunkIndexInBatch * this.NETWORK_CHUNK_SIZE;
-    const remainingInBatch = this.currentBatch.byteLength - chunkStartInBatch;
+    // 🆕 直接基于offset在batch中的位置计算，避免batch内索引计算错误
+    const offsetInBatch = this.totalFileOffset - this.currentBatchStartOffset;
+    const remainingInBatch = this.currentBatch.byteLength - offsetInBatch;
     const chunkSize = Math.min(this.NETWORK_CHUNK_SIZE, remainingInBatch);
 
     if (chunkSize <= 0) {
@@ -262,8 +265,8 @@ export class StreamingFileReader {
     }
 
     const networkChunk = this.currentBatch.slice(
-      chunkStartInBatch,
-      chunkStartInBatch + chunkSize
+      offsetInBatch,
+      offsetInBatch + chunkSize
     );
 
     // Delete frequent slice logs, only output when needed
