@@ -253,11 +253,6 @@ export const en: Messages = {
       chooseSavePath_tips:
         "Save large files or folders directly to a selected directory. 👉",
       chooseSavePath_dis: "Choose save location",
-      safeSave_dis: "Safe Save",
-      safeSave_tooltip:
-        "Don't worry about connection interruption, click here to safely save files for next resume",
-      safeSaveSuccessMsg:
-        "Files have been safely saved to disk, safe to close page, supports resume transfer!",
     },
     RetrieveMethod: {
       P: "Congrats 🎉 Share content is waiting to be retrieved:",
@@ -308,6 +303,8 @@ export const en: Messages = {
       noFilesForFolderMsg: "No files found for folder '{folderName}'.",
       zipError: "Error creating ZIP.",
       fileNotFoundMsg: "File '{fileName}' not found for download.",
+      confirmLeaveWhileTransferring: "Files are currently transferring. Leaving will interrupt the transfer. Are you sure?",
+      leaveWhileTransferringSuccess: "Left room, transfer interrupted",
       html: {
         senderTab: "Send",
         retrieveTab: "Retrieve",

@@ -14,7 +14,7 @@ import { StreamingFileReader } from "./StreamingFileReader";
 import { TransferConfig } from "./TransferConfig";
 import WebRTC_Initiator from "../webrtc_Initiator";
 import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NEXT_PUBLIC_development!;
+const developmentEnv = process.env.NODE_ENV;
 /**
  * 🚀 File transfer orchestrator
  * Integrates all components to provide unified file transfer services
@@ -40,9 +40,6 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
 
     this.log("log", "FileTransferOrchestrator initialized");
   }
-
-  // ===== Public API - Simplified interface =====
-
   /**
    * 🎯 Send file metadata
    */
@@ -168,7 +165,6 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   ): Promise<void> {
     const fileId = generateFileId(file);
     const peerState = this.stateManager.getPeerState(peerId);
-
     if (peerState.isSending) {
       this.log("warn", `Already sending file to peer ${peerId}`, { fileId });
       return;
@@ -182,7 +178,6 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       bufferQueue: [],
       isReading: false,
     });
-
     // Initialize progress statistics
     const currentSent = this.stateManager.getFileBytesSent(peerId, fileId);
     this.stateManager.updateFileBytesSent(peerId, fileId, offset - currentSent);
@@ -210,13 +205,13 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     const peerState = this.stateManager.getPeerState(peerId);
     const transferStartTime = performance.now();
 
-    // 1. Initialize streaming file reader
-    const streamReader = new StreamingFileReader(
-      file,
-      peerState.readOffset || 0
-    );
+    // 🔧 Fix: Record initial offset at the start of transmission, used for subsequent statistics calculation
+    const initialReadOffset = peerState.readOffset || 0;
 
-    if (developmentEnv === "true") {
+    // 1. Initialize streaming file reader
+    const streamReader = new StreamingFileReader(file, initialReadOffset);
+
+    if (developmentEnv === "development") {
       postLogToBackend(
         `[DEBUG] 🚀 Starting transfer - file: ${file.name}, size: ${(
           file.size /
@@ -306,20 +301,34 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
         }
       }
 
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         const totalTime = performance.now() - transferStartTime;
         const avgSpeedMBps = totalBytesSent / 1024 / 1024 / (totalTime / 1000);
+
+        // 🔧 Fix: Use correct initial offset instead of current readOffset for log statistics
+        const initialOffset = initialReadOffset || 0; // Initial offset at the start of transmission
+        const expectedTotalChunks = Math.ceil(file.size / 65536);
+        const startChunkIndex = Math.floor(initialOffset / 65536);
+        const expectedChunksSent = expectedTotalChunks - startChunkIndex;
+
         postLogToBackend(
-          `[DEBUG] ✅ Transfer complete - file: ${file.name}, time: ${(
+          `[DEBUG-CHUNKS] ✅ Transfer complete - file: ${file.name}, time: ${(
             totalTime / 1000
-          ).toFixed(1)}s, speed: ${avgSpeedMBps.toFixed(
-            1
-          )}MB/s, chunks: ${networkChunkIndex}`
+          ).toFixed(1)}s, speed: ${avgSpeedMBps.toFixed(1)}MB/s`
         );
+        postLogToBackend(
+          `[DEBUG-CHUNKS] Chunks sent: ${networkChunkIndex}, expected: ${expectedChunksSent}, startChunk: ${startChunkIndex}, totalFileChunks: ${expectedTotalChunks}, initialOffset: ${initialOffset}`
+        );
+
+        if (networkChunkIndex !== expectedChunksSent) {
+          postLogToBackend(
+            `[DEBUG-CHUNKS] ⚠️ CHUNK MISMATCH: sent ${networkChunkIndex} but expected ${expectedChunksSent}`
+          );
+        }
       }
     } catch (error: any) {
       const errorMessage = `Streaming send error: ${error.message}`;
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(`[DEBUG] ❌ Transfer error: ${errorMessage}`);
       }
       this.fireError(errorMessage, {
@@ -338,9 +347,23 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
    * ⏳ Wait for transfer completion confirmation
    */
   private async waitForTransferComplete(peerId: string): Promise<void> {
-    const peerState = this.stateManager.getPeerState(peerId);
-    while (peerState?.isSending) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
+    while (true) {
+      const currentPeerState = this.stateManager.getPeerState(peerId);
+
+      // Check if it has been cleaned up or does not exist
+      if (!currentPeerState || !currentPeerState.isSending) {
+        this.log("log", `Transfer completed or peer disconnected: ${peerId}`);
+        break;
+      }
+
+      // Check if the WebRTC connection is still valid
+      if (!this.webrtcConnection.peerConnections.has(peerId)) {
+        this.log("log", `Peer connection lost: ${peerId}, stopping transfer`);
+        this.stateManager.updatePeerState(peerId, { isSending: false });
+        break;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
@@ -414,6 +437,19 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   }
 
   /**
+   * 🔄 Handle peer reconnection
+   */
+  public handlePeerReconnection(peerId: string): void {
+    // Clear all transfer states for this peer
+    this.stateManager.clearPeerState(peerId);
+    if (developmentEnv === "development")
+      this.log(
+        "log",
+        `Successfully reset transfer state for reconnected peer ${peerId}`
+      );
+  }
+
+  /**
    * 🧹 Clean up all resources
    */
   public cleanup(): void {
@@ -421,7 +457,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     this.networkTransmitter.cleanup();
     this.progressTracker.cleanup();
     this.messageHandler.cleanup();
-
-    this.log("log", "FileTransferOrchestrator cleaned up");
+    if (developmentEnv === "development")
+      this.log("log", "FileTransferOrchestrator cleaned up");
   }
 }

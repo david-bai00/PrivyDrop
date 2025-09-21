@@ -1,7 +1,8 @@
 import { CustomFile } from "@/types/webrtc";
 import { TransferConfig } from "./TransferConfig";
+import { ChunkRangeCalculator } from "@/lib/utils/ChunkRangeCalculator";
 import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NEXT_PUBLIC_development!;
+const developmentEnv = process.env.NODE_ENV;
 /**
  * 🚀 Network chunk interface
  */
@@ -39,6 +40,7 @@ export class StreamingFileReader {
 
   // Global state
   private totalFileOffset = 0; // Current position in the entire file
+  private startChunkIndex = 0; // 🔧 Record the chunk index at the start of transmission
   private isFinished = false;
   private isReading = false; // Prevent concurrent reading
 
@@ -46,15 +48,21 @@ export class StreamingFileReader {
     this.file = file;
     this.totalFileSize = file.size;
     this.totalFileOffset = startOffset;
+    // 🔧 Fix: When resuming, currentBatchStartOffset should start from startOffset
+    this.currentBatchStartOffset = startOffset;
     this.fileReader = new FileReader();
 
-    if (developmentEnv === "true") {
+    // 🔧 Record the starting chunk index of the transfer, used for boundary detection
+    this.startChunkIndex = Math.floor(startOffset / this.NETWORK_CHUNK_SIZE);
+
+    if (developmentEnv === "development") {
+      const chunkRange = ChunkRangeCalculator.getChunkRange(
+        this.totalFileSize,
+        startOffset,
+        this.NETWORK_CHUNK_SIZE
+      );
       postLogToBackend(
-        `[DEBUG] 📖 StreamingFileReader created - file: ${file.name}, size: ${(
-          this.totalFileSize /
-          1024 /
-          1024
-        ).toFixed(1)}MB`
+        `[SEND-SUMMARY] File: ${file.name}, offset: ${startOffset}, startChunk: ${chunkRange.startChunk}, endChunk: ${chunkRange.endChunk}, willSend: ${chunkRange.totalChunks}, absoluteTotal: ${chunkRange.absoluteTotalChunks}`
       );
     }
   }
@@ -87,7 +95,21 @@ export class StreamingFileReader {
     // 4. Update state
     this.updateChunkState(networkChunk);
 
-    // Delete frequent chunk progress logs
+    // if (developmentEnv === "development") {
+    //   const totalChunks = this.calculateTotalNetworkChunks();
+
+    //   const isFirst = globalChunkIndex === this.startChunkIndex;
+    //   const expectedLastChunk = Math.floor(
+    //     (this.totalFileSize - 1) / this.NETWORK_CHUNK_SIZE
+    //   );
+    //   const isRealLast = isLast && globalChunkIndex === expectedLastChunk;
+
+    //   if (isFirst || isRealLast) {
+    //     postLogToBackend(
+    //       `[BOUNDARY] Chunk #${globalChunkIndex}/${totalChunks}, isFirst: ${isFirst}, isLast: ${isRealLast}, startIdx: ${this.startChunkIndex}, expectedLastIdx: ${expectedLastChunk}, size: ${networkChunk.byteLength}`
+    //     );
+    //   }
+    // }
 
     return {
       chunk: networkChunk,
@@ -160,23 +182,31 @@ export class StreamingFileReader {
       this.currentBatch = await this.readFileSlice(fileSlice);
       const readTime = performance.now() - readStartTime;
 
-      this.currentBatchStartOffset = this.totalFileOffset;
-      this.currentChunkIndexInBatch = 0;
+      const batchStartOffset = this.totalFileOffset;
+      this.currentBatchStartOffset = batchStartOffset;
 
-      // Only output batch reading logs in development environment
-      if (developmentEnv === "true") {
+      // 🔧 Fix: Simplify index calculation logic within batch
+      // Since calculateGlobalChunkIndex now directly calculates based on totalFileOffset
+      // Indexing within a batch only needs to be calculated based on the starting position of the current batch
+      const chunkOffsetInBatch =
+        batchStartOffset -
+        Math.floor(batchStartOffset / this.BATCH_SIZE) * this.BATCH_SIZE;
+      this.currentChunkIndexInBatch = Math.floor(
+        chunkOffsetInBatch / this.NETWORK_CHUNK_SIZE
+      );
+
+      // Only output essential batch reading logs in development environment
+      if (developmentEnv === "development" && batchSize > this.BATCH_SIZE / 2) {
         const totalTime = performance.now() - startTime;
         const speedMBps = batchSize / 1024 / 1024 / (totalTime / 1000);
         postLogToBackend(
-          `[DEBUG] 📖 BATCH_READ - size: ${(batchSize / 1024 / 1024).toFixed(
+          `[BATCH-READ] 📖 size: ${(batchSize / 1024 / 1024).toFixed(
             1
-          )}MB, time: ${totalTime.toFixed(0)}ms, speed: ${speedMBps.toFixed(
-            1
-          )}MB/s`
+          )}MB, speed: ${speedMBps.toFixed(1)}MB/s`
         );
       }
     } catch (error) {
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(`[DEBUG] ❌ BATCH_READ failed: ${error}`);
       }
       throw new Error(`Failed to load file batch: ${error}`);
@@ -215,15 +245,16 @@ export class StreamingFileReader {
 
   /**
    * ✂️ Slice 64KB network chunk from 32MB batch
+   * 🆕 Fix: Calculate directly based on the position of offset in the batch, avoiding complex batch internal index calculations
    */
   private sliceNetworkChunkFromBatch(): ArrayBuffer {
     if (!this.currentBatch) {
       throw new Error("No current batch available for slicing");
     }
 
-    const chunkStartInBatch =
-      this.currentChunkIndexInBatch * this.NETWORK_CHUNK_SIZE;
-    const remainingInBatch = this.currentBatch.byteLength - chunkStartInBatch;
+    // 🆕 Calculated directly based on the position of offset in the batch to avoid index calculation errors within the batch
+    const offsetInBatch = this.totalFileOffset - this.currentBatchStartOffset;
+    const remainingInBatch = this.currentBatch.byteLength - offsetInBatch;
     const chunkSize = Math.min(this.NETWORK_CHUNK_SIZE, remainingInBatch);
 
     if (chunkSize <= 0) {
@@ -231,8 +262,8 @@ export class StreamingFileReader {
     }
 
     const networkChunk = this.currentBatch.slice(
-      chunkStartInBatch,
-      chunkStartInBatch + chunkSize
+      offsetInBatch,
+      offsetInBatch + chunkSize
     );
 
     // Delete frequent slice logs, only output when needed
@@ -241,13 +272,11 @@ export class StreamingFileReader {
 
   /**
    * 📊 Calculate global network chunk index
+   * 🔧 Simplified logic: directly calculate based on file offset to avoid batch boundary errors
    */
   private calculateGlobalChunkIndex(): number {
-    const batchesBefore = Math.floor(
-      this.currentBatchStartOffset / this.BATCH_SIZE
-    );
-    const chunksInPreviousBatches = batchesBefore * this.CHUNKS_PER_BATCH;
-    return chunksInPreviousBatches + this.currentChunkIndexInBatch;
+    // Calculate chunk index directly based on current file offset, avoiding complex batch calculations, consistent with receiver
+    return Math.floor(this.totalFileOffset / this.NETWORK_CHUNK_SIZE);
   }
 
   /**
@@ -324,10 +353,14 @@ export class StreamingFileReader {
     this.isFinished = false;
     this.isReading = false;
     this.currentBatch = null;
-    this.currentBatchStartOffset = 0;
-    this.currentChunkIndexInBatch = 0;
-    if (developmentEnv === "true") {
-      postLogToBackend(`[DEBUG] 🔄 StreamingFileReader reset`);
+    // 🔧 Fix: Reset also needs to correctly set currentBatchStartOffset
+    this.currentBatchStartOffset = startOffset;
+    this.currentChunkIndexInBatch = 0; // Reset to 0, loadNextBatch will recalculate
+
+    if (developmentEnv === "development") {
+      postLogToBackend(
+        `[DEBUG] 🔄 StreamingFileReader reset - startOffset:${startOffset}`
+      );
     }
   }
 

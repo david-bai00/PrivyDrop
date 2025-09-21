@@ -13,7 +13,7 @@ import type { Messages } from "@/types/messages";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { supportsAutoDownload } from "@/lib/browserUtils";
 import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NEXT_PUBLIC_development!;
+const developmentEnv = process.env.NODE_ENV;
 
 function formatFolderDis(template: string, num: number, size: string) {
   return template.replace("{num}", num.toString()).replace("{size}", size);
@@ -44,7 +44,6 @@ interface FileListDisplayProps {
   onRequest?: (item: FileMeta) => void; // Request file
   onDelete?: (item: FileMeta) => void;
   onLocationPick?: () => Promise<boolean>;
-  onSafeSave?: () => void; // New prop for safe save functionality
   saveType?: { [fileId: string]: boolean }; // File stored on disk or in memory
   largeFileThreshold?: number;
 }
@@ -66,7 +65,6 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
   onRequest,
   onDelete,
   onLocationPick,
-  onSafeSave,
   saveType,
   largeFileThreshold = 500 * 1024 * 1024, // 500MB default
 }) => {
@@ -261,7 +259,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
 
           if (isAutoDownloadSupported) {
             // Browsers that support automatic downloads like Chrome: Download directly
-            if (developmentEnv === "true") {
+            if (developmentEnv === "development") {
               postLogToBackend(
                 `[Download Debug] Auto-downloading file: ${item.name}`
               );
@@ -269,7 +267,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
             onDownload(item);
           } else {
             // Non-Chrome browsers: Set to save status, wait for user manual click
-            if (developmentEnv === "true") {
+            if (developmentEnv === "development") {
               postLogToBackend(
                 `[Download Debug] Setting pendingSave for non-Chrome browser: ${item.name}`
               );
@@ -280,9 +278,9 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
             }));
           }
         } else {
-          if (developmentEnv === "true") {
+          if (developmentEnv === "development") {
             postLogToBackend(
-              `[Firefox Debug] Skipping download logic - isSaveToDisk: ${isSaveToDisk}, onDownload: ${!!onDownload}`
+              `Skipping download logic - isSaveToDisk: ${isSaveToDisk}, onDownload: ${!!onDownload}`
             );
           }
         }
@@ -459,29 +457,6 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
                     {messages.text.FileListDisplay.chooseSavePath_dis}
                   </Button>
                 )}
-                {/* Safe Save Button - only show when location is picked and files are saved to disk */}
-                {onSafeSave &&
-                  pickedLocation &&
-                  (isAnyFileTransferring ||
-                    (saveType &&
-                      Object.values(saveType).some(
-                        (isSavedToDisk) => isSavedToDisk
-                      ))) && (
-                    <Tooltip
-                      content={messages.text.FileListDisplay.safeSave_tooltip}
-                    >
-                      <Button
-                        onClick={() => {
-                          onSafeSave();
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="mr-2 text-green-600 border-green-600 hover:bg-green-50"
-                      >
-                        {messages.text.FileListDisplay.safeSave_dis}
-                      </Button>
-                    </Tooltip>
-                  )}
               </div>
             </div>
           )}

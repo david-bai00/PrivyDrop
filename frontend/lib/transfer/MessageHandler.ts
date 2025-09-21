@@ -2,11 +2,11 @@ import {
   WebRTCMessage,
   FileRequest,
   FileReceiveComplete,
-  FolderReceiveComplete,
+  FolderReceiveComplete
 } from "@/types/webrtc";
 import { StateManager } from "./StateManager";
 import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NEXT_PUBLIC_development!;
+const developmentEnv = process.env.NODE_ENV;
 /**
  * 🚀 Message handling interface - Communicate with main orchestrator
  */
@@ -120,7 +120,7 @@ export class MessageHandler {
     message: FolderReceiveComplete,
     peerId: string
   ): void {
-    if (developmentEnv === "true") {
+    if (developmentEnv === "development") {
       postLogToBackend(
         `[DEBUG] 📥 Folder complete - folderName: ${message.folderName}, files: ${message.completedFileIds.length}`
       );
@@ -172,6 +172,7 @@ export class MessageHandler {
    * 🧹 Clean up resources
    */
   public cleanup(): void {
-    postLogToBackend("[DEBUG] 🧹 MessageHandler cleaned up");
+    if (developmentEnv === "development")
+      postLogToBackend("[DEBUG] 🧹 MessageHandler cleaned up");
   }
 }

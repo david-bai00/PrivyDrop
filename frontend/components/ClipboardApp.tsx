@@ -55,7 +55,6 @@ const ClipboardApp = () => {
     requestFolder,
     setReceiverDirectoryHandle,
     getReceiverSaveType,
-    manualSafeSave,
   } = useWebRTCConnection({
     messages,
     putMessageInMs,
@@ -219,7 +218,6 @@ const ClipboardApp = () => {
               getReceiverSaveType={getReceiverSaveType}
               retrieveMessage={retrieveMessage}
               handleLeaveRoom={handleLeaveReceiverRoom}
-              manualSafeSave={manualSafeSave}
             />
           )}
         </CardContent>

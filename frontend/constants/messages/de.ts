@@ -256,11 +256,6 @@ export const de: Messages = {
       chooseSavePath_tips:
         "Speichern Sie große Dateien oder Ordner direkt in einem ausgewählten Verzeichnis. 👉",
       chooseSavePath_dis: "Speicherort auswählen",
-      safeSave_dis: "Sicheres Speichern",
-      safeSave_tooltip:
-        "Keine Angst vor Verbindungsunterbrechung, klicken Sie hier, um Dateien sicher zu speichern für die nächste Fortsetzung",
-      safeSaveSuccessMsg:
-        "Dateien wurden sicher auf der Festplatte gespeichert, sicher die Seite zu schließen, unterstützt Wiederaufnahme der Übertragung!",
     },
     RetrieveMethod: {
       P: "Glückwunsch 🎉 Freigegebene Inhalte warten darauf, abgerufen zu werden:",
@@ -316,6 +311,9 @@ export const de: Messages = {
       noFilesForFolderMsg: "Keine Dateien im Ordner '{folderName}' gefunden.",
       zipError: "Fehler beim Erstellen der ZIP-Datei.",
       fileNotFoundMsg: "Datei '{fileName}' zum Herunterladen nicht gefunden.",
+      confirmLeaveWhileTransferring:
+        "Dateien werden derzeit übertragen. Das Verlassen wird die Übertragung unterbrechen. Sind Sie sicher?",
+      leaveWhileTransferringSuccess: "Raum verlassen, Übertragung unterbrochen",
       html: {
         senderTab: "Senden",
         retrieveTab: "Abrufen",

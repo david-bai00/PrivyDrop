@@ -4,7 +4,7 @@ export const trackReferrer = async () => {
   // Get URL parameters
   const urlParams = new URLSearchParams(window.location.search);
   let ref = urlParams.get("ref");
-  if (process.env.NEXT_PUBLIC_development === "false") {
+  if (process.env.NODE_ENV === "production") {
     ref = urlParams.get("ref") || "noRef"; // Production environment, count daily active users, record as noRef if there is no ref
   }
 

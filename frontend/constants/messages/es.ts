@@ -254,11 +254,6 @@ export const es: Messages = {
       chooseSavePath_tips:
         "Guarda archivos grandes o carpetas directamente en un directorio seleccionado. 👉",
       chooseSavePath_dis: "Elegir ubicación de guardado",
-      safeSave_dis: "Guardar Seguro",
-      safeSave_tooltip:
-        "No te preocupes por la interrupción de la conexión, haz clic aquí para guardar archivos de forma segura para la próxima reanudación",
-      safeSaveSuccessMsg:
-        "Los archivos se han guardado de forma segura en el disco, es seguro cerrar la página, ¡admite transferencia de reanudación!",
     },
     RetrieveMethod: {
       P: "¡Felicitaciones 🎉 El contenido compartido está esperando ser recuperado:",
@@ -310,6 +305,10 @@ export const es: Messages = {
         "No se encontraron archivos en la carpeta '{folderName}'.",
       zipError: "Error al crear el archivo ZIP.",
       fileNotFoundMsg: "Archivo '{fileName}' no encontrado para descargar.",
+      confirmLeaveWhileTransferring:
+        "Los archivos se están transfiriendo actualmente. Salir interrumpirá la transferencia. ¿Estás seguro?",
+      leaveWhileTransferringSuccess:
+        "Saliste de la sala, transferencia interrumpida",
       html: {
         senderTab: "Enviar",
         retrieveTab: "Recuperar",

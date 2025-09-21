@@ -36,6 +36,7 @@ export function useRoomManager({
     senderDisconnected,
     isSenderInRoom,
     isReceiverInRoom,
+    isAnyFileTransferring,
     setShareRoomId,
     setInitShareRoomId,
     setShareLink,
@@ -150,6 +151,12 @@ export function useRoomManager({
   const handleLeaveReceiverRoom = useCallback(async () => {
     if (!messages) return;
 
+    // Check if files are transferring and show confirmation
+    if (isAnyFileTransferring) {
+      const confirmed = window.confirm(messages.text.ClipboardApp.confirmLeaveWhileTransferring);
+      if (!confirmed) return;
+    }
+
     try {
       // Call backend API to leave room
       if (webrtcService.receiver.roomId && webrtcService.receiver.peerId) {
@@ -159,9 +166,12 @@ export function useRoomManager({
         );
       }
 
-      putMessageInMs(messages.text.ClipboardApp.roomStatus.leftRoomMsg, false);
+      const message = isAnyFileTransferring 
+        ? messages.text.ClipboardApp.leaveWhileTransferringSuccess
+        : messages.text.ClipboardApp.roomStatus.leftRoomMsg;
+      putMessageInMs(message, false);
 
-      // Reset receiver state
+      // Reset receiver state (clears all as per requirement)
       resetReceiverState();
 
       // Clean up WebRTC connection
@@ -170,7 +180,7 @@ export function useRoomManager({
       console.error("[RoomManager] Receiver failed to leave room:", error);
       putMessageInMs("Failed to leave room", true);
     }
-  }, [messages, putMessageInMs, resetReceiverState]);
+  }, [messages, putMessageInMs, resetReceiverState, isAnyFileTransferring]);
 
   // Sender reset app state
   const resetSenderAppState = useCallback(async () => {
@@ -195,6 +205,12 @@ export function useRoomManager({
   const handleLeaveSenderRoom = useCallback(async () => {
     if (!messages) return;
 
+    // Check if files are transferring and show confirmation
+    if (isAnyFileTransferring) {
+      const confirmed = window.confirm(messages.text.ClipboardApp.confirmLeaveWhileTransferring);
+      if (!confirmed) return;
+    }
+
     try {
       // Call backend API to leave room
       if (webrtcService.sender.roomId && webrtcService.sender.peerId) {
@@ -204,15 +220,18 @@ export function useRoomManager({
         );
       }
 
-      putMessageInMs(messages.text.ClipboardApp.roomStatus.leftRoomMsg, true);
+      const message = isAnyFileTransferring 
+        ? messages.text.ClipboardApp.leaveWhileTransferringSuccess
+        : messages.text.ClipboardApp.roomStatus.leftRoomMsg;
+      putMessageInMs(message, true);
 
-      // Reset sender state and get new room ID
+      // Reset sender state and get new room ID (keeps files as per requirement)
       await resetSenderAppState();
     } catch (error) {
       console.error("[RoomManager] Sender failed to leave room:", error);
       putMessageInMs("Failed to leave room", true);
     }
-  }, [messages, putMessageInMs, resetSenderAppState]);
+  }, [messages, putMessageInMs, resetSenderAppState, isAnyFileTransferring]);
 
   // Room ID input processing
     const processRoomIdInput = useCallback(

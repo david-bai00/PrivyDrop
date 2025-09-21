@@ -257,11 +257,6 @@ export const fr: Messages = {
       chooseSavePath_tips:
         "Enregistrez des fichiers volumineux ou des dossiers directement dans un répertoire sélectionné. 👉",
       chooseSavePath_dis: "Choisir l'emplacement de sauvegarde",
-      safeSave_dis: "Sauvegarde Sécurisée",
-      safeSave_tooltip:
-        "N'ayez pas peur de l'interruption de connexion, cliquez ici pour sauvegarder les fichiers en toute sécurité pour la prochaine reprise",
-      safeSaveSuccessMsg:
-        "Les fichiers ont été sauvegardés en toute sécurité sur le disque, sûr de fermer la page, prend en charge la reprise du transfert !",
     },
     RetrieveMethod: {
       P: "Félicitations 🎉 Le contenu partagé attend d'être récupéré :",
@@ -318,6 +313,9 @@ export const fr: Messages = {
       zipError: "Erreur lors de la création du fichier ZIP.",
       fileNotFoundMsg:
         "Fichier '{fileName}' introuvable pour le téléchargement.",
+      confirmLeaveWhileTransferring:
+        "Des fichiers sont actuellement en cours de transfert. Quitter interrompra le transfert. Êtes-vous sûr?",
+      leaveWhileTransferringSuccess: "Salle quittée, transfert interrompu",
       html: {
         senderTab: "Envoyer",
         retrieveTab: "Récupérer",

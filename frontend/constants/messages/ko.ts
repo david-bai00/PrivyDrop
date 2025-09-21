@@ -247,9 +247,6 @@ export const ko: Messages = {
       chooseSavePath_tips:
         "큰 파일이나 폴더를 선택한 디렉터리에 직접 저장합니다. 👉",
       chooseSavePath_dis: "저장 위치 선택",
-      safeSave_dis: "안전 저장",
-      safeSave_tooltip: "연결 중단을 두려워하지 마세요. 다음 재개를 위해 파일을 안전하게 저장하려면 여기를 클릭하세요",
-      safeSaveSuccessMsg: "파일이 디스크에 안전하게 저장되었습니다. 페이지를 안전하게 닫을 수 있으며 전송 재개를 지원합니다!",
     },
     RetrieveMethod: {
       P: "축하합니다 🎉 공유된 콘텐츠가 검색을 기다리고 있습니다:",
@@ -300,6 +297,8 @@ export const ko: Messages = {
       noFilesForFolderMsg: "폴더 '{folderName}'에서 파일을 찾을 수 없습니다.",
       zipError: "ZIP 파일 생성 중 오류가 발생했습니다.",
       fileNotFoundMsg: "다운로드할 파일 '{fileName}'을(를) 찾을 수 없습니다.",
+      confirmLeaveWhileTransferring: "현재 파일이 전송 중입니다. 나가면 전송이 중단됩니다. 확실합니까?",
+      leaveWhileTransferringSuccess: "방을 나갔습니다. 전송이 중단되었습니다",
       html: {
         senderTab: "보내기",
         retrieveTab: "검색",

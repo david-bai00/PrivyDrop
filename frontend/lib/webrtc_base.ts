@@ -2,7 +2,7 @@
 import io, { Socket, ManagerOptions, SocketOptions } from "socket.io-client";
 import { WakeLockManager } from "./wakeLockManager";
 import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NEXT_PUBLIC_development!; // Development environment
+const developmentEnv = process.env.NODE_ENV; // Development environment
 
 export class WebRTCError extends Error {
   constructor(message: string, public context?: Record<string, any>) {
@@ -64,6 +64,8 @@ export default class BaseWebRTC {
   protected isPeerDisconnected: boolean; // Tracks P2P connection status
   protected reconnectionInProgress: boolean; // Prevents duplicate reconnections
   protected wakeLockManager: WakeLockManager;
+  // Graceful disconnect tracking
+  protected gracefullyDisconnectedPeers: Set<string>;
 
   constructor(config: WebRTCConfig) {
     this.iceServers = config.iceServers;
@@ -83,6 +85,7 @@ export default class BaseWebRTC {
     this.roomId = null;
     this.peerId = null; // Own ID
     this.isInRoom = false; // Whether the user has already joined a room
+    this.gracefullyDisconnectedPeers = new Set(); // Track peers that disconnected gracefully
     this.setupCommonSocketListeners();
 
     this.isInitiator = false;
@@ -128,7 +131,7 @@ export default class BaseWebRTC {
     this.socket.on("disconnect", () => {
       this.isInRoom = false;
       this.isSocketDisconnected = true;
-      if (developmentEnv === "true")
+      if (developmentEnv === "development")
         postLogToBackend(
           `${this.peerId} disconnect on socket,isInitiator:${this.isInitiator},isInRoom:${this.isInRoom}`
         );
@@ -150,7 +153,7 @@ export default class BaseWebRTC {
     if (this.isSocketDisconnected && this.isPeerDisconnected && this.roomId) {
       // Start reconnection only after both socket and P2P connections are disconnected
       this.reconnectionInProgress = true;
-      if (developmentEnv === "true") {
+      if (developmentEnv === "development") {
         postLogToBackend(
           `Starting reconnection, socket and peer both disconnected. isInitiator:${this.isInitiator}`
         );
@@ -311,7 +314,7 @@ export default class BaseWebRTC {
       disconnected: async () => {
         await this.cleanupExistingConnection(peerId);
         this.isPeerDisconnected = true;
-        if (developmentEnv === "true")
+        if (developmentEnv === "development")
           postLogToBackend(`p2p disconnected, isInitiator:${this.isInitiator}`);
         // Attempt to reconnect
         this.attemptReconnection();
@@ -378,24 +381,31 @@ export default class BaseWebRTC {
           event.data?.length || event.data?.size || event.data?.byteLength || 0;
       }
 
-      // postLogToBackend(
-      //   `[Firefox Debug] DataChannel onmessage - peer: ${peerId}, dataType: ${dataType}, size: ${dataSize}`
-      // );
-
       if (this.onDataReceived) {
         this.onDataReceived(event.data, peerId);
       }
     };
 
     dataChannel.onerror = (error) => {
-      this.log("error", `Data channel error for peer ${peerId}`, { error });
+      // Check if this is a user-initiated disconnect (not a real error)
+      // The error parameter is an Event object, not an Error object
+      const errorTarget = error.target as RTCDataChannel;
+      const isUserDisconnect = 
+        errorTarget?.readyState === "closed" || 
+        error.type === "error";
+
+      if (isUserDisconnect) {
+        this.log("log", `Data channel closed by user for peer ${peerId}`, {
+          error,
+        });
+      } else {
+        this.log("error", `Data channel error for peer ${peerId}`, { error });
+      }
     };
 
     dataChannel.onclose = () => {
-      if (developmentEnv === "true") {
-        postLogToBackend(
-          `[Firefox Debug] DataChannel closed for peer: ${peerId}`
-        );
+      if (developmentEnv === "development") {
+        postLogToBackend(`DataChannel closed for peer: ${peerId}`);
       }
       this.log("log", `Data channel with ${peerId} closed.`);
     };
@@ -432,7 +442,7 @@ export default class BaseWebRTC {
               roomId: this.roomId,
             });
           }
-          if (developmentEnv === "true")
+          if (developmentEnv === "development")
             postLogToBackend(
               `peerId:${this.socket.id} Successfully joined room: ${response.roomId},isInitiator:${this.isInitiator},isInRoom:${this.isInRoom}`
             );
@@ -440,7 +450,7 @@ export default class BaseWebRTC {
         } else {
           this.isInRoom = false;
           this.roomId = null;
-          if (developmentEnv === "true")
+          if (developmentEnv === "development")
             postLogToBackend(`Failed to join room,message:${response.message}`);
           this.fireError("Failed to join room", { message: response.message });
           reject(new Error(response.message));
@@ -473,37 +483,40 @@ export default class BaseWebRTC {
     }
   }
   // Send to a specific peer
-  protected sendToPeer(data: any, peerId: string): boolean {
+  public sendToPeer(data: any, peerId: string): boolean {
     const dataChannel = this.dataChannels.get(peerId);
     if (dataChannel?.readyState === "open") {
       try {
         // Firefox compatibility debugging: Log sending details
-        const dataType =
+        const _dataType =
           typeof data === "string"
             ? "string"
             : data instanceof ArrayBuffer
             ? "ArrayBuffer"
             : typeof data;
-        const dataSize =
+        const _dataSize =
           typeof data === "string"
             ? data.length
             : data instanceof ArrayBuffer
             ? data.byteLength
             : 0;
 
-        // postLogToBackend(`[Firefox Debug] sendToPeer - type: ${dataType}, size: ${dataSize}, bufferedAmount: ${dataChannel.bufferedAmount}`);
+        // if (developmentEnv === "development")
+        //   postLogToBackend(
+        //     `sendToPeer - type: ${dataType}, size: ${dataSize}, bufferedAmount: ${dataChannel.bufferedAmount}`
+        //   );
 
         dataChannel.send(data);
         return true;
       } catch (error) {
-        postLogToBackend(`[Firefox Debug] sendToPeer error: ${error}`);
+        postLogToBackend(`sendToPeer error: ${error}`);
         this.log("error", `Error sending data to peer ${peerId}`, { error });
         return false;
       }
     }
 
     postLogToBackend(
-      `[Firefox Debug] DataChannel not ready - peerId: ${peerId}, state: ${
+      `DataChannel not ready - peerId: ${peerId}, state: ${
         dataChannel?.readyState || "undefined"
       }`
     );
@@ -512,11 +525,29 @@ export default class BaseWebRTC {
   }
 
   protected retryDataSend(data: any, peerId: string): boolean {
+    // Check if peer has gracefully disconnected - no need to retry
+    if (this.gracefullyDisconnectedPeers.has(peerId)) {
+      this.log(
+        "log",
+        `Peer ${peerId} has gracefully disconnected, skipping retry`
+      );
+      return false;
+    }
+
     const maxRetries = 5;
     let retryCount = 0;
     let ret = false;
 
     const attemptSend = () => {
+      // Check again in case peer disconnected during retry
+      if (this.gracefullyDisconnectedPeers.has(peerId)) {
+        this.log(
+          "log",
+          `Peer ${peerId} gracefully disconnected during retry, stopping`
+        );
+        return;
+      }
+
       const dataChannel = this.dataChannels.get(peerId);
       if (dataChannel?.readyState === "open") {
         dataChannel.send(data);
@@ -537,6 +568,14 @@ export default class BaseWebRTC {
 
     setTimeout(attemptSend, 100);
     return ret;
+  }
+
+  /**
+   * Mark a peer as gracefully disconnected to prevent unnecessary retries
+   */
+  public markPeerGracefullyDisconnected(peerId: string): void {
+    this.gracefullyDisconnectedPeers.add(peerId);
+    this.log("log", `Marked peer ${peerId} as gracefully disconnected`);
   }
 
   protected async closeDataChannel(peerId: string): Promise<void> {
@@ -583,6 +622,7 @@ export default class BaseWebRTC {
     this.isPeerDisconnected = false;
     this.isSocketDisconnected = false;
     this.reconnectionInProgress = false;
+    this.gracefullyDisconnectedPeers.clear(); // Clear graceful disconnect tracking
 
     this.log(
       "log",
@@ -590,7 +630,7 @@ export default class BaseWebRTC {
     );
   }
   // Abstract method declaration
-  protected createDataChannel(peerId: string) {
+  protected createDataChannel(_peerId: string) {
     throw new Error("createDataChannel must be implemented by subclass");
   }
 }

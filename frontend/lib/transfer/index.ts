@@ -8,7 +8,6 @@ export { TransferConfig } from "./TransferConfig";
 
 // State management
 export { StateManager } from "./StateManager";
-export type { NetworkPerformanceMetrics } from "./StateManager";
 
 // High-performance file reading
 export { StreamingFileReader } from "./StreamingFileReader";
@@ -34,6 +33,8 @@ export { FileTransferOrchestrator } from "./FileTransferOrchestrator";
 import WebRTC_Initiator from "../webrtc_Initiator";
 import { FileTransferOrchestrator } from "./FileTransferOrchestrator";
 
-export function createFileTransferService(webrtcConnection: WebRTC_Initiator): FileTransferOrchestrator {
+export function createFileTransferService(
+  webrtcConnection: WebRTC_Initiator
+): FileTransferOrchestrator {
   return new FileTransferOrchestrator(webrtcConnection);
 }
