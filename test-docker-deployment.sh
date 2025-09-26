@@ -28,7 +28,7 @@ else
     fi
     
     # 检查前端健康
-    if curl -f http://localhost:3000/api/health >/dev/null 2>&1; then
+    if curl -f http://localhost:3002/api/health >/dev/null 2>&1; then
         echo "✅ 前端服务正常"
     else
         echo "❌ 前端服务异常"
@@ -36,6 +36,6 @@ else
     
     echo ""
     echo "🔗 访问链接:"
-    echo "   前端应用: http://localhost:3000"
+    echo "   前端应用: http://localhost:3002"
     echo "   后端API: http://localhost:3001"
 fi

@@ -41,7 +41,7 @@ PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）�
 
 ### 🐳 Docker 一键部署 (推荐)
 
-**零配置，5分钟完成部署！支持内网使用，无需公网IP。**
+**零配置，5 分钟完成部署！支持内网使用，无需公网 IP。**
 
 ```bash
 # 克隆项目
@@ -52,13 +52,14 @@ cd PrivyDrop
 bash deploy.sh
 
 # 访问应用
-# http://localhost:3000
+# http://localhost:3002
 ```
 
 **部署优势**:
-- ✅ 部署时间: 60分钟 → 5分钟
-- ✅ 技术门槛: Linux运维 → 会用Docker即可  
-- ✅ 环境要求: 公网IP → 内网即可使用
+
+- ✅ 部署时间: 60 分钟 → 5 分钟
+- ✅ 技术门槛: Linux 运维 → 会用 Docker 即可
+- ✅ 环境要求: 公网 IP → 内网即可使用
 - ✅ 成功率: 70% → 95%+
 
 详见: [Docker 部署指南](./docs/DEPLOYMENT_docker.zh-CN.md)

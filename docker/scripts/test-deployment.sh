@@ -92,7 +92,7 @@ test_network_connectivity() {
     echo -e "${BLUE}=== 网络连接测试 ===${NC}"
     
     # 测试端口连通性
-    local ports=("3000:前端" "3001:后端" "6379:Redis")
+    local ports=("3002:前端" "3001:后端" "6379:Redis")
     
     for port_info in "${ports[@]}"; do
         local port=$(echo "$port_info" | cut -d':' -f1)
@@ -114,7 +114,7 @@ test_api_functionality() {
     
     # 健康检查API
     run_test "后端健康检查API" "curl -f http://localhost:3001/health"
-    run_test "前端健康检查API" "curl -f http://localhost:3000/api/health"
+    run_test "前端健康检查API" "curl -f http://localhost:3002/api/health"
     
     # 后端详细健康检查
     if curl -f http://localhost:3001/health/detailed >/dev/null 2>&1; then
@@ -144,7 +144,7 @@ test_webrtc_functionality() {
     echo -e "${BLUE}=== WebRTC功能测试 ===${NC}"
     
     # 测试前端页面加载
-    if curl -f http://localhost:3000 >/dev/null 2>&1; then
+    if curl -f http://localhost:3002 >/dev/null 2>&1; then
         log_success "前端页面可访问"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -350,7 +350,7 @@ generate_report() {
         echo -e "${GREEN}🎉 所有测试通过！PrivyDrop 部署成功！${NC}"
         echo ""
         echo "🔗 访问链接:"
-        echo "   前端应用: http://localhost:3000"
+        echo "   前端应用: http://localhost:3002"
         echo "   后端API: http://localhost:3001"
         
         # 显示局域网访问地址
@@ -359,7 +359,7 @@ generate_report() {
             if [[ -n "$local_ip" && "$local_ip" != "127.0.0.1" ]]; then
                 echo ""
                 echo "🌐 局域网访问:"
-                echo "   前端应用: http://$local_ip:3000"
+                echo "   前端应用: http://$local_ip:3002"
                 echo "   后端API: http://$local_ip:3001"
             fi
         fi

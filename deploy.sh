@@ -39,13 +39,12 @@ PrivyDrop Docker 一键部署脚本
 
 选项:
   --domain DOMAIN     指定域名 (用于HTTPS部署)
-  --mode MODE         部署模式: basic|public|full
-                      basic: 内网HTTP部署 (默认)
+  --mode MODE         部署模式: basic|public|full|private
+                      basic/private: 内网HTTP部署 (默认，private 将跳过网络检测)
                       public: 公网HTTP部署 + TURN服务器
                       full: 完整HTTPS部署 + TURN服务器
   --with-nginx        启用Nginx反向代理
   --with-turn         启用TURN服务器
-  --dev               开发模式部署
   --clean             清理现有容器和数据
   --help              显示帮助信息
 
@@ -53,7 +52,6 @@ PrivyDrop Docker 一键部署脚本
   $0                                    # 基础部署
   $0 --mode public --with-turn          # 公网部署 + TURN服务器
   $0 --domain example.com --mode full   # 完整HTTPS部署
-  $0 --dev                              # 开发模式部署
   $0 --clean                            # 清理部署
 
 EOF
@@ -65,7 +63,6 @@ parse_arguments() {
     DEPLOYMENT_MODE=""
     WITH_NGINX=false
     WITH_TURN=false
-    DEV_MODE=false
     CLEAN_MODE=false
     
     while [[ $# -gt 0 ]]; do
@@ -84,10 +81,6 @@ parse_arguments() {
                 ;;
             --with-turn)
                 WITH_TURN=true
-                shift
-                ;;
-            --dev)
-                DEV_MODE=true
                 shift
                 ;;
             --clean)
@@ -111,7 +104,6 @@ parse_arguments() {
     export DEPLOYMENT_MODE
     export WITH_NGINX
     export WITH_TURN
-    export DEV_MODE
 }
 
 # 检查依赖
@@ -204,7 +196,7 @@ setup_environment() {
     fi
     
     # 生成配置文件
-    if ! bash "$DOCKER_SCRIPTS_DIR/generate-config.sh"; then
+    if ! bash "$DOCKER_SCRIPTS_DIR/generate-config.sh" $detect_args; then
         log_error "配置生成失败"
         exit 1
     fi
@@ -222,13 +214,6 @@ deploy_services() {
         docker-compose down
     fi
     
-    # 确定compose文件
-    local compose_files="-f docker-compose.yml"
-    if [[ "$DEV_MODE" == "true" ]]; then
-        compose_files="$compose_files -f docker-compose.dev.yml"
-        log_info "使用开发模式配置"
-    fi
-    
     # 确定启用的服务
     local profiles=""
     if [[ "$WITH_NGINX" == "true" ]]; then
@@ -240,15 +225,11 @@ deploy_services() {
     
     # 构建镜像
     log_info "构建Docker镜像..."
-    if [[ "$DEV_MODE" == "true" ]]; then
-        docker-compose $compose_files build --parallel
-    else
-        docker-compose $compose_files build --no-cache --parallel
-    fi
+    docker-compose build --no-cache --parallel
     
     # 启动服务
     log_info "启动服务..."
-    docker-compose $compose_files up -d $profiles
+    docker-compose up -d $profiles
     
     log_success "服务启动完成"
 }
@@ -271,7 +252,7 @@ wait_for_services() {
         fi
         
         # 检查前端健康状态
-        if curl -f http://localhost:3000/api/health &> /dev/null; then
+        if curl -f http://localhost:3002/api/health &> /dev/null; then
             frontend_ready=true
         fi
         
@@ -337,13 +318,13 @@ show_deployment_info() {
     fi
     
     echo -e "${BLUE}📋 访问信息：${NC}"
-    echo "   前端应用: http://localhost:${frontend_port:-3000}"
+    echo "   前端应用: http://localhost:${frontend_port:-3002}"
     echo "   后端API: http://localhost:${backend_port:-3001}"
     
     if [[ -n "$local_ip" ]] && [[ "$local_ip" != "127.0.0.1" ]]; then
         echo ""
         echo -e "${BLUE}🌐 局域网访问：${NC}"
-        echo "   前端应用: http://$local_ip:${frontend_port:-3000}"
+        echo "   前端应用: http://$local_ip:${frontend_port:-3002}"
         echo "   后端API: http://$local_ip:${backend_port:-3001}"
     fi
     

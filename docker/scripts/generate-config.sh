@@ -33,10 +33,75 @@ generate_env_file() {
     log_info "生成环境变量配置..."
     
     local env_file=".env"
-    
-    # 生成随机密码
-    local turn_password=$(openssl rand -base64 32 2>/dev/null || echo "privydrop$(date +%s)")
-    
+
+    # 读取已有配置以保留用户自定义字段（如代理、TURN）
+    declare -A existing_env=()
+    if [[ -f "$env_file" ]]; then
+        while IFS= read -r line; do
+            [[ -z "$line" || "${line:0:1}" == "#" ]] && continue
+            if [[ "$line" == *=* ]]; then
+                local key="${line%%=*}"
+                local value="${line#*=}"
+                existing_env[$key]="$value"
+            fi
+        done < "$env_file"
+    fi
+
+    # 生成随机密码（同时保存到全局变量，供后续生成 TURN 配置使用）
+    local turn_password="${existing_env[TURN_PASSWORD]}"
+    if [[ -z "$turn_password" ]]; then
+        turn_password=$(openssl rand -base64 32 2>/dev/null || echo "privydrop$(date +%s)")
+    fi
+
+    # 计算不同部署模式下的访问入口
+    local cors_origin="http://${LOCAL_IP}:3002"
+    local api_url="http://${LOCAL_IP}:3001"
+    local ssl_mode="self-signed"
+    local turn_enabled="false"
+    local turn_host_value=""
+    local turn_realm_value="${existing_env[TURN_REALM]:-turn.local}"
+    local turn_username_value="${existing_env[TURN_USERNAME]:-privydrop}"
+    local next_public_turn_host=""
+    local next_public_turn_username=""
+    local next_public_turn_password=""
+
+    if [[ "$DEPLOYMENT_MODE" == "public" ]]; then
+        cors_origin="http://${DOMAIN_NAME:-$LOCAL_IP}"
+        api_url="$cors_origin"
+        turn_enabled="true"
+    elif [[ "$DEPLOYMENT_MODE" == "full" ]]; then
+        cors_origin="https://${DOMAIN_NAME:-$LOCAL_IP}"
+        api_url="$cors_origin"
+        ssl_mode="letsencrypt"
+        turn_enabled="true"
+    fi
+
+    if [[ "$turn_enabled" == "true" ]]; then
+        if [[ -n "$DOMAIN_NAME" ]]; then
+            turn_host_value="turn.${DOMAIN_NAME}"
+            turn_realm_value="turn.${DOMAIN_NAME}"
+        else
+            turn_host_value="$LOCAL_IP"
+            turn_realm_value="turn.local"
+        fi
+
+        next_public_turn_host="$turn_host_value"
+        next_public_turn_username="$turn_username_value"
+        next_public_turn_password="$turn_password"
+    fi
+
+    local default_no_proxy="localhost,127.0.0.1,backend,frontend,redis,coturn"
+    local http_proxy_value="${HTTP_PROXY:-${existing_env[HTTP_PROXY]}}"
+    local https_proxy_value="${HTTPS_PROXY:-${existing_env[HTTPS_PROXY]}}"
+    local no_proxy_value="${NO_PROXY:-${existing_env[NO_PROXY]:-$default_no_proxy}}"
+
+    # 将关键 TURN 参数暴露给后续步骤
+    TURN_ENABLED="$turn_enabled"
+    TURN_USERNAME="$turn_username_value"
+    TURN_PASSWORD="$turn_password"
+    TURN_REALM="$turn_realm_value"
+    TURN_HOST="$turn_host_value"
+
     cat > "$env_file" << EOF
 # PrivyDrop Docker 配置文件
 # 自动生成时间: $(date)
@@ -46,13 +111,16 @@ generate_env_file() {
 # =============================================================================
 # 网络配置
 # =============================================================================
-CORS_ORIGIN=http://${LOCAL_IP}
-NEXT_PUBLIC_API_URL=http://${LOCAL_IP}:3001
+CORS_ORIGIN=${cors_origin}
+NEXT_PUBLIC_API_URL=${api_url}
+NEXT_PUBLIC_TURN_HOST=${next_public_turn_host}
+NEXT_PUBLIC_TURN_USERNAME=${next_public_turn_username}
+NEXT_PUBLIC_TURN_PASSWORD=${next_public_turn_password}
 
 # =============================================================================
 # 端口配置
 # =============================================================================
-FRONTEND_PORT=3000
+FRONTEND_PORT=3002
 BACKEND_PORT=3001
 HTTP_PORT=80
 HTTPS_PORT=443
@@ -74,16 +142,16 @@ PUBLIC_IP=${PUBLIC_IP:-}
 # =============================================================================
 # SSL配置
 # =============================================================================
-SSL_MODE=self-signed
+SSL_MODE=${ssl_mode}
 DOMAIN_NAME=${DOMAIN_NAME:-}
 
 # =============================================================================
 # TURN服务器配置 (可选)
 # =============================================================================
-TURN_ENABLED=${TURN_ENABLED:-false}
-TURN_USERNAME=privydrop
+TURN_ENABLED=${turn_enabled}
+TURN_USERNAME=${turn_username_value}
 TURN_PASSWORD=${turn_password}
-TURN_REALM=${DOMAIN_NAME:-turn.local}
+TURN_REALM=${turn_realm_value}
 
 # =============================================================================
 # Nginx配置
@@ -94,18 +162,15 @@ NGINX_SERVER_NAME=${DOMAIN_NAME:-${LOCAL_IP}}
 # 日志配置
 # =============================================================================
 LOG_LEVEL=info
+
+# =============================================================================
+# 代理配置 (可选)
+# =============================================================================
+HTTP_PROXY=${http_proxy_value}
+HTTPS_PROXY=${https_proxy_value}
+NO_PROXY=${no_proxy_value}
 EOF
 
-    # 根据部署模式调整配置
-    if [[ "$DEPLOYMENT_MODE" == "full" ]]; then
-        sed -i "s|CORS_ORIGIN=http://|CORS_ORIGIN=https://|g" "$env_file"
-        sed -i "s|NEXT_PUBLIC_API_URL=http://|NEXT_PUBLIC_API_URL=https://|g" "$env_file"
-        sed -i "s|SSL_MODE=self-signed|SSL_MODE=letsencrypt|g" "$env_file"
-        sed -i "s|TURN_ENABLED=false|TURN_ENABLED=true|g" "$env_file"
-    elif [[ "$DEPLOYMENT_MODE" == "public" ]]; then
-        sed -i "s|TURN_ENABLED=false|TURN_ENABLED=true|g" "$env_file"
-    fi
-    
     log_success "环境变量配置已生成: $env_file"
 }
 
@@ -117,7 +182,7 @@ generate_nginx_config() {
     
     local server_name="${DOMAIN_NAME:-${LOCAL_IP} localhost}"
     local upstream_backend="backend:3001"
-    local upstream_frontend="frontend:3000"
+    local upstream_frontend="frontend:3002"
     
     # 生成主Nginx配置
     cat > docker/nginx/nginx.conf << 'EOF'
@@ -547,6 +612,32 @@ create_log_directories() {
 main() {
     echo -e "${BLUE}=== PrivyDrop 配置生成 ===${NC}"
     echo ""
+    
+    # 解析参数（与环境检测脚本保持一致）
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --domain)
+                DOMAIN_NAME="$2"
+                shift 2
+                ;;
+            --mode)
+                DEPLOYMENT_MODE="$2"
+                if [[ "$2" == "private" || "$2" == "basic" ]]; then
+                    FORCED_MODE="private"
+                elif [[ "$2" == "public" || "$2" == "full" ]]; then
+                    FORCED_MODE="public"
+                fi
+                shift 2
+                ;;
+            --local-ip)
+                LOCAL_IP_OVERRIDE="$2"
+                shift 2
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
     
     # 首先运行环境检测
     if ! detect_network_environment; then

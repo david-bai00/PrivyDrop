@@ -159,7 +159,7 @@ main() {
         backend_running=true
     fi
     
-    if check_service 3000 "前端"; then
+    if check_service 3002 "前端"; then
         frontend_running=true
     fi
     
@@ -191,8 +191,8 @@ main() {
     if [ "$frontend_running" = true ]; then
         echo -e "${BLUE}=== 测试前端健康检查API ===${NC}"
         
-        test_api "http://localhost:3000/api/health" "前端基础健康检查"
-        test_api "http://localhost:3000/api/health/detailed" "前端详细健康检查"
+        test_api "http://localhost:3002/api/health" "前端基础健康检查"
+        test_api "http://localhost:3002/api/health/detailed" "前端详细健康检查"
     fi
     
     # 测试结果汇总

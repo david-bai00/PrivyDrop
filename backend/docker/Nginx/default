@@ -88,7 +88,7 @@ server {
     }
     # Next.js Image Optimization Service (usually handled by the Next.js application)
     location /_next/image {
-        proxy_pass http://localhost:3000; # Point to the Next.js application
+        proxy_pass http://localhost:3002; # Point to the Next.js application
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -110,7 +110,7 @@ server {
     }
     # Named location, used to proxy requests to the Next.js application
     location @nextjs_app {
-        proxy_pass http://localhost:3000; # Point to the Next.js application
+        proxy_pass http://localhost:3002; # Point to the Next.js application
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';

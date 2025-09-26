@@ -12,6 +12,174 @@ NETWORK_MODE=""
 LOCAL_IP=""
 PUBLIC_IP=""
 DEPLOYMENT_MODE="basic"
+FORCED_MODE=""
+LOCAL_IP_OVERRIDE=""
+
+declare -a IP_CANDIDATES=()
+declare -A __SEEN_IPS=()
+
+add_ip_candidate() {
+    local ip="$1"
+    [[ -z "$ip" ]] && return
+    [[ "$ip" == "127."* ]] && return
+    [[ "$ip" == "0.0.0.0" ]] && return
+    if [[ -z "${__SEEN_IPS[$ip]}" ]]; then
+        IP_CANDIDATES+=("$ip")
+        __SEEN_IPS[$ip]=1
+    fi
+}
+
+is_rfc1918_ip() {
+    local ip="$1"
+    case "$ip" in
+        10.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[0-1].*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+is_cgnat_ip() {
+    local ip="$1"
+    case "$ip" in
+        100.*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+is_reserved_benchmark_ip() {
+    local ip="$1"
+    case "$ip" in
+        198.18.*|198.19.*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+is_link_local_ip() {
+    local ip="$1"
+    case "$ip" in
+        169.254.*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+is_routable_public_ip() {
+    local ip="$1"
+    if [[ -z "$ip" ]]; then
+        return 1
+    fi
+    if is_rfc1918_ip "$ip"; then
+        return 1
+    fi
+    if is_cgnat_ip "$ip"; then
+        return 1
+    fi
+    if is_reserved_benchmark_ip "$ip"; then
+        return 1
+    fi
+    case "$ip" in
+        127.*|169.254.*)
+            return 1
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+}
+
+collect_ip_candidates() {
+    IP_CANDIDATES=()
+    unset __SEEN_IPS
+    declare -A __SEEN_IPS=()
+
+    if command -v hostname >/dev/null 2>&1; then
+        local host_ips
+        host_ips=$(hostname -I 2>/dev/null || true)
+        for ip in $host_ips; do
+            add_ip_candidate "$ip"
+        done
+    fi
+
+    if command -v ip >/dev/null 2>&1; then
+        while IFS= read -r ip; do
+            add_ip_candidate "$ip"
+        done < <(ip -o -4 addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1)
+    fi
+
+    if command -v ifconfig >/dev/null 2>&1; then
+        while IFS= read -r ip; do
+            add_ip_candidate "$ip"
+        done < <(ifconfig 2>/dev/null | awk '/inet / {print $2}' | grep -E '^[0-9]+(\.[0-9]+){3}$')
+    fi
+
+    if command -v ip >/dev/null 2>&1; then
+        local route_ip
+        route_ip=$(ip route get 1.1.1.1 2>/dev/null | awk '{for (i=1;i<=NF;i++) if ($i=="src") {print $(i+1); exit}}')
+        add_ip_candidate "$route_ip"
+    fi
+
+    if [[ ${#IP_CANDIDATES[@]} -eq 0 ]]; then
+        local fallback
+        fallback=$(hostname -I 2>/dev/null | awk '{print $1}')
+        add_ip_candidate "$fallback"
+    fi
+}
+
+resolve_local_ip() {
+    if [[ -n "$LOCAL_IP_OVERRIDE" ]]; then
+        LOCAL_IP="$LOCAL_IP_OVERRIDE"
+        return
+    fi
+
+    collect_ip_candidates
+
+    if [[ ${#IP_CANDIDATES[@]} -eq 0 ]]; then
+        LOCAL_IP=""
+        return
+    fi
+
+    local ip
+    for ip in "${IP_CANDIDATES[@]}"; do
+        if is_rfc1918_ip "$ip"; then
+            LOCAL_IP="$ip"
+            return
+        fi
+    done
+
+    for ip in "${IP_CANDIDATES[@]}"; do
+        if is_cgnat_ip "$ip"; then
+            LOCAL_IP="$ip"
+            return
+        fi
+    done
+
+    for ip in "${IP_CANDIDATES[@]}"; do
+        if is_reserved_benchmark_ip "$ip"; then
+            continue
+        fi
+        if is_link_local_ip "$ip"; then
+            continue
+        fi
+        LOCAL_IP="$ip"
+        return
+    done
+
+    LOCAL_IP="${IP_CANDIDATES[0]}"
+}
 
 # 日志函数
 log_info() {
@@ -33,35 +201,80 @@ log_error() {
 # 检测网络环境
 detect_network_environment() {
     log_info "检测网络环境..."
-    
-    # 获取本机IP
-    LOCAL_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7}' | head -1)
-    if [[ -z "$LOCAL_IP" ]]; then
-        LOCAL_IP=$(hostname -I | awk '{print $1}')
-    fi
-    
+
+    resolve_local_ip
+
     if [[ -z "$LOCAL_IP" ]]; then
         LOCAL_IP="127.0.0.1"
         log_warning "无法自动检测本机IP，使用默认值: $LOCAL_IP"
     fi
-    
-    # 检测公网连接
+
+    if [[ "$FORCED_MODE" == "private" ]]; then
+        NETWORK_MODE="private"
+        PUBLIC_IP=""
+        log_info "已通过参数指定网络模式: $NETWORK_MODE"
+        echo "   本机IP: $LOCAL_IP"
+        return 0
+    fi
+
+    local mode_guess="private"
+    local printed_prompt_info="false"
+    PUBLIC_IP=""
+
     if curl -s --connect-timeout 5 --max-time 10 ifconfig.me > /dev/null 2>&1; then
         PUBLIC_IP=$(curl -s --connect-timeout 5 --max-time 10 ifconfig.me 2>/dev/null || echo "")
         if [[ -n "$PUBLIC_IP" ]]; then
-            NETWORK_MODE="public"
-            log_success "检测到公网环境"
+            if is_routable_public_ip "$PUBLIC_IP"; then
+                mode_guess="public"
+            else
+                log_warning "检测到测试或保留网段公网IP，按内网环境处理"
+            fi
+        else
+            log_warning "公网连接不稳定，按内网环境处理"
+        fi
+    fi
+
+    if [[ -z "$FORCED_MODE" ]]; then
+        if [[ "$mode_guess" == "public" ]]; then
             echo "   本机IP: $LOCAL_IP"
             echo "   公网IP: $PUBLIC_IP"
+            printed_prompt_info="true"
+            read -r -p "是否按公网模式继续？(Y/n): " confirm </dev/tty 2>/dev/null || confirm="Y"
+            confirm=${confirm:-Y}
+            if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                NETWORK_MODE="public"
+            else
+                NETWORK_MODE="private"
+                PUBLIC_IP=""
+                log_warning "按用户选择，已切换为内网模式"
+            fi
         else
             NETWORK_MODE="private"
-            log_warning "公网连接不稳定，按内网环境处理"
-            echo "   本机IP: $LOCAL_IP"
         fi
     else
-        NETWORK_MODE="private"
+        NETWORK_MODE="$FORCED_MODE"
+        if [[ "$FORCED_MODE" == "public" && -z "$PUBLIC_IP" ]]; then
+            log_warning "未能检测到公网IP，仍按公网模式继续，请确认网络配置"
+        fi
+    fi
+
+    if [[ "$NETWORK_MODE" != "public" ]]; then
+        PUBLIC_IP=""
+    fi
+
+    if [[ "$FORCED_MODE" == "public" ]]; then
+        log_info "已通过参数指定网络模式: $NETWORK_MODE"
+    elif [[ "$NETWORK_MODE" == "public" ]]; then
+        log_success "检测到公网环境"
+    else
         log_success "检测到内网环境"
+    fi
+
+    if [[ "$printed_prompt_info" == "false" ]]; then
         echo "   本机IP: $LOCAL_IP"
+        if [[ "$NETWORK_MODE" == "public" && -n "$PUBLIC_IP" ]]; then
+            echo "   公网IP: $PUBLIC_IP"
+        fi
     fi
 }
 
@@ -181,7 +394,7 @@ check_port_availability() {
     
     if [[ ${#occupied_ports[@]} -gt 0 ]]; then
         log_warning "以下端口已被占用: ${occupied_ports[*]}"
-        log_info "可以通过修改.env文件中的端口配置来解决冲突"
+        log_info "可以通过修改 .env 中的端口，或先执行 './deploy.sh --clean' / 'docker-compose down' 清理旧容器"
     else
         log_success "所有端口都可用"
     fi
@@ -216,6 +429,21 @@ main() {
                 ;;
             --mode)
                 DEPLOYMENT_MODE="$2"
+                case "$2" in
+                    private|basic)
+                        FORCED_MODE="private"
+                        ;;
+                    public|full)
+                        FORCED_MODE="public"
+                        ;;
+                    *)
+                        FORCED_MODE=""
+                        ;;
+                esac
+                shift 2
+                ;;
+            --local-ip)
+                LOCAL_IP_OVERRIDE="$2"
                 shift 2
                 ;;
             *)
@@ -240,7 +468,7 @@ main() {
     fi
     echo ""
     
-    check_port_availability "80,443,3000,3001,3478,5349,6379"
+    check_port_availability "80,443,3002,3001,3478,5349,6379"
     echo ""
     
     detect_deployment_mode
@@ -259,6 +487,7 @@ main() {
     export PUBLIC_IP
     export DEPLOYMENT_MODE
     export DOMAIN_NAME
+    export LOCAL_IP_OVERRIDE
     
     return 0
 }

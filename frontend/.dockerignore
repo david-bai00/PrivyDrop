@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.gitignore
+README.md
+Dockerfile
+.dockerignore
+.env*
+npm-debug.log*
+.npm
+coverage
+.nyc_output
+*.log
+public/sw.js
+public/workbox-*.js

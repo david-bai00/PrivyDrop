@@ -225,7 +225,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
               }
               return updated;
             });
-          }, 3000);
+          }, 3002);
         }
       }
     });

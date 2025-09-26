@@ -3,10 +3,10 @@ import { CONFIG } from "./env";
 
 // Define the sources allowed in the development environment
 const DEV_ORIGINS = [
-  CONFIG.CORS_ORIGIN,                         // http://localhost:3002
-  'http://localhost:3000',                    // alternate port
-  /^http:\/\/192\.168\.\d+\.\d+:3000$/,      // LAN addresses
-  /^http:\/\/192\.168\.\d+\.\d+:3002$/       // LAN addresses with new port
+  CONFIG.CORS_ORIGIN, // http://localhost:3002
+  "http://localhost:3002", // alternate port
+  /^http:\/\/192\.168\.\d+\.\d+:3002$/, // LAN addresses
+  /^http:\/\/192\.168\.\d+\.\d+:3002$/, // LAN addresses with new port
 ];
 
 // Configure CORS

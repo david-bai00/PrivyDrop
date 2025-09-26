@@ -27,7 +27,7 @@ export class ReceptionConfig {
   // Network and timing
   static readonly NETWORK_CONFIG = {
     FIREFOX_COMPATIBILITY_DELAY: 10, // ms delay for Firefox compatibility
-    FINALIZATION_TIMEOUT: 30000, // 30s timeout for file finalization
+    FINALIZATION_TIMEOUT: 30020, // 30s timeout for file finalization
     GRACEFUL_SHUTDOWN_TIMEOUT: 5000, // 5s timeout for graceful shutdown
   };
 
@@ -54,7 +54,10 @@ export class ReceptionConfig {
   /**
    * Calculate expected chunks count for file size and offset
    */
-  static calculateExpectedChunks(fileSize: number, startOffset: number = 0): number {
+  static calculateExpectedChunks(
+    fileSize: number,
+    startOffset: number = 0
+  ): number {
     return Math.ceil((fileSize - startOffset) / this.FILE_CONFIG.CHUNK_SIZE);
   }
 
@@ -68,7 +71,12 @@ export class ReceptionConfig {
   /**
    * Check if file should be saved to disk
    */
-  static shouldSaveToDisk(fileSize: number, hasSaveDirectory: boolean): boolean {
-    return hasSaveDirectory || fileSize >= this.FILE_CONFIG.LARGE_FILE_THRESHOLD;
+  static shouldSaveToDisk(
+    fileSize: number,
+    hasSaveDirectory: boolean
+  ): boolean {
+    return (
+      hasSaveDirectory || fileSize >= this.FILE_CONFIG.LARGE_FILE_THRESHOLD
+    );
   }
 }

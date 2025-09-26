@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # Redis缓存服务
@@ -23,6 +23,10 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - NO_PROXY=${NO_PROXY}
     container_name: privydrop-backend
     restart: unless-stopped
     environment:
@@ -52,22 +56,26 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - NO_PROXY=${NO_PROXY}
     container_name: privydrop-frontend
     restart: unless-stopped
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3001}
-      - PORT=3000
+      - PORT=3002
       - HOSTNAME=0.0.0.0
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${FRONTEND_PORT:-3002}:3002"
     depends_on:
       backend:
         condition: service_healthy
     networks:
       - privydrop-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3002/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -101,7 +109,7 @@ services:
     restart: unless-stopped
     ports:
       - "3478:3478/tcp"
-      - "3478:3478/udp" 
+      - "3478:3478/udp"
       - "5349:5349/tcp"
       - "5349:5349/udp"
       - "49152-65535:49152-65535/udp"
@@ -114,21 +122,6 @@ services:
     profiles:
       - turn
     command: ["-c", "/etc/coturn/turnserver.conf"]
-
-  # 自动更新服务 (可选)
-  watchtower:
-    image: containrrr/watchtower:latest
-    container_name: privydrop-watchtower
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_POLL_INTERVAL=86400  # 24小时检查一次
-      - WATCHTOWER_INCLUDE_STOPPED=true
-      - WATCHTOWER_REVIVE_STOPPED=false
-    profiles:
-      - auto-update
 
 networks:
   privydrop-network:
