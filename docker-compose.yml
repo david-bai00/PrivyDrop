@@ -45,7 +45,7 @@ services:
     volumes:
       - ./logs:/app/logs
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      test: ["CMD", "node", "health-check.js"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -60,6 +60,10 @@ services:
         - HTTP_PROXY=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - NO_PROXY=${NO_PROXY}
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+        - NEXT_PUBLIC_TURN_HOST=${NEXT_PUBLIC_TURN_HOST}
+        - NEXT_PUBLIC_TURN_USERNAME=${NEXT_PUBLIC_TURN_USERNAME}
+        - NEXT_PUBLIC_TURN_PASSWORD=${NEXT_PUBLIC_TURN_PASSWORD}
     container_name: privydrop-frontend
     restart: unless-stopped
     environment:
@@ -75,11 +79,11 @@ services:
     networks:
       - privydrop-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3002/api/health"]
+      test: ["CMD", "node", "health-check.js"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 120s
 
   # Nginx反向代理
   nginx:

@@ -5,9 +5,9 @@ ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
 
-ENV http_proxy=${HTTP_PROXY} \
-    https_proxy=${HTTPS_PROXY} \
-    no_proxy=${NO_PROXY}
+ENV http_proxy ${HTTP_PROXY} \
+    https_proxy ${HTTPS_PROXY} \
+    no_proxy ${NO_PROXY}
 
 WORKDIR /app
 COPY package*.json ./

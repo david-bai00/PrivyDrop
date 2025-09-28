@@ -225,7 +225,7 @@ deploy_services() {
     
     # 构建镜像
     log_info "构建Docker镜像..."
-    docker-compose build --no-cache --parallel
+    docker-compose build --parallel
     
     # 启动服务
     log_info "启动服务..."

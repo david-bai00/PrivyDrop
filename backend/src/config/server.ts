@@ -9,11 +9,24 @@ const DEV_ORIGINS = [
   /^http:\/\/192\.168\.\d+\.\d+:3002$/, // LAN addresses with new port
 ];
 
+// 解析生产环境下的多来源配置（逗号分隔）
+const parseProdOrigins = (): string | RegExp | (string | RegExp)[] => {
+  const v = CONFIG.CORS_ORIGIN?.trim();
+  if (!v) return DEV_ORIGINS; // 回退到开发白名单
+  if (v.includes(",")) {
+    return v
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return v;
+};
+
 // Configure CORS
 export const corsOptions: CorsOptions =
   CONFIG.NODE_ENV === "production"
     ? {
-        origin: CONFIG.CORS_ORIGIN,
+        origin: parseProdOrigins(),
         methods: ["GET", "POST", "OPTIONS"],
         credentials: true,
         allowedHeaders: ["Content-Type", "Authorization"],
@@ -28,7 +41,7 @@ export const corsOptions: CorsOptions =
 export const corsWSOptions =
   CONFIG.NODE_ENV === "production"
     ? {
-        origin: CONFIG.CORS_ORIGIN, // Allowed origin, replace with your Next.js application's URL
+        origin: parseProdOrigins(),
         methods: ["GET", "POST"],
         credentials: true,
       }

@@ -54,7 +54,8 @@ generate_env_file() {
     fi
 
     # 计算不同部署模式下的访问入口
-    local cors_origin="http://${LOCAL_IP}:3002"
+    # 同时支持 localhost 与 本机IP，两者都可用于浏览器访问，便于Docker直连或本机调试
+    local cors_origin="http://${LOCAL_IP}:3002,http://localhost:3002"
     local api_url="http://${LOCAL_IP}:3001"
     local ssl_mode="self-signed"
     local turn_enabled="false"
@@ -66,7 +67,7 @@ generate_env_file() {
     local next_public_turn_password=""
 
     if [[ "$DEPLOYMENT_MODE" == "public" ]]; then
-        cors_origin="http://${DOMAIN_NAME:-$LOCAL_IP}"
+        cors_origin="http://${DOMAIN_NAME:-$LOCAL_IP},http://localhost"
         api_url="$cors_origin"
         turn_enabled="true"
     elif [[ "$DEPLOYMENT_MODE" == "full" ]]; then
