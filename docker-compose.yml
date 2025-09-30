@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # Redis缓存服务
   redis:
@@ -116,7 +114,7 @@ services:
       - "3478:3478/udp"
       - "5349:5349/tcp"
       - "5349:5349/udp"
-      - "49152-65535:49152-65535/udp"
+      - "${TURN_MIN_PORT:-49152}-${TURN_MAX_PORT:-49252}:${TURN_MIN_PORT:-49152}-${TURN_MAX_PORT:-49252}/udp"
     volumes:
       - ./docker/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
       - ./docker/ssl:/etc/ssl/certs:ro

@@ -28,6 +28,109 @@ log_error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
+# 默认与全局参数
+WITH_TURN="${WITH_TURN:-false}"
+TURN_EXTERNAL_IP_OVERRIDE=""
+TURN_MIN_PORT_DEFAULT=49152
+TURN_MAX_PORT_DEFAULT=49252
+TURN_MIN_PORT="$TURN_MIN_PORT_DEFAULT"
+TURN_MAX_PORT="$TURN_MAX_PORT_DEFAULT"
+
+parse_turn_port_range() {
+    local range="$1"
+    if [[ -z "$range" ]]; then
+        return 0
+    fi
+    if [[ ! "$range" =~ ^([0-9]{2,5})-([0-9]{2,5})$ ]]; then
+        log_error "--turn-port-range 格式应为 MIN-MAX，例如 49152-49252"
+        exit 1
+    fi
+    local min="${BASH_REMATCH[1]}"
+    local max="${BASH_REMATCH[2]}"
+    if (( min < 1 || max > 65535 || min >= max )); then
+        log_error "无效端口段：$min-$max，应在 1-65535 且 MIN<MAX"
+        exit 1
+    fi
+    TURN_MIN_PORT="$min"
+    TURN_MAX_PORT="$max"
+}
+
+cleanup_previous_artifacts() {
+    log_warning "清理上一次生成的配置产物..."
+    rm -f .env 2>/dev/null || true
+    rm -f docker/nginx/nginx.conf 2>/dev/null || true
+    rm -f docker/nginx/conf.d/*.conf 2>/dev/null || true
+    rm -f docker/coturn/turnserver.conf 2>/dev/null || true
+    rm -f docker/ssl/* 2>/dev/null || true
+}
+
+# 显示帮助信息
+show_help() {
+    cat << 'EOF'
+PrivyDrop 配置生成脚本（Docker 版）
+
+用法: bash docker/scripts/generate-config.sh [选项]
+
+选项:
+  --mode MODE              生成模式: private|basic|public|full
+                           private/basic: 内网HTTP；默认不启用TURN，前端直连后端
+                           public: 公网HTTP + 启用TURN（无域名也可，TURN host=本机IP）
+                           full:  完整HTTPS + 启用TURN（建议配合域名）
+  --with-turn              在任意模式下启用TURN（含private/basic）。默认 external-ip=LOCAL_IP
+  --turn-external-ip IP    显式指定TURN external-ip；不指定则使用 PUBLIC_IP，否则回退 LOCAL_IP
+  --turn-port-range R      指定TURN端口段（UDP），格式 MIN-MAX；默认 49152-49252
+  --domain DOMAIN      指定域名（用于 Nginx/证书/TURN realm，如 turn.DOMAIN）
+  --local-ip IP        指定本机局域网IP（不传则自动探测）
+  --help               显示本帮助
+
+环境变量（可选）:
+  PUBLIC_IP            显式指定公网IP；仅在 public/full 模式有效。
+                       TURN external-ip 写入优先使用 PUBLIC_IP，
+                       留空则回退为 LOCAL_IP（仅同局域网可用，穿透受限）。
+
+生成内容:
+  - .env                          核心环境变量（含 NEXT_PUBLIC_API_URL/CORS 等）
+  - docker/nginx/*                Nginx 反向代理配置（private/basic 也会生成 HTTP 配置）
+  - docker/ssl/*                  自签证书（private/basic/public 生成；full 可替换为正式证书）
+  - docker/coturn/turnserver.conf 在 public/full 或使用 --with-turn 时生成/覆盖
+
+重要说明:
+  - TURN external-ip 赋值逻辑为 external-ip=${PUBLIC_IP:-${LOCAL_IP}}
+    即优先使用 PUBLIC_IP，否则回退 LOCAL_IP。
+  - private/basic 模式不会覆盖 docker/coturn/turnserver.conf，
+    若此前生成过 TURN 配置，该文件可能保留历史 external-ip。
+
+示例:
+  # 1) 纯内网（推荐开发/内网快速跑通）
+  bash docker/scripts/generate-config.sh --mode private [--local-ip 192.168.0.113]
+
+  # 2) 内网 + 启用TURN（默认 external-ip=LOCAL_IP，端口段=49152-49252）
+  bash docker/scripts/generate-config.sh --mode private --with-turn [--local-ip 192.168.0.113]
+
+  # 3) 内网 + 启用TURN（自定义端口段/显式external-ip）
+  bash docker/scripts/generate-config.sh --mode private --with-turn \
+       --turn-port-range 56000-56100 --turn-external-ip 192.168.0.113 \
+       [--local-ip 192.168.0.113]
+
+  # 4) 公网HTTP + TURN（自动探测公网IP，不带域名也可）
+  bash docker/scripts/generate-config.sh --mode public --local-ip 192.168.0.113
+
+  # 5) 公网HTTP + TURN（指定公网IP，避免外网探测）
+  PUBLIC_IP=1.2.3.4 bash docker/scripts/generate-config.sh --mode public --local-ip 192.168.0.113
+
+  # 6) HTTPS + TURN（有域名）
+  bash docker/scripts/generate-config.sh --mode full --domain example.com --local-ip 192.168.0.113
+
+内网带TURN测试提示（不改脚本的最小步骤）:
+  A) 一步生成（推荐）：
+     bash docker/scripts/generate-config.sh --mode private --with-turn --local-ip 192.168.0.113
+     然后 bash ./deploy.sh --mode private --with-turn
+  B) 分步生成：
+     先按 private 生成部署前后端，再 docker compose up -d coturn
+
+EOF
+}
+
 # 生成环境变量文件
 generate_env_file() {
     log_info "生成环境变量配置..."
@@ -77,6 +180,11 @@ generate_env_file() {
         turn_enabled="true"
     fi
 
+    # 若显式启用 TURN，则覆盖模式默认
+    if [[ "$WITH_TURN" == "true" ]]; then
+        turn_enabled="true"
+    fi
+
     if [[ "$turn_enabled" == "true" ]]; then
         if [[ -n "$DOMAIN_NAME" ]]; then
             turn_host_value="turn.${DOMAIN_NAME}"
@@ -91,6 +199,10 @@ generate_env_file() {
         next_public_turn_password="$turn_password"
     fi
 
+    # 端口段（默认 49152-49252，可被 --turn-port-range 覆盖）
+    local turn_min_port_value="${TURN_MIN_PORT:-$TURN_MIN_PORT_DEFAULT}"
+    local turn_max_port_value="${TURN_MAX_PORT:-$TURN_MAX_PORT_DEFAULT}"
+
     local default_no_proxy="localhost,127.0.0.1,backend,frontend,redis,coturn"
     local http_proxy_value="${HTTP_PROXY:-${existing_env[HTTP_PROXY]}}"
     local https_proxy_value="${HTTPS_PROXY:-${existing_env[HTTPS_PROXY]}}"
@@ -102,6 +214,8 @@ generate_env_file() {
     TURN_PASSWORD="$turn_password"
     TURN_REALM="$turn_realm_value"
     TURN_HOST="$turn_host_value"
+    TURN_MIN_PORT="$turn_min_port_value"
+    TURN_MAX_PORT="$turn_max_port_value"
 
     cat > "$env_file" << EOF
 # PrivyDrop Docker 配置文件
@@ -153,6 +267,8 @@ TURN_ENABLED=${turn_enabled}
 TURN_USERNAME=${turn_username_value}
 TURN_PASSWORD=${turn_password}
 TURN_REALM=${turn_realm_value}
+TURN_MIN_PORT=${turn_min_port_value}
+TURN_MAX_PORT=${turn_max_port_value}
 
 # =============================================================================
 # Nginx配置
@@ -495,6 +611,19 @@ generate_coturn_config() {
         
         mkdir -p docker/coturn
         
+        # 计算 external-ip：优先 --turn-external-ip，再次 PUBLIC_IP，最后 LOCAL_IP
+        local external_ip_value
+        if [[ -n "$TURN_EXTERNAL_IP_OVERRIDE" ]]; then
+            external_ip_value="$TURN_EXTERNAL_IP_OVERRIDE"
+        elif [[ -n "$PUBLIC_IP" ]]; then
+            external_ip_value="$PUBLIC_IP"
+        else
+            external_ip_value="$LOCAL_IP"
+        fi
+
+        local min_port_value="${TURN_MIN_PORT:-$TURN_MIN_PORT_DEFAULT}"
+        local max_port_value="${TURN_MAX_PORT:-$TURN_MAX_PORT_DEFAULT}"
+
         cat > docker/coturn/turnserver.conf << EOF
 # PrivyDrop TURN服务器配置
 # 自动生成时间: $(date)
@@ -508,7 +637,7 @@ listening-ip=0.0.0.0
 relay-ip=0.0.0.0
 
 # 外部IP (用于NAT环境)
-external-ip=${PUBLIC_IP:-${LOCAL_IP}}
+external-ip=${external_ip_value}
 
 # 服务器域名
 realm=${TURN_REALM}
@@ -535,8 +664,8 @@ no-loopback-peers
 no-multicast-peers
 
 # 性能配置
-min-port=49152
-max-port=65535
+min-port=${min_port_value}
+max-port=${max_port_value}
 
 # 数据库 (可选)
 # userdb=/var/lib/turn/turndb
@@ -634,12 +763,31 @@ main() {
                 LOCAL_IP_OVERRIDE="$2"
                 shift 2
                 ;;
+            --with-turn)
+                WITH_TURN="true"
+                shift
+                ;;
+            --turn-external-ip)
+                TURN_EXTERNAL_IP_OVERRIDE="$2"
+                shift 2
+                ;;
+            --turn-port-range)
+                parse_turn_port_range "$2"
+                shift 2
+                ;;
+            --help)
+                show_help
+                exit 0
+                ;;
             *)
                 shift
                 ;;
         esac
     done
     
+    # 先清理上一次生成物（避免历史残留误导）
+    cleanup_previous_artifacts
+
     # 首先运行环境检测
     if ! detect_network_environment; then
         log_error "环境检测失败"

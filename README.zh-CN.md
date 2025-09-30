@@ -48,11 +48,18 @@ PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）�
 git clone https://github.com/david-bai00/PrivyDrop.git
 cd PrivyDrop
 
-# 一键部署
-bash deploy.sh
+# 生成配置（自动检测本机局域网 IP，已无需 --local-ip）
+bash docker/scripts/generate-config.sh --mode private
+
+# 日志目录权限（coturn/nginx 外挂日志需要可写）
+chmod 777 -R logs
+
+# 一键部署（Compose V2）
+bash deploy.sh --mode private
 
 # 访问应用
-# http://localhost:3002
+# 前端: http://localhost:3002
+# 后端: http://localhost:3001
 ```
 
 **部署优势**:
@@ -62,7 +69,7 @@ bash deploy.sh
 - ✅ 环境要求: 公网 IP → 内网即可使用
 - ✅ 成功率: 70% → 95%+
 
-详见: [Docker 部署指南](./docs/DEPLOYMENT_docker.zh-CN.md)
+详见: [Docker 部署指南](./build/docker/README.md)
 
 ### 💻 本地开发环境
 

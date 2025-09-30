@@ -54,6 +54,9 @@ PrivyDrop Docker 一键部署脚本
   $0 --domain example.com --mode full   # 完整HTTPS部署
   $0 --clean                            # 清理部署
 
+要求:
+  - Docker Engine 和 Docker Compose V2（命令为 `docker compose`）
+
 EOF
 }
 
@@ -116,8 +119,8 @@ check_dependencies() {
         missing_deps+=("docker")
     fi
     
-    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
-        missing_deps+=("docker-compose")
+    if ! docker compose version &> /dev/null; then
+        missing_deps+=("docker compose (V2)")
     fi
     
     if ! command -v curl &> /dev/null; then
@@ -137,8 +140,8 @@ check_dependencies() {
                 docker)
                     echo "  Docker: https://docs.docker.com/get-docker/"
                     ;;
-                docker-compose)
-                    echo "  Docker Compose: https://docs.docker.com/compose/install/"
+                "docker compose (V2)")
+                    echo "  Docker Compose V2 插件: https://docs.docker.com/compose/install/"
                     ;;
                 curl)
                     echo "  curl: sudo apt-get install curl (Ubuntu/Debian)"
@@ -161,7 +164,7 @@ clean_deployment() {
         
         # 停止并删除容器
         if [[ -f "docker-compose.yml" ]]; then
-            docker-compose down -v --remove-orphans 2>/dev/null || true
+            docker compose down -v --remove-orphans 2>/dev/null || true
         fi
         
         # 删除镜像
@@ -209,12 +212,12 @@ deploy_services() {
     log_info "构建和启动服务..."
     
     # 停止现有服务
-    if docker-compose ps | grep -q "Up"; then
+    if docker compose ps | grep -q "Up"; then
         log_info "停止现有服务..."
-        docker-compose down
+        docker compose down
     fi
     
-    # 确定启用的服务
+    # 确定启用的服务（Compose V2 需要将 --profile 放在子命令之前）
     local profiles=""
     if [[ "$WITH_NGINX" == "true" ]]; then
         profiles="$profiles --profile nginx"
@@ -225,11 +228,12 @@ deploy_services() {
     
     # 构建镜像
     log_info "构建Docker镜像..."
-    docker-compose build --parallel
+    docker compose build --parallel
     
-    # 启动服务
+    # 启动服务（--profile 需置于 up 之前）
     log_info "启动服务..."
-    docker-compose up -d $profiles
+    # shellcheck disable=SC2086
+    docker compose $profiles up -d
     
     log_success "服务启动完成"
 }
@@ -273,8 +277,8 @@ wait_for_services() {
         return 0
     else
         log_error "服务启动超时"
-        log_info "查看服务状态: docker-compose ps"
-        log_info "查看服务日志: docker-compose logs -f"
+        log_info "查看服务状态: docker compose ps"
+        log_info "查看服务日志: docker compose logs -f"
         return 1
     fi
 }
@@ -285,7 +289,7 @@ post_deployment_checks() {
     
     # 检查容器状态
     log_info "检查容器状态..."
-    docker-compose ps
+    docker compose ps
     
     # 运行健康检查测试
     if [[ -f "test-health-apis.sh" ]]; then
@@ -337,10 +341,10 @@ show_deployment_info() {
     
     echo ""
     echo -e "${BLUE}🔧 管理命令：${NC}"
-    echo "   查看状态: docker-compose ps"
-    echo "   查看日志: docker-compose logs -f [服务名]"
-    echo "   重启服务: docker-compose restart [服务名]"
-    echo "   停止服务: docker-compose down"
+    echo "   查看状态: docker compose ps"
+    echo "   查看日志: docker compose logs -f [服务名]"
+    echo "   重启服务: docker compose restart [服务名]"
+    echo "   停止服务: docker compose down"
     echo "   完全清理: $0 --clean"
     
     if [[ -f "docker/ssl/ca-cert.pem" ]]; then
@@ -369,7 +373,7 @@ show_deployment_info() {
     echo ""
     echo -e "${YELLOW}💡 提示：${NC}"
     echo "   - 首次启动可能需要几分钟来下载和构建镜像"
-    echo "   - 如遇问题，请查看日志: docker-compose logs -f"
+    echo "   - 如遇问题，请查看日志: docker compose logs -f"
     echo "   - 更多帮助: $0 --help"
     echo ""
 }
@@ -403,7 +407,7 @@ main() {
         post_deployment_checks
         show_deployment_info
     else
-        log_error "部署失败，请检查日志: docker-compose logs"
+        log_error "部署失败，请检查日志: docker compose logs"
         exit 1
     fi
 }

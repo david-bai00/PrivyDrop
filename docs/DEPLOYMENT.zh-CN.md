@@ -30,14 +30,16 @@ sudo bash backend/docker/env_install.sh
 ```
 
 该脚本将自动安装：
+
 - **Node.js v20** - 运行环境
-- **Redis Server** - 用于房间管理和缓存  
-- **Coturn** - TURN/STUN 服务器（可选，用于NAT穿透）
+- **Redis Server** - 用于房间管理和缓存
+- **Coturn** - TURN/STUN 服务器（可选，用于 NAT 穿透）
 - **Nginx** - Web 服务器和反向代理（使用官方仓库）
 - **PM2** - Node.js 进程管理器
 - **Certbot** - SSL 证书管理
 
 安装完成后，可以验证各服务状态：
+
 ```bash
 # 验证 Node.js 版本
 node -v
@@ -53,11 +55,13 @@ sudo systemctl status coturn
 ```
 
 **注意事项：**
-- **Redis配置：** 默认监听 `127.0.0.1:6379`，请确保后端 `.env` 文件中包含正确的 `REDIS_HOST` 和 `REDIS_PORT`
-- **TURN服务：** 为可选配置，Privydrop 默认使用公共 STUN 服务器，只有对 NAT 穿透有极高要求时才需要配置
+
+- **Redis 配置：** 默认监听 `127.0.0.1:6379`，请确保后端 `.env` 文件中包含正确的 `REDIS_HOST` 和 `REDIS_PORT`
+- **TURN 服务：** 为可选配置，Privydrop 默认使用公共 STUN 服务器，只有对 NAT 穿透有极高要求时才需要配置
 - **Nginx：** 脚本安装官方版本并验证 stream 模块支持
 
-**TURN服务器防火墙配置（如果需要配置TURN服务）：**
+**TURN 服务器防火墙配置（如果需要配置 TURN 服务）：**
+
 ```bash
 # 启用 Coturn 服务
 sudo sed -i 's/#TURNSERVER_ENABLED=1/TURNSERVER_ENABLED=1/' /etc/default/coturn
@@ -68,6 +72,7 @@ sudo ufw reload
 ```
 
 通过 `sudo ufw app info Turnserver` 看到的端口如下：
+
 - `3478,3479,5349,5350,49152:65535/tcp`
 - `3478,3479,5349,5350,49152:65535/udp`
 
