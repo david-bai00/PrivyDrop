@@ -74,8 +74,8 @@ PrivyDrop 配置生成脚本（Docker 版）
 选项:
   --mode MODE              生成模式: private|basic|public|full
                            private/basic: 内网HTTP；默认不启用TURN，前端直连后端
-                           public: 公网HTTP + 启用TURN（无域名也可，TURN host=本机IP）
-                           full:  完整HTTPS + 启用TURN（建议配合域名）
+                           public: 公网HTTP + 启用TURN（无域名也可，TURN host=公网IP优先）
+                           full:  完整HTTPS + 启用TURN（建议配合域名，前端走域名HTTPS）
   --with-turn              在任意模式下启用TURN（含private/basic）。默认 external-ip=LOCAL_IP
   --turn-external-ip IP    显式指定TURN external-ip；不指定则使用 PUBLIC_IP，否则回退 LOCAL_IP
   --turn-port-range R      指定TURN端口段（UDP），格式 MIN-MAX；默认 49152-49252
@@ -88,7 +88,7 @@ PrivyDrop 配置生成脚本（Docker 版）
                        TURN external-ip 写入优先使用 PUBLIC_IP，
                        留空则回退为 LOCAL_IP（仅同局域网可用，穿透受限）。
 
-生成内容:
+生成内容（自动写入关键变量）:
   - .env                          核心环境变量（含 NEXT_PUBLIC_API_URL/CORS 等）
   - docker/nginx/*                Nginx 反向代理配置（private/basic 也会生成 HTTP 配置）
   - docker/ssl/*                  自签证书（private/basic/public 生成；full 可替换为正式证书）
@@ -112,7 +112,7 @@ PrivyDrop 配置生成脚本（Docker 版）
        --turn-port-range 56000-56100 --turn-external-ip 192.168.0.113 \
        [--local-ip 192.168.0.113]
 
-  # 4) 公网HTTP + TURN（自动探测公网IP，不带域名也可）
+  # 4) 公网HTTP + TURN（自动探测公网IP，不带域名也可；自动注入 NEXT_PUBLIC_API_URL）
   bash docker/scripts/generate-config.sh --mode public --local-ip 192.168.0.113
 
   # 5) 公网HTTP + TURN（指定公网IP，避免外网探测）
@@ -170,12 +170,15 @@ generate_env_file() {
     local next_public_turn_password=""
 
     if [[ "$DEPLOYMENT_MODE" == "public" ]]; then
-        cors_origin="http://${DOMAIN_NAME:-$LOCAL_IP},http://localhost"
-        api_url="$cors_origin"
+        # 公网无域名：前端直连后端，自动写入基于 PUBLIC_IP（无则回退 LOCAL_IP）
+        local effective_public_host="${PUBLIC_IP:-$LOCAL_IP}"
+        cors_origin="http://${effective_public_host}:3002,http://localhost:3002"
+        api_url="http://${effective_public_host}:3001"
         turn_enabled="true"
     elif [[ "$DEPLOYMENT_MODE" == "full" ]]; then
+        # 有域名HTTPS：前端与后端都走域名，由 Nginx /api 转发
         cors_origin="https://${DOMAIN_NAME:-$LOCAL_IP}"
-        api_url="$cors_origin"
+        api_url="https://${DOMAIN_NAME:-$LOCAL_IP}"
         ssl_mode="letsencrypt"
         turn_enabled="true"
     fi
@@ -190,7 +193,8 @@ generate_env_file() {
             turn_host_value="turn.${DOMAIN_NAME}"
             turn_realm_value="turn.${DOMAIN_NAME}"
         else
-            turn_host_value="$LOCAL_IP"
+            # 无域名时：主机优先使用 PUBLIC_IP，其次回退 LOCAL_IP
+            turn_host_value="${PUBLIC_IP:-$LOCAL_IP}"
             turn_realm_value="turn.local"
         fi
 

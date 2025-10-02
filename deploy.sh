@@ -210,7 +210,12 @@ setup_environment() {
 # 构建和启动服务
 deploy_services() {
     log_info "构建和启动服务..."
-    
+
+    # 确保日志目录存在并放宽权限，避免容器无法写日志（coturn/nginx 等）
+    mkdir -p logs logs/nginx logs/backend logs/frontend logs/coturn 2>/dev/null || true
+    chmod 777 -R logs 2>/dev/null || true
+    log_info "日志目录已准备并授权: ./logs (权限 777)"
+
     # 停止现有服务
     if docker compose ps | grep -q "Up"; then
         log_info "停止现有服务..."
@@ -312,31 +317,76 @@ show_deployment_info() {
     
     # 读取配置信息
     local local_ip=""
+    local public_ip=""
     local frontend_port=""
     local backend_port=""
+    local deployment_mode=""
+    local network_mode=""
+    local domain_name=""
+    local turn_enabled_env=""
     
     if [[ -f ".env" ]]; then
         local_ip=$(grep "LOCAL_IP=" .env | cut -d'=' -f2)
+        public_ip=$(grep "PUBLIC_IP=" .env | cut -d'=' -f2)
         frontend_port=$(grep "FRONTEND_PORT=" .env | cut -d'=' -f2)
         backend_port=$(grep "BACKEND_PORT=" .env | cut -d'=' -f2)
+        deployment_mode=$(grep "DEPLOYMENT_MODE=" .env | cut -d'=' -f2)
+        network_mode=$(grep "NETWORK_MODE=" .env | cut -d'=' -f2)
+        domain_name=$(grep "DOMAIN_NAME=" .env | cut -d'=' -f2)
+        turn_enabled_env=$(grep "TURN_ENABLED=" .env | cut -d'=' -f2)
     fi
     
     echo -e "${BLUE}📋 访问信息：${NC}"
-    echo "   前端应用: http://localhost:${frontend_port:-3002}"
-    echo "   后端API: http://localhost:${backend_port:-3001}"
-    
-    if [[ -n "$local_ip" ]] && [[ "$local_ip" != "127.0.0.1" ]]; then
-        echo ""
-        echo -e "${BLUE}🌐 局域网访问：${NC}"
-        echo "   前端应用: http://$local_ip:${frontend_port:-3002}"
-        echo "   后端API: http://$local_ip:${backend_port:-3001}"
+
+    # 判定是否公网场景（public/full）
+    local is_public="false"
+    if [[ "$deployment_mode" == "public" || "$deployment_mode" == "full" || "$network_mode" == "public" ]]; then
+        is_public="true"
+    fi
+
+    if [[ "$is_public" == "true" ]]; then
+        # 公网展示优先域名，其次公网IP
+        if [[ -n "$domain_name" ]]; then
+            if [[ "$WITH_NGINX" == "true" || "$deployment_mode" == "full" ]]; then
+                echo "   公网访问: https://$domain_name"
+                echo "   API 地址: https://$domain_name"
+            else
+                echo "   公网访问: http://$domain_name:${frontend_port:-3002}"
+                echo "   API 地址: http://$domain_name:${backend_port:-3001}"
+            fi
+        elif [[ -n "$public_ip" ]]; then
+            echo "   公网访问: http://$public_ip:${frontend_port:-3002}"
+            echo "   API 地址: http://$public_ip:${backend_port:-3001}"
+        else
+            # 回退：无法获取公网IP时给出局域网与本机
+            echo "   前端应用: http://localhost:${frontend_port:-3002}"
+            echo "   后端API: http://localhost:${backend_port:-3001}"
+        fi
+    else
+        # 内网/基础模式：本机+局域网
+        echo "   前端应用: http://localhost:${frontend_port:-3002}"
+        echo "   后端API: http://localhost:${backend_port:-3001}"
+        if [[ -n "$local_ip" ]] && [[ "$local_ip" != "127.0.0.1" ]]; then
+            echo ""
+            echo -e "${BLUE}🌐 局域网访问：${NC}"
+            echo "   前端应用: http://$local_ip:${frontend_port:-3002}"
+            echo "   后端API: http://$local_ip:${backend_port:-3001}"
+        fi
     fi
     
     if [[ "$WITH_NGINX" == "true" ]]; then
         echo ""
         echo -e "${BLUE}🔀 Nginx代理：${NC}"
-        echo "   HTTP: http://localhost"
-        [[ -f "docker/ssl/server-cert.pem" ]] && echo "   HTTPS: https://localhost"
+        if [[ -n "$domain_name" ]]; then
+            echo "   HTTP: http://$domain_name"
+            [[ -f "docker/ssl/server-cert.pem" ]] && echo "   HTTPS: https://$domain_name"
+        elif [[ -n "$public_ip" ]]; then
+            echo "   HTTP: http://$public_ip"
+            [[ -f "docker/ssl/server-cert.pem" ]] && echo "   HTTPS: https://$public_ip"
+        else
+            echo "   HTTP: http://localhost"
+            [[ -f "docker/ssl/server-cert.pem" ]] && echo "   HTTPS: https://localhost"
+        fi
     fi
     
     echo ""
@@ -354,7 +404,7 @@ show_deployment_info() {
         echo "   要信任HTTPS连接，请将CA证书导入浏览器"
     fi
     
-    if [[ "$WITH_TURN" == "true" ]]; then
+    if [[ "$WITH_TURN" == "true" || "$turn_enabled_env" == "true" ]]; then
         local turn_username=""
         local turn_realm=""
         if [[ -f ".env" ]]; then
@@ -364,8 +414,18 @@ show_deployment_info() {
         
         echo ""
         echo -e "${BLUE}🔄 TURN服务器：${NC}"
-        echo "   STUN: stun:$local_ip:3478"
-        echo "   TURN: turn:$local_ip:3478"
+        # 展示优先域名的 TURN 信息，否则展示公网IP
+        if [[ -n "$domain_name" ]]; then
+            echo "   STUN: stun:${domain_name}:3478"
+            echo "   TURN (UDP): turn:${domain_name}:3478"
+            echo "   TURN (TLS): turns:turn.${domain_name}:443 (如已配置 443 SNI 分流)"
+        elif [[ -n "$public_ip" ]]; then
+            echo "   STUN: stun:${public_ip}:3478"
+            echo "   TURN: turn:${public_ip}:3478"
+        else
+            echo "   STUN: stun:${local_ip}:3478"
+            echo "   TURN: turn:${local_ip}:3478"
+        fi
         echo "   用户名: ${turn_username:-privydrop}"
         echo "   密码: (保存在.env文件中)"
     fi
@@ -376,6 +436,19 @@ show_deployment_info() {
     echo "   - 如遇问题，请查看日志: docker compose logs -f"
     echo "   - 更多帮助: $0 --help"
     echo ""
+
+    # 公网场景追加：如何测试域名(HTTPS+Nginx)
+    if [[ "$is_public" == "true" && -z "$domain_name" ]]; then
+        echo -e "${BLUE}🌍 公网域名部署（HTTPS + Nginx）快速测试：${NC}"
+        echo "   1) 将你的域名 A 记录解析到 ${public_ip:-<server-ip>}"
+        echo "      可选：将 turn.<your-domain> 也解析到同一IP，用于 TURN 主机名"
+        echo "   2) 运行: ./deploy.sh --mode full --domain <your-domain> --with-nginx --with-turn"
+        echo "   3) 放行端口: 80, 443, 3478/udp, 5349/tcp, 5349/udp"
+        echo "   4) 验证: https://<your-domain> 正常打开，/api/health 返回 200"
+        echo "      WebRTC: 打开 webrtc-internals，观察是否出现 relay 候选 (TURN)"
+        echo "   注: 目前 Docker 版本未启用 443 SNI 转发至 coturn，如需 turns:443 请后续启用 stream 分流。"
+        echo ""
+    fi
 }
 
 # 主函数
