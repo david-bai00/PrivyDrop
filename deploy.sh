@@ -45,6 +45,7 @@ PrivyDrop Docker 一键部署脚本
                       full: 完整HTTPS部署 + TURN服务器
   --with-nginx        启用Nginx反向代理
   --with-turn         启用TURN服务器
+  --le-email EMAIL    使用 Let's Encrypt 时的证书邮箱（full 模式推荐传入）
   --clean             清理现有容器和数据
   --help              显示帮助信息
 
@@ -67,6 +68,7 @@ parse_arguments() {
     WITH_NGINX=false
     WITH_TURN=false
     CLEAN_MODE=false
+    LE_EMAIL=""
     
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -85,6 +87,10 @@ parse_arguments() {
             --with-turn)
                 WITH_TURN=true
                 shift
+                ;;
+            --le-email)
+                LE_EMAIL="$2"
+                shift 2
                 ;;
             --clean)
                 CLEAN_MODE=true
@@ -155,6 +161,107 @@ check_dependencies() {
     fi
     
     log_success "依赖检查通过"
+}
+
+# 安装并准备 Let's Encrypt（certbot）
+ensure_certbot() {
+    if command -v certbot >/dev/null 2>&1; then
+        return 0
+    fi
+    log_info "安装 certbot (需要 sudo 权限)..."
+    if command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get update -y && sudo apt-get install -y certbot
+    else
+        log_error "未检测到 apt-get，请手动安装 certbot 或在支持的系统上运行"
+        exit 1
+    fi
+}
+
+# 写入 certbot 部署钩子：续期后复制证书并热重载服务
+install_certbot_deploy_hook() {
+    local repo_dir="$SCRIPT_DIR"
+    local hook_dir="/etc/letsencrypt/renewal-hooks/deploy"
+    local hook_file="$hook_dir/privydrop-reload.sh"
+    local compose_file="$repo_dir/docker-compose.yml"
+
+    sudo mkdir -p "$hook_dir"
+    sudo bash -c "cat > '$hook_file'" << EOF
+#!/bin/bash
+set -e
+REPO_DIR="$repo_dir"
+COMPOSE_FILE="$compose_file"
+
+# RENEWED_LINEAGE 由 certbot 传入，指向 live/<domain>
+if [[ -z "\$RENEWED_LINEAGE" ]]; then
+  exit 0
+fi
+
+cp "\$RENEWED_LINEAGE/fullchain.pem" "\$REPO_DIR/docker/ssl/server-cert.pem"
+cp "\$RENEWED_LINEAGE/privkey.pem" "\$REPO_DIR/docker/ssl/server-key.pem"
+chmod 600 "\$REPO_DIR/docker/ssl/server-key.pem" || true
+
+# 热重载 nginx，如失败则重启
+docker compose -f "\$COMPOSE_FILE" exec -T nginx nginx -s reload 2>/dev/null || \
+docker compose -f "\$COMPOSE_FILE" restart nginx || true
+
+# 优先向 coturn 发送 HUP，不行则重启（若未启用则忽略）
+docker compose -f "\$COMPOSE_FILE" exec -T coturn sh -c 'kill -HUP 1' 2>/dev/null || \
+docker compose -f "\$COMPOSE_FILE" restart coturn || true
+EOF
+    sudo chmod +x "$hook_file"
+
+    # 尝试启用 systemd 定时器
+    if command -v systemctl >/dev/null 2>&1; then
+        sudo systemctl enable --now certbot.timer 2>/dev/null || true
+    fi
+}
+
+# 使用 webroot 首次签发并启用 443 配置
+provision_letsencrypt_cert() {
+    # 仅在 full 模式且启用 nginx 且存在域名时执行
+    if [[ "$DEPLOYMENT_MODE" != "full" || "$WITH_NGINX" != "true" ]]; then
+        return 0
+    fi
+    if [[ -z "$DOMAIN_NAME" ]]; then
+        log_warning "full 模式未指定 --domain，跳过 Let’s Encrypt"
+        return 0
+    fi
+    if [[ -z "$LE_EMAIL" ]]; then
+        log_warning "未指定 --le-email，将使用 --register-unsafely-without-email"
+    fi
+
+    ensure_certbot
+    install_certbot_deploy_hook
+
+    mkdir -p docker/letsencrypt-www docker/ssl
+
+    # 如果证书已存在，跳过签发
+    if [[ -f "/etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem" ]]; then
+        log_info "检测到已存在的证书，跳过首次签发"
+    else
+        log_info "通过 webroot 模式签发 Let's Encrypt 证书..."
+        local email_args="--email $LE_EMAIL"
+        if [[ -z "$LE_EMAIL" ]]; then
+            email_args="--register-unsafely-without-email"
+        fi
+        # 需要 80 端口可达且 nginx 已启动
+        sudo certbot certonly --webroot -w "$(pwd)/docker/letsencrypt-www" \
+            -d "$DOMAIN_NAME" -d "turn.$DOMAIN_NAME" \
+            $email_args --agree-tos --non-interactive || {
+              log_error "证书签发失败，请查看 certbot 输出"
+              return 1
+            }
+        # 首次签发后复制到 docker/ssl
+        sudo cp "/etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem" docker/ssl/server-cert.pem
+        sudo cp "/etc/letsencrypt/live/$DOMAIN_NAME/privkey.pem" docker/ssl/server-key.pem
+        sudo chmod 600 docker/ssl/server-key.pem || true
+    fi
+
+    # 启用 443 配置（证书已就绪）：不清理，仅追加
+    bash "$DOCKER_SCRIPTS_DIR/generate-config.sh" --mode full --domain "$DOMAIN_NAME" --no-clean --ssl-mode letsencrypt || true
+
+    # 热重载 nginx 以启用 443
+    docker compose exec -T nginx nginx -s reload || docker compose restart nginx
 }
 
 # 清理现有部署
@@ -473,6 +580,9 @@ main() {
     # 部署服务
     deploy_services
     echo ""
+
+    # 若为 full + nginx，自动签发证书并启用 443
+    provision_letsencrypt_cert || true
     
     # 等待服务就绪
     if wait_for_services; then

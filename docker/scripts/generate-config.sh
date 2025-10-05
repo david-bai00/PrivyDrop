@@ -55,13 +55,24 @@ parse_turn_port_range() {
     TURN_MAX_PORT="$max"
 }
 
+NO_CLEAN=false
+RESET_SSL=false
+
 cleanup_previous_artifacts() {
-    log_warning "清理上一次生成的配置产物..."
+    if [[ "$NO_CLEAN" == "true" ]]; then
+        log_info "跳过清理历史生成物 (--no-clean)"
+        return 0
+    fi
+    log_warning "清理上一次生成的配置产物 (保留 SSL 证书)..."
     rm -f .env 2>/dev/null || true
     rm -f docker/nginx/nginx.conf 2>/dev/null || true
     rm -f docker/nginx/conf.d/*.conf 2>/dev/null || true
     rm -f docker/coturn/turnserver.conf 2>/dev/null || true
-    rm -f docker/ssl/* 2>/dev/null || true
+    # 默认不清理 docker/ssl，除非显式 --reset-ssl
+    if [[ "$RESET_SSL" == "true" ]]; then
+        log_warning "按请求重置 SSL 证书目录: docker/ssl/*"
+        rm -f docker/ssl/* 2>/dev/null || true
+    fi
 }
 
 # 显示帮助信息
@@ -82,6 +93,10 @@ PrivyDrop 配置生成脚本（Docker 版）
   --domain DOMAIN      指定域名（用于 Nginx/证书/TURN realm，如 turn.DOMAIN）
   --local-ip IP        指定本机局域网IP（不传则自动探测）
   --help               显示本帮助
+  --no-clean           跳过清理历史生成物（推荐用于二次生成避免清理 SSL）
+  --reset-ssl          强制清理 docker/ssl/*（默认不清理）
+  --ssl-mode MODE      证书模式：letsencrypt|self-signed|provided
+                        - full 模式默认 letsencrypt；private/public 默认 self-signed
 
 环境变量（可选）:
   PUBLIC_IP            显式指定公网IP；仅在 public/full 模式有效。
@@ -362,6 +377,7 @@ http {
 EOF
 
     # 生成站点配置
+    mkdir -p docker/letsencrypt-www
     cat > docker/nginx/conf.d/default.conf << EOF
 # 上游服务定义
 upstream backend {
@@ -384,6 +400,11 @@ server {
     add_header X-Content-Type-Options nosniff;
     add_header X-XSS-Protection "1; mode=block";
     
+    # ACME 回源，用于 Let's Encrypt 签发/续期
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
     # 健康检查端点
     location /nginx-health {
         access_log off;
@@ -512,7 +533,7 @@ EOF
         log_success "SSL证书已生成: docker/ssl/"
         log_info "要信任证书，请导入CA证书: docker/ssl/ca-cert.pem"
         
-        # 生成HTTPS Nginx配置
+        # 自签场景直接生成 443 配置
         if [[ "$DEPLOYMENT_MODE" != "basic" ]]; then
             generate_https_nginx_config
         fi
@@ -606,6 +627,20 @@ server {
 EOF
 
     log_success "HTTPS配置已添加"
+}
+
+# 当证书存在时再启用 443 配置（适用于 letsencrypt/provided）
+enable_https_if_cert_present() {
+    if [[ -f "docker/ssl/server-cert.pem" && -f "docker/ssl/server-key.pem" ]]; then
+        # 若 default.conf 中尚未存在 443 server，则追加
+        if ! grep -q "listen 443 ssl" docker/nginx/conf.d/default.conf 2>/dev/null; then
+            generate_https_nginx_config
+        else
+            log_info "检测到已存在 443 配置，跳过追加"
+        fi
+    else
+        log_warning "未检测到证书 (docker/ssl/server-*.pem)，暂不启用 443 配置"
+    fi
 }
 
 # 生成Coturn配置
@@ -779,6 +814,18 @@ main() {
                 parse_turn_port_range "$2"
                 shift 2
                 ;;
+            --no-clean)
+                NO_CLEAN=true
+                shift
+                ;;
+            --reset-ssl)
+                RESET_SSL=true
+                shift
+                ;;
+            --ssl-mode)
+                SSL_MODE="$2"
+                shift 2
+                ;;
             --help)
                 show_help
                 exit 0
@@ -813,9 +860,25 @@ main() {
     generate_nginx_config
     echo ""
     
+    # 证书生成策略：
+    # - private/public 默认自签；full 默认 letsencrypt（由部署脚本触发签发与复制）
+    if [[ -z "$SSL_MODE" ]]; then
+        if [[ "$DEPLOYMENT_MODE" == "full" ]]; then
+            SSL_MODE="letsencrypt"
+        else
+            SSL_MODE="self-signed"
+        fi
+    fi
+
     generate_ssl_certificates
     echo ""
-    
+
+    # full/provided/letsencrypt：仅在证书就绪时启用 443
+    if [[ "$DEPLOYMENT_MODE" == "full" ]]; then
+        enable_https_if_cert_present
+        echo ""
+    fi
+
     generate_coturn_config
     echo ""
     
