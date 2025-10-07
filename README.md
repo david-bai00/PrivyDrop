@@ -35,7 +35,24 @@ We believe everyone should have control over their own data. PrivyDrop was creat
 - **Backend**: Node.js, Express.js, TypeScript
 - **Real-time Communication**: WebRTC, Socket.IO
 - **Data Storage**: Redis
-- **Deployment**: PM2, Nginx, Docker [WIP]
+- **Deployment**: PM2, Nginx, Docker
+
+## 🐳 Docker One-Click Deployment (Recommended)
+
+Deploy in minutes with zero manual configuration. Supports private/public networks and auto HTTPS (Let’s Encrypt).
+
+```bash
+# Private LAN (no domain/public IP)
+bash ./deploy.sh --mode private
+
+# Public IP without domain (with TURN)
+bash ./deploy.sh --mode public --with-turn
+
+# Public domain (HTTPS + Nginx + TURN + SNI 443, auto-issue/renew)
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
+```
+
+See [Docker Deployment Guide](./docs/DEPLOYMENT_docker.md)
 
 ## 🚀 Quick Start (Full-Stack Local Development)
 

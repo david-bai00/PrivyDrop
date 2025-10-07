@@ -41,26 +41,20 @@ PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）�
 
 ### 🐳 Docker 一键部署 (推荐)
 
-**零配置，5 分钟完成部署！支持内网使用，无需公网 IP。**
+**零配置，一条命令完成部署！支持内网/公网/域名，自动签发/续期 HTTPS。**
 
 ```bash
-# 克隆项目
-git clone https://github.com/david-bai00/PrivyDrop.git
-cd PrivyDrop
+# 内网（无域名/无公网IP）
+bash ./deploy.sh --mode private
 
-# 生成配置（自动检测本机局域网 IP，已无需 --local-ip）
-bash docker/scripts/generate-config.sh --mode private
+# 公网IP（无域名），含 TURN
+bash ./deploy.sh --mode public --with-turn
 
-# 日志目录权限（coturn/nginx 外挂日志需要可写）
-chmod 777 -R logs
-
-# 一键部署（Compose V2）
-bash deploy.sh --mode private
-
-# 访问应用
-# 前端: http://localhost:3002
-# 后端: http://localhost:3001
+# 公网域名（HTTPS + Nginx + TURN + SNI 443 分流，自动申请/续期证书）
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
 ```
+
+完整说明见: docs/DEPLOYMENT_docker.zh-CN.md
 
 **部署优势**:
 
@@ -69,7 +63,7 @@ bash deploy.sh --mode private
 - ✅ 环境要求: 公网 IP → 内网即可使用
 - ✅ 成功率: 70% → 95%+
 
-详见: [Docker 部署指南](./build/docker/README.md)
+详见: [Docker 部署指南](./docs/DEPLOYMENT_docker.zh-CN.md)
 
 ### 💻 本地开发环境
 

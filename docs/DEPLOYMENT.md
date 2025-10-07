@@ -1,4 +1,8 @@
-# PrivyDrop Deployment Guide
+# PrivyDrop Deployment Guide (Bare-Metal)
+
+> Audience & Scope: This guide targets developers/operators who prefer a non-container (bare-metal) setup.
+>
+> Recommended: Prefer the one-click Docker deployment for simplicity and robustness, including auto HTTPS and TURN. See [Docker Deployment Guide](./docs/DEPLOYMENT_docker.md).
 
 This guide provides comprehensive instructions for deploying the full-stack PrivyDrop application, including setting up Redis, a TURN server, the backend service, the frontend application, and configuring Nginx as a reverse proxy.
 
@@ -30,6 +34,7 @@ sudo bash backend/docker/env_install.sh
 ```
 
 This script will automatically install:
+
 - **Node.js v20** - Runtime environment
 - **Redis Server** - Used for room management and caching
 - **Coturn** - TURN/STUN server (optional, for NAT traversal)
@@ -38,6 +43,7 @@ This script will automatically install:
 - **Certbot** - SSL certificate management
 
 After installation, you can verify the services:
+
 ```bash
 # Verify Node.js version
 node -v
@@ -53,11 +59,13 @@ sudo systemctl status coturn
 ```
 
 **Configuration Notes:**
+
 - **Redis Configuration:** Default listening on `127.0.0.1:6379`, ensure your backend `.env` file includes correct `REDIS_HOST` and `REDIS_PORT`
 - **TURN Service:** Optional configuration, PrivyDrop uses public STUN servers by default, only needed for extremely high NAT traversal requirements
 - **Nginx:** Script installs official version and verifies stream module support
 
 **TURN Server Firewall Configuration (if configuring TURN service):**
+
 ```bash
 # Enable the Coturn service
 sudo sed -i 's/#TURNSERVER_ENABLED=1/TURNSERVER_ENABLED=1/' /etc/default/coturn
@@ -68,6 +76,7 @@ sudo ufw reload
 ```
 
 The ports seen via `sudo ufw app info Turnserver` are as follows:
+
 - `3478,3479,5349,5350,49152:65535/tcp`
 - `3478,3479,5349,5350,49152:65535/udp`
 

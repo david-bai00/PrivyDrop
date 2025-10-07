@@ -1,6 +1,22 @@
-# PrivyDrop Docker Deployment Guide
+# PrivyDrop Docker One-Click Deployment (Recommended)
 
-This guide provides a one-click Docker deployment solution for PrivyDrop, supporting both private and public network environments without complex manual configuration.
+This guide provides a one-click Docker deployment for PrivyDrop. It supports both private and public networks, automates config/build/start, and provisions HTTPS certificates.
+
+## 🚀 Quick Start (Top)
+
+```bash
+# Private LAN (no domain/public IP)
+bash ./deploy.sh --mode private
+
+# Public IP without domain (with TURN)
+bash ./deploy.sh --mode public --with-turn
+
+# Public domain (HTTPS + Nginx + TURN + SNI 443, auto-issue/renew certs)
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
+```
+
+- Requires Docker Compose v2 (command `docker compose`).
+- In full mode, Let’s Encrypt (webroot) is auto-issued and auto-renewed (no downtime); SNI 443 multiplexing is enabled by default (`turn.your-domain.com` → coturn:5349; others → web:8443).
 
 ## 🎯 Deployment Advantages
 
@@ -34,9 +50,9 @@ Compared to traditional deployment methods, Docker deployment offers the followi
 ### Software Dependencies
 
 - Docker 20.10+
-- Docker Compose 2.0+ (or docker-compose 1.27+)
-- curl (for health checks)
-- openssl (for SSL certificate generation)
+- Docker Compose 2.x (command `docker compose`)
+- curl (for health checks, optional)
+- openssl (cert tools; the script auto-installs certbot)
 
 ## 🚀 Quick Start
 
@@ -92,21 +108,21 @@ bash deploy.sh --mode public --with-turn
 - ✅ Supports complex network environments
 - ✅ Automatic NAT traversal configuration
 
-### Full Mode
+### Full Mode (full)
 
 **Use Case**: Production environment, public servers with domain
 
 ```bash
-bash deploy.sh --domain your-domain.com --mode full --with-nginx --with-turn
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
 ```
 
 **Features**:
 
-- ✅ HTTPS secure access
-- ✅ Self-signed SSL certificates
+- ✅ HTTPS secure access (Let’s Encrypt auto-issue/renew, zero downtime)
 - ✅ Nginx reverse proxy
-- ✅ Built-in TURN server
-- ✅ Complete production environment configuration
+- ✅ Built-in TURN server (default port range 49152-49252/udp)
+- ✅ SNI 443 multiplexing (turn.<domain> → coturn:5349; others → web:8443)
+- ✅ Complete production setup
 
 > Tip: If your network uses carrier-grade NAT or proxy and is mis-detected as public, append `--mode private` to skip public-IP probing and force basic mode. When the detected LAN IP is not the one you expect, append `--local-ip 192.168.x.x` to override it explicitly.
 
@@ -131,19 +147,22 @@ HTTPS_PROXY=http://your-proxy:7890
 NO_PROXY=localhost,127.0.0.1,backend,frontend,redis,coturn
 ```
 
-`docker-compose` passes these values as build args; the Dockerfiles expose them as environment variables so `npm`/`pnpm` automatically reuse the proxy. Leave them blank if you don't need a proxy.
+`docker compose` passes these values as build args; the Dockerfiles expose them as environment variables so `npm`/`pnpm` automatically reuse the proxy. Leave them blank if you don't need a proxy.
 
-### Enable Specific Services
+### Common Flags
 
 ```bash
 # Enable only Nginx reverse proxy
-bash deploy.sh --with-nginx
+bash ./deploy.sh --with-nginx
 
-# Enable only TURN server
-bash deploy.sh --with-turn
+# Enable TURN (recommended in public/full)
+bash ./deploy.sh --with-turn
 
-# Enable all services
-bash deploy.sh --with-nginx --with-turn
+# Explicitly enable SNI 443 (auto-enabled in full+domain; use --no-sni443 to disable)
+bash ./deploy.sh --with-sni443
+
+# Adjust TURN port range (default 49152-49252/udp)
+bash ./deploy.sh --mode full --with-turn --turn-port-range 55000-55100
 ```
 
 ## 🌐 Access Methods
@@ -164,54 +183,55 @@ After deployment, the script automatically displays LAN access addresses:
    Backend API: http://192.168.1.100:3001
 ```
 
-### HTTPS Access (if enabled)
+### HTTPS Access (full mode)
 
-- **Secure Access**: https://localhost
-- **Certificate Location**: `docker/ssl/ca-cert.pem`
+- **Public HTTPS**: https://your-domain.com
+- **Certificate Source**: Let’s Encrypt (auto issue/renew via webroot)
+- **Runtime Location**: Copied to `docker/ssl/` and hot-reloaded
 
-**Note**: When first accessing HTTPS, the browser will warn about an untrusted certificate. This is normal. You can:
+Notes:
 
-1. Click "Advanced" → "Continue to site"
-2. Or import the `docker/ssl/ca-cert.pem` certificate into your browser
+- First-time issuance happens automatically after Nginx:80 is up; then 443 is enabled and hot-reloaded.
+- Renewal is automated: a deploy-hook copies renewed certs to `docker/ssl/` and reloads Nginx; coturn is HUP’ed/restarted for TLS as needed.
 
 ## 🔍 Management Commands
 
 ### View Service Status
 
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 ### View Service Logs
 
 ```bash
 # View all service logs
-docker-compose logs -f
+docker compose logs -f
 
 # View specific service logs
-docker-compose logs -f backend
-docker-compose logs -f frontend
-docker-compose logs -f redis
+docker compose logs -f backend
+docker compose logs -f frontend
+docker compose logs -f redis
 ```
 
 ### Restart Services
 
 ```bash
 # Restart all services
-docker-compose restart
+docker compose restart
 
 # Restart specific service
-docker-compose restart backend
+docker compose restart backend
 ```
 
 ### Stop Services
 
 ```bash
 # Stop services but keep data
-docker-compose stop
+docker compose stop
 
 # Stop services and remove containers
-docker-compose down
+docker compose down
 ```
 
 ### Complete Cleanup
@@ -237,7 +257,7 @@ bash deploy.sh --clean
 
 ```bash
 # First try cleaning previous containers
-bash deploy.sh --clean   # or docker-compose down
+bash deploy.sh --clean   # or docker compose down
 
 # If the port is still occupied, locate the process
 sudo ss -tulpn | grep :3002
@@ -436,15 +456,6 @@ logs/
 └── coturn/         # TURN server logs
 ```
 
-### Monitoring Integration (optional)
-
-Can integrate Prometheus + Grafana monitoring stack:
-
-```bash
-# Enable monitoring (planned)
-bash deploy.sh --with-monitoring
-```
-
 ## 🔄 Updates and Maintenance
 
 ### Update Application
@@ -498,21 +509,3 @@ bash deploy.sh --help
 ### Community Support
 
 - GitHub Issues: Technical questions and bug reports
-- GitHub Discussions: Usage discussions and feature suggestions
-
----
-
-## 📝 Changelog
-
-### v1.0.0 (Docker Version)
-
-- ✅ Added Docker one-click deployment support
-- ✅ Added health check APIs
-- ✅ Added automatic environment detection and configuration generation
-- ✅ Added multiple deployment modes
-- ✅ Added comprehensive troubleshooting guide
-- ✅ Support for private network deployment without public IP requirement
-
----
-
-**🎉 Congratulations! You have successfully deployed PrivyDrop. Start enjoying secure, private file sharing!**

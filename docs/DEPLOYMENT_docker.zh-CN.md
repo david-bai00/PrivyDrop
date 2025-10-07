@@ -1,6 +1,22 @@
-# PrivyDrop Docker 部署指南
+# PrivyDrop Docker 一键部署（推荐）
 
-本指南提供 PrivyDrop 的 Docker 一键部署方案，支持内网和公网环境，无需复杂的手动配置。
+本指南提供 PrivyDrop 的 Docker 一键部署方案，支持内网与公网，一次命令完成配置、构建、启动与证书自动化。
+
+## 🚀 快速开始（置顶）
+
+```bash
+# 内网（无域名/无公网IP）
+bash ./deploy.sh --mode private
+
+# 公网IP（无域名），含 TURN
+bash ./deploy.sh --mode public --with-turn
+
+# 公网域名（HTTPS + Nginx + TURN + SNI 443 分流，自动申请/续期证书）
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
+```
+
+- 使用 Docker Compose V2（命令 `docker compose`）。
+- full 模式自动申请 Let’s Encrypt 证书（webroot，无停机）并自动续期；默认启用 SNI 443 分流（`turn.your-domain.com` → coturn:5349，其余 → web:8443）。
 
 ## 🎯 部署优势
 
@@ -34,9 +50,9 @@
 ### 软件依赖
 
 - Docker 20.10+
-- Docker Compose 2.0+ (或 docker-compose 1.27+)
-- curl (用于健康检查)
-- openssl (用于 SSL 证书生成)
+- Docker Compose 2.x（命令 `docker compose`）
+- curl（用于健康检查，可选）
+- openssl（用于证书工具，脚本会自动安装 certbot）
 
 ## 🚀 快速开始
 
@@ -48,17 +64,12 @@ git clone https://github.com/david-bai00/PrivyDrop.git
 cd PrivyDrop
 ```
 
-### 2. 一键部署
+### 2. 一键部署（示例）
 
 ```bash
-# 基础部署 (推荐新手)
-bash deploy.sh
-
-# 等待部署完成后访问
-# http://localhost:3002
+# 示例：公网域名（HTTPS + Nginx + TURN）
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
 ```
-
-就是这么简单！🎉
 
 ## 📚 部署模式详解
 
@@ -92,20 +103,20 @@ bash deploy.sh --mode public --with-turn
 - ✅ 支持复杂网络环境
 - ✅ 自动配置 NAT 穿透
 
-### 完整模式
+### 完整模式（full）
 
 **适用场景**: 生产环境、有域名的公网服务器
 
 ```bash
-bash deploy.sh --domain your-domain.com --mode full --with-nginx --with-turn
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
 ```
 
 **特性**:
 
-- ✅ HTTPS 安全访问
-- ✅ 自签名 SSL 证书
+- ✅ HTTPS 安全访问（Let’s Encrypt 自动签发/续期，无停机）
 - ✅ Nginx 反向代理
-- ✅ 内置 TURN 服务器
+- ✅ 内置 TURN 服务器（默认端口段 49152-49252/udp，可覆盖）
+- ✅ SNI 443 分流（turn.<domain> → coturn:5349，其余 → web:8443）
 - ✅ 完整生产环境配置
 
 > 提示：若家庭宽带/运营商代理导致脚本误判为公网环境，可追加 `--mode private` 强制跳过公网检测，按基础模式执行；如果自动识别到的局域网地址不是你想要的，可进一步追加 `--local-ip 192.168.x.x` 显式指定。
@@ -133,17 +144,20 @@ NO_PROXY=localhost,127.0.0.1,backend,frontend,redis,coturn
 
 `docker-compose` 会把这些变量作为 build args 传递给前后端镜像，Dockerfile 中会自动设置为环境变量，从而让 `npm`/`pnpm` 使用代理。若无需代理，保持为空即可。
 
-### 启用特定服务
+### 常用开关
 
 ```bash
-# 仅启用 Nginx 反向代理
-bash deploy.sh --with-nginx
+# 仅启用 Nginx
+bash ./deploy.sh --with-nginx
 
-# 仅启用 TURN 服务器
-bash deploy.sh --with-turn
+# 启用 TURN（public/full 建议）
+bash ./deploy.sh --with-turn
 
-# 启用所有服务
-bash deploy.sh --with-nginx --with-turn
+# 显式启用 SNI 443（full+domain 默认开启，可用 --no-sni443 关闭）
+bash ./deploy.sh --with-sni443
+
+# 调整 TURN 端口段（默认 49152-49252/udp）
+bash ./deploy.sh --mode full --with-turn --turn-port-range 55000-55100
 ```
 
 ## 🌐 访问方式
@@ -179,39 +193,39 @@ bash deploy.sh --with-nginx --with-turn
 ### 查看服务状态
 
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 ### 查看服务日志
 
 ```bash
 # 查看所有服务日志
-docker-compose logs -f
+docker compose logs -f
 
 # 查看特定服务日志
-docker-compose logs -f backend
-docker-compose logs -f frontend
-docker-compose logs -f redis
+docker compose logs -f backend
+docker compose logs -f frontend
+docker compose logs -f redis
 ```
 
 ### 重启服务
 
 ```bash
 # 重启所有服务
-docker-compose restart
+docker compose restart
 
 # 重启特定服务
-docker-compose restart backend
+docker compose restart backend
 ```
 
 ### 停止服务
 
 ```bash
-# 停ิ止服务但保留数据
-docker-compose stop
+# 停止服务但保留数据
+docker compose stop
 
 # 停止服务并删除容器
-docker-compose down
+docker compose down
 ```
 
 ### 完全清理
@@ -237,7 +251,7 @@ bash deploy.sh --clean
 
 ```bash
 # 方法1: 清理旧容器
-bash deploy.sh --clean   # 或 docker-compose down
+bash deploy.sh --clean   # 或 docker compose down
 
 # 方法2: 查找并结束占用进程
 sudo ss -tulpn | grep :3002
@@ -392,19 +406,15 @@ networks:
 bash deploy.sh --mode full --with-nginx
 ```
 
-## 🔒 安全配置
+## 🔒 HTTPS 与安全
 
-### SSL/TLS 配置
+### 证书自动化（Let’s Encrypt）
 
-1. **自签名证书** (默认):
+full 模式自动申请并续期证书：
 
-   - 自动生成和配置
-   - 适用于内网和测试环境
-   - 证书位置: `docker/ssl/`
-
-2. **Let's Encrypt 证书** (计划中):
-   - 自动申请和续期
-   - 适用于有域名的生产环境
+- 首次签发：webroot 模式（无停机），系统证书保存在 `/etc/letsencrypt/live/<domain>/`，脚本复制到 `docker/ssl/` 并启用 443；
+- 续期：certbot deploy-hook 自动复制至 `docker/ssl/`，并热重载 Nginx 与重载（或重启）coturn；
+- 证书谱系（-0001/-0002）已自动适配，无需手动处理。
 
 ### 网络安全
 
@@ -434,15 +444,6 @@ logs/
 ├── backend/        # 后端应用日志
 ├── frontend/       # 前端应用日志
 └── coturn/         # TURN服务器日志
-```
-
-### 监控集成 (可选)
-
-可以集成 Prometheus + Grafana 监控栈：
-
-```bash
-# 启用监控 (计划中)
-bash deploy.sh --with-monitoring
 ```
 
 ## 🔄 更新和维护
@@ -477,8 +478,8 @@ cp .env .env.backup
 docker system prune -f
 
 # 更新基础镜像
-docker-compose pull
-docker-compose up -d
+docker compose pull
+docker compose up -d
 ```
 
 ## 🆘 获取帮助
@@ -498,21 +499,3 @@ bash deploy.sh --help
 ### 社区支持
 
 - GitHub Issues: 技术问题和 bug 报告
-- GitHub Discussions: 使用交流和功能建议
-
----
-
-## 📝 更新日志
-
-### v1.0.0 (Docker 化版本)
-
-- ✅ 新增 Docker 一键部署支持
-- ✅ 新增健康检查 API
-- ✅ 新增自动环境检测和配置生成
-- ✅ 新增多种部署模式
-- ✅ 新增完整的故障排除指南
-- ✅ 支持内网部署，无需公网 IP
-
----
-
-**🎉 恭喜！你已经成功部署了 PrivyDrop。开始享受安全、私密的文件分享吧！**

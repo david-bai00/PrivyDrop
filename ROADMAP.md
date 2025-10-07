@@ -8,11 +8,21 @@ This roadmap is a living document. We welcome community feedback and contributio
 
 ## ✅ Completed
 
+### Architecture optimization
+
 - **Core Architecture Refactor (Q3 2025)**: Successfully refactored the entire frontend codebase to a modern, layered architecture.
   - Implemented a framework-agnostic **Service Layer** (`webrtcService`) to encapsulate all WebRTC and business logic.
   - Introduced **Zustand** for centralized, predictable state management (`fileTransferStore`).
   - Decoupled UI components from business logic, establishing a clear, unidirectional data flow.
 - **Resumable File Transfers (Q3 2025):** Implemented robust logic for resuming transfers from the point of interruption. This is enabled by setting a save directory, which allows the receiver to check for partially downloaded files and request only the missing chunks.
+
+### Deployment and Operation
+
+- Docker one-click deployment (Q4 20252)
+  - Unified container health checks (node health-check.js)
+  - Let’s Encrypt automation (webroot) with zero-downtime renewals and deploy-hook
+  - TURN improvements (env port range; default 49152-49252)
+  - SNI 443 multiplexing (turns:443 via Nginx stream; enabled by default in full+domain)
 
 ---
 
