@@ -45,6 +45,7 @@ PrivyDrop Docker 一键部署脚本
                       full: 完整HTTPS部署 + TURN服务器
   --with-nginx        启用Nginx反向代理
   --with-turn         启用TURN服务器
+  --with-sni443       启用 443 SNI 分流 (full 模式默认启用)
   --le-email EMAIL    使用 Let's Encrypt 时的证书邮箱（full 模式推荐传入）
   --clean             清理现有容器和数据
   --help              显示帮助信息
@@ -69,6 +70,7 @@ parse_arguments() {
     WITH_TURN=false
     CLEAN_MODE=false
     LE_EMAIL=""
+    WITH_SNI443=false
     
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -86,6 +88,10 @@ parse_arguments() {
                 ;;
             --with-turn)
                 WITH_TURN=true
+                shift
+                ;;
+            --with-sni443)
+                WITH_SNI443=true
                 shift
                 ;;
             --le-email)
@@ -268,8 +274,10 @@ provision_letsencrypt_cert() {
     sudo cp "$lineage_dir/privkey.pem" docker/ssl/server-key.pem
     sudo chmod 600 docker/ssl/server-key.pem || true
 
-    # 启用 443 配置（证书已就绪）：不清理，仅追加
-    bash "$DOCKER_SCRIPTS_DIR/generate-config.sh" --mode full --domain "$DOMAIN_NAME" --no-clean --ssl-mode letsencrypt || true
+    # 启用 443 配置（证书已就绪）：不清理，仅追加；传递 SNI 开关（默认 full 启用）
+    local gen_args=(--mode full --domain "$DOMAIN_NAME" --no-clean --ssl-mode letsencrypt)
+    [[ "$WITH_SNI443" == "true" ]] && gen_args+=(--enable-sni443)
+    bash "$DOCKER_SCRIPTS_DIR/generate-config.sh" "${gen_args[@]}" || true
 
     # 热重载 nginx 以启用 443
     docker compose exec -T nginx nginx -s reload || docker compose restart nginx
@@ -327,6 +335,7 @@ setup_environment() {
     local detect_args=""
     [[ -n "$DOMAIN_NAME" ]] && detect_args="--domain $DOMAIN_NAME"
     [[ -n "$DEPLOYMENT_MODE" ]] && detect_args="$detect_args --mode $DEPLOYMENT_MODE"
+    [[ "$WITH_SNI443" == "true" ]] && detect_args="$detect_args --enable-sni443"
     
     if ! bash "$DOCKER_SCRIPTS_DIR/detect-environment.sh" $detect_args; then
         log_error "环境检测失败"

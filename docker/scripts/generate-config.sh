@@ -35,6 +35,7 @@ TURN_MIN_PORT_DEFAULT=49152
 TURN_MAX_PORT_DEFAULT=49252
 TURN_MIN_PORT="$TURN_MIN_PORT_DEFAULT"
 TURN_MAX_PORT="$TURN_MAX_PORT_DEFAULT"
+ENABLE_SNI443="${ENABLE_SNI443:-}"
 
 parse_turn_port_range() {
     local range="$1"
@@ -92,6 +93,8 @@ PrivyDrop 配置生成脚本（Docker 版）
   --turn-port-range R      指定TURN端口段（UDP），格式 MIN-MAX；默认 49152-49252
   --domain DOMAIN      指定域名（用于 Nginx/证书/TURN realm，如 turn.DOMAIN）
   --local-ip IP        指定本机局域网IP（不传则自动探测）
+  --enable-sni443      启用 443 SNI 分流（turn.DOMAIN → coturn:5349，其余 → web:8443）
+  --no-sni443          关闭 443 SNI 分流（HTTPS 直接监听 443）
   --help               显示本帮助
   --no-clean           跳过清理历史生成物（推荐用于二次生成避免清理 SSL）
   --reset-ssl          强制清理 docker/ssl/*（默认不清理）
@@ -543,12 +546,16 @@ EOF
 # 生成HTTPS Nginx配置
 generate_https_nginx_config() {
     log_info "生成HTTPS Nginx配置..."
+    local https_port="443"
+    if [[ "$ENABLE_SNI443" == "true" ]]; then
+        https_port="8443"
+    fi
     
     cat >> docker/nginx/conf.d/default.conf << EOF
 
 # HTTPS服务器配置
 server {
-    listen 443 ssl http2;
+    listen ${https_port} ssl http2;
     server_name ${DOMAIN_NAME:-${LOCAL_IP}};
     
     # SSL配置
@@ -629,14 +636,56 @@ EOF
     log_success "HTTPS配置已添加"
 }
 
+# 生成 Nginx stream SNI 分流（443）
+generate_stream_sni443() {
+    if [[ "$ENABLE_SNI443" != "true" ]]; then
+        return 0
+    fi
+    if [[ -z "$DOMAIN_NAME" ]]; then
+        log_warning "SNI 443 需要域名，未指定域名，跳过 stream 配置"
+        return 0
+    fi
+    # 避免重复追加
+    if grep -q "## SNI 443 stream" docker/nginx/nginx.conf 2>/dev/null; then
+        log_info "已存在 SNI 443 stream 配置，跳过追加"
+        return 0
+    fi
+    log_info "追加 SNI 443 stream 配置到 nginx.conf"
+    cat >> docker/nginx/nginx.conf << EOF
+
+## SNI 443 stream
+stream {
+    map \$ssl_preread_server_name \$sni_upstream {
+        ~^turn\.(${DOMAIN_NAME})$ coturn;
+        default web;
+    }
+
+    upstream coturn { server coturn:5349; }
+    upstream web    { server 127.0.0.1:8443; }
+
+    server {
+        listen 443 reuseport;
+        proxy_pass \$sni_upstream;
+        ssl_preread on;
+    }
+}
+EOF
+}
+
 # 当证书存在时再启用 443 配置（适用于 letsencrypt/provided）
 enable_https_if_cert_present() {
     if [[ -f "docker/ssl/server-cert.pem" && -f "docker/ssl/server-key.pem" ]]; then
-        # 若 default.conf 中尚未存在 443 server，则追加
-        if ! grep -q "listen 443 ssl" docker/nginx/conf.d/default.conf 2>/dev/null; then
+        # SNI 开启时，先追加 stream 分流，再生成 8443/443 的 HTTPS
+        if [[ "$ENABLE_SNI443" == "true" && -n "$DOMAIN_NAME" ]]; then
+            generate_stream_sni443
+        fi
+        # 若 default.conf 中尚未存在 HTTPS server，则追加（端口根据 SNI 开关决定）
+        local expected="listen 443 ssl"
+        [[ "$ENABLE_SNI443" == "true" ]] && expected="listen 8443 ssl"
+        if ! grep -q "$expected" docker/nginx/conf.d/default.conf 2>/dev/null; then
             generate_https_nginx_config
         else
-            log_info "检测到已存在 443 配置，跳过追加"
+            log_info "检测到已存在 HTTPS(${ENABLE_SNI443:+SNI=on}) 配置，跳过追加"
         fi
     else
         log_warning "未检测到证书 (docker/ssl/server-*.pem)，暂不启用 443 配置"
@@ -814,6 +863,14 @@ main() {
                 parse_turn_port_range "$2"
                 shift 2
                 ;;
+            --enable-sni443)
+                ENABLE_SNI443=true
+                shift
+                ;;
+            --no-sni443)
+                ENABLE_SNI443=false
+                shift
+                ;;
             --no-clean)
                 NO_CLEAN=true
                 shift
@@ -867,6 +924,15 @@ main() {
             SSL_MODE="letsencrypt"
         else
             SSL_MODE="self-signed"
+        fi
+    fi
+
+    # SNI 443 默认启用：full 模式且有域名，除非显式 --no-sni443
+    if [[ -z "$ENABLE_SNI443" ]]; then
+        if [[ "$DEPLOYMENT_MODE" == "full" && -n "$DOMAIN_NAME" ]]; then
+            ENABLE_SNI443=true
+        else
+            ENABLE_SNI443=false
         fi
     fi
 
