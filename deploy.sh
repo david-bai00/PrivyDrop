@@ -235,9 +235,9 @@ provision_letsencrypt_cert() {
 
     mkdir -p docker/letsencrypt-www docker/ssl
 
-    # 如果证书已存在，跳过签发
-    if [[ -f "/etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem" ]]; then
-        log_info "检测到已存在的证书，跳过首次签发"
+    # 如果证书已存在（含 -0001 谱系），跳过签发
+    if [[ -f "/etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem" ]] || ls -1d /etc/letsencrypt/live/${DOMAIN_NAME}* >/dev/null 2>&1; then
+        log_info "检测到已存在的证书/谱系，跳过首次签发"
     else
         log_info "通过 webroot 模式签发 Let's Encrypt 证书..."
         local email_args="--email $LE_EMAIL"
@@ -251,11 +251,22 @@ provision_letsencrypt_cert() {
               log_error "证书签发失败，请查看 certbot 输出"
               return 1
             }
-        # 首次签发后复制到 docker/ssl
-        sudo cp "/etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem" docker/ssl/server-cert.pem
-        sudo cp "/etc/letsencrypt/live/$DOMAIN_NAME/privkey.pem" docker/ssl/server-key.pem
-        sudo chmod 600 docker/ssl/server-key.pem || true
     fi
+
+    # 解析谱系目录（兼容 -0001/-0002 后缀）并复制到 docker/ssl
+    local lineage_dir
+    lineage_dir=$(readlink -f "/etc/letsencrypt/live/$DOMAIN_NAME" 2>/dev/null || true)
+    if [[ -z "$lineage_dir" || ! -d "$lineage_dir" ]]; then
+        lineage_dir=$(ls -1d /etc/letsencrypt/live/${DOMAIN_NAME}* 2>/dev/null | sort | tail -1)
+    fi
+    if [[ -z "$lineage_dir" || ! -f "$lineage_dir/fullchain.pem" ]]; then
+        log_error "未找到有效证书谱系目录，请检查 /etc/letsencrypt/live/${DOMAIN_NAME}*"
+        return 1
+    fi
+
+    sudo cp "$lineage_dir/fullchain.pem" docker/ssl/server-cert.pem
+    sudo cp "$lineage_dir/privkey.pem" docker/ssl/server-key.pem
+    sudo chmod 600 docker/ssl/server-key.pem || true
 
     # 启用 443 配置（证书已就绪）：不清理，仅追加
     bash "$DOCKER_SCRIPTS_DIR/generate-config.sh" --mode full --domain "$DOMAIN_NAME" --no-clean --ssl-mode letsencrypt || true
@@ -273,6 +284,11 @@ clean_deployment() {
         if [[ -f "docker-compose.yml" ]]; then
             docker compose down -v --remove-orphans 2>/dev/null || true
         fi
+        # 优雅停止后兜底强制清理命名容器
+        docker stop -t 10 privydrop-nginx privydrop-coturn 2>/dev/null || true
+        docker rm -f privydrop-nginx privydrop-coturn 2>/dev/null || true
+        # 兜底清理项目网络（若存在）
+        docker network rm privydrop_privydrop-network 2>/dev/null || true
         
         # 删除镜像
         docker images | grep privydrop | awk '{print $3}' | xargs -r docker rmi -f 2>/dev/null || true
@@ -285,6 +301,18 @@ clean_deployment() {
         if [[ $# -eq 1 ]]; then  # 如果只有--clean参数
             exit 0
         fi
+    fi
+}
+
+# 确保 TURN 服务按需启动（当指定 --with-turn 时）
+ensure_turn_running() {
+    if [[ "$WITH_TURN" != "true" ]]; then
+        return 0
+    fi
+    # 未运行则显式启用 profile 启动 coturn
+    if ! docker compose ps | grep -q "privydrop-coturn"; then
+        log_info "启动 TURN 服务 (profile: turn)..."
+        docker compose --profile turn up -d coturn || true
     fi
 }
 
@@ -338,9 +366,16 @@ deploy_services() {
         profiles="$profiles --profile turn"
     fi
     
-    # 构建镜像
+    # 构建镜像（先并行，失败则串行回退）
     log_info "构建Docker镜像..."
+    set +e
     docker compose build --parallel
+    local build_status=$?
+    set -e
+    if [[ $build_status -ne 0 ]]; then
+        log_warning "并行构建失败，回退为串行构建..."
+        docker compose build
+    fi
     
     # 启动服务（--profile 需置于 up 之前）
     log_info "启动服务..."
@@ -402,6 +437,20 @@ post_deployment_checks() {
     # 检查容器状态
     log_info "检查容器状态..."
     docker compose ps
+    
+    # full+nginx 场景追加 HTTPS 健康检查（若定义了域名）
+    if [[ -f ".env" ]]; then
+        local dep_mode="$(grep "DEPLOYMENT_MODE=" .env | cut -d'=' -f2)"
+        local dname="$(grep "DOMAIN_NAME=" .env | cut -d'=' -f2)"
+        if [[ "$dep_mode" == "full" && -n "$dname" ]]; then
+            log_info "测试: HTTPS 健康检查 https://$dname/api/health"
+            if curl -fsS "https://$dname/api/health" >/dev/null; then
+                log_success "HTTPS 健康检查通过"
+            else
+                log_warning "HTTPS 健康检查失败。若证书刚签发，请稍等或执行: bash docker/scripts/generate-config.sh --mode full --domain $dname --no-clean && docker compose exec -T nginx nginx -s reload"
+            fi
+        fi
+    fi
     
     # 运行健康检查测试
     if [[ -f "test-health-apis.sh" ]]; then
@@ -572,6 +621,11 @@ main() {
     
     # 清理模式
     clean_deployment
+    # 若仅执行清理（未指定其它参数），直接退出，避免进入环境检测
+    if [[ "$CLEAN_MODE" == "true" && -z "$DEPLOYMENT_MODE" && "$WITH_NGINX" == "false" && "$WITH_TURN" == "false" && -z "$DOMAIN_NAME" ]]; then
+        log_success "清理完成（仅清理模式），已退出。"
+        exit 0
+    fi
     
     # 环境设置
     setup_environment
@@ -583,6 +637,8 @@ main() {
 
     # 若为 full + nginx，自动签发证书并启用 443
     provision_letsencrypt_cert || true
+    # 确保 TURN 启动（当请求了 --with-turn 时）
+    ensure_turn_running || true
     
     # 等待服务就绪
     if wait_for_services; then
