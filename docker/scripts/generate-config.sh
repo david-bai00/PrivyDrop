@@ -139,12 +139,9 @@ Examples:
   # 6) HTTPS + TURN (with domain)
   bash docker/scripts/generate-config.sh --mode full --domain example.com --local-ip 192.168.0.113
 
-Intranet with TURN quick tip (minimal changes):
-  A) One-step (recommended):
-     bash docker/scripts/generate-config.sh --mode private --with-turn --local-ip 192.168.0.113
-     then bash ./deploy.sh --mode private --with-turn
-  B) Step-by-step:
-     Generate private for web/backend first, then docker compose up -d coturn
+For more scenarios and details, see:
+  - docs/DEPLOYMENT_docker.md (English)
+  - docs/DEPLOYMENT_docker.zh-CN.md (中文)
 
 EOF
 }

@@ -8,6 +8,9 @@
 # 内网（无域名/无公网IP）
 bash ./deploy.sh --mode private
 
+# 内网 + TURN（推荐用于复杂内网/NAT）
+bash ./deploy.sh --mode private --with-turn
+
 # 公网IP（无域名），含 TURN
 bash ./deploy.sh --mode public --with-turn
 
@@ -17,6 +20,13 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 
 - 使用 Docker Compose V2（命令 `docker compose`）。
 - full 模式自动申请 Let’s Encrypt 证书（webroot，无停机）并自动续期；默认启用 SNI 443 分流（`turn.your-domain.com` → coturn:5349，其余 → web:8443）。
+
+## 模式一览
+
+- basic：内网 HTTP；自动进行网络环境检测
+- private：内网 HTTP；跳过网络环境检测（更快，适合已知内网/CI 环境）
+- public：公网 HTTP；开启 TURN；无域名也可使用
+- full：域名 + HTTPS；开启 TURN；可选启用 SNI 443 分流
 
 ## 🎯 部署优势
 
@@ -407,6 +417,47 @@ bash deploy.sh --mode full --with-nginx
 ```
 
 ## 🔒 HTTPS 与安全
+
+### 域名 + 自签证书（full + self-signed）
+
+适用于仅需加密链路或内网 PKI 的场景。
+
+步骤：
+
+1) 生成配置（自签证书 + 域名）
+
+```bash
+SSL_MODE=self-signed \
+bash docker/scripts/generate-config.sh \
+  --mode full --domain your-domain.com --with-nginx --with-turn
+```
+
+2) 启动服务（手动启动，避免自动申请 Let’s Encrypt）
+
+```bash
+docker compose build
+docker compose --profile nginx up -d
+```
+
+3) 在浏览器导入 CA 证书 `docker/ssl/ca-cert.pem`，或在首次访问时接受风险提示
+
+可选：如需 `turns:443`，请启用 SNI 443 分流（参考“常用开关”与生成器帮助）。
+
+注意：生产环境建议使用 Let’s Encrypt，避免浏览器信任问题与 HSTS 限制。
+
+### 公网域名部署（HTTPS + Nginx）快速测试
+
+1) 将域名 A 记录解析至服务器 IP（可选：`turn.<your-domain>` 指向相同 IP）
+
+2) 运行：
+
+```bash
+./deploy.sh --mode full --domain <your-domain> --with-nginx --with-turn --le-email you@domain.com
+```
+
+3) 放行端口：`80`, `443`, `3478/udp`, `5349/tcp`, `5349/udp`
+
+4) 验证：访问 `https://<your-domain>`，`/api/health` 返回 200；打开浏览器 `webrtc-internals` 观察是否出现 `relay` 候选（TURN）
 
 ### 证书自动化（Let’s Encrypt）
 

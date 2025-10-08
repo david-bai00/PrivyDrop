@@ -8,6 +8,9 @@ This guide provides a one-click Docker deployment for PrivyDrop. It supports bot
 # Private LAN (no domain/public IP)
 bash ./deploy.sh --mode private
 
+# Private LAN + TURN (for complex NAT/LAN)
+bash ./deploy.sh --mode private --with-turn
+
 # Public IP without domain (with TURN)
 bash ./deploy.sh --mode public --with-turn
 
@@ -17,6 +20,13 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 
 - Requires Docker Compose v2 (command `docker compose`).
 - In full mode, Let’s Encrypt (webroot) is auto-issued and auto-renewed (no downtime); SNI 443 multiplexing is enabled by default (`turn.your-domain.com` → coturn:5349; others → web:8443).
+
+## Modes Overview
+
+- basic: Intranet HTTP; auto-detect network environment
+- private: Intranet HTTP; skip network detection (faster; good for known LAN/CI)
+- public: Public HTTP; TURN enabled; works without a domain
+- full: Domain + HTTPS; TURN enabled; optional SNI 443 split
 
 ## 🎯 Deployment Advantages
 
@@ -413,6 +423,47 @@ bash deploy.sh --mode full --with-nginx
 ```
 
 ## 🔒 Security Configuration
+
+### Domain + Self-signed Certificates (full + self-signed)
+
+Use when you only need encrypted transport or have your own PKI.
+
+Steps:
+
+1) Generate configuration (self-signed + domain)
+
+```bash
+SSL_MODE=self-signed \
+bash docker/scripts/generate-config.sh \
+  --mode full --domain your-domain.com --with-nginx --with-turn
+```
+
+2) Start services manually (to avoid auto-provisioning Let’s Encrypt)
+
+```bash
+docker compose build
+docker compose --profile nginx up -d
+```
+
+3) Import the CA certificate `docker/ssl/ca-cert.pem` into your browser, or accept the risk on first visit
+
+Optional: To use `turns:443`, enable SNI 443 split (see “Common Flags” and the generator help).
+
+Note: For production, prefer Let’s Encrypt to avoid trust/HSTS issues.
+
+### Public Domain Deployment (HTTPS + Nginx) — Quick Test
+
+1) Point your domain A record to the server IP (optional: also `turn.<your-domain>` to the same IP)
+
+2) Run:
+
+```bash
+./deploy.sh --mode full --domain <your-domain> --with-nginx --with-turn --le-email you@domain.com
+```
+
+3) Open ports: `80`, `443`, `3478/udp`, `5349/tcp`, `5349/udp`
+
+4) Verify: visit `https://<your-domain>`, `/api/health` returns 200; open `chrome://webrtc-internals` and check for `relay` candidates (TURN)
 
 ### SSL/TLS Configuration
 

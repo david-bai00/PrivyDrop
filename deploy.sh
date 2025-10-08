@@ -602,17 +602,9 @@ show_deployment_info() {
     echo "   - More help: $0 --help"
     echo ""
 
-    # Public scenario: how to test a domain (HTTPS+Nginx)
+    # Public scenario: for domain + HTTPS setup steps, see docs
     if [[ "$is_public" == "true" && -z "$domain_name" ]]; then
-        echo -e "${BLUE}🌍 Public domain deployment (HTTPS + Nginx) quick test:${NC}"
-        echo "   1) Point your domain A record to ${public_ip:-<server-ip>}"
-        echo "      Optional: also point turn.<your-domain> to the same IP for TURN hostname"
-        echo "   2) Run: ./deploy.sh --mode full --domain <your-domain> --with-nginx --with-turn"
-        echo "   3) Open ports: 80, 443, 3478/udp, 5349/tcp, 5349/udp"
-        echo "   4) Verify: https://<your-domain> opens, /api/health returns 200"
-        echo "      WebRTC: open chrome://webrtc-internals and check for relay candidates (TURN)"
-        echo "   Note: The Docker setup does not enable 443 SNI to coturn by default; enable stream SNI if you need turns:443."
-        echo ""
+        echo -e "${BLUE}🌍 Domain + HTTPS guide:${NC} see docs/DEPLOYMENT_docker.md or docs/DEPLOYMENT_docker.zh-CN.md"
     fi
 }
 
