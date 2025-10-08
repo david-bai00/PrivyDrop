@@ -37,6 +37,11 @@ TURN_MIN_PORT="$TURN_MIN_PORT_DEFAULT"
 TURN_MAX_PORT="$TURN_MAX_PORT_DEFAULT"
 ENABLE_SNI443="${ENABLE_SNI443:-}"
 
+# Web HTTPS in LAN (self-signed only when explicitly enabled)
+WEB_HTTPS_ENABLED=false
+HTTPS_LISTEN_PORT=""
+HSTS_ENABLED=false
+
 parse_turn_port_range() {
     local range="$1"
     if [[ -z "$range" ]]; then
@@ -84,22 +89,24 @@ PrivyDrop Config Generator (Docker)
 Usage: bash docker/scripts/generate-config.sh [options]
 
 Options:
-  --mode MODE              Generation mode: private|basic|public|full
-                           private/basic: Intranet HTTP; TURN disabled by default; frontend talks directly to backend
-                           public: Public HTTP + TURN enabled (works without domain; TURN host prefers public IP)
-                           full:   Full HTTPS + TURN enabled (domain recommended; frontend via domain HTTPS)
-  --with-turn              Enable TURN in any mode (including private/basic). Default external-ip=LOCAL_IP
+  --mode MODE              Generation mode: lan-http|lan-tls|public|full
+                           lan-http: Intranet HTTP (fast start; no TLS)
+                           lan-tls:  Intranet HTTPS (self-signed; dev/managed env only)
+                           public:   Public HTTP + TURN (no domain)
+                           full:     Domain + HTTPS (Let’s Encrypt) + TURN
+  --with-turn              Enable TURN in any mode. Default external-ip=LOCAL_IP
   --turn-external-ip IP    Explicit TURN external-ip; if not set, use PUBLIC_IP, otherwise fallback to LOCAL_IP
   --turn-port-range R      TURN UDP port range, format MIN-MAX; default 49152-49252
   --domain DOMAIN          Domain (for Nginx/certs/TURN realm, e.g., turn.DOMAIN)
   --local-ip IP            Local intranet IP (auto-detected if omitted)
   --enable-sni443          Enable 443 SNI split (turn.DOMAIN → coturn:5349, others → web:8443)
   --no-sni443              Disable 443 SNI split (HTTPS listens directly on 443)
+  --enable-web-https       In lan-tls mode, enable self-signed HTTPS on 8443 (no HSTS)
   --help                   Show this help
   --no-clean               Skip cleaning previous outputs (useful for regeneration without wiping SSL)
   --reset-ssl              Force clean docker/ssl/* (not cleaned by default)
   --ssl-mode MODE          Cert mode: letsencrypt|self-signed|provided
-                           - full defaults to letsencrypt; private/public default to self-signed
+                           - full defaults to letsencrypt; lan-tls uses self-signed when --enable-web-https; others: none
 
 Environment variables (optional):
   PUBLIC_IP                Explicit public IP; only used in public/full.
@@ -108,35 +115,28 @@ Environment variables (optional):
 
 Outputs (with key variables set automatically):
   - .env                          Core env vars (including NEXT_PUBLIC_API_URL/CORS)
-  - docker/nginx/*                Nginx reverse proxy configs (HTTP also generated for private/basic)
-  - docker/ssl/*                  Self-signed certs (generated for private/basic/public; replace with real certs for full)
+  - docker/nginx/*                Nginx reverse proxy configs
+  - docker/ssl/*                  Self-signed certs (only when lan-tls + --enable-web-https)
   - docker/coturn/turnserver.conf Generated/overwritten in public/full or when --with-turn is set
 
 Notes:
   - TURN external-ip is set as external-ip=${PUBLIC_IP:-${LOCAL_IP}}
     i.e., prefer PUBLIC_IP, otherwise fallback to LOCAL_IP.
-  - private/basic does not overwrite docker/coturn/turnserver.conf;
-    if TURN was generated before, that file may retain a previous external-ip.
 
 Examples:
-  # 1) Pure intranet (recommended for dev/quick LAN testing)
-  bash docker/scripts/generate-config.sh --mode private [--local-ip 192.168.0.113]
+  # 1) LAN HTTP (fastest path)
+  bash docker/scripts/generate-config.sh --mode lan-http [--local-ip 192.168.0.113]
 
-  # 2) Intranet + TURN (default external-ip=LOCAL_IP, ports=49152-49252)
-  bash docker/scripts/generate-config.sh --mode private --with-turn [--local-ip 192.168.0.113]
+  # 2) LAN + TURN (default external-ip=LOCAL_IP)
+  bash docker/scripts/generate-config.sh --mode lan-http --with-turn [--local-ip 192.168.0.113]
 
-  # 3) Intranet + TURN (custom port range / explicit external-ip)
-  bash docker/scripts/generate-config.sh --mode private --with-turn \
-       --turn-port-range 56000-56100 --turn-external-ip 192.168.0.113 \
-       [--local-ip 192.168.0.113]
+  # 3) LAN HTTPS (self-signed; dev/managed env only)
+  bash docker/scripts/generate-config.sh --mode lan-tls --enable-web-https [--local-ip 192.168.0.113]
 
-  # 4) Public HTTP + TURN (auto-detect public IP; inject NEXT_PUBLIC_API_URL)
-  bash docker/scripts/generate-config.sh --mode public --local-ip 192.168.0.113
+  # 4) Public HTTP + TURN (no domain)
+  bash docker/scripts/generate-config.sh --mode public [--local-ip 192.168.0.113]
 
-  # 5) Public HTTP + TURN (explicit public IP; avoid external detection)
-  PUBLIC_IP=1.2.3.4 bash docker/scripts/generate-config.sh --mode public --local-ip 192.168.0.113
-
-  # 6) HTTPS + TURN (with domain)
+  # 5) Full HTTPS + TURN (with domain; LE auto-issue/renew)
   bash docker/scripts/generate-config.sh --mode full --domain example.com --local-ip 192.168.0.113
 
 For more scenarios and details, see:
@@ -175,7 +175,7 @@ generate_env_file() {
     # Support both localhost and host IP for browser access; helpful for Docker direct access or local debugging
     local cors_origin="http://${LOCAL_IP}:3002,http://localhost:3002"
     local api_url="http://${LOCAL_IP}:3001"
-    local ssl_mode="self-signed"
+    local ssl_mode="none"
     local turn_enabled="false"
     local turn_host_value=""
     local turn_realm_value="${existing_env[TURN_REALM]:-turn.local}"
@@ -184,19 +184,33 @@ generate_env_file() {
     local next_public_turn_username=""
     local next_public_turn_password=""
 
-    if [[ "$DEPLOYMENT_MODE" == "public" ]]; then
-        # Public without domain: frontend connects directly to backend; use PUBLIC_IP (fallback LOCAL_IP)
-        local effective_public_host="${PUBLIC_IP:-$LOCAL_IP}"
-        cors_origin="http://${effective_public_host}:3002,http://localhost:3002"
-        api_url="http://${effective_public_host}:3001"
-        turn_enabled="true"
-    elif [[ "$DEPLOYMENT_MODE" == "full" ]]; then
-        # With domain + HTTPS: both frontend and backend via domain; Nginx proxies /api
-        cors_origin="https://${DOMAIN_NAME:-$LOCAL_IP}"
-        api_url="https://${DOMAIN_NAME:-$LOCAL_IP}"
-        ssl_mode="letsencrypt"
-        turn_enabled="true"
-    fi
+    case "$DEPLOYMENT_MODE" in
+        lan-http)
+            cors_origin="http://${LOCAL_IP}:3002,http://localhost:3002"
+            api_url="http://${LOCAL_IP}:3001"
+            ;;
+        lan-tls)
+            if [[ "$WEB_HTTPS_ENABLED" == "true" ]]; then
+                HTTPS_LISTEN_PORT="8443"
+                cors_origin="https://${LOCAL_IP}:${HTTPS_LISTEN_PORT}"
+                api_url="https://${LOCAL_IP}:${HTTPS_LISTEN_PORT}"
+                ssl_mode="self-signed"
+            fi
+            ;;
+        public)
+            local effective_public_host="${PUBLIC_IP:-$LOCAL_IP}"
+            cors_origin="http://${effective_public_host}:3002,http://localhost:3002"
+            api_url="http://${effective_public_host}:3001"
+            turn_enabled="true"
+            ;;
+        full)
+            cors_origin="https://${DOMAIN_NAME:-$LOCAL_IP}"
+            api_url="https://${DOMAIN_NAME:-$LOCAL_IP}"
+            ssl_mode="letsencrypt"
+            turn_enabled="true"
+            ;;
+        *) : ;;
+    esac
 
     # If TURN explicitly enabled, override mode defaults
     if [[ "$WITH_TURN" == "true" ]]; then
@@ -257,7 +271,7 @@ NEXT_PUBLIC_TURN_PASSWORD=${next_public_turn_password}
 FRONTEND_PORT=3002
 BACKEND_PORT=3001
 HTTP_PORT=80
-HTTPS_PORT=443
+HTTPS_PORT=${HTTPS_LISTEN_PORT:-443}
 
 # =============================================================================
 # Redis config
@@ -481,7 +495,7 @@ EOF
 
 # Generate SSL certificates
 generate_ssl_certificates() {
-    if [[ "$SSL_MODE" == "self-signed" ]] || [[ "$NETWORK_MODE" == "private" ]]; then
+    if [[ "$SSL_MODE" == "self-signed" ]]; then
         log_info "Generating self-signed SSL certificates..."
         
         mkdir -p docker/ssl
@@ -533,8 +547,10 @@ EOF
         log_success "SSL certificates generated: docker/ssl/"
         log_info "To trust the cert, import the CA cert: docker/ssl/ca-cert.pem"
         
-        # For self-signed, generate 443 config immediately
-        if [[ "$DEPLOYMENT_MODE" != "basic" ]]; then
+        # For self-signed, generate HTTPS config only when explicitly enabled (lan-tls)
+        if [[ "$WEB_HTTPS_ENABLED" == "true" ]]; then
+            HSTS_ENABLED=false
+            HTTPS_LISTEN_PORT="${HTTPS_LISTEN_PORT:-8443}"
             generate_https_nginx_config
         fi
     fi
@@ -544,10 +560,20 @@ EOF
 generate_https_nginx_config() {
     log_info "Generating HTTPS Nginx config..."
     local https_port="443"
-    if [[ "$ENABLE_SNI443" == "true" ]]; then
+    if [[ -n "$HTTPS_LISTEN_PORT" ]]; then
+        https_port="$HTTPS_LISTEN_PORT"
+    elif [[ "$ENABLE_SNI443" == "true" ]]; then
         https_port="8443"
     fi
-    
+
+    local hsts_lines=""
+    if [[ "$HSTS_ENABLED" == "true" ]]; then
+        hsts_lines=$(cat << 'HSTSEOF'
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+HSTSEOF
+)
+    fi
+
     cat >> docker/nginx/conf.d/default.conf << EOF
 
 # HTTPS server config
@@ -565,7 +591,7 @@ server {
     ssl_session_timeout 10m;
     
     # Security headers
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+${hsts_lines}
     add_header X-Frame-Options DENY;
     add_header X-Content-Type-Options nosniff;
     add_header X-XSS-Protection "1; mode=block";
@@ -669,7 +695,7 @@ stream {
 EOF
 }
 
-# Enable 443 only when certs exist (for letsencrypt/provided)
+# Enable HTTPS only when certs exist (for letsencrypt/provided)
 enable_https_if_cert_present() {
     if [[ -f "docker/ssl/server-cert.pem" && -f "docker/ssl/server-key.pem" ]]; then
         # With SNI enabled, append stream split first, then generate HTTPS on 8443/443
@@ -678,8 +704,10 @@ enable_https_if_cert_present() {
         fi
         # If HTTPS server is not present in default.conf, append it (port depends on SNI flag)
         local expected="listen 443 ssl"
-        [[ "$ENABLE_SNI443" == "true" ]] && expected="listen 8443 ssl"
+        [[ -n "$HTTPS_LISTEN_PORT" ]] && expected="listen ${HTTPS_LISTEN_PORT} ssl"
+        [[ "$ENABLE_SNI443" == "true" && -z "$HTTPS_LISTEN_PORT" ]] && expected="listen 8443 ssl"
         if ! grep -q "$expected" docker/nginx/conf.d/default.conf 2>/dev/null; then
+            HSTS_ENABLED=true
             generate_https_nginx_config
         else
             log_info "Existing HTTPS (${ENABLE_SNI443:+SNI=on}) config detected; skipping"
@@ -837,11 +865,17 @@ main() {
                 ;;
             --mode)
                 DEPLOYMENT_MODE="$2"
-                if [[ "$2" == "private" || "$2" == "basic" ]]; then
-                    FORCED_MODE="private"
-                elif [[ "$2" == "public" || "$2" == "full" ]]; then
-                    FORCED_MODE="public"
-                fi
+                case "$2" in
+                    lan-http|lan-tls)
+                        FORCED_MODE="private"
+                        ;;
+                    public|full)
+                        FORCED_MODE="public"
+                        ;;
+                    *)
+                        FORCED_MODE=""
+                        ;;
+                esac
                 shift 2
                 ;;
             --local-ip)
@@ -866,6 +900,11 @@ main() {
                 ;;
             --no-sni443)
                 ENABLE_SNI443=false
+                shift
+                ;;
+            --enable-web-https)
+                WEB_HTTPS_ENABLED=true
+                HTTPS_LISTEN_PORT="8443"
                 shift
                 ;;
             --no-clean)
@@ -904,7 +943,7 @@ main() {
         exit 1
     fi
     
-    detect_deployment_mode
+    # No automatic deployment-mode detection here; honor user-provided --mode
     echo ""
     
     # Generate all configuration files
@@ -915,13 +954,25 @@ main() {
     echo ""
     
     # Certificate generation policy:
-    # - private/public use self-signed; full uses letsencrypt (issued/copied by deploy script)
+    # - full uses letsencrypt (issued/copied by deploy script)
+    # - lan-tls uses self-signed only when --enable-web-https is set
+    # - others: none
     if [[ -z "$SSL_MODE" ]]; then
-        if [[ "$DEPLOYMENT_MODE" == "full" ]]; then
-            SSL_MODE="letsencrypt"
-        else
-            SSL_MODE="self-signed"
-        fi
+        case "$DEPLOYMENT_MODE" in
+            full)
+                SSL_MODE="letsencrypt"
+                ;;
+            lan-tls)
+                if [[ "$WEB_HTTPS_ENABLED" == "true" ]]; then
+                    SSL_MODE="self-signed"
+                else
+                    SSL_MODE="none"
+                fi
+                ;;
+            *)
+                SSL_MODE="none"
+                ;;
+        esac
     fi
 
     # SNI on 443 enabled by default: full mode with domain, unless --no-sni443
@@ -936,11 +987,20 @@ main() {
     generate_ssl_certificates
     echo ""
 
-    # full/provided/letsencrypt: enable 443 only when certs are ready
-    if [[ "$DEPLOYMENT_MODE" == "full" ]]; then
-        enable_https_if_cert_present
-        echo ""
-    fi
+    # Enable HTTPS depending on mode/certs
+    case "$DEPLOYMENT_MODE" in
+        full)
+            enable_https_if_cert_present
+            echo ""
+            ;;
+        lan-tls)
+            # HTTPS already handled on generation when enabled
+            :
+            ;;
+        *)
+            :
+            ;;
+    esac
 
     generate_coturn_config
     echo ""

@@ -236,18 +236,7 @@ detect_network_environment() {
 
     if [[ -z "$FORCED_MODE" ]]; then
         if [[ "$mode_guess" == "public" ]]; then
-            echo "   Local IP: $LOCAL_IP"
-            echo "   Public IP: $PUBLIC_IP"
-            printed_prompt_info="true"
-            read -r -p "Continue in public mode? (Y/n): " confirm </dev/tty 2>/dev/null || confirm="Y"
-            confirm=${confirm:-Y}
-            if [[ "$confirm" =~ ^[Yy]$ ]]; then
-                NETWORK_MODE="public"
-            else
-                NETWORK_MODE="private"
-                PUBLIC_IP=""
-                log_warning "Switched to private mode per user choice"
-            fi
+            NETWORK_MODE="public"
         else
             NETWORK_MODE="private"
         fi
@@ -409,7 +398,7 @@ detect_deployment_mode() {
         log_success "Deployment mode: full (HTTPS + TURN server)"
     elif [[ "$NETWORK_MODE" == "public" ]]; then
         DEPLOYMENT_MODE="public"
-        log_success "Deployment mode: public (HTTP + self-signed)"
+        log_success "Deployment mode: public (HTTP + TURN)"
     else
         DEPLOYMENT_MODE="basic"
         log_success "Deployment mode: basic (intranet HTTP)"

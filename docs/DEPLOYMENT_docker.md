@@ -6,10 +6,13 @@ This guide provides a one-click Docker deployment for PrivyDrop. It supports bot
 
 ```bash
 # Private LAN (no domain/public IP)
-bash ./deploy.sh --mode private
+bash ./deploy.sh --mode lan-http
 
 # Private LAN + TURN (for complex NAT/LAN)
-bash ./deploy.sh --mode private --with-turn
+bash ./deploy.sh --mode lan-http --with-turn
+
+# LAN HTTPS (self-signed; dev/managed env; explicitly enable 8443)
+bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 
 # Public IP without domain (with TURN)
 bash ./deploy.sh --mode public --with-turn
@@ -23,10 +26,10 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 
 ## Modes Overview
 
-- basic: Intranet HTTP; auto-detect network environment
-- private: Intranet HTTP; skip network detection (faster; good for known LAN/CI)
-- public: Public HTTP; TURN enabled; works without a domain
-- full: Domain + HTTPS; TURN enabled; optional SNI 443 split
+- lan-http: Intranet HTTP; fastest to start; no TLS
+- lan-tls:  Intranet HTTPS (self-signed; dev/managed env); 8443 disabled by default; enable via `--enable-web-https`; HSTS disabled; turns:443 not guaranteed
+- public:   Public HTTP + TURN; works without a domain (no HTTPS/turns:443)
+- full:     Domain + HTTPS (Let’s Encrypt auto-issue/renew) + TURN; SNI 443 split enabled by default (use `--no-sni443` to disable)
 
 ## 🎯 Deployment Advantages
 
@@ -424,32 +427,15 @@ bash deploy.sh --mode full --with-nginx
 
 ## 🔒 Security Configuration
 
-### Domain + Self-signed Certificates (full + self-signed)
+### LAN HTTPS (lan-tls, self-signed, dev/managed env)
 
-Use when you only need encrypted transport or have your own PKI.
-
-Steps:
-
-1) Generate configuration (self-signed + domain)
+- 8443 is disabled by default; explicitly enable with:
 
 ```bash
-SSL_MODE=self-signed \
-bash docker/scripts/generate-config.sh \
-  --mode full --domain your-domain.com --with-nginx --with-turn
+bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 ```
 
-2) Start services manually (to avoid auto-provisioning Let’s Encrypt)
-
-```bash
-docker compose build
-docker compose --profile nginx up -d
-```
-
-3) Import the CA certificate `docker/ssl/ca-cert.pem` into your browser, or accept the risk on first visit
-
-Optional: To use `turns:443`, enable SNI 443 split (see “Common Flags” and the generator help).
-
-Note: For production, prefer Let’s Encrypt to avoid trust/HSTS issues.
+- For development or managed devices only (internal CA trusted fleet-wide); HSTS disabled; `turns:443` not guaranteed. For restricted networks (443-only), use full (domain + trusted cert + SNI 443).
 
 ### Public Domain Deployment (HTTPS + Nginx) — Quick Test
 
@@ -465,17 +451,13 @@ Note: For production, prefer Let’s Encrypt to avoid trust/HSTS issues.
 
 4) Verify: visit `https://<your-domain>`, `/api/health` returns 200; open `chrome://webrtc-internals` and check for `relay` candidates (TURN)
 
-### SSL/TLS Configuration
+### SSL/TLS Automation (Let’s Encrypt)
 
-1. **Self-signed Certificates** (default):
+In full mode, certificates are auto-issued and auto-renewed:
 
-   - Automatically generated and configured
-   - Suitable for private networks and testing
-   - Certificate location: `docker/ssl/`
-
-2. **Let's Encrypt Certificates** (planned):
-   - Automatic application and renewal
-   - Suitable for production with domain names
+- Initial issuance: webroot (no downtime); system certs live under `/etc/letsencrypt/live/<domain>/`; copied to `docker/ssl/` and 443 is enabled.
+- Renewal: `certbot.timer` or `/etc/cron.d/certbot` runs daily; the deploy-hook copies new certs to `docker/ssl/` and hot-reloads Nginx/Coturn.
+- Lineage suffixes (-0001/-0002) are handled automatically.
 
 ### Network Security
 

@@ -6,10 +6,13 @@
 
 ```bash
 # 内网（无域名/无公网IP）
-bash ./deploy.sh --mode private
+bash ./deploy.sh --mode lan-http
 
 # 内网 + TURN（推荐用于复杂内网/NAT）
-bash ./deploy.sh --mode private --with-turn
+bash ./deploy.sh --mode lan-http --with-turn
+
+# 内网 HTTPS（自签，开发/受管环境，需显式开启 8443）
+bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 
 # 公网IP（无域名），含 TURN
 bash ./deploy.sh --mode public --with-turn
@@ -23,10 +26,10 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 
 ## 模式一览
 
-- basic：内网 HTTP；自动进行网络环境检测
-- private：内网 HTTP；跳过网络环境检测（更快，适合已知内网/CI 环境）
-- public：公网 HTTP；开启 TURN；无域名也可使用
-- full：域名 + HTTPS；开启 TURN；可选启用 SNI 443 分流
+- lan-http：内网 HTTP；最快上手，默认不启用 TLS
+- lan-tls：内网 HTTPS（自签，仅开发/受管环境）；默认不启 8443，需 `--enable-web-https` 显式开启；禁用 HSTS；不保证 turns:443
+- public：公网 HTTP；开启 TURN；无域名也可使用（不提供 HTTPS/turns:443）
+- full：域名 + HTTPS（Let’s Encrypt 自动签发/续期）+ TURN；默认启用 SNI 443 分流（可 `--no-sni443` 关闭）
 
 ## 🎯 部署优势
 
@@ -418,32 +421,15 @@ bash deploy.sh --mode full --with-nginx
 
 ## 🔒 HTTPS 与安全
 
-### 域名 + 自签证书（full + self-signed）
+### 内网 HTTPS（lan-tls，自签，开发/受管环境）
 
-适用于仅需加密链路或内网 PKI 的场景。
-
-步骤：
-
-1) 生成配置（自签证书 + 域名）
+- 默认不启 8443；需 `--enable-web-https` 显式开启：
 
 ```bash
-SSL_MODE=self-signed \
-bash docker/scripts/generate-config.sh \
-  --mode full --domain your-domain.com --with-nginx --with-turn
+bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 ```
 
-2) 启动服务（手动启动，避免自动申请 Let’s Encrypt）
-
-```bash
-docker compose build
-docker compose --profile nginx up -d
-```
-
-3) 在浏览器导入 CA 证书 `docker/ssl/ca-cert.pem`，或在首次访问时接受风险提示
-
-可选：如需 `turns:443`，请启用 SNI 443 分流（参考“常用开关”与生成器帮助）。
-
-注意：生产环境建议使用 Let’s Encrypt，避免浏览器信任问题与 HSTS 限制。
+- 仅用于开发或受管终端（全员导入内部 CA）；禁用 HSTS；不保证 `turns:443`；受限网络（仅 443 出口）应使用 full（域名 + 受信证书 + SNI 443）。
 
 ### 公网域名部署（HTTPS + Nginx）快速测试
 
@@ -463,8 +449,8 @@ docker compose --profile nginx up -d
 
 full 模式自动申请并续期证书：
 
-- 首次签发：webroot 模式（无停机），系统证书保存在 `/etc/letsencrypt/live/<domain>/`，脚本复制到 `docker/ssl/` 并启用 443；
-- 续期：certbot deploy-hook 自动复制至 `docker/ssl/`，并热重载 Nginx 与重载（或重启）coturn；
+- 首次签发：webroot 模式（无停机），系统证书在 `/etc/letsencrypt/live/<domain>/`，脚本复制到 `docker/ssl/` 并启用 443；
+- 续期：`certbot.timer` 或 `/etc/cron.d/certbot` 每日尝试 `certbot renew`；deploy-hook 自动复制新证书并热重载 Nginx/Coturn；
 - 证书谱系（-0001/-0002）已自动适配，无需手动处理。
 
 ### 网络安全

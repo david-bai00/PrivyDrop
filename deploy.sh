@@ -39,21 +39,28 @@ Usage: $0 [options]
 
 Options:
   --domain DOMAIN     Specify domain (for HTTPS deployments)
-  --mode MODE         Deployment mode: basic|public|full|private
-                      basic/private: Intranet HTTP (default; private skips network detection)
-                      public: Public HTTP + TURN server
-                      full:   Full HTTPS + TURN server
+  --mode MODE         Deployment mode: lan-http|lan-tls|public|full
+                      lan-http: Intranet HTTP (fast start; no TLS)
+                      lan-tls:  Intranet HTTPS (self-signed; dev/managed env only)
+                      public:   Public HTTP + TURN server
+                      full:     Domain + HTTPS (Let’s Encrypt) + TURN server
   --with-nginx        Enable Nginx reverse proxy
   --with-turn         Enable TURN server
-  --with-sni443       Enable 443 SNI routing (enabled by default in full mode)
+  --with-sni443       Force enable 443 SNI routing (full; default enabled)
+  --no-sni443         Disable 443 SNI routing (full; web listens directly on 443)
+  --enable-web-https  In lan-tls mode, enable self-signed HTTPS on 8443 (no HSTS)
   --le-email EMAIL    Email for Let's Encrypt (recommended in full mode)
+  --test-renewal      Run 'certbot renew --dry-run' and reload services (verification)
   --clean             Clean existing containers and data
   --help              Show help
 
 Examples:
-  $0                                    # Basic deployment
-  $0 --mode public --with-turn          # Public deployment + TURN server
-  $0 --domain example.com --mode full   # Full HTTPS deployment
+  $0 --mode lan-http                     # LAN HTTP quick start
+  $0 --mode lan-http --with-turn         # LAN HTTP with TURN (NAT-friendly)
+  $0 --mode lan-tls --enable-web-https   # LAN HTTPS (self-signed) on 8443 (dev/managed)
+  $0 --mode public --with-turn           # Public deployment + TURN server (no domain)
+  $0 --mode full --domain example.com \\
+       --with-nginx --with-turn --le-email you@domain.com   # Full HTTPS deployment (LE auto-issue/renew)
   $0 --clean                            # Clean deployment
 
 Requirements:
@@ -71,6 +78,9 @@ parse_arguments() {
     CLEAN_MODE=false
     LE_EMAIL=""
     WITH_SNI443=false
+    DISABLE_SNI443=false
+    ENABLE_WEB_HTTPS=false
+    TEST_RENEWAL=false
     
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -94,9 +104,21 @@ parse_arguments() {
                 WITH_SNI443=true
                 shift
                 ;;
+            --no-sni443)
+                DISABLE_SNI443=true
+                shift
+                ;;
+            --enable-web-https)
+                ENABLE_WEB_HTTPS=true
+                shift
+                ;;
             --le-email)
                 LE_EMAIL="$2"
                 shift 2
+                ;;
+            --test-renewal)
+                TEST_RENEWAL=true
+                shift
                 ;;
             --clean)
                 CLEAN_MODE=true
@@ -222,6 +244,40 @@ EOF
     fi
 }
 
+# Ensure renewal is scheduled daily: prefer systemd timer; fallback to cron
+ensure_renewal_scheduler() {
+    if command -v systemctl >/dev/null 2>&1; then
+        sudo systemctl enable --now certbot.timer 2>/dev/null || true
+        return 0
+    fi
+    # Fallback: cron job every 12 hours
+    if [ -w /etc/cron.d ] || sudo test -d /etc/cron.d; then
+        sudo bash -c 'cat > /etc/cron.d/certbot' << 'EOF'
+# Auto-renew Let's Encrypt certificates for PrivyDrop
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+0 */12 * * * root certbot renew -q
+EOF
+    fi
+}
+
+# Dry-run renewal test
+test_renewal() {
+    log_info "Running certbot dry-run renewal test..."
+    if ! command -v certbot >/dev/null 2>&1; then
+        log_error "certbot not installed. Run full mode issuance first or install certbot manually"
+        return 1
+    fi
+    sudo certbot renew --dry-run || {
+        log_error "certbot dry-run failed"
+        return 1
+    }
+    # Attempt hot-reload of nginx and coturn similar to deploy-hook
+    docker compose exec -T nginx nginx -s reload 2>/dev/null || docker compose restart nginx || true
+    docker compose exec -T coturn sh -c 'kill -HUP 1' 2>/dev/null || docker compose restart coturn || true
+    log_success "Dry-run renewal completed; services reloaded"
+}
+
 # Issue via webroot and enable 443 config
 provision_letsencrypt_cert() {
     # Only in full mode with nginx enabled and domain set
@@ -238,6 +294,7 @@ provision_letsencrypt_cert() {
 
     ensure_certbot
     install_certbot_deploy_hook
+    ensure_renewal_scheduler
 
     mkdir -p docker/letsencrypt-www docker/ssl
 
@@ -277,6 +334,7 @@ provision_letsencrypt_cert() {
     # Enable 443 config (certs ready): append only; pass SNI flag (enabled by default in full)
     local gen_args=(--mode full --domain "$DOMAIN_NAME" --no-clean --ssl-mode letsencrypt)
     [[ "$WITH_SNI443" == "true" ]] && gen_args+=(--enable-sni443)
+    [[ "$DISABLE_SNI443" == "true" ]] && gen_args+=(--no-sni443)
     bash "$DOCKER_SCRIPTS_DIR/generate-config.sh" "${gen_args[@]}" || true
 
     # Hot-reload nginx to enable 443
@@ -336,6 +394,8 @@ setup_environment() {
     [[ -n "$DOMAIN_NAME" ]] && detect_args="--domain $DOMAIN_NAME"
     [[ -n "$DEPLOYMENT_MODE" ]] && detect_args="$detect_args --mode $DEPLOYMENT_MODE"
     [[ "$WITH_SNI443" == "true" ]] && detect_args="$detect_args --enable-sni443"
+    [[ "$DISABLE_SNI443" == "true" ]] && detect_args="$detect_args --no-sni443"
+    [[ "$ENABLE_WEB_HTTPS" == "true" ]] && detect_args="$detect_args --enable-web-https"
     
     if ! bash "$DOCKER_SCRIPTS_DIR/detect-environment.sh" $detect_args; then
         log_error "Environment detection failed"
@@ -619,6 +679,11 @@ main() {
     # Check dependencies
     check_dependencies
     echo ""
+
+    # If only testing renewal, run and exit
+    if [[ "$TEST_RENEWAL" == "true" ]]; then
+        test_renewal && exit 0 || exit 1
+    fi
     
     # Clean mode
     clean_deployment
