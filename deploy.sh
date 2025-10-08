@@ -1,19 +1,19 @@
 #!/bin/bash
 
-set -e  # 遇到错误立即退出
+set -e  # Exit immediately on error
 
-# 颜色定义
+# Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# 脚本目录
+# Script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOCKER_SCRIPTS_DIR="$SCRIPT_DIR/docker/scripts"
 
-# 日志函数
+# Logging helpers
 log_info() {
     echo -e "${BLUE}ℹ️  $1${NC}"
 }
@@ -30,39 +30,39 @@ log_error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
-# 显示帮助信息
+# Show help
 show_help() {
     cat << EOF
-PrivyDrop Docker 一键部署脚本
+PrivyDrop Docker Deployment Script
 
-用法: $0 [选项]
+Usage: $0 [options]
 
-选项:
-  --domain DOMAIN     指定域名 (用于HTTPS部署)
-  --mode MODE         部署模式: basic|public|full|private
-                      basic/private: 内网HTTP部署 (默认，private 将跳过网络检测)
-                      public: 公网HTTP部署 + TURN服务器
-                      full: 完整HTTPS部署 + TURN服务器
-  --with-nginx        启用Nginx反向代理
-  --with-turn         启用TURN服务器
-  --with-sni443       启用 443 SNI 分流 (full 模式默认启用)
-  --le-email EMAIL    使用 Let's Encrypt 时的证书邮箱（full 模式推荐传入）
-  --clean             清理现有容器和数据
-  --help              显示帮助信息
+Options:
+  --domain DOMAIN     Specify domain (for HTTPS deployments)
+  --mode MODE         Deployment mode: basic|public|full|private
+                      basic/private: Intranet HTTP (default; private skips network detection)
+                      public: Public HTTP + TURN server
+                      full:   Full HTTPS + TURN server
+  --with-nginx        Enable Nginx reverse proxy
+  --with-turn         Enable TURN server
+  --with-sni443       Enable 443 SNI routing (enabled by default in full mode)
+  --le-email EMAIL    Email for Let's Encrypt (recommended in full mode)
+  --clean             Clean existing containers and data
+  --help              Show help
 
-示例:
-  $0                                    # 基础部署
-  $0 --mode public --with-turn          # 公网部署 + TURN服务器
-  $0 --domain example.com --mode full   # 完整HTTPS部署
-  $0 --clean                            # 清理部署
+Examples:
+  $0                                    # Basic deployment
+  $0 --mode public --with-turn          # Public deployment + TURN server
+  $0 --domain example.com --mode full   # Full HTTPS deployment
+  $0 --clean                            # Clean deployment
 
-要求:
-  - Docker Engine 和 Docker Compose V2（命令为 `docker compose`）
+Requirements:
+  - Docker Engine and Docker Compose V2 (command `docker compose`)
 
 EOF
 }
 
-# 解析命令行参数
+# Parse command-line arguments
 parse_arguments() {
     DOMAIN_NAME=""
     DEPLOYMENT_MODE=""
@@ -107,23 +107,23 @@ parse_arguments() {
                 exit 0
                 ;;
             *)
-                log_error "未知参数: $1"
+                log_error "Unknown argument: $1"
                 show_help
                 exit 1
                 ;;
         esac
     done
     
-    # 导出变量供其他脚本使用
+    # Export variables for other scripts
     export DOMAIN_NAME
     export DEPLOYMENT_MODE
     export WITH_NGINX
     export WITH_TURN
 }
 
-# 检查依赖
+# Check dependencies
 check_dependencies() {
-    log_info "检查依赖..."
+    log_info "Checking dependencies..."
     
     local missing_deps=()
     
@@ -144,16 +144,16 @@ check_dependencies() {
     fi
     
     if [[ ${#missing_deps[@]} -gt 0 ]]; then
-        log_error "缺少依赖: ${missing_deps[*]}"
+        log_error "Missing dependencies: ${missing_deps[*]}"
         echo ""
-        echo "请安装缺少的依赖:"
+        echo "Please install the missing dependencies:"
         for dep in "${missing_deps[@]}"; do
             case $dep in
                 docker)
                     echo "  Docker: https://docs.docker.com/get-docker/"
                     ;;
                 "docker compose (V2)")
-                    echo "  Docker Compose V2 插件: https://docs.docker.com/compose/install/"
+                    echo "  Docker Compose V2 plugin: https://docs.docker.com/compose/install/"
                     ;;
                 curl)
                     echo "  curl: sudo apt-get install curl (Ubuntu/Debian)"
@@ -166,24 +166,24 @@ check_dependencies() {
         exit 1
     fi
     
-    log_success "依赖检查通过"
+    log_success "Dependency checks passed"
 }
 
-# 安装并准备 Let's Encrypt（certbot）
+# Install and prepare Let's Encrypt (certbot)
 ensure_certbot() {
     if command -v certbot >/dev/null 2>&1; then
         return 0
     fi
-    log_info "安装 certbot (需要 sudo 权限)..."
+    log_info "Installing certbot (requires sudo)..."
     if command -v apt-get >/dev/null 2>&1; then
         sudo apt-get update -y && sudo apt-get install -y certbot
     else
-        log_error "未检测到 apt-get，请手动安装 certbot 或在支持的系统上运行"
+        log_error "apt-get not found. Please install certbot manually or run on a supported system"
         exit 1
     fi
 }
 
-# 写入 certbot 部署钩子：续期后复制证书并热重载服务
+# Write certbot deploy hook: copy certs and hot-reload services after renewal
 install_certbot_deploy_hook() {
     local repo_dir="$SCRIPT_DIR"
     local hook_dir="/etc/letsencrypt/renewal-hooks/deploy"
@@ -197,7 +197,7 @@ set -e
 REPO_DIR="$repo_dir"
 COMPOSE_FILE="$compose_file"
 
-# RENEWED_LINEAGE 由 certbot 传入，指向 live/<domain>
+# RENEWED_LINEAGE is provided by certbot and points to live/<domain>
 if [[ -z "\$RENEWED_LINEAGE" ]]; then
   exit 0
 fi
@@ -206,34 +206,34 @@ cp "\$RENEWED_LINEAGE/fullchain.pem" "\$REPO_DIR/docker/ssl/server-cert.pem"
 cp "\$RENEWED_LINEAGE/privkey.pem" "\$REPO_DIR/docker/ssl/server-key.pem"
 chmod 600 "\$REPO_DIR/docker/ssl/server-key.pem" || true
 
-# 热重载 nginx，如失败则重启
+# Hot-reload nginx; restart if it fails
 docker compose -f "\$COMPOSE_FILE" exec -T nginx nginx -s reload 2>/dev/null || \
 docker compose -f "\$COMPOSE_FILE" restart nginx || true
 
-# 优先向 coturn 发送 HUP，不行则重启（若未启用则忽略）
+# Prefer sending HUP to coturn; restart if needed (ignore if disabled)
 docker compose -f "\$COMPOSE_FILE" exec -T coturn sh -c 'kill -HUP 1' 2>/dev/null || \
 docker compose -f "\$COMPOSE_FILE" restart coturn || true
 EOF
     sudo chmod +x "$hook_file"
 
-    # 尝试启用 systemd 定时器
+    # Attempt to enable systemd timer
     if command -v systemctl >/dev/null 2>&1; then
         sudo systemctl enable --now certbot.timer 2>/dev/null || true
     fi
 }
 
-# 使用 webroot 首次签发并启用 443 配置
+# Issue via webroot and enable 443 config
 provision_letsencrypt_cert() {
-    # 仅在 full 模式且启用 nginx 且存在域名时执行
+    # Only in full mode with nginx enabled and domain set
     if [[ "$DEPLOYMENT_MODE" != "full" || "$WITH_NGINX" != "true" ]]; then
         return 0
     fi
     if [[ -z "$DOMAIN_NAME" ]]; then
-        log_warning "full 模式未指定 --domain，跳过 Let’s Encrypt"
+        log_warning "Full mode without --domain; skipping Let's Encrypt"
         return 0
     fi
     if [[ -z "$LE_EMAIL" ]]; then
-        log_warning "未指定 --le-email，将使用 --register-unsafely-without-email"
+        log_warning "No --le-email specified; using --register-unsafely-without-email"
     fi
 
     ensure_certbot
@@ -241,32 +241,32 @@ provision_letsencrypt_cert() {
 
     mkdir -p docker/letsencrypt-www docker/ssl
 
-    # 如果证书已存在（含 -0001 谱系），跳过签发
+    # If certificates already exist (including -0001 lineage), skip issuance
     if [[ -f "/etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem" ]] || ls -1d /etc/letsencrypt/live/${DOMAIN_NAME}* >/dev/null 2>&1; then
-        log_info "检测到已存在的证书/谱系，跳过首次签发"
+        log_info "Detected existing certificates/lineage; skipping initial issuance"
     else
-        log_info "通过 webroot 模式签发 Let's Encrypt 证书..."
+        log_info "Issuing Let's Encrypt certificate via webroot..."
         local email_args="--email $LE_EMAIL"
         if [[ -z "$LE_EMAIL" ]]; then
             email_args="--register-unsafely-without-email"
         fi
-        # 需要 80 端口可达且 nginx 已启动
+        # Requires port 80 reachable and nginx running
         sudo certbot certonly --webroot -w "$(pwd)/docker/letsencrypt-www" \
             -d "$DOMAIN_NAME" -d "turn.$DOMAIN_NAME" \
             $email_args --agree-tos --non-interactive || {
-              log_error "证书签发失败，请查看 certbot 输出"
+              log_error "Certificate issuance failed; please check certbot output"
               return 1
             }
     fi
 
-    # 解析谱系目录（兼容 -0001/-0002 后缀）并复制到 docker/ssl
+    # Resolve lineage directory (supports -0001/-0002 suffixes) and copy to docker/ssl
     local lineage_dir
     lineage_dir=$(readlink -f "/etc/letsencrypt/live/$DOMAIN_NAME" 2>/dev/null || true)
     if [[ -z "$lineage_dir" || ! -d "$lineage_dir" ]]; then
         lineage_dir=$(ls -1d /etc/letsencrypt/live/${DOMAIN_NAME}* 2>/dev/null | sort | tail -1)
     fi
     if [[ -z "$lineage_dir" || ! -f "$lineage_dir/fullchain.pem" ]]; then
-        log_error "未找到有效证书谱系目录，请检查 /etc/letsencrypt/live/${DOMAIN_NAME}*"
+        log_error "No valid certificate lineage directory found. Check /etc/letsencrypt/live/${DOMAIN_NAME}*"
         return 1
     fi
 
@@ -274,99 +274,99 @@ provision_letsencrypt_cert() {
     sudo cp "$lineage_dir/privkey.pem" docker/ssl/server-key.pem
     sudo chmod 600 docker/ssl/server-key.pem || true
 
-    # 启用 443 配置（证书已就绪）：不清理，仅追加；传递 SNI 开关（默认 full 启用）
+    # Enable 443 config (certs ready): append only; pass SNI flag (enabled by default in full)
     local gen_args=(--mode full --domain "$DOMAIN_NAME" --no-clean --ssl-mode letsencrypt)
     [[ "$WITH_SNI443" == "true" ]] && gen_args+=(--enable-sni443)
     bash "$DOCKER_SCRIPTS_DIR/generate-config.sh" "${gen_args[@]}" || true
 
-    # 热重载 nginx 以启用 443
+    # Hot-reload nginx to enable 443
     docker compose exec -T nginx nginx -s reload || docker compose restart nginx
 }
 
-# 清理现有部署
+# Clean existing deployment
 clean_deployment() {
     if [[ "$CLEAN_MODE" == "true" ]]; then
-        log_warning "清理现有部署..."
+        log_warning "Cleaning existing deployment..."
         
-        # 停止并删除容器
+        # Stop and remove containers
         if [[ -f "docker-compose.yml" ]]; then
             docker compose down -v --remove-orphans 2>/dev/null || true
         fi
-        # 优雅停止后兜底强制清理命名容器
+        # After graceful stop, force-clean named containers as fallback
         docker stop -t 10 privydrop-nginx privydrop-coturn 2>/dev/null || true
         docker rm -f privydrop-nginx privydrop-coturn 2>/dev/null || true
-        # 兜底清理项目网络（若存在）
+        # Fallback: remove project network (if present)
         docker network rm privydrop_privydrop-network 2>/dev/null || true
         
-        # 删除镜像
+        # Remove images
         docker images | grep privydrop | awk '{print $3}' | xargs -r docker rmi -f 2>/dev/null || true
         
-        # 清理配置文件
+        # Clean configuration files
         rm -rf docker/nginx/conf.d/*.conf docker/ssl/* logs/* .env 2>/dev/null || true
         
-        log_success "清理完成"
+        log_success "Cleanup complete"
         
-        if [[ $# -eq 1 ]]; then  # 如果只有--clean参数
+        if [[ $# -eq 1 ]]; then  # If only --clean parameter
             exit 0
         fi
     fi
 }
 
-# 确保 TURN 服务按需启动（当指定 --with-turn 时）
+# Ensure TURN service starts when requested (--with-turn)
 ensure_turn_running() {
     if [[ "$WITH_TURN" != "true" ]]; then
         return 0
     fi
-    # 未运行则显式启用 profile 启动 coturn
+    # If not running, start coturn via profile
     if ! docker compose ps | grep -q "privydrop-coturn"; then
-        log_info "启动 TURN 服务 (profile: turn)..."
+        log_info "Starting TURN service (profile: turn)..."
         docker compose --profile turn up -d coturn || true
     fi
 }
 
-# 环境检测和配置生成
+# Environment detection and configuration generation
 setup_environment() {
-    log_info "设置环境..."
+    log_info "Setting up environment..."
     
-    # 确保脚本可执行
+    # Ensure scripts are executable
     chmod +x "$DOCKER_SCRIPTS_DIR"/*.sh 2>/dev/null || true
     
-    # 运行环境检测
+    # Run environment detection
     local detect_args=""
     [[ -n "$DOMAIN_NAME" ]] && detect_args="--domain $DOMAIN_NAME"
     [[ -n "$DEPLOYMENT_MODE" ]] && detect_args="$detect_args --mode $DEPLOYMENT_MODE"
     [[ "$WITH_SNI443" == "true" ]] && detect_args="$detect_args --enable-sni443"
     
     if ! bash "$DOCKER_SCRIPTS_DIR/detect-environment.sh" $detect_args; then
-        log_error "环境检测失败"
+        log_error "Environment detection failed"
         exit 1
     fi
     
-    # 生成配置文件
+    # Generate configuration files
     if ! bash "$DOCKER_SCRIPTS_DIR/generate-config.sh" $detect_args; then
-        log_error "配置生成失败"
+        log_error "Configuration generation failed"
         exit 1
     fi
     
-    log_success "环境设置完成"
+    log_success "Environment setup complete"
 }
 
-# 构建和启动服务
+# Build and start services
 deploy_services() {
-    log_info "构建和启动服务..."
+    log_info "Building and starting services..."
 
-    # 确保日志目录存在并放宽权限，避免容器无法写日志（coturn/nginx 等）
+    # Ensure log directories exist and relax permissions so containers (coturn/nginx etc.) can write logs
     mkdir -p logs logs/nginx logs/backend logs/frontend logs/coturn 2>/dev/null || true
     chmod 777 -R logs 2>/dev/null || true
-    log_info "日志目录已准备并授权: ./logs (权限 777)"
+    log_info "Log directories prepared and permissions set: ./logs (mode 777)"
 
-    # 停止现有服务
+    # Stop existing services
     if docker compose ps | grep -q "Up"; then
-        log_info "停止现有服务..."
+        log_info "Stopping existing services..."
         docker compose down
     fi
     
-    # 确定启用的服务（Compose V2 需要将 --profile 放在子命令之前）
+    # Determine enabled services (Compose V2 requires --profile before the subcommand)
     local profiles=""
     if [[ "$WITH_NGINX" == "true" ]]; then
         profiles="$profiles --profile nginx"
@@ -375,28 +375,28 @@ deploy_services() {
         profiles="$profiles --profile turn"
     fi
     
-    # 构建镜像（先并行，失败则串行回退）
-    log_info "构建Docker镜像..."
+    # Build images (parallel first, fall back to serial on failure)
+    log_info "Building Docker images..."
     set +e
     docker compose build --parallel
     local build_status=$?
     set -e
     if [[ $build_status -ne 0 ]]; then
-        log_warning "并行构建失败，回退为串行构建..."
+        log_warning "Parallel build failed; falling back to serial build..."
         docker compose build
     fi
     
-    # 启动服务（--profile 需置于 up 之前）
-    log_info "启动服务..."
+    # Start services (--profile must precede up)
+    log_info "Starting services..."
     # shellcheck disable=SC2086
     docker compose $profiles up -d
     
-    log_success "服务启动完成"
+    log_success "Services started"
 }
 
-# 等待服务就绪
+# Wait for services to be ready
 wait_for_services() {
-    log_info "等待服务就绪..."
+    log_info "Waiting for services to be ready..."
     
     local max_attempts=60
     local attempt=0
@@ -406,12 +406,12 @@ wait_for_services() {
         local backend_ready=false
         local frontend_ready=false
         
-        # 检查后端健康状态
+        # Check backend health
         if curl -f http://localhost:3001/health &> /dev/null; then
             backend_ready=true
         fi
         
-        # 检查前端健康状态
+        # Check frontend health
         if curl -f http://localhost:3002/api/health &> /dev/null; then
             frontend_ready=true
         fi
@@ -429,58 +429,58 @@ wait_for_services() {
     echo ""
     
     if [[ "$services_ready" == "true" ]]; then
-        log_success "所有服务已就绪"
+        log_success "All services are ready"
         return 0
     else
-        log_error "服务启动超时"
-        log_info "查看服务状态: docker compose ps"
-        log_info "查看服务日志: docker compose logs -f"
+        log_error "Service startup timed out"
+        log_info "View service status: docker compose ps"
+        log_info "View service logs: docker compose logs -f"
         return 1
     fi
 }
 
-# 运行部署后检查
+# Run post-deployment checks
 post_deployment_checks() {
-    log_info "运行部署后检查..."
+    log_info "Running post-deployment checks..."
     
-    # 检查容器状态
-    log_info "检查容器状态..."
+    # Check container status
+    log_info "Checking container status..."
     docker compose ps
     
-    # full+nginx 场景追加 HTTPS 健康检查（若定义了域名）
+    # In full+nginx, add HTTPS health check (if domain defined)
     if [[ -f ".env" ]]; then
         local dep_mode="$(grep "DEPLOYMENT_MODE=" .env | cut -d'=' -f2)"
         local dname="$(grep "DOMAIN_NAME=" .env | cut -d'=' -f2)"
         if [[ "$dep_mode" == "full" && -n "$dname" ]]; then
-            log_info "测试: HTTPS 健康检查 https://$dname/api/health"
+            log_info "Test: HTTPS health check https://$dname/api/health"
             if curl -fsS "https://$dname/api/health" >/dev/null; then
-                log_success "HTTPS 健康检查通过"
+                log_success "HTTPS health check passed"
             else
-                log_warning "HTTPS 健康检查失败。若证书刚签发，请稍等或执行: bash docker/scripts/generate-config.sh --mode full --domain $dname --no-clean && docker compose exec -T nginx nginx -s reload"
+                log_warning "HTTPS health check failed. If the certificate was just issued, wait a bit or run: bash docker/scripts/generate-config.sh --mode full --domain $dname --no-clean && docker compose exec -T nginx nginx -s reload"
             fi
         fi
     fi
     
-    # 运行健康检查测试
+    # Run health-check tests
     if [[ -f "test-health-apis.sh" ]]; then
-        log_info "运行健康检查测试..."
+        log_info "Running health-check tests..."
         if bash test-health-apis.sh; then
-            log_success "健康检查测试通过"
+            log_success "Health-check tests passed"
         else
-            log_warning "健康检查测试失败，但服务可能仍然正常"
+            log_warning "Health-check tests failed, but services may still be working"
         fi
     fi
     
-    log_success "部署后检查完成"
+    log_success "Post-deployment checks complete"
 }
 
-# 显示部署结果
+# Show deployment results
 show_deployment_info() {
     echo ""
-    echo -e "${GREEN}🎉 PrivyDrop 部署完成！${NC}"
+    echo -e "${GREEN}🎉 PrivyDrop deployment complete!${NC}"
     echo ""
     
-    # 读取配置信息
+    # Read configuration
     local local_ip=""
     local public_ip=""
     local frontend_port=""
@@ -501,47 +501,47 @@ show_deployment_info() {
         turn_enabled_env=$(grep "TURN_ENABLED=" .env | cut -d'=' -f2)
     fi
     
-    echo -e "${BLUE}📋 访问信息：${NC}"
+    echo -e "${BLUE}📋 Access Info:${NC}"
 
-    # 判定是否公网场景（public/full）
+    # Determine if public scenario (public/full)
     local is_public="false"
     if [[ "$deployment_mode" == "public" || "$deployment_mode" == "full" || "$network_mode" == "public" ]]; then
         is_public="true"
     fi
 
     if [[ "$is_public" == "true" ]]; then
-        # 公网展示优先域名，其次公网IP
+        # For public scenarios, prefer domain, then public IP
         if [[ -n "$domain_name" ]]; then
             if [[ "$WITH_NGINX" == "true" || "$deployment_mode" == "full" ]]; then
-                echo "   公网访问: https://$domain_name"
-                echo "   API 地址: https://$domain_name"
+                echo "   Public access: https://$domain_name"
+                echo "   API: https://$domain_name"
             else
-                echo "   公网访问: http://$domain_name:${frontend_port:-3002}"
-                echo "   API 地址: http://$domain_name:${backend_port:-3001}"
+                echo "   Public access: http://$domain_name:${frontend_port:-3002}"
+                echo "   API: http://$domain_name:${backend_port:-3001}"
             fi
         elif [[ -n "$public_ip" ]]; then
-            echo "   公网访问: http://$public_ip:${frontend_port:-3002}"
-            echo "   API 地址: http://$public_ip:${backend_port:-3001}"
+            echo "   Public access: http://$public_ip:${frontend_port:-3002}"
+            echo "   API: http://$public_ip:${backend_port:-3001}"
         else
-            # 回退：无法获取公网IP时给出局域网与本机
-            echo "   前端应用: http://localhost:${frontend_port:-3002}"
-            echo "   后端API: http://localhost:${backend_port:-3001}"
+            # Fallback: show LAN and localhost if public IP is unavailable
+            echo "   Frontend: http://localhost:${frontend_port:-3002}"
+            echo "   Backend API: http://localhost:${backend_port:-3001}"
         fi
     else
-        # 内网/基础模式：本机+局域网
-        echo "   前端应用: http://localhost:${frontend_port:-3002}"
-        echo "   后端API: http://localhost:${backend_port:-3001}"
+        # Private/basic: localhost + LAN
+        echo "   Frontend: http://localhost:${frontend_port:-3002}"
+        echo "   Backend API: http://localhost:${backend_port:-3001}"
         if [[ -n "$local_ip" ]] && [[ "$local_ip" != "127.0.0.1" ]]; then
             echo ""
-            echo -e "${BLUE}🌐 局域网访问：${NC}"
-            echo "   前端应用: http://$local_ip:${frontend_port:-3002}"
-            echo "   后端API: http://$local_ip:${backend_port:-3001}"
+            echo -e "${BLUE}🌐 LAN Access:${NC}"
+            echo "   Frontend: http://$local_ip:${frontend_port:-3002}"
+            echo "   Backend API: http://$local_ip:${backend_port:-3001}"
         fi
     fi
     
     if [[ "$WITH_NGINX" == "true" ]]; then
         echo ""
-        echo -e "${BLUE}🔀 Nginx代理：${NC}"
+        echo -e "${BLUE}🔀 Nginx Proxy:${NC}"
         if [[ -n "$domain_name" ]]; then
             echo "   HTTP: http://$domain_name"
             [[ -f "docker/ssl/server-cert.pem" ]] && echo "   HTTPS: https://$domain_name"
@@ -555,18 +555,18 @@ show_deployment_info() {
     fi
     
     echo ""
-    echo -e "${BLUE}🔧 管理命令：${NC}"
-    echo "   查看状态: docker compose ps"
-    echo "   查看日志: docker compose logs -f [服务名]"
-    echo "   重启服务: docker compose restart [服务名]"
-    echo "   停止服务: docker compose down"
-    echo "   完全清理: $0 --clean"
+    echo -e "${BLUE}🔧 Management Commands:${NC}"
+    echo "   Status: docker compose ps"
+    echo "   Logs: docker compose logs -f [service]"
+    echo "   Restart: docker compose restart [service]"
+    echo "   Stop: docker compose down"
+    echo "   Full cleanup: $0 --clean"
     
     if [[ -f "docker/ssl/ca-cert.pem" ]]; then
         echo ""
-        echo -e "${BLUE}🔒 SSL证书：${NC}"
-        echo "   CA证书: docker/ssl/ca-cert.pem"
-        echo "   要信任HTTPS连接，请将CA证书导入浏览器"
+        echo -e "${BLUE}🔒 SSL Certificates:${NC}"
+        echo "   CA certificate: docker/ssl/ca-cert.pem"
+        echo "   To trust HTTPS, import the CA certificate into your browser"
     fi
     
     if [[ "$WITH_TURN" == "true" || "$turn_enabled_env" == "true" ]]; then
@@ -578,12 +578,12 @@ show_deployment_info() {
         fi
         
         echo ""
-        echo -e "${BLUE}🔄 TURN服务器：${NC}"
-        # 展示优先域名的 TURN 信息，否则展示公网IP
+        echo -e "${BLUE}🔄 TURN Server:${NC}"
+        # Prefer domain for TURN info; otherwise show public IP
         if [[ -n "$domain_name" ]]; then
             echo "   STUN: stun:${domain_name}:3478"
             echo "   TURN (UDP): turn:${domain_name}:3478"
-            echo "   TURN (TLS): turns:turn.${domain_name}:443 (如已配置 443 SNI 分流)"
+            echo "   TURN (TLS): turns:turn.${domain_name}:443 (if 443 SNI split is configured)"
         elif [[ -n "$public_ip" ]]; then
             echo "   STUN: stun:${public_ip}:3478"
             echo "   TURN: turn:${public_ip}:3478"
@@ -591,77 +591,77 @@ show_deployment_info() {
             echo "   STUN: stun:${local_ip}:3478"
             echo "   TURN: turn:${local_ip}:3478"
         fi
-        echo "   用户名: ${turn_username:-privydrop}"
-        echo "   密码: (保存在.env文件中)"
+        echo "   Username: ${turn_username:-privydrop}"
+        echo "   Password: (stored in .env)"
     fi
     
     echo ""
-    echo -e "${YELLOW}💡 提示：${NC}"
-    echo "   - 首次启动可能需要几分钟来下载和构建镜像"
-    echo "   - 如遇问题，请查看日志: docker compose logs -f"
-    echo "   - 更多帮助: $0 --help"
+    echo -e "${YELLOW}💡 Tips:${NC}"
+    echo "   - First run may take several minutes to download and build images"
+    echo "   - If issues occur, check logs: docker compose logs -f"
+    echo "   - More help: $0 --help"
     echo ""
 
-    # 公网场景追加：如何测试域名(HTTPS+Nginx)
+    # Public scenario: how to test a domain (HTTPS+Nginx)
     if [[ "$is_public" == "true" && -z "$domain_name" ]]; then
-        echo -e "${BLUE}🌍 公网域名部署（HTTPS + Nginx）快速测试：${NC}"
-        echo "   1) 将你的域名 A 记录解析到 ${public_ip:-<server-ip>}"
-        echo "      可选：将 turn.<your-domain> 也解析到同一IP，用于 TURN 主机名"
-        echo "   2) 运行: ./deploy.sh --mode full --domain <your-domain> --with-nginx --with-turn"
-        echo "   3) 放行端口: 80, 443, 3478/udp, 5349/tcp, 5349/udp"
-        echo "   4) 验证: https://<your-domain> 正常打开，/api/health 返回 200"
-        echo "      WebRTC: 打开 webrtc-internals，观察是否出现 relay 候选 (TURN)"
-        echo "   注: 目前 Docker 版本未启用 443 SNI 转发至 coturn，如需 turns:443 请后续启用 stream 分流。"
+        echo -e "${BLUE}🌍 Public domain deployment (HTTPS + Nginx) quick test:${NC}"
+        echo "   1) Point your domain A record to ${public_ip:-<server-ip>}"
+        echo "      Optional: also point turn.<your-domain> to the same IP for TURN hostname"
+        echo "   2) Run: ./deploy.sh --mode full --domain <your-domain> --with-nginx --with-turn"
+        echo "   3) Open ports: 80, 443, 3478/udp, 5349/tcp, 5349/udp"
+        echo "   4) Verify: https://<your-domain> opens, /api/health returns 200"
+        echo "      WebRTC: open chrome://webrtc-internals and check for relay candidates (TURN)"
+        echo "   Note: The Docker setup does not enable 443 SNI to coturn by default; enable stream SNI if you need turns:443."
         echo ""
     fi
 }
 
-# 主函数
+# Main function
 main() {
-    echo -e "${BLUE}=== PrivyDrop Docker 一键部署 ===${NC}"
+    echo -e "${BLUE}=== PrivyDrop Docker One-Click Deployment ===${NC}"
     echo ""
     
-    # 解析命令行参数
+    # Parse command-line arguments
     parse_arguments "$@"
     
-    # 检查依赖
+    # Check dependencies
     check_dependencies
     echo ""
     
-    # 清理模式
+    # Clean mode
     clean_deployment
-    # 若仅执行清理（未指定其它参数），直接退出，避免进入环境检测
+    # If only cleaning (no other args), exit early to skip env detection
     if [[ "$CLEAN_MODE" == "true" && -z "$DEPLOYMENT_MODE" && "$WITH_NGINX" == "false" && "$WITH_TURN" == "false" && -z "$DOMAIN_NAME" ]]; then
-        log_success "清理完成（仅清理模式），已退出。"
+        log_success "Cleanup complete (clean-only mode). Exiting."
         exit 0
     fi
     
-    # 环境设置
+    # Environment setup
     setup_environment
     echo ""
     
-    # 部署服务
+    # Deploy services
     deploy_services
     echo ""
 
-    # 若为 full + nginx，自动签发证书并启用 443
+    # If full + nginx, automatically issue certs and enable 443
     provision_letsencrypt_cert || true
-    # 确保 TURN 启动（当请求了 --with-turn 时）
+    # Ensure TURN is running (when requested with --with-turn)
     ensure_turn_running || true
     
-    # 等待服务就绪
+    # Wait for services to be ready
     if wait_for_services; then
         echo ""
         post_deployment_checks
         show_deployment_info
     else
-        log_error "部署失败，请检查日志: docker compose logs"
+        log_error "Deployment failed. Please check logs: docker compose logs"
         exit 1
     fi
 }
 
-# 捕获中断信号
-trap 'log_warning "部署被中断"; exit 1' INT TERM
+# Trap interrupt signals
+trap 'log_warning "Deployment interrupted"; exit 1' INT TERM
 
-# 运行主函数
+# Run main function
 main "$@"

@@ -1,5 +1,5 @@
 services:
-  # Redis缓存服务
+  # Redis cache service
   redis:
     image: redis:7-alpine
     container_name: privydrop-redis
@@ -16,7 +16,7 @@ services:
       retries: 3
       start_period: 5s
 
-  # 后端信令服务
+  # Backend signaling service
   backend:
     build:
       context: ./backend
@@ -49,7 +49,7 @@ services:
       retries: 3
       start_period: 40s
 
-  # 前端应用
+  # Frontend app
   frontend:
     build:
       context: ./frontend
@@ -83,7 +83,7 @@ services:
       retries: 3
       start_period: 120s
 
-  # Nginx反向代理
+  # Nginx reverse proxy
   nginx:
     image: nginx:alpine
     container_name: privydrop-nginx
@@ -105,7 +105,7 @@ services:
     profiles:
       - nginx
 
-  # TURN/STUN服务器 (可选，用于NAT穿透)
+  # TURN/STUN server (optional, for NAT traversal)
   coturn:
     image: coturn/coturn:4.6.2
     container_name: privydrop-coturn

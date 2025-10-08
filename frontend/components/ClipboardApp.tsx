@@ -49,7 +49,7 @@ const ClipboardApp = () => {
     handleDownloadFile,
   } = useFileTransferHandler({ messages, putMessageInMs });
 
-  // 简化的 WebRTC 连接初始化
+  // Simplified WebRTC connection initialization
   const {
     requestFile,
     requestFolder,
@@ -60,7 +60,7 @@ const ClipboardApp = () => {
     putMessageInMs,
   });
 
-  // 大大简化的房间管理 - 不再需要传递任何 WebRTC 依赖
+  // Greatly simplified room management - No longer need to pass any WebRTC dependencies
   const {
     processRoomIdInput,
     joinRoom,

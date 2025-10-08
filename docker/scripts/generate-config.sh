@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# 导入环境检测脚本
+# Import environment detection script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/detect-environment.sh"
 
-# 颜色定义
+# Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 日志函数
+# Logging helpers
 log_info() {
     echo -e "${BLUE}ℹ️  $1${NC}"
 }
@@ -28,7 +28,7 @@ log_error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
-# 默认与全局参数
+# Defaults and global parameters
 WITH_TURN="${WITH_TURN:-false}"
 TURN_EXTERNAL_IP_OVERRIDE=""
 TURN_MIN_PORT_DEFAULT=49152
@@ -43,13 +43,13 @@ parse_turn_port_range() {
         return 0
     fi
     if [[ ! "$range" =~ ^([0-9]{2,5})-([0-9]{2,5})$ ]]; then
-        log_error "--turn-port-range 格式应为 MIN-MAX，例如 49152-49252"
+        log_error "--turn-port-range must be MIN-MAX, e.g., 49152-49252"
         exit 1
     fi
     local min="${BASH_REMATCH[1]}"
     local max="${BASH_REMATCH[2]}"
     if (( min < 1 || max > 65535 || min >= max )); then
-        log_error "无效端口段：$min-$max，应在 1-65535 且 MIN<MAX"
+        log_error "Invalid port range: $min-$max; must be within 1-65535 and MIN<MAX"
         exit 1
     fi
     TURN_MIN_PORT="$min"
@@ -61,101 +61,101 @@ RESET_SSL=false
 
 cleanup_previous_artifacts() {
     if [[ "$NO_CLEAN" == "true" ]]; then
-        log_info "跳过清理历史生成物 (--no-clean)"
+        log_info "Skipping cleanup of previous artifacts (--no-clean)"
         return 0
     fi
-    log_warning "清理上一次生成的配置产物 (保留 SSL 证书)..."
+    log_warning "Cleaning previous generated artifacts (keeping SSL certificates)..."
     rm -f .env 2>/dev/null || true
     rm -f docker/nginx/nginx.conf 2>/dev/null || true
     rm -f docker/nginx/conf.d/*.conf 2>/dev/null || true
     rm -f docker/coturn/turnserver.conf 2>/dev/null || true
-    # 默认不清理 docker/ssl，除非显式 --reset-ssl
+    # Do not clean docker/ssl by default unless --reset-ssl is set
     if [[ "$RESET_SSL" == "true" ]]; then
-        log_warning "按请求重置 SSL 证书目录: docker/ssl/*"
+        log_warning "Resetting SSL directory as requested: docker/ssl/*"
         rm -f docker/ssl/* 2>/dev/null || true
     fi
 }
 
-# 显示帮助信息
+# Show help
 show_help() {
     cat << 'EOF'
-PrivyDrop 配置生成脚本（Docker 版）
+PrivyDrop Config Generator (Docker)
 
-用法: bash docker/scripts/generate-config.sh [选项]
+Usage: bash docker/scripts/generate-config.sh [options]
 
-选项:
-  --mode MODE              生成模式: private|basic|public|full
-                           private/basic: 内网HTTP；默认不启用TURN，前端直连后端
-                           public: 公网HTTP + 启用TURN（无域名也可，TURN host=公网IP优先）
-                           full:  完整HTTPS + 启用TURN（建议配合域名，前端走域名HTTPS）
-  --with-turn              在任意模式下启用TURN（含private/basic）。默认 external-ip=LOCAL_IP
-  --turn-external-ip IP    显式指定TURN external-ip；不指定则使用 PUBLIC_IP，否则回退 LOCAL_IP
-  --turn-port-range R      指定TURN端口段（UDP），格式 MIN-MAX；默认 49152-49252
-  --domain DOMAIN      指定域名（用于 Nginx/证书/TURN realm，如 turn.DOMAIN）
-  --local-ip IP        指定本机局域网IP（不传则自动探测）
-  --enable-sni443      启用 443 SNI 分流（turn.DOMAIN → coturn:5349，其余 → web:8443）
-  --no-sni443          关闭 443 SNI 分流（HTTPS 直接监听 443）
-  --help               显示本帮助
-  --no-clean           跳过清理历史生成物（推荐用于二次生成避免清理 SSL）
-  --reset-ssl          强制清理 docker/ssl/*（默认不清理）
-  --ssl-mode MODE      证书模式：letsencrypt|self-signed|provided
-                        - full 模式默认 letsencrypt；private/public 默认 self-signed
+Options:
+  --mode MODE              Generation mode: private|basic|public|full
+                           private/basic: Intranet HTTP; TURN disabled by default; frontend talks directly to backend
+                           public: Public HTTP + TURN enabled (works without domain; TURN host prefers public IP)
+                           full:   Full HTTPS + TURN enabled (domain recommended; frontend via domain HTTPS)
+  --with-turn              Enable TURN in any mode (including private/basic). Default external-ip=LOCAL_IP
+  --turn-external-ip IP    Explicit TURN external-ip; if not set, use PUBLIC_IP, otherwise fallback to LOCAL_IP
+  --turn-port-range R      TURN UDP port range, format MIN-MAX; default 49152-49252
+  --domain DOMAIN          Domain (for Nginx/certs/TURN realm, e.g., turn.DOMAIN)
+  --local-ip IP            Local intranet IP (auto-detected if omitted)
+  --enable-sni443          Enable 443 SNI split (turn.DOMAIN → coturn:5349, others → web:8443)
+  --no-sni443              Disable 443 SNI split (HTTPS listens directly on 443)
+  --help                   Show this help
+  --no-clean               Skip cleaning previous outputs (useful for regeneration without wiping SSL)
+  --reset-ssl              Force clean docker/ssl/* (not cleaned by default)
+  --ssl-mode MODE          Cert mode: letsencrypt|self-signed|provided
+                           - full defaults to letsencrypt; private/public default to self-signed
 
-环境变量（可选）:
-  PUBLIC_IP            显式指定公网IP；仅在 public/full 模式有效。
-                       TURN external-ip 写入优先使用 PUBLIC_IP，
-                       留空则回退为 LOCAL_IP（仅同局域网可用，穿透受限）。
+Environment variables (optional):
+  PUBLIC_IP                Explicit public IP; only used in public/full.
+                           TURN external-ip prefers PUBLIC_IP,
+                           fallback to LOCAL_IP (LAN-only; NAT traversal limited).
 
-生成内容（自动写入关键变量）:
-  - .env                          核心环境变量（含 NEXT_PUBLIC_API_URL/CORS 等）
-  - docker/nginx/*                Nginx 反向代理配置（private/basic 也会生成 HTTP 配置）
-  - docker/ssl/*                  自签证书（private/basic/public 生成；full 可替换为正式证书）
-  - docker/coturn/turnserver.conf 在 public/full 或使用 --with-turn 时生成/覆盖
+Outputs (with key variables set automatically):
+  - .env                          Core env vars (including NEXT_PUBLIC_API_URL/CORS)
+  - docker/nginx/*                Nginx reverse proxy configs (HTTP also generated for private/basic)
+  - docker/ssl/*                  Self-signed certs (generated for private/basic/public; replace with real certs for full)
+  - docker/coturn/turnserver.conf Generated/overwritten in public/full or when --with-turn is set
 
-重要说明:
-  - TURN external-ip 赋值逻辑为 external-ip=${PUBLIC_IP:-${LOCAL_IP}}
-    即优先使用 PUBLIC_IP，否则回退 LOCAL_IP。
-  - private/basic 模式不会覆盖 docker/coturn/turnserver.conf，
-    若此前生成过 TURN 配置，该文件可能保留历史 external-ip。
+Notes:
+  - TURN external-ip is set as external-ip=${PUBLIC_IP:-${LOCAL_IP}}
+    i.e., prefer PUBLIC_IP, otherwise fallback to LOCAL_IP.
+  - private/basic does not overwrite docker/coturn/turnserver.conf;
+    if TURN was generated before, that file may retain a previous external-ip.
 
-示例:
-  # 1) 纯内网（推荐开发/内网快速跑通）
+Examples:
+  # 1) Pure intranet (recommended for dev/quick LAN testing)
   bash docker/scripts/generate-config.sh --mode private [--local-ip 192.168.0.113]
 
-  # 2) 内网 + 启用TURN（默认 external-ip=LOCAL_IP，端口段=49152-49252）
+  # 2) Intranet + TURN (default external-ip=LOCAL_IP, ports=49152-49252)
   bash docker/scripts/generate-config.sh --mode private --with-turn [--local-ip 192.168.0.113]
 
-  # 3) 内网 + 启用TURN（自定义端口段/显式external-ip）
+  # 3) Intranet + TURN (custom port range / explicit external-ip)
   bash docker/scripts/generate-config.sh --mode private --with-turn \
        --turn-port-range 56000-56100 --turn-external-ip 192.168.0.113 \
        [--local-ip 192.168.0.113]
 
-  # 4) 公网HTTP + TURN（自动探测公网IP，不带域名也可；自动注入 NEXT_PUBLIC_API_URL）
+  # 4) Public HTTP + TURN (auto-detect public IP; inject NEXT_PUBLIC_API_URL)
   bash docker/scripts/generate-config.sh --mode public --local-ip 192.168.0.113
 
-  # 5) 公网HTTP + TURN（指定公网IP，避免外网探测）
+  # 5) Public HTTP + TURN (explicit public IP; avoid external detection)
   PUBLIC_IP=1.2.3.4 bash docker/scripts/generate-config.sh --mode public --local-ip 192.168.0.113
 
-  # 6) HTTPS + TURN（有域名）
+  # 6) HTTPS + TURN (with domain)
   bash docker/scripts/generate-config.sh --mode full --domain example.com --local-ip 192.168.0.113
 
-内网带TURN测试提示（不改脚本的最小步骤）:
-  A) 一步生成（推荐）：
+Intranet with TURN quick tip (minimal changes):
+  A) One-step (recommended):
      bash docker/scripts/generate-config.sh --mode private --with-turn --local-ip 192.168.0.113
-     然后 bash ./deploy.sh --mode private --with-turn
-  B) 分步生成：
-     先按 private 生成部署前后端，再 docker compose up -d coturn
+     then bash ./deploy.sh --mode private --with-turn
+  B) Step-by-step:
+     Generate private for web/backend first, then docker compose up -d coturn
 
 EOF
 }
 
-# 生成环境变量文件
+# Generate environment variables file
 generate_env_file() {
-    log_info "生成环境变量配置..."
+    log_info "Generating environment variable config..."
     
     local env_file=".env"
 
-    # 读取已有配置以保留用户自定义字段（如代理、TURN）
+    # Read existing config to keep user-defined fields (e.g., proxy, TURN)
     declare -A existing_env=()
     if [[ -f "$env_file" ]]; then
         while IFS= read -r line; do
@@ -168,14 +168,14 @@ generate_env_file() {
         done < "$env_file"
     fi
 
-    # 生成随机密码（同时保存到全局变量，供后续生成 TURN 配置使用）
+    # Generate a random password (also saved globally for TURN configuration later)
     local turn_password="${existing_env[TURN_PASSWORD]}"
     if [[ -z "$turn_password" ]]; then
         turn_password=$(openssl rand -base64 32 2>/dev/null || echo "privydrop$(date +%s)")
     fi
 
-    # 计算不同部署模式下的访问入口
-    # 同时支持 localhost 与 本机IP，两者都可用于浏览器访问，便于Docker直连或本机调试
+    # Compute access endpoints for different deployment modes
+    # Support both localhost and host IP for browser access; helpful for Docker direct access or local debugging
     local cors_origin="http://${LOCAL_IP}:3002,http://localhost:3002"
     local api_url="http://${LOCAL_IP}:3001"
     local ssl_mode="self-signed"
@@ -188,20 +188,20 @@ generate_env_file() {
     local next_public_turn_password=""
 
     if [[ "$DEPLOYMENT_MODE" == "public" ]]; then
-        # 公网无域名：前端直连后端，自动写入基于 PUBLIC_IP（无则回退 LOCAL_IP）
+        # Public without domain: frontend connects directly to backend; use PUBLIC_IP (fallback LOCAL_IP)
         local effective_public_host="${PUBLIC_IP:-$LOCAL_IP}"
         cors_origin="http://${effective_public_host}:3002,http://localhost:3002"
         api_url="http://${effective_public_host}:3001"
         turn_enabled="true"
     elif [[ "$DEPLOYMENT_MODE" == "full" ]]; then
-        # 有域名HTTPS：前端与后端都走域名，由 Nginx /api 转发
+        # With domain + HTTPS: both frontend and backend via domain; Nginx proxies /api
         cors_origin="https://${DOMAIN_NAME:-$LOCAL_IP}"
         api_url="https://${DOMAIN_NAME:-$LOCAL_IP}"
         ssl_mode="letsencrypt"
         turn_enabled="true"
     fi
 
-    # 若显式启用 TURN，则覆盖模式默认
+    # If TURN explicitly enabled, override mode defaults
     if [[ "$WITH_TURN" == "true" ]]; then
         turn_enabled="true"
     fi
@@ -211,7 +211,7 @@ generate_env_file() {
             turn_host_value="turn.${DOMAIN_NAME}"
             turn_realm_value="turn.${DOMAIN_NAME}"
         else
-            # 无域名时：主机优先使用 PUBLIC_IP，其次回退 LOCAL_IP
+            # Without domain: prefer PUBLIC_IP; fallback to LOCAL_IP
             turn_host_value="${PUBLIC_IP:-$LOCAL_IP}"
             turn_realm_value="turn.local"
         fi
@@ -221,7 +221,7 @@ generate_env_file() {
         next_public_turn_password="$turn_password"
     fi
 
-    # 端口段（默认 49152-49252，可被 --turn-port-range 覆盖）
+    # Port range (default 49152-49252; overridable via --turn-port-range)
     local turn_min_port_value="${TURN_MIN_PORT:-$TURN_MIN_PORT_DEFAULT}"
     local turn_max_port_value="${TURN_MAX_PORT:-$TURN_MAX_PORT_DEFAULT}"
 
@@ -230,7 +230,7 @@ generate_env_file() {
     local https_proxy_value="${HTTPS_PROXY:-${existing_env[HTTPS_PROXY]}}"
     local no_proxy_value="${NO_PROXY:-${existing_env[NO_PROXY]:-$default_no_proxy}}"
 
-    # 将关键 TURN 参数暴露给后续步骤
+    # Expose key TURN parameters to later steps
     TURN_ENABLED="$turn_enabled"
     TURN_USERNAME="$turn_username_value"
     TURN_PASSWORD="$turn_password"
@@ -240,13 +240,13 @@ generate_env_file() {
     TURN_MAX_PORT="$turn_max_port_value"
 
     cat > "$env_file" << EOF
-# PrivyDrop Docker 配置文件
-# 自动生成时间: $(date)
-# 网络模式: $NETWORK_MODE
-# 部署模式: $DEPLOYMENT_MODE
+# PrivyDrop Docker configuration
+# Generated at: $(date)
+# Network mode: $NETWORK_MODE
+# Deployment mode: $DEPLOYMENT_MODE
 
 # =============================================================================
-# 网络配置
+# Network config
 # =============================================================================
 CORS_ORIGIN=${cors_origin}
 NEXT_PUBLIC_API_URL=${api_url}
@@ -255,7 +255,7 @@ NEXT_PUBLIC_TURN_USERNAME=${next_public_turn_username}
 NEXT_PUBLIC_TURN_PASSWORD=${next_public_turn_password}
 
 # =============================================================================
-# 端口配置
+# Port config
 # =============================================================================
 FRONTEND_PORT=3002
 BACKEND_PORT=3001
@@ -263,13 +263,13 @@ HTTP_PORT=80
 HTTPS_PORT=443
 
 # =============================================================================
-# Redis配置
+# Redis config
 # =============================================================================
 REDIS_HOST=redis
 REDIS_PORT=6379
 
 # =============================================================================
-# 部署配置
+# Deployment config
 # =============================================================================
 DEPLOYMENT_MODE=${DEPLOYMENT_MODE}
 NETWORK_MODE=${NETWORK_MODE}
@@ -277,13 +277,13 @@ LOCAL_IP=${LOCAL_IP}
 PUBLIC_IP=${PUBLIC_IP:-}
 
 # =============================================================================
-# SSL配置
+# SSL config
 # =============================================================================
 SSL_MODE=${ssl_mode}
 DOMAIN_NAME=${DOMAIN_NAME:-}
 
 # =============================================================================
-# TURN服务器配置 (可选)
+# TURN server config (optional)
 # =============================================================================
 TURN_ENABLED=${turn_enabled}
 TURN_USERNAME=${turn_username_value}
@@ -293,29 +293,29 @@ TURN_MIN_PORT=${turn_min_port_value}
 TURN_MAX_PORT=${turn_max_port_value}
 
 # =============================================================================
-# Nginx配置
+# Nginx config
 # =============================================================================
 NGINX_SERVER_NAME=${DOMAIN_NAME:-${LOCAL_IP}}
 
 # =============================================================================
-# 日志配置
+# Logging config
 # =============================================================================
 LOG_LEVEL=info
 
 # =============================================================================
-# 代理配置 (可选)
+# Proxy config (optional)
 # =============================================================================
 HTTP_PROXY=${http_proxy_value}
 HTTPS_PROXY=${https_proxy_value}
 NO_PROXY=${no_proxy_value}
 EOF
 
-    log_success "环境变量配置已生成: $env_file"
+    log_success "Environment variable config generated: $env_file"
 }
 
-# 生成Nginx配置
+# Generate Nginx config
 generate_nginx_config() {
-    log_info "生成Nginx配置..."
+    log_info "Generating Nginx config..."
     
     mkdir -p docker/nginx/conf.d
     
@@ -323,7 +323,7 @@ generate_nginx_config() {
     local upstream_backend="backend:3001"
     local upstream_frontend="frontend:3002"
     
-    # 生成主Nginx配置
+    # Generate main Nginx config
     cat > docker/nginx/nginx.conf << 'EOF'
 user nginx;
 worker_processes auto;
@@ -340,14 +340,14 @@ http {
     include /etc/nginx/mime.types;
     default_type application/octet-stream;
 
-    # 日志格式
+    # Log format
     log_format main '$remote_addr - $remote_user [$time_local] "$request" '
                     '$status $body_bytes_sent "$http_referer" '
                     '"$http_user_agent" "$http_x_forwarded_for"';
 
     access_log /var/log/nginx/access.log main;
 
-    # 基础配置
+    # Basic settings
     sendfile on;
     tcp_nopush on;
     tcp_nodelay on;
@@ -355,12 +355,12 @@ http {
     types_hash_max_size 2048;
     server_tokens off;
 
-    # 客户端配置
+    # Client settings
     client_max_body_size 100M;
     client_header_timeout 60s;
     client_body_timeout 60s;
 
-    # Gzip配置
+    # Gzip settings
     gzip on;
     gzip_vary on;
     gzip_min_length 1000;
@@ -374,15 +374,15 @@ http {
         application/xml+rss
         application/json;
 
-    # 包含站点配置
+    # Include site configs
     include /etc/nginx/conf.d/*.conf;
 }
 EOF
 
-    # 生成站点配置
+    # Generate site config
     mkdir -p docker/letsencrypt-www
     cat > docker/nginx/conf.d/default.conf << EOF
-# 上游服务定义
+# Upstream definitions
 upstream backend {
     server ${upstream_backend};
     keepalive 32;
@@ -393,29 +393,29 @@ upstream frontend {
     keepalive 32;
 }
 
-# HTTP服务器配置
+# HTTP server config
 server {
     listen 80;
     server_name ${server_name};
     
-    # 安全头
+    # Security headers
     add_header X-Frame-Options DENY;
     add_header X-Content-Type-Options nosniff;
     add_header X-XSS-Protection "1; mode=block";
     
-    # ACME 回源，用于 Let's Encrypt 签发/续期
+    # ACME upstream for Let's Encrypt issuance/renewal
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
     }
 
-    # 健康检查端点
+    # Health check endpoint
     location /nginx-health {
         access_log off;
         return 200 "healthy\n";
         add_header Content-Type text/plain;
     }
     
-    # 后端API代理
+    # Backend API proxy
     location /api/ {
         proxy_pass http://backend/api/;
         proxy_http_version 1.1;
@@ -427,13 +427,13 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_cache_bypass \$http_upgrade;
         
-        # 超时配置
+        # Timeout settings
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
     }
     
-    # 后端健康检查代理
+    # Backend health-check proxy
     location /health {
         proxy_pass http://backend/health;
         proxy_http_version 1.1;
@@ -443,7 +443,7 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
     
-    # Socket.IO代理
+    # Socket.IO proxy
     location /socket.io/ {
         proxy_pass http://backend;
         proxy_http_version 1.1;
@@ -454,12 +454,12 @@ server {
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
         
-        # WebSocket特殊配置
+        # WebSocket-specific settings
         proxy_buffering off;
         proxy_cache off;
     }
     
-    # 前端应用代理
+    # Frontend app proxy
     location / {
         proxy_pass http://frontend;
         proxy_http_version 1.1;
@@ -471,41 +471,41 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_cache_bypass \$http_upgrade;
         
-        # Next.js特殊配置
+        # Next.js-specific settings
         proxy_buffering off;
     }
 }
 EOF
 
-    log_success "Nginx配置已生成"
-    echo "  主配置: docker/nginx/nginx.conf"
-    echo "  站点配置: docker/nginx/conf.d/default.conf"
+    log_success "Nginx config generated"
+    echo "  Main config: docker/nginx/nginx.conf"
+    echo "  Site config: docker/nginx/conf.d/default.conf"
 }
 
-# 生成SSL证书
+# Generate SSL certificates
 generate_ssl_certificates() {
     if [[ "$SSL_MODE" == "self-signed" ]] || [[ "$NETWORK_MODE" == "private" ]]; then
-        log_info "生成自签名SSL证书..."
+        log_info "Generating self-signed SSL certificates..."
         
         mkdir -p docker/ssl
         
-        # 生成CA私钥
+        # Generate CA private key
         openssl genrsa -out docker/ssl/ca-key.pem 4096 2>/dev/null
         
-        # 生成CA证书
+        # Generate CA certificate
         openssl req -new -x509 -days 365 -key docker/ssl/ca-key.pem \
             -out docker/ssl/ca-cert.pem \
             -subj "/C=CN/ST=Local/L=Local/O=PrivyDrop/CN=PrivyDrop-CA" 2>/dev/null
         
-        # 生成服务器私钥
+        # Generate server private key
         openssl genrsa -out docker/ssl/server-key.pem 4096 2>/dev/null
         
-        # 生成服务器证书请求
+        # Generate server CSR
         openssl req -new -key docker/ssl/server-key.pem \
             -out docker/ssl/server.csr \
             -subj "/C=CN/ST=Local/L=Local/O=PrivyDrop/CN=${LOCAL_IP}" 2>/dev/null
         
-        # 创建扩展配置
+        # Create extensions config
         cat > docker/ssl/server.ext << EOF
 authorityKeyIdentifier=keyid,issuer
 basicConstraints=CA:FALSE
@@ -520,32 +520,32 @@ IP.1 = ${LOCAL_IP}
 IP.2 = 127.0.0.1
 EOF
         
-        # 签名服务器证书
+        # Sign server certificate
         openssl x509 -req -days 365 -in docker/ssl/server.csr \
             -CA docker/ssl/ca-cert.pem -CAkey docker/ssl/ca-key.pem \
             -out docker/ssl/server-cert.pem -CAcreateserial \
             -extensions v3_req -extfile docker/ssl/server.ext 2>/dev/null
         
-        # 清理临时文件
+        # Clean temporary files
         rm -f docker/ssl/server.csr docker/ssl/server.ext docker/ssl/ca-cert.srl
         
-        # 设置权限
+        # Set permissions
         chmod 600 docker/ssl/*-key.pem
         chmod 644 docker/ssl/*-cert.pem
         
-        log_success "SSL证书已生成: docker/ssl/"
-        log_info "要信任证书，请导入CA证书: docker/ssl/ca-cert.pem"
+        log_success "SSL certificates generated: docker/ssl/"
+        log_info "To trust the cert, import the CA cert: docker/ssl/ca-cert.pem"
         
-        # 自签场景直接生成 443 配置
+        # For self-signed, generate 443 config immediately
         if [[ "$DEPLOYMENT_MODE" != "basic" ]]; then
             generate_https_nginx_config
         fi
     fi
 }
 
-# 生成HTTPS Nginx配置
+# Generate HTTPS Nginx config
 generate_https_nginx_config() {
-    log_info "生成HTTPS Nginx配置..."
+    log_info "Generating HTTPS Nginx config..."
     local https_port="443"
     if [[ "$ENABLE_SNI443" == "true" ]]; then
         https_port="8443"
@@ -553,12 +553,12 @@ generate_https_nginx_config() {
     
     cat >> docker/nginx/conf.d/default.conf << EOF
 
-# HTTPS服务器配置
+# HTTPS server config
 server {
     listen ${https_port} ssl http2;
     server_name ${DOMAIN_NAME:-${LOCAL_IP}};
     
-    # SSL配置
+    # SSL settings
     ssl_certificate /etc/nginx/ssl/server-cert.pem;
     ssl_certificate_key /etc/nginx/ssl/server-key.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
@@ -567,20 +567,20 @@ server {
     ssl_session_cache shared:SSL:10m;
     ssl_session_timeout 10m;
     
-    # 安全头
+    # Security headers
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header X-Frame-Options DENY;
     add_header X-Content-Type-Options nosniff;
     add_header X-XSS-Protection "1; mode=block";
     
-    # 健康检查端点
+    # Health check endpoint
     location /nginx-health {
         access_log off;
         return 200 "healthy\n";
         add_header Content-Type text/plain;
     }
     
-    # 后端API代理
+    # Backend API proxy
     location /api/ {
         proxy_pass http://backend/api/;
         proxy_http_version 1.1;
@@ -593,7 +593,7 @@ server {
         proxy_cache_bypass \$http_upgrade;
     }
     
-    # 后端健康检查代理
+    # Backend health-check proxy
     location /health {
         proxy_pass http://backend/health;
         proxy_http_version 1.1;
@@ -603,7 +603,7 @@ server {
         proxy_set_header X-Forwarded-Proto https;
     }
     
-    # Socket.IO代理
+    # Socket.IO proxy
     location /socket.io/ {
         proxy_pass http://backend;
         proxy_http_version 1.1;
@@ -617,7 +617,7 @@ server {
         proxy_cache off;
     }
     
-    # 前端应用代理
+    # Frontend app proxy
     location / {
         proxy_pass http://frontend;
         proxy_http_version 1.1;
@@ -633,24 +633,24 @@ server {
 }
 EOF
 
-    log_success "HTTPS配置已添加"
+    log_success "HTTPS config added"
 }
 
-# 生成 Nginx stream SNI 分流（443）
+# Generate Nginx stream SNI split (443)
 generate_stream_sni443() {
     if [[ "$ENABLE_SNI443" != "true" ]]; then
         return 0
     fi
     if [[ -z "$DOMAIN_NAME" ]]; then
-        log_warning "SNI 443 需要域名，未指定域名，跳过 stream 配置"
+        log_warning "SNI 443 requires a domain; none specified, skipping stream config"
         return 0
     fi
-    # 避免重复追加
+    # Avoid duplicate appends
     if grep -q "## SNI 443 stream" docker/nginx/nginx.conf 2>/dev/null; then
-        log_info "已存在 SNI 443 stream 配置，跳过追加"
+        log_info "SNI 443 stream config already exists; skipping"
         return 0
     fi
-    log_info "追加 SNI 443 stream 配置到 nginx.conf"
+    log_info "Append SNI 443 stream config to nginx.conf"
     cat >> docker/nginx/nginx.conf << EOF
 
 ## SNI 443 stream
@@ -672,34 +672,34 @@ stream {
 EOF
 }
 
-# 当证书存在时再启用 443 配置（适用于 letsencrypt/provided）
+# Enable 443 only when certs exist (for letsencrypt/provided)
 enable_https_if_cert_present() {
     if [[ -f "docker/ssl/server-cert.pem" && -f "docker/ssl/server-key.pem" ]]; then
-        # SNI 开启时，先追加 stream 分流，再生成 8443/443 的 HTTPS
+        # With SNI enabled, append stream split first, then generate HTTPS on 8443/443
         if [[ "$ENABLE_SNI443" == "true" && -n "$DOMAIN_NAME" ]]; then
             generate_stream_sni443
         fi
-        # 若 default.conf 中尚未存在 HTTPS server，则追加（端口根据 SNI 开关决定）
+        # If HTTPS server is not present in default.conf, append it (port depends on SNI flag)
         local expected="listen 443 ssl"
         [[ "$ENABLE_SNI443" == "true" ]] && expected="listen 8443 ssl"
         if ! grep -q "$expected" docker/nginx/conf.d/default.conf 2>/dev/null; then
             generate_https_nginx_config
         else
-            log_info "检测到已存在 HTTPS(${ENABLE_SNI443:+SNI=on}) 配置，跳过追加"
+            log_info "Existing HTTPS (${ENABLE_SNI443:+SNI=on}) config detected; skipping"
         fi
     else
-        log_warning "未检测到证书 (docker/ssl/server-*.pem)，暂不启用 443 配置"
+        log_warning "No certificates detected (docker/ssl/server-*.pem); 443 config not enabled yet"
     fi
 }
 
-# 生成Coturn配置
+# Generate Coturn config
 generate_coturn_config() {
     if [[ "$TURN_ENABLED" == "true" ]]; then
-        log_info "生成Coturn TURN服务器配置..."
+        log_info "Generating Coturn TURN server config..."
         
         mkdir -p docker/coturn
         
-        # 计算 external-ip：优先 --turn-external-ip，再次 PUBLIC_IP，最后 LOCAL_IP
+        # Compute external-ip: prefer --turn-external-ip, then PUBLIC_IP, then LOCAL_IP
         local external_ip_value
         if [[ -n "$TURN_EXTERNAL_IP_OVERRIDE" ]]; then
             external_ip_value="$TURN_EXTERNAL_IP_OVERRIDE"
@@ -713,68 +713,68 @@ generate_coturn_config() {
         local max_port_value="${TURN_MAX_PORT:-$TURN_MAX_PORT_DEFAULT}"
 
         cat > docker/coturn/turnserver.conf << EOF
-# PrivyDrop TURN服务器配置
-# 自动生成时间: $(date)
+# PrivyDrop TURN server configuration
+# Generated at: $(date)
 
-# 监听端口
+# Listen ports
 listening-port=3478
 tls-listening-port=5349
 
-# 监听IP
+# Listen IPs
 listening-ip=0.0.0.0
 relay-ip=0.0.0.0
 
-# 外部IP (用于NAT环境)
+# External IP (for NAT)
 external-ip=${external_ip_value}
 
-# 服务器域名
+# Server domain
 realm=${TURN_REALM}
 server-name=${TURN_REALM}
 
-# 认证方式
+# Authentication method
 lt-cred-mech
 
-# 用户认证
+# User authentication
 user=${TURN_USERNAME}:${TURN_PASSWORD}
 
-# SSL证书 (如果启用TLS)
+# SSL certificates (if TLS enabled)
 cert=/etc/ssl/certs/server-cert.pem
 pkey=/etc/ssl/certs/server-key.pem
 
-# 日志配置
+# Logging configuration
 no-stdout-log
 log-file=/var/log/turnserver.log
 verbose
 
-# 安全配置
+# Security settings
 no-cli
 no-loopback-peers
 no-multicast-peers
 
-# 性能配置
+# Performance settings
 min-port=${min_port_value}
 max-port=${max_port_value}
 
-# 数据库 (可选)
+# Database (optional)
 # userdb=/var/lib/turn/turndb
 
-# 其他配置
+# Miscellaneous
 mobility
 no-tlsv1
 no-tlsv1_1
 EOF
 
-        log_success "Coturn配置已生成: docker/coturn/turnserver.conf"
-        log_info "TURN服务器用户名: ${TURN_USERNAME}"
-        log_warning "TURN服务器密码已保存在.env文件中"
+        log_success "Coturn config generated: docker/coturn/turnserver.conf"
+        log_info "TURN server username: ${TURN_USERNAME}"
+        log_warning "TURN server password saved in .env"
     fi
 }
 
-# 生成Docker忽略文件
+# Generate Docker ignore files
 generate_dockerignore() {
-    log_info "生成Docker忽略文件..."
+    log_info "Generating Docker ignore files..."
     
-    # 后端.dockerignore
+    # Backend .dockerignore
     cat > backend/.dockerignore << EOF
 node_modules
 npm-debug.log*
@@ -791,7 +791,7 @@ logs
 *.log
 EOF
 
-    # 前端.dockerignore
+    # Frontend .dockerignore
     cat > frontend/.dockerignore << EOF
 node_modules
 .next
@@ -810,28 +810,28 @@ public/sw.js
 public/workbox-*.js
 EOF
 
-    log_success "Docker忽略文件已生成"
+    log_success "Docker ignore files generated"
 }
 
-# 创建日志目录
+# Create log directories
 create_log_directories() {
-    log_info "创建日志目录..."
+    log_info "Creating log directories..."
     
     mkdir -p logs/{nginx,backend,frontend,coturn}
     
-    # 设置权限
+    # Set permissions
     chmod 755 logs
     chmod 755 logs/*
     
-    log_success "日志目录已创建: logs/"
+    log_success "Log directories created: logs/"
 }
 
-# 主函数
+# Main function
 main() {
-    echo -e "${BLUE}=== PrivyDrop 配置生成 ===${NC}"
+    echo -e "${BLUE}=== PrivyDrop Config Generation ===${NC}"
     echo ""
     
-    # 解析参数（与环境检测脚本保持一致）
+    # Parse arguments (consistent with the environment detection script)
     while [[ $# -gt 0 ]]; do
         case $1 in
             --domain)
@@ -893,32 +893,32 @@ main() {
         esac
     done
     
-    # 先清理上一次生成物（避免历史残留误导）
+    # Clean previous outputs first (avoid stale leftovers)
     cleanup_previous_artifacts
 
-    # 首先运行环境检测
+    # Run environment detection first
     if ! detect_network_environment; then
-        log_error "环境检测失败"
+        log_error "Environment detection failed"
         exit 1
     fi
     
     if ! check_system_resources; then
-        log_error "系统资源检查失败"
+        log_error "System resource check failed"
         exit 1
     fi
     
     detect_deployment_mode
     echo ""
     
-    # 生成所有配置文件
+    # Generate all configuration files
     generate_env_file
     echo ""
     
     generate_nginx_config
     echo ""
     
-    # 证书生成策略：
-    # - private/public 默认自签；full 默认 letsencrypt（由部署脚本触发签发与复制）
+    # Certificate generation policy:
+    # - private/public use self-signed; full uses letsencrypt (issued/copied by deploy script)
     if [[ -z "$SSL_MODE" ]]; then
         if [[ "$DEPLOYMENT_MODE" == "full" ]]; then
             SSL_MODE="letsencrypt"
@@ -927,7 +927,7 @@ main() {
         fi
     fi
 
-    # SNI 443 默认启用：full 模式且有域名，除非显式 --no-sni443
+    # SNI on 443 enabled by default: full mode with domain, unless --no-sni443
     if [[ -z "$ENABLE_SNI443" ]]; then
         if [[ "$DEPLOYMENT_MODE" == "full" && -n "$DOMAIN_NAME" ]]; then
             ENABLE_SNI443=true
@@ -939,7 +939,7 @@ main() {
     generate_ssl_certificates
     echo ""
 
-    # full/provided/letsencrypt：仅在证书就绪时启用 443
+    # full/provided/letsencrypt: enable 443 only when certs are ready
     if [[ "$DEPLOYMENT_MODE" == "full" ]]; then
         enable_https_if_cert_present
         echo ""
@@ -954,20 +954,20 @@ main() {
     create_log_directories
     echo ""
     
-    log_success "🎉 所有配置文件生成完成！"
+    log_success "🎉 All configuration files generated!"
     echo ""
-    echo -e "${BLUE}生成的文件:${NC}"
-    echo "  .env - 环境变量配置"
-    echo "  docker/nginx/ - Nginx配置"
-    echo "  docker/ssl/ - SSL证书"
-    [[ "$TURN_ENABLED" == "true" ]] && echo "  docker/coturn/ - TURN服务器配置"
-    echo "  logs/ - 日志目录"
+    echo -e "${BLUE}Generated files:${NC}"
+    echo "  .env - Environment variables"
+    echo "  docker/nginx/ - Nginx config"
+    echo "  docker/ssl/ - SSL certificates"
+    [[ "$TURN_ENABLED" == "true" ]] && echo "  docker/coturn/ - TURN server config"
+    echo "  logs/ - Log directories"
     echo ""
-    echo -e "${BLUE}下一步:${NC}"
-    echo "  运行 './deploy.sh' 开始部署"
+    echo -e "${BLUE}Next steps:${NC}"
+    echo "  Run './deploy.sh' to start deployment"
 }
 
-# 如果脚本被直接执行
+# If the script is executed directly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
 fi

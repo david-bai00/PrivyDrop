@@ -1,21 +1,21 @@
 #!/bin/bash
 
-# PrivyDrop Docker 部署测试脚本
-# 用于验证部署的完整性和功能
+# PrivyDrop Docker deployment test script
+# Validate deployment integrity and functionality
 
-# 颜色定义
+# Color definitions
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# 测试结果统计
+# Test result counters
 TESTS_PASSED=0
 TESTS_FAILED=0
 TOTAL_TESTS=0
 
-# 日志函数
+# Logging helpers
 log_info() {
     echo -e "${BLUE}ℹ️  $1${NC}"
 }
@@ -34,13 +34,13 @@ log_warning() {
     echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
-# 测试函数
+# Test functions
 run_test() {
     local test_name="$1"
     local test_command="$2"
     
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
-    log_info "测试: $test_name"
+    log_info "Test: $test_name"
     
     if eval "$test_command" >/dev/null 2>&1; then
         log_success "$test_name"
@@ -51,35 +51,35 @@ run_test() {
     fi
 }
 
-# Docker环境测试
+# Docker environment tests
 test_docker_environment() {
-    echo -e "${BLUE}=== Docker环境测试 ===${NC}"
+    echo -e "${BLUE}=== Docker Environment Tests ===${NC}"
     
-    run_test "Docker已安装" "command -v docker"
-    run_test "Docker服务运行中" "docker info"
-    run_test "Docker Compose可用" "docker-compose --version || docker compose version"
+    run_test "Docker installed" "command -v docker"
+    run_test "Docker daemon running" "docker info"
+    run_test "Docker Compose available" "docker-compose --version || docker compose version"
     
     echo ""
 }
 
-# 容器状态测试
+# Container status tests
 test_container_status() {
-    echo -e "${BLUE}=== 容器状态测试 ===${NC}"
+    echo -e "${BLUE}=== Container Status Tests ===${NC}"
     
-    # 检查容器是否存在和运行
+    # Check if containers exist and are running
     local containers=("privydrop-redis" "privydrop-backend" "privydrop-frontend")
     
     for container in "${containers[@]}"; do
-        run_test "容器 $container 运行中" "docker ps | grep -q $container"
+        run_test "Container $container is running" "docker ps | grep -q $container"
     done
     
-    # 检查容器健康状态
+    # Check container health
     for container in "${containers[@]}"; do
         if docker ps --format "table {{.Names}}\t{{.Status}}" | grep -q "$container.*healthy"; then
-            log_success "容器 $container 健康状态正常"
+            log_success "Container $container health OK"
             TESTS_PASSED=$((TESTS_PASSED + 1))
         else
-            log_warning "容器 $container 健康状态未知或不健康"
+            log_warning "Container $container health unknown or unhealthy"
         fi
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
     done
@@ -87,78 +87,78 @@ test_container_status() {
     echo ""
 }
 
-# 网络连接测试
+# Network connectivity tests
 test_network_connectivity() {
-    echo -e "${BLUE}=== 网络连接测试 ===${NC}"
+    echo -e "${BLUE}=== Network Connectivity Tests ===${NC}"
     
-    # 测试端口连通性
-    local ports=("3002:前端" "3001:后端" "6379:Redis")
+    # Test port connectivity
+    local ports=("3002:Frontend" "3001:Backend" "6379:Redis")
     
     for port_info in "${ports[@]}"; do
         local port=$(echo "$port_info" | cut -d':' -f1)
         local service=$(echo "$port_info" | cut -d':' -f2)
         
-        run_test "$service 端口 $port 可访问" "nc -z localhost $port"
+        run_test "$service port $port reachable" "nc -z localhost $port"
     done
     
-    # 测试容器间网络
-    run_test "后端可连接Redis" "docker-compose exec -T backend sh -c 'nc -z redis 6379'"
-    run_test "前端可连接后端" "curl -f http://localhost:3001/health"
+    # Test inter-container networking
+    run_test "Backend can connect to Redis" "docker-compose exec -T backend sh -c 'nc -z redis 6379'"
+    run_test "Frontend can reach backend" "curl -f http://localhost:3001/health"
     
     echo ""
 }
 
-# API功能测试
+# API functionality tests
 test_api_functionality() {
-    echo -e "${BLUE}=== API功能测试 ===${NC}"
+    echo -e "${BLUE}=== API Functionality Tests ===${NC}"
     
-    # 健康检查API
-    run_test "后端健康检查API" "curl -f http://localhost:3001/health"
-    run_test "前端健康检查API" "curl -f http://localhost:3002/api/health"
+    # Health check APIs
+    run_test "Backend health check API" "curl -f http://localhost:3001/health"
+    run_test "Frontend health check API" "curl -f http://localhost:3002/api/health"
     
-    # 后端详细健康检查
+    # Backend detailed health check
     if curl -f http://localhost:3001/health/detailed >/dev/null 2>&1; then
         local redis_status=$(curl -s http://localhost:3001/health/detailed | jq -r '.dependencies.redis.status' 2>/dev/null)
         if [[ "$redis_status" == "connected" ]]; then
-            log_success "Redis连接状态正常"
+            log_success "Redis connection OK"
             TESTS_PASSED=$((TESTS_PASSED + 1))
         else
-            log_error "Redis连接状态异常"
+            log_error "Redis connection issue"
             TESTS_FAILED=$((TESTS_FAILED + 1))
         fi
     else
-        log_error "详细健康检查API不可用"
+        log_error "Detailed health check API unavailable"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
-    # 业务API测试
-    run_test "获取房间API" "curl -f http://localhost:3001/api/get_room"
-    run_test "创建房间API" "curl -f -X POST -H 'Content-Type: application/json' -d '{\"roomId\":\"test123\"}' http://localhost:3001/api/create_room"
+    # Application API tests
+    run_test "Get room API" "curl -f http://localhost:3001/api/get_room"
+    run_test "Create room API" "curl -f -X POST -H 'Content-Type: application/json' -d '{\"roomId\":\"test123\"}' http://localhost:3001/api/create_room"
     
     echo ""
 }
 
-# WebRTC功能测试
+# WebRTC functionality tests
 test_webrtc_functionality() {
-    echo -e "${BLUE}=== WebRTC功能测试 ===${NC}"
+    echo -e "${BLUE}=== WebRTC Functionality Tests ===${NC}"
     
-    # 测试前端页面加载
+    # Test frontend page load
     if curl -f http://localhost:3002 >/dev/null 2>&1; then
-        log_success "前端页面可访问"
+        log_success "Frontend page reachable"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
-        log_error "前端页面不可访问"
+        log_error "Frontend page not reachable"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
-    # 测试Socket.IO连接 (简单测试)
+    # Test Socket.IO connection (basic)
     if curl -f http://localhost:3001/socket.io/socket.io.js >/dev/null 2>&1; then
-        log_success "Socket.IO客户端脚本可访问"
+        log_success "Socket.IO client script reachable"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
-        log_error "Socket.IO客户端脚本不可访问"
+        log_error "Socket.IO client script not reachable"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
@@ -166,64 +166,64 @@ test_webrtc_functionality() {
     echo ""
 }
 
-# 性能测试
+# Performance tests
 test_performance() {
-    echo -e "${BLUE}=== 性能测试 ===${NC}"
+    echo -e "${BLUE}=== Performance Tests ===${NC}"
     
-    # 内存使用测试
+    # Memory usage test
     local backend_memory=$(docker stats --no-stream --format "table {{.Container}}\t{{.MemUsage}}" | grep privydrop-backend | awk '{print $2}' | cut -d'/' -f1)
     local frontend_memory=$(docker stats --no-stream --format "table {{.Container}}\t{{.MemUsage}}" | grep privydrop-frontend | awk '{print $2}' | cut -d'/' -f1)
     
     if [[ -n "$backend_memory" ]]; then
-        log_info "后端内存使用: $backend_memory"
+        log_info "Backend memory usage: $backend_memory"
     fi
     
     if [[ -n "$frontend_memory" ]]; then
-        log_info "前端内存使用: $frontend_memory"
+        log_info "Frontend memory usage: $frontend_memory"
     fi
     
-    # 响应时间测试
+    # Response time test
     local response_time=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:3001/health)
     if (( $(echo "$response_time < 1.0" | bc -l) )); then
-        log_success "API响应时间正常: ${response_time}s"
+        log_success "API response time OK: ${response_time}s"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
-        log_warning "API响应时间较慢: ${response_time}s"
+        log_warning "API response time slow: ${response_time}s"
     fi
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
     echo ""
 }
 
-# 安全测试
+# Security tests
 test_security() {
-    echo -e "${BLUE}=== 安全测试 ===${NC}"
+    echo -e "${BLUE}=== Security Tests ===${NC}"
     
-    # 检查容器用户
+    # Check container users
     local backend_user=$(docker-compose exec -T backend whoami 2>/dev/null || echo "unknown")
     local frontend_user=$(docker-compose exec -T frontend whoami 2>/dev/null || echo "unknown")
     
     if [[ "$backend_user" != "root" ]]; then
-        log_success "后端容器使用非root用户: $backend_user"
+        log_success "Backend container uses non-root user: $backend_user"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
-        log_warning "后端容器使用root用户"
+        log_warning "Backend container runs as root"
     fi
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
     if [[ "$frontend_user" != "root" ]]; then
-        log_success "前端容器使用非root用户: $frontend_user"
+        log_success "Frontend container uses non-root user: $frontend_user"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
-        log_warning "前端容器使用root用户"
+        log_warning "Frontend container runs as root"
     fi
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
-    # 检查敏感信息泄露
+    # Check for sensitive info leakage
     if curl -s http://localhost:3001/health/detailed | grep -q "password\|secret\|key" >/dev/null 2>&1; then
-        log_warning "健康检查API可能泄露敏感信息"
+        log_warning "Health check API may leak sensitive info"
     else
-        log_success "健康检查API未泄露敏感信息"
+        log_success "Health check API does not leak sensitive info"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     fi
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
@@ -231,27 +231,27 @@ test_security() {
     echo ""
 }
 
-# 日志测试
+# Logging tests
 test_logging() {
-    echo -e "${BLUE}=== 日志测试 ===${NC}"
+    echo -e "${BLUE}=== Logging Tests ===${NC}"
     
-    # 检查日志目录
+    # Check log directories
     if [[ -d "logs" ]]; then
-        log_success "日志目录存在"
+        log_success "Log directory exists"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
-        log_warning "日志目录不存在"
+        log_warning "Log directory does not exist"
     fi
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
-    # 检查日志文件
+    # Check log files
     local log_files=("logs/backend" "logs/frontend")
     for log_dir in "${log_files[@]}"; do
         if [[ -d "$log_dir" ]]; then
-            log_success "日志目录 $log_dir 存在"
+            log_success "Log directory $log_dir exists"
             TESTS_PASSED=$((TESTS_PASSED + 1))
         else
-            log_info "日志目录 $log_dir 不存在 (可能正常)"
+            log_info "Log directory $log_dir not found (may be normal)"
         fi
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
     done
@@ -259,39 +259,39 @@ test_logging() {
     echo ""
 }
 
-# 配置文件测试
+# Configuration file tests
 test_configuration() {
-    echo -e "${BLUE}=== 配置文件测试 ===${NC}"
+    echo -e "${BLUE}=== Configuration File Tests ===${NC}"
     
-    # 检查环境变量文件
+    # Check env file
     if [[ -f ".env" ]]; then
-        log_success ".env 文件存在"
+        log_success ".env file exists"
         TESTS_PASSED=$((TESTS_PASSED + 1))
         
-        # 检查关键配置项
+        # Check key configuration entries
         local required_vars=("LOCAL_IP" "CORS_ORIGIN" "NEXT_PUBLIC_API_URL")
         for var in "${required_vars[@]}"; do
             if grep -q "^$var=" .env; then
-                log_success "配置项 $var 已设置"
+                log_success "Config $var is set"
                 TESTS_PASSED=$((TESTS_PASSED + 1))
             else
-                log_error "配置项 $var 未设置"
+                log_error "Config $var is not set"
                 TESTS_FAILED=$((TESTS_FAILED + 1))
             fi
             TOTAL_TESTS=$((TOTAL_TESTS + 1))
         done
     else
-        log_error ".env 文件不存在"
+        log_error ".env file not found"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
-    # 检查Docker Compose文件
+    # Check Docker Compose file
     if [[ -f "docker-compose.yml" ]]; then
-        log_success "docker-compose.yml 文件存在"
+        log_success "docker-compose.yml exists"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
-        log_error "docker-compose.yml 文件不存在"
+        log_error "docker-compose.yml not found"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
@@ -299,25 +299,25 @@ test_configuration() {
     echo ""
 }
 
-# 清理测试
+# Cleanup tests
 test_cleanup() {
-    echo -e "${BLUE}=== 清理功能测试 ===${NC}"
+    echo -e "${BLUE}=== Cleanup Tests ===${NC}"
     
-    # 测试清理命令是否可用
+    # Verify cleanup commands work
     if [[ -f "deploy.sh" ]]; then
-        log_success "部署脚本存在"
+        log_success "Deployment script exists"
         TESTS_PASSED=$((TESTS_PASSED + 1))
         
-        # 测试帮助命令
+        # Test help command
         if bash deploy.sh --help >/dev/null 2>&1; then
-            log_success "部署脚本帮助功能正常"
+            log_success "Deployment script help works"
             TESTS_PASSED=$((TESTS_PASSED + 1))
         else
-            log_error "部署脚本帮助功能异常"
+            log_error "Deployment script help fails"
             TESTS_FAILED=$((TESTS_FAILED + 1))
         fi
     else
-        log_error "部署脚本不存在"
+        log_error "Deployment script not found"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     TOTAL_TESTS=$((TOTAL_TESTS + 2))
@@ -325,65 +325,65 @@ test_cleanup() {
     echo ""
 }
 
-# 生成测试报告
+# Generate test report
 generate_report() {
-    echo -e "${BLUE}=== 测试报告 ===${NC}"
+    echo -e "${BLUE}=== Test Report ===${NC}"
     echo ""
     
-    echo "📊 测试统计:"
-    echo "   总测试数: $TOTAL_TESTS"
-    echo -e "   通过: ${GREEN}$TESTS_PASSED${NC}"
-    echo -e "   失败: ${RED}$TESTS_FAILED${NC}"
+    echo "📊 Test stats:"
+    echo "   Total tests: $TOTAL_TESTS"
+    echo -e "   Passed: ${GREEN}$TESTS_PASSED${NC}"
+    echo -e "   Failed: ${RED}$TESTS_FAILED${NC}"
     
     local success_rate=$((TESTS_PASSED * 100 / TOTAL_TESTS))
-    echo "   成功率: $success_rate%"
+    echo "   Success rate: $success_rate%"
     
     echo ""
-    echo "📋 系统信息:"
-    echo "   Docker版本: $(docker --version)"
-    echo "   Docker Compose版本: $(docker-compose --version 2>/dev/null || docker compose version 2>/dev/null || echo '未知')"
-    echo "   操作系统: $(uname -s) $(uname -r)"
-    echo "   测试时间: $(date)"
+    echo "📋 System info:"
+    echo "   Docker version: $(docker --version)"
+    echo "   Docker Compose version: $(docker-compose --version 2>/dev/null || docker compose version 2>/dev/null || echo 'unknown')"
+    echo "   OS: $(uname -s) $(uname -r)"
+    echo "   Test time: $(date)"
     
     echo ""
     if [[ $TESTS_FAILED -eq 0 ]]; then
-        echo -e "${GREEN}🎉 所有测试通过！PrivyDrop 部署成功！${NC}"
+        echo -e "${GREEN}🎉 All tests passed! PrivyDrop deployment successful!${NC}"
         echo ""
-        echo "🔗 访问链接:"
-        echo "   前端应用: http://localhost:3002"
-        echo "   后端API: http://localhost:3001"
+        echo "🔗 Access links:"
+        echo "   Frontend: http://localhost:3002"
+        echo "   Backend API: http://localhost:3001"
         
-        # 显示局域网访问地址
+        # Show LAN access addresses
         if [[ -f ".env" ]]; then
             local local_ip=$(grep "LOCAL_IP=" .env | cut -d'=' -f2)
             if [[ -n "$local_ip" && "$local_ip" != "127.0.0.1" ]]; then
                 echo ""
-                echo "🌐 局域网访问:"
-                echo "   前端应用: http://$local_ip:3002"
-                echo "   后端API: http://$local_ip:3001"
+                echo "🌐 LAN access:"
+                echo "   Frontend: http://$local_ip:3002"
+                echo "   Backend API: http://$local_ip:3001"
             fi
         fi
         
         return 0
     else
-        echo -e "${RED}❌ 有 $TESTS_FAILED 个测试失败${NC}"
+        echo -e "${RED}❌ $TESTS_FAILED test(s) failed${NC}"
         echo ""
-        echo "🔧 故障排除建议:"
-        echo "   1. 查看容器状态: docker-compose ps"
-        echo "   2. 查看容器日志: docker-compose logs -f"
-        echo "   3. 重新部署: bash deploy.sh"
-        echo "   4. 完全清理后重新部署: bash deploy.sh --clean"
+        echo "🔧 Troubleshooting tips:"
+        echo "   1. View container status: docker-compose ps"
+        echo "   2. View container logs: docker-compose logs -f"
+        echo "   3. Redeploy: bash deploy.sh"
+        echo "   4. Clean and redeploy: bash deploy.sh --clean"
         
         return 1
     fi
 }
 
-# 主函数
+# Main function
 main() {
-    echo -e "${BLUE}=== PrivyDrop Docker 部署测试开始 ===${NC}"
+    echo -e "${BLUE}=== PrivyDrop Docker Deployment Tests ===${NC}"
     echo ""
     
-    # 检查必要工具
+    # Check required tools
     local missing_tools=()
     for tool in curl jq bc nc; do
         if ! command -v "$tool" >/dev/null 2>&1; then
@@ -392,12 +392,12 @@ main() {
     done
     
     if [[ ${#missing_tools[@]} -gt 0 ]]; then
-        log_warning "缺少测试工具: ${missing_tools[*]}"
-        log_info "建议安装: sudo apt-get install curl jq bc netcat"
+        log_warning "Missing test tools: ${missing_tools[*]}"
+        log_info "Suggested install: sudo apt-get install curl jq bc netcat"
         echo ""
     fi
     
-    # 运行所有测试
+    # Run all tests
     test_docker_environment
     test_container_status
     test_network_connectivity
@@ -409,12 +409,12 @@ main() {
     test_configuration
     test_cleanup
     
-    # 生成报告
+    # Generate report
     generate_report
 }
 
-# 捕获中断信号
-trap 'echo -e "\n${YELLOW}测试被中断${NC}"; exit 1' INT TERM
+# Trap interrupt signals
+trap 'echo -e "\n${YELLOW}Tests interrupted${NC}"; exit 1' INT TERM
 
-# 运行主函数
+# Run main function
 main "$@"

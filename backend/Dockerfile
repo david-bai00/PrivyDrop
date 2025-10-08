@@ -1,4 +1,4 @@
-# 构建阶段
+# Build stage
 FROM node:18-alpine AS builder
 
 ARG HTTP_PROXY
@@ -15,18 +15,18 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# 运行阶段
+# Run stage
 FROM node:18-alpine AS runtime
 
 WORKDIR /app
 
-# 复制预构建的文件
+# Copy prebuilt artifacts
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 COPY health-check.js ./
 
-# 创建用户并设置权限
+# Create user and set permissions
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S backend -u 1001 -G nodejs && \
     chown -R backend:nodejs /app
@@ -34,7 +34,7 @@ RUN addgroup -g 1001 -S nodejs && \
 USER backend
 EXPOSE 3001
 
-# 使用Node.js脚本做健康检查（替代curl）
+# Use a Node.js script for health checks (instead of curl)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node health-check.js
 

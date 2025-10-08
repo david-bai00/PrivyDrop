@@ -9,10 +9,10 @@ const DEV_ORIGINS = [
   /^http:\/\/192\.168\.\d+\.\d+:3002$/, // LAN addresses with new port
 ];
 
-// 解析生产环境下的多来源配置（逗号分隔）
+// Parse multi-origin config in production (comma-separated)
 const parseProdOrigins = (): string | RegExp | (string | RegExp)[] => {
   const v = CONFIG.CORS_ORIGIN?.trim();
-  if (!v) return DEV_ORIGINS; // 回退到开发白名单
+  if (!v) return DEV_ORIGINS; // Fallback to the development whitelist
   if (v.includes(",")) {
     return v
       .split(",")
