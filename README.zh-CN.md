@@ -45,7 +45,13 @@ PrivyDrop (原 SecureShare) 是一个基于 WebRTC 的开源点对点（P2P）�
 
 ```bash
 # 内网（无域名/无公网IP）
-bash ./deploy.sh --mode private
+bash ./deploy.sh --mode lan-http
+
+# 内网 + TURN（推荐用于复杂内网/NAT）
+bash ./deploy.sh --mode lan-http --with-turn
+
+# 内网 HTTPS（自签，开发/受管环境，显式开启 8443）
+bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 
 # 公网IP（无域名），含 TURN
 bash ./deploy.sh --mode public --with-turn
@@ -54,7 +60,7 @@ bash ./deploy.sh --mode public --with-turn
 bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
 ```
 
-完整说明见: docs/DEPLOYMENT_docker.zh-CN.md
+完整说明见: docs/DEPLOYMENT_docker.zh-CN.md（模式一览、LAN TLS、自签限制、Let’s Encrypt 自动签发/续期）
 
 **部署优势**:
 

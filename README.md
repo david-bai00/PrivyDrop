@@ -43,7 +43,13 @@ Deploy in minutes with zero manual configuration. Supports private/public networ
 
 ```bash
 # Private LAN (no domain/public IP)
-bash ./deploy.sh --mode private
+bash ./deploy.sh --mode lan-http
+
+# Private LAN + TURN (for complex NAT/LAN)
+bash ./deploy.sh --mode lan-http --with-turn
+
+# LAN HTTPS (self-signed; dev/managed env; explicitly enable 8443)
+bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 
 # Public IP without domain (with TURN)
 bash ./deploy.sh --mode public --with-turn
@@ -52,7 +58,7 @@ bash ./deploy.sh --mode public --with-turn
 bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
 ```
 
-See [Docker Deployment Guide](./docs/DEPLOYMENT_docker.md)
+See [Docker Deployment Guide](./docs/DEPLOYMENT_docker.md) (Modes Overview, LAN TLS limitations, Let’s Encrypt auto-issue/renew)
 
 ## 🚀 Quick Start (Full-Stack Local Development)
 
