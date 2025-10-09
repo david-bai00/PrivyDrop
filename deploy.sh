@@ -545,6 +545,7 @@ show_deployment_info() {
     local public_ip=""
     local frontend_port=""
     local backend_port=""
+    local https_port=""
     local deployment_mode=""
     local network_mode=""
     local domain_name=""
@@ -555,6 +556,7 @@ show_deployment_info() {
         public_ip=$(grep "PUBLIC_IP=" .env | cut -d'=' -f2)
         frontend_port=$(grep "FRONTEND_PORT=" .env | cut -d'=' -f2)
         backend_port=$(grep "BACKEND_PORT=" .env | cut -d'=' -f2)
+        https_port=$(grep "HTTPS_PORT=" .env | cut -d'=' -f2)
         deployment_mode=$(grep "DEPLOYMENT_MODE=" .env | cut -d'=' -f2)
         network_mode=$(grep "NETWORK_MODE=" .env | cut -d'=' -f2)
         domain_name=$(grep "DOMAIN_NAME=" .env | cut -d'=' -f2)
@@ -604,13 +606,32 @@ show_deployment_info() {
         echo -e "${BLUE}🔀 Nginx Proxy:${NC}"
         if [[ -n "$domain_name" ]]; then
             echo "   HTTP: http://$domain_name"
-            [[ -f "docker/ssl/server-cert.pem" ]] && echo "   HTTPS: https://$domain_name"
+            if [[ -f "docker/ssl/server-cert.pem" ]]; then
+                echo "   HTTPS: https://$domain_name"
+            fi
         elif [[ -n "$public_ip" ]]; then
             echo "   HTTP: http://$public_ip"
-            [[ -f "docker/ssl/server-cert.pem" ]] && echo "   HTTPS: https://$public_ip"
+            if [[ -f "docker/ssl/server-cert.pem" ]]; then
+                # In non-domain cases, show HTTPS with explicit port (e.g., lan-tls uses 8443)
+                if [[ -n "$https_port" && "$https_port" != "443" ]]; then
+                    echo "   HTTPS: https://$public_ip:$https_port"
+                else
+                    echo "   HTTPS: https://$public_ip"
+                fi
+            fi
         else
             echo "   HTTP: http://localhost"
-            [[ -f "docker/ssl/server-cert.pem" ]] && echo "   HTTPS: https://localhost"
+            if [[ -f "docker/ssl/server-cert.pem" ]]; then
+                # Show correct HTTPS endpoint based on configured port
+                if [[ -n "$https_port" && "$https_port" != "443" ]]; then
+                    echo "   HTTPS: https://localhost:$https_port"
+                    if [[ -n "$local_ip" && "$local_ip" != "127.0.0.1" ]]; then
+                        echo "   HTTPS (LAN): https://$local_ip:$https_port"
+                    fi
+                else
+                    echo "   HTTPS: https://localhost"
+                fi
+            fi
         fi
     fi
     

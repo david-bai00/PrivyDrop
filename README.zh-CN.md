@@ -62,6 +62,14 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 
 完整说明见: docs/DEPLOYMENT_docker.zh-CN.md（模式一览、LAN TLS、自签限制、Let’s Encrypt 自动签发/续期）
 
+提示（lan-tls 自签 HTTPS）
+- 首次访问需导入 CA 证书：`docker/ssl/ca-cert.pem` 到浏览器（或系统信任），否则浏览器会提示“证书无效/不受信任”。
+- 访问方式（默认）：
+  - Nginx: `http://localhost`
+  - HTTPS: `https://localhost:8443`、`https://<你的局域网IP>:8443`
+  - 前端开发口（可选）: `http://localhost:3002`、`http://<你的局域网IP>:3002`
+  - 若导入了 CA，浏览器与 API 走同源 HTTPS（8443）可避免 CORS；我们已默认放开常见开发来源（`localhost`、`:3002` 等）。
+
 **部署优势**:
 
 - ✅ 部署时间: 60 分钟 → 5 分钟

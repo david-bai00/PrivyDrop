@@ -60,6 +60,14 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 
 See [Docker Deployment Guide](./docs/DEPLOYMENT_docker.md) (Modes Overview, LAN TLS limitations, Let’s Encrypt auto-issue/renew)
 
+Heads-up (LAN TLS, self-signed)
+- Import the CA certificate into your browser (or system trust store) on first use: `docker/ssl/ca-cert.pem`. Otherwise the browser shows “certificate not valid/untrusted”.
+- Access endpoints (by default):
+  - Nginx: `http://localhost`
+  - HTTPS: `https://localhost:8443`, `https://<your LAN IP>:8443`
+  - Frontend dev ports (optional): `http://localhost:3002`, `http://<your LAN IP>:3002`
+  - With CA trusted, using same-origin HTTPS (8443) avoids CORS; common dev origins (`localhost`, `:3002`) are allowed by default.
+
 ## 🚀 Quick Start (Full-Stack Local Development)
 
 Before you begin, ensure your development environment has [Node.js](https://nodejs.org/) (v18+), [npm](https://www.npmjs.com/), and a running [Redis](https://redis.io/) instance installed.

@@ -431,6 +431,35 @@ bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 
 - 仅用于开发或受管终端（全员导入内部 CA）；禁用 HSTS；不保证 `turns:443`；受限网络（仅 443 出口）应使用 full（域名 + 受信证书 + SNI 443）。
 
+使用说明（强烈建议逐条完成）
+
+1) 导入自签 CA 证书（必做）
+- 证书位置：`docker/ssl/ca-cert.pem`
+- 浏览器导入：
+  - Chrome/Edge：设置 → 隐私与安全 → 安全 → 管理证书 → “受信任的根证书颁发机构” → 导入 `ca-cert.pem`
+  - macOS：钥匙串访问 → System → 证书 → 导入 `ca-cert.pem` → 设置“始终信任”
+  - Linux（系统层）：
+    - `sudo cp docker/ssl/ca-cert.pem /usr/local/share/ca-certificates/privydrop-ca.crt`
+    - `sudo update-ca-certificates`
+- 未导入时，浏览器访问 HTTPS 会提示“证书无效/不受信任”，API 请求也会失败。
+
+2) 访问方式（默认端口与路径）
+- Nginx 反代：`http://localhost`
+- HTTPS（Web）：`https://localhost:8443`、`https://<局域网IP>:8443`
+- 前端直连（可选）：`http://localhost:3002`、`http://<局域网IP>:3002`
+- 说明：lan-tls 下未开启 443；HTTPS 统一走 8443。
+
+3) 跨域（CORS）说明
+- 为方便开发与调试，脚本已默认放开常见来源：`https://<局域网IP>:8443`、`https://localhost:8443`、`http://localhost`、`http://<局域网IP>`、`http://localhost:3002`、`http://<局域网IP>:3002`。
+- 若仍需最小化来源，请在 `.env` 中精准收敛 `CORS_ORIGIN`，并 `docker compose restart backend`。
+
+4) 健康检查
+- `curl -kfsS https://localhost:8443/api/health` → 200
+- `bash ./test-health-apis.sh` → 所有测试应通过（前端 detailed 健康已在容器内信任自签 CA）。
+
+5) 部署提示
+- 脚本会只显示可访问的 Nginx 入口；lan-tls 下将显示明确的 `https://localhost:8443`（如存在局域网 IP 也将显示 `https://<IP>:8443`）。
+
 ### 公网域名部署（HTTPS + Nginx）快速测试
 
 1) 将域名 A 记录解析至服务器 IP（可选：`turn.<your-domain>` 指向相同 IP）

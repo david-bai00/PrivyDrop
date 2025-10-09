@@ -437,6 +437,35 @@ bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 
 - For development or managed devices only (internal CA trusted fleet-wide); HSTS disabled; `turns:443` not guaranteed. For restricted networks (443-only), use full (domain + trusted cert + SNI 443).
 
+Usage (strongly recommended)
+
+1) Import the self-signed CA (required)
+- Location: `docker/ssl/ca-cert.pem`
+- Browser import:
+  - Chrome/Edge: Settings → Privacy & Security → Security → Manage certificates → “Trusted Root Certification Authorities” → Import `ca-cert.pem`
+  - macOS: Keychain Access → System → Certificates → Import `ca-cert.pem` → set to “Always Trust”
+  - Linux (system-wide):
+    - `sudo cp docker/ssl/ca-cert.pem /usr/local/share/ca-certificates/privydrop-ca.crt`
+    - `sudo update-ca-certificates`
+- Without trusting the CA, browser HTTPS will show untrusted cert warnings and API requests will fail.
+
+2) Access endpoints (default ports and paths)
+- Nginx reverse proxy: `http://localhost`
+- HTTPS (Web): `https://localhost:8443`, `https://<LAN IP>:8443`
+- Frontend direct (optional): `http://localhost:3002`, `http://<LAN IP>:3002`
+- Note: In lan-tls, 443 is not open; HTTPS uses 8443.
+
+3) CORS
+- For convenience, common dev origins are allowed by default: `https://<LAN IP>:8443`, `https://localhost:8443`, `http://localhost`, `http://<LAN IP>`, `http://localhost:3002`, `http://<LAN IP>:3002`.
+- To minimize allowed origins, edit `CORS_ORIGIN` in `.env` and then `docker compose restart backend`.
+
+4) Health checks
+- `curl -kfsS https://localhost:8443/api/health` → 200
+- `bash ./test-health-apis.sh` → all tests should pass (frontend container trusts the self-signed CA).
+
+5) Deployment hints
+- The script prints only reachable Nginx endpoints; in lan-tls it will show `https://localhost:8443` (and `https://<LAN IP>:8443` if available).
+
 ### Public Domain Deployment (HTTPS + Nginx) — Quick Test
 
 1) Point your domain A record to the server IP (optional: also `turn.<your-domain>` to the same IP)

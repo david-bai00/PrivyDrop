@@ -186,20 +186,23 @@ generate_env_file() {
 
     case "$DEPLOYMENT_MODE" in
         lan-http)
-            cors_origin="http://${LOCAL_IP}:3002,http://localhost:3002"
+            # Allow both dev ports and nginx origins to avoid CORS when --with-nginx is used
+            cors_origin="http://${LOCAL_IP}:3002,http://localhost:3002,http://${LOCAL_IP},http://localhost"
             api_url="http://${LOCAL_IP}:3001"
             ;;
         lan-tls)
             if [[ "$WEB_HTTPS_ENABLED" == "true" ]]; then
                 HTTPS_LISTEN_PORT="8443"
-                cors_origin="https://${LOCAL_IP}:${HTTPS_LISTEN_PORT}"
+                # Allow common dev origins to avoid CORS when accessing via http://localhost and :3002
+                # Keep API URL on HTTPS to go through nginx TLS
+                cors_origin="https://${LOCAL_IP}:${HTTPS_LISTEN_PORT},https://localhost:${HTTPS_LISTEN_PORT},http://${LOCAL_IP},http://${LOCAL_IP}:3002,http://localhost,http://localhost:3002"
                 api_url="https://${LOCAL_IP}:${HTTPS_LISTEN_PORT}"
                 ssl_mode="self-signed"
             fi
             ;;
         public)
             local effective_public_host="${PUBLIC_IP:-$LOCAL_IP}"
-            cors_origin="http://${effective_public_host}:3002,http://localhost:3002"
+            cors_origin="http://${effective_public_host}:3002,http://localhost:3002,http://${effective_public_host},http://localhost"
             api_url="http://${effective_public_host}:3001"
             turn_enabled="true"
             ;;
@@ -250,6 +253,16 @@ generate_env_file() {
     TURN_MIN_PORT="$turn_min_port_value"
     TURN_MAX_PORT="$turn_max_port_value"
 
+    # Decide container HTTPS port for Docker mapping
+    # - full (with SNI 443): container listens on 443 (stream), website on 8443 internal
+    # - lan-tls (self-signed, explicitly enabled): container listens on 8443 (no stream)
+    local docker_https_container_port="443"
+    if [[ "$DEPLOYMENT_MODE" == "lan-tls" && "$WEB_HTTPS_ENABLED" == "true" ]]; then
+        docker_https_container_port="8443"
+    else
+        docker_https_container_port="443"
+    fi
+
     cat > "$env_file" << EOF
 # PrivyDrop Docker configuration
 # Generated at: $(date)
@@ -272,6 +285,7 @@ FRONTEND_PORT=3002
 BACKEND_PORT=3001
 HTTP_PORT=80
 HTTPS_PORT=${HTTPS_LISTEN_PORT:-443}
+DOCKER_HTTPS_CONTAINER_PORT=${docker_https_container_port}
 
 # =============================================================================
 # Redis config
@@ -516,26 +530,34 @@ generate_ssl_certificates() {
             -out docker/ssl/server.csr \
             -subj "/C=CN/ST=Local/L=Local/O=PrivyDrop/CN=${LOCAL_IP}" 2>/dev/null
         
-        # Create extensions config
+        # Create extensions config (with v3_req section for -extensions v3_req)
         cat > docker/ssl/server.ext << EOF
+[v3_req]
+subjectKeyIdentifier=hash
 authorityKeyIdentifier=keyid,issuer
 basicConstraints=CA:FALSE
-keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
-subjectAltName = @alt_names
+keyUsage=digitalSignature,nonRepudiation,keyEncipherment,dataEncipherment
+extendedKeyUsage=serverAuth
+subjectAltName=@alt_names
 
 [alt_names]
-DNS.1 = localhost
-DNS.2 = *.local
-DNS.3 = ${DOMAIN_NAME:-privydrop.local}
-IP.1 = ${LOCAL_IP}
-IP.2 = 127.0.0.1
+DNS.1=localhost
+DNS.2=*.local
+DNS.3=${DOMAIN_NAME:-privydrop.local}
+IP.1=${LOCAL_IP}
+IP.2=127.0.0.1
 EOF
         
         # Sign server certificate
         openssl x509 -req -days 365 -in docker/ssl/server.csr \
             -CA docker/ssl/ca-cert.pem -CAkey docker/ssl/ca-key.pem \
             -out docker/ssl/server-cert.pem -CAcreateserial \
-            -extensions v3_req -extfile docker/ssl/server.ext 2>/dev/null
+            -extensions v3_req -extfile docker/ssl/server.ext
+        # Validate certificate generation
+        if [[ ! -f docker/ssl/server-cert.pem ]]; then
+            log_error "Failed to generate docker/ssl/server-cert.pem (self-signed). Check OpenSSL output above."
+            exit 1
+        fi
         
         # Clean temporary files
         rm -f docker/ssl/server.csr docker/ssl/server.ext docker/ssl/ca-cert.srl

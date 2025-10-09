@@ -69,6 +69,7 @@ services:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3001}
       - PORT=3002
       - HOSTNAME=0.0.0.0
+      - NODE_EXTRA_CA_CERTS=/opt/privydrop/ssl/ca-cert.pem
     ports:
       - "${FRONTEND_PORT:-3002}:3002"
     depends_on:
@@ -76,6 +77,8 @@ services:
         condition: service_healthy
     networks:
       - privydrop-network
+    volumes:
+      - ./docker/ssl:/opt/privydrop/ssl:ro
     healthcheck:
       test: ["CMD", "node", "health-check.js"]
       interval: 30s
@@ -90,7 +93,7 @@ services:
     restart: unless-stopped
     ports:
       - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:${DOCKER_HTTPS_CONTAINER_PORT:-443}"
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
