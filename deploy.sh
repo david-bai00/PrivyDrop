@@ -393,6 +393,7 @@ setup_environment() {
     local detect_args=""
     [[ -n "$DOMAIN_NAME" ]] && detect_args="--domain $DOMAIN_NAME"
     [[ -n "$DEPLOYMENT_MODE" ]] && detect_args="$detect_args --mode $DEPLOYMENT_MODE"
+    [[ "$WITH_NGINX" == "true" ]] && detect_args="$detect_args --with-nginx"
     [[ "$WITH_SNI443" == "true" ]] && detect_args="$detect_args --enable-sni443"
     [[ "$DISABLE_SNI443" == "true" ]] && detect_args="$detect_args --no-sni443"
     [[ "$ENABLE_WEB_HTTPS" == "true" ]] && detect_args="$detect_args --enable-web-https"

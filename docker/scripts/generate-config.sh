@@ -210,6 +210,14 @@ generate_env_file() {
                     api_url="https://${LOCAL_IP}:${HTTPS_LISTEN_PORT}"
                 fi
                 ssl_mode="self-signed"
+            else
+                # No TLS enabled: use HTTP. When Nginx is enabled, enforce same-origin gateway.
+                cors_origin="http://${LOCAL_IP},http://localhost,http://${LOCAL_IP}:3002,http://localhost:3002"
+                if [[ "$WITH_NGINX" == "true" ]]; then
+                    api_url=""
+                else
+                    api_url="http://${LOCAL_IP}:3001"
+                fi
             fi
             ;;
         public)
