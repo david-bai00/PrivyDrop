@@ -62,11 +62,14 @@ services:
         - NEXT_PUBLIC_TURN_HOST=${NEXT_PUBLIC_TURN_HOST}
         - NEXT_PUBLIC_TURN_USERNAME=${NEXT_PUBLIC_TURN_USERNAME}
         - NEXT_PUBLIC_TURN_PASSWORD=${NEXT_PUBLIC_TURN_PASSWORD}
+        - NEXT_IMAGE_UNOPTIMIZED=${NEXT_IMAGE_UNOPTIMIZED:-true}
     container_name: privydrop-frontend
     restart: unless-stopped
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      - BACKEND_INTERNAL_URL=${BACKEND_INTERNAL_URL:-http://backend:3001}
+      - NEXT_IMAGE_UNOPTIMIZED=${NEXT_IMAGE_UNOPTIMIZED:-true}
       - PORT=3002
       - HOSTNAME=0.0.0.0
       - NODE_EXTRA_CA_CERTS=/opt/privydrop/ssl/ca-cert.pem

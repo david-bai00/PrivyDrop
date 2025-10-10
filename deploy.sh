@@ -582,8 +582,13 @@ show_deployment_info() {
                 echo "   API: http://$domain_name:${backend_port:-3001}"
             fi
         elif [[ -n "$public_ip" ]]; then
-            echo "   Public access: http://$public_ip:${frontend_port:-3002}"
-            echo "   API: http://$public_ip:${backend_port:-3001}"
+            if [[ "$WITH_NGINX" == "true" ]]; then
+                echo "   Public access: http://$public_ip"
+                echo "   API: http://$public_ip"
+            else
+                echo "   Public access: http://$public_ip:${frontend_port:-3002}"
+                echo "   API: http://$public_ip:${backend_port:-3001}"
+            fi
         else
             # Fallback: show LAN and localhost if public IP is unavailable
             echo "   Frontend: http://localhost:${frontend_port:-3002}"
@@ -591,13 +596,24 @@ show_deployment_info() {
         fi
     else
         # Private/basic: localhost + LAN
-        echo "   Frontend: http://localhost:${frontend_port:-3002}"
-        echo "   Backend API: http://localhost:${backend_port:-3001}"
+        if [[ "$WITH_NGINX" == "true" ]]; then
+            # When Nginx is enabled and frontend uses same-origin API, prefer the gateway as the primary entry
+            echo "   Frontend: http://localhost"
+            echo "   API: http://localhost"
+        else
+            echo "   Frontend: http://localhost:${frontend_port:-3002}"
+            echo "   Backend API: http://localhost:${backend_port:-3001}"
+        fi
         if [[ -n "$local_ip" ]] && [[ "$local_ip" != "127.0.0.1" ]]; then
             echo ""
             echo -e "${BLUE}🌐 LAN Access:${NC}"
-            echo "   Frontend: http://$local_ip:${frontend_port:-3002}"
-            echo "   Backend API: http://$local_ip:${backend_port:-3001}"
+            if [[ "$WITH_NGINX" == "true" ]]; then
+                echo "   Frontend: http://$local_ip"
+                echo "   API: http://$local_ip"
+            else
+                echo "   Frontend: http://$local_ip:${frontend_port:-3002}"
+                echo "   Backend API: http://$local_ip:${backend_port:-3001}"
+            fi
         fi
     fi
     

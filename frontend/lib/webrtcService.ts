@@ -18,10 +18,13 @@ class WebRTCService {
   private static instance: WebRTCService;
 
   private constructor() {
+    const apiUrl = (config.API_URL || "").trim();
+    // Use same-origin when API_URL is empty string — socket.io accepts empty string for same-origin
+    const signalingServer: string = apiUrl.length > 0 ? apiUrl : "";
     const webRTCConfig = {
       iceServers: getIceServers(),
       socketOptions: getSocketOptions() || {},
-      signalingServer: config.API_URL,
+      signalingServer,
     };
 
     this.sender = new WebRTC_Initiator(webRTCConfig);

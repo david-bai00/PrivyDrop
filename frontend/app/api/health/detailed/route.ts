@@ -17,14 +17,14 @@ export async function GET(request: NextRequest) {
       environment: process.env.NODE_ENV || 'development'
     };
 
-    // 检查后端API连接
+    // Check backend API connectivity
     const backendHealth = await checkBackendHealth();
     if (backendHealth.status !== 'connected') {
       errors.push('Backend API connection failed');
       status = 'degraded';
     }
 
-    // 系统信息
+    // System info snapshot
     const systemInfo = {
       runtime: process.env.NEXT_RUNTIME || 'nodejs',
       nextjs: {
@@ -64,10 +64,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// 检查后端API健康状态
+// Check backend API health
 async function checkBackendHealth() {
   try {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    // Prefer container-internal URL, then public URL, then localhost fallback
+    const backendUrl = process.env.BACKEND_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const start = Date.now();
     
     const response = await fetch(`${backendUrl}/health`, {
@@ -75,7 +76,7 @@ async function checkBackendHealth() {
       headers: {
         'Content-Type': 'application/json',
       },
-      // 设置超时时间
+      // Timeout to avoid long-hanging connections in degraded networks
       signal: AbortSignal.timeout(5000)
     });
 
@@ -101,7 +102,7 @@ async function checkBackendHealth() {
   } catch (error) {
     return {
       status: 'disconnected',
-      backendUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+      backendUrl: process.env.BACKEND_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
       error: error instanceof Error ? error.message : 'Unknown error'
     };
   }

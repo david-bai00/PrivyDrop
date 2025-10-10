@@ -30,6 +30,7 @@ log_error() {
 
 # Defaults and global parameters
 WITH_TURN="${WITH_TURN:-false}"
+WITH_NGINX="${WITH_NGINX:-false}"
 TURN_EXTERNAL_IP_OVERRIDE=""
 TURN_MIN_PORT_DEFAULT=49152
 TURN_MAX_PORT_DEFAULT=49252
@@ -95,6 +96,7 @@ Options:
                            public:   Public HTTP + TURN (no domain)
                            full:     Domain + HTTPS (Let’s Encrypt) + TURN
   --with-turn              Enable TURN in any mode. Default external-ip=LOCAL_IP
+  --with-nginx             Indicate Nginx reverse proxy is enabled (frontdoor same-origin)
   --turn-external-ip IP    Explicit TURN external-ip; if not set, use PUBLIC_IP, otherwise fallback to LOCAL_IP
   --turn-port-range R      TURN UDP port range, format MIN-MAX; default 49152-49252
   --domain DOMAIN          Domain (for Nginx/certs/TURN realm, e.g., turn.DOMAIN)
@@ -174,6 +176,7 @@ generate_env_file() {
     # Compute access endpoints for different deployment modes
     # Support both localhost and host IP for browser access; helpful for Docker direct access or local debugging
     local cors_origin="http://${LOCAL_IP}:3002,http://localhost:3002"
+    # API URL exposed to browser. When WITH_NGINX=true, prefer same-origin (empty => use relative /api)
     local api_url="http://${LOCAL_IP}:3001"
     local ssl_mode="none"
     local turn_enabled="false"
@@ -188,22 +191,36 @@ generate_env_file() {
         lan-http)
             # Allow both dev ports and nginx origins to avoid CORS when --with-nginx is used
             cors_origin="http://${LOCAL_IP}:3002,http://localhost:3002,http://${LOCAL_IP},http://localhost"
-            api_url="http://${LOCAL_IP}:3001"
+            if [[ "$WITH_NGINX" == "true" ]]; then
+                # Same-origin via Nginx (frontend uses relative /api)
+                api_url=""
+            else
+                api_url="http://${LOCAL_IP}:3001"
+            fi
             ;;
         lan-tls)
             if [[ "$WEB_HTTPS_ENABLED" == "true" ]]; then
                 HTTPS_LISTEN_PORT="8443"
-                # Allow common dev origins to avoid CORS when accessing via http://localhost and :3002
-                # Keep API URL on HTTPS to go through nginx TLS
+                # Allow HTTP for local debug; HTTPS is exposed on 8443 by default
                 cors_origin="https://${LOCAL_IP}:${HTTPS_LISTEN_PORT},https://localhost:${HTTPS_LISTEN_PORT},http://${LOCAL_IP},http://${LOCAL_IP}:3002,http://localhost,http://localhost:3002"
-                api_url="https://${LOCAL_IP}:${HTTPS_LISTEN_PORT}"
+                if [[ "$WITH_NGINX" == "true" ]]; then
+                    # Same-origin via Nginx (relative /api), TLS is terminated by Nginx
+                    api_url=""
+                else
+                    api_url="https://${LOCAL_IP}:${HTTPS_LISTEN_PORT}"
+                fi
                 ssl_mode="self-signed"
             fi
             ;;
         public)
             local effective_public_host="${PUBLIC_IP:-$LOCAL_IP}"
             cors_origin="http://${effective_public_host}:3002,http://localhost:3002,http://${effective_public_host},http://localhost"
-            api_url="http://${effective_public_host}:3001"
+            if [[ "$WITH_NGINX" == "true" ]]; then
+                # Same-origin via Nginx gateway
+                api_url=""
+            else
+                api_url="http://${effective_public_host}:3001"
+            fi
             turn_enabled="true"
             ;;
         full)
@@ -286,6 +303,11 @@ BACKEND_PORT=3001
 HTTP_PORT=80
 HTTPS_PORT=${HTTPS_LISTEN_PORT:-443}
 DOCKER_HTTPS_CONTAINER_PORT=${docker_https_container_port}
+
+# =============================================================================
+# Internal backend URL for server-side (frontend container only)
+# =============================================================================
+BACKEND_INTERNAL_URL=http://backend:3001
 
 # =============================================================================
 # Redis config
@@ -922,6 +944,10 @@ main() {
                 ;;
             --no-sni443)
                 ENABLE_SNI443=false
+                shift
+                ;;
+            --with-nginx)
+                WITH_NGINX=true
                 shift
                 ;;
             --enable-web-https)

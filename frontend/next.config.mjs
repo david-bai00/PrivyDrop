@@ -12,6 +12,8 @@ const withMDX = createMDX({
 const nextConfig = {
   pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
   images: {
+    // Disable optimization inside Docker to avoid container loopback fetch failures (502)
+    unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === 'true',
     remotePatterns: [
       {
         protocol: 'https',

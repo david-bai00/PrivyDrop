@@ -1,3 +1,5 @@
+import { ManagerOptions, SocketOptions } from "socket.io-client";
+
 export const config = {
   API_URL: process.env.NEXT_PUBLIC_API_URL!,
   USE_HTTPS: process.env.NODE_ENV !== "development",
@@ -54,14 +56,12 @@ export const getIceServers = () => {
   return iceServers;
 };
 
-export const getSocketOptions = () => {
-  return config.USE_HTTPS
-    ? {
-        secure: true,
-        path: "/socket.io/",
-        transports: ["websocket"],
-      }
-    : undefined;
+export const getSocketOptions = (): Partial<ManagerOptions & SocketOptions> => {
+  // Allow polling fallback; do not force "secure" here — protocol will be inferred
+  return {
+    path: "/socket.io/",
+    transports: ["websocket", "polling"],
+  };
 };
 
 export const getFetchOptions = (options: RequestInit = {}): RequestInit => {
