@@ -81,22 +81,19 @@ cd PrivyDrop
 
 ```bash
 # Basic deployment (recommended for beginners)
-bash deploy.sh
-
-# After deployment completes, visit:
-# http://localhost:3002
+bash ./deploy.sh
 ```
 
 That's it! 🎉
 
 ## 📚 Deployment Modes
 
-### Basic Mode (Default)
+### LAN HTTP (lan-http)
 
 **Use Case**: Private network file transfer, personal use, testing environment
 
 ```bash
-bash deploy.sh
+bash ./deploy.sh --mode lan-http
 ```
 
 **Features**:
@@ -111,7 +108,7 @@ bash deploy.sh
 **Use Case**: Servers with public IP but no domain
 
 ```bash
-bash deploy.sh --mode public --with-turn
+bash ./deploy.sh --mode public --with-turn --with-nginx
 ```
 
 **Features**:
@@ -137,7 +134,7 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 - ✅ SNI 443 multiplexing (turn.<domain> → coturn:5349; others → web:8443)
 - ✅ Complete production setup
 
-> Tip: If your network uses carrier-grade NAT or proxy and is mis-detected as public, append `--mode private` to skip public-IP probing and force basic mode. When the detected LAN IP is not the one you expect, append `--local-ip 192.168.x.x` to override it explicitly.
+> Tip: The script no longer auto-detects the deployment mode; always pass `--mode lan-http|lan-tls|public|full`. If the detected LAN IP is not the one you expect, add `--local-ip 192.168.x.x` to override.
 
 ## 🔧 Advanced Configuration
 
@@ -180,32 +177,21 @@ bash ./deploy.sh --mode full --with-turn --turn-port-range 55000-55100
 
 ## 🌐 Access Methods
 
-### Local Access
+- With Nginx (recommended, same-origin gateway)
+  - lan-http/public: `http://localhost` (or `http://<public IP>`)
+  - lan-tls (with `--enable-web-https`): `https://localhost:8443` (or `https://<LAN IP>:8443`)
+  - full (with domain): `https://<your-domain>` (443)
+  - Health checks: `curl -fsS http://localhost/api/health` (lan-http/public), `curl -kfsS https://localhost:8443/api/health` (lan-tls+https), `curl -fsS https://<domain>/api/health` (full)
 
-- **Frontend App**: http://localhost:3002
-- **API Interface**: http://localhost:3001
-- **Health Check**: http://localhost:3001/health
+- Without Nginx (direct ports, for debugging only)
+  - Frontend: `http://localhost:3002` (or `http://<LAN IP>:3002`)
+  - API: `http://localhost:3001` (or `http://<LAN IP>:3001`)
+  - Note: direct ports may cause CORS or 404 in production/public setups and are not recommended for public access.
 
-### LAN Access
+### HTTPS Access (lan-tls/full)
 
-After deployment, the script automatically displays LAN access addresses:
-
-```
-🌐 LAN Access:
-   Frontend App: http://192.168.1.100:3002
-   Backend API: http://192.168.1.100:3001
-```
-
-### HTTPS Access (full mode)
-
-- **Public HTTPS**: https://your-domain.com
-- **Certificate Source**: Let’s Encrypt (auto issue/renew via webroot)
-- **Runtime Location**: Copied to `docker/ssl/` and hot-reloaded
-
-Notes:
-
-- First-time issuance happens automatically after Nginx:80 is up; then 443 is enabled and hot-reloaded.
-- Renewal is automated: a deploy-hook copies renewed certs to `docker/ssl/` and reloads Nginx; coturn is HUP’ed/restarted for TLS as needed.
+- lan-tls: with `--enable-web-https`, access via `https://localhost:8443` (certs in `docker/ssl/`). Import `docker/ssl/ca-cert.pem` into your browser or trust store on first use.
+- full: after Let’s Encrypt issuance, access via `https://<your-domain>` (443). Certs auto-issue/renew; hot-reload is handled via deploy hook.
 
 ## 🔍 Management Commands
 
@@ -251,7 +237,7 @@ docker compose down
 
 ```bash
 # Clean all containers, images and data
-bash deploy.sh --clean
+bash ./deploy.sh --clean
 ```
 
 ## 🛠️ Troubleshooting
@@ -270,7 +256,7 @@ bash deploy.sh --clean
 
 ```bash
 # First try cleaning previous containers
-bash deploy.sh --clean   # or docker compose down
+bash ./deploy.sh --clean   # or docker compose down
 
 # If the port is still occupied, locate the process
 sudo ss -tulpn | grep :3002
@@ -319,14 +305,14 @@ newgrp docker
 
 ```bash
 # 1. Check service status
-docker-compose ps
+docker compose ps
 
 # 2. Check health status
 curl http://localhost:3001/health
 curl http://localhost:3002/api/health
 
 # 3. View detailed logs
-docker-compose logs -f
+docker compose logs -f
 
 # 4. Check firewall
 sudo ufw status
@@ -340,7 +326,7 @@ sudo ufw status
 
 ```bash
 # Enable TURN server
-bash deploy.sh --with-turn
+bash ./deploy.sh --with-turn
 
 # Check network connectivity
 curl -I http://localhost:3001/api/get_room
@@ -534,7 +520,7 @@ bash deploy.sh
 
 ```bash
 # Backup Redis data
-docker-compose exec redis redis-cli BGSAVE
+docker compose exec redis redis-cli BGSAVE
 
 # Backup SSL certificates
 tar -czf ssl-backup.tar.gz docker/ssl/
@@ -550,8 +536,8 @@ cp .env .env.backup
 docker system prune -f
 
 # Update base images
-docker-compose pull
-docker-compose up -d
+docker compose pull
+docker compose up -d
 ```
 
 ## 🆘 Getting Help
@@ -559,7 +545,12 @@ docker-compose up -d
 ### Command Line Help
 
 ```bash
-bash deploy.sh --help
+bash ./deploy.sh --help
+
+### Additional Notes
+
+- In Docker environments, Next.js Image optimization is disabled by default (`NEXT_IMAGE_UNOPTIMIZED=true`) to avoid container loopback fetch failures on `/_next/image`. To enable it, set the variable to `false` and rebuild.
+- With `--with-nginx`, the frontend is built to use same-origin API (`/api`, `/socket.io/`). Use the gateway URLs printed by the script; direct ports `:3002/:3001` are not recommended in production.
 ```
 
 ### Online Resources

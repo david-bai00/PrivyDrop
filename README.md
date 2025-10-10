@@ -51,8 +51,8 @@ bash ./deploy.sh --mode lan-http --with-turn
 # LAN HTTPS (self-signed; dev/managed env; explicitly enable 8443)
 bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 
-# Public IP without domain (with TURN)
-bash ./deploy.sh --mode public --with-turn
+# Public IP without domain (with TURN; recommended with Nginx for same-origin)
+bash ./deploy.sh --mode public --with-turn --with-nginx
 
 # Public domain (HTTPS + Nginx + TURN + SNI 443, auto-issue/renew)
 bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
@@ -66,7 +66,8 @@ Heads-up (LAN TLS, self-signed)
   - Nginx: `http://localhost`
   - HTTPS: `https://localhost:8443`, `https://<your LAN IP>:8443`
   - Frontend dev ports (optional): `http://localhost:3002`, `http://<your LAN IP>:3002`
-  - With CA trusted, using same-origin HTTPS (8443) avoids CORS; common dev origins (`localhost`, `:3002`) are allowed by default.
+  - When `--with-nginx` is enabled, the frontend and API are same-origin (`/api`, `/socket.io`) for stability; direct ports `:3002/:3001` are for debugging only and may cause CORS or 404.
+  - With `--enable-web-https` and the CA trusted, same-origin HTTPS (8443) avoids CORS; common dev origins (`localhost`, `:3002`) are allowed by default.
 
 ## 🚀 Quick Start (Full-Stack Local Development)
 

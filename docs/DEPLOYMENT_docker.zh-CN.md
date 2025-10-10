@@ -86,12 +86,12 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 
 ## 📚 部署模式详解
 
-### 基础模式 (默认)
+### lan-http（内网 HTTP）
 
 **适用场景**: 内网文件传输、个人使用、测试环境
 
 ```bash
-bash deploy.sh
+bash ./deploy.sh --mode lan-http
 ```
 
 **特性**:
@@ -106,7 +106,7 @@ bash deploy.sh
 **适用场景**: 有公网 IP 但无域名的服务器
 
 ```bash
-bash deploy.sh --mode public --with-turn
+bash ./deploy.sh --mode public --with-turn --with-nginx
 ```
 
 **特性**:
@@ -132,7 +132,7 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 - ✅ SNI 443 分流（turn.<domain> → coturn:5349，其余 → web:8443）
 - ✅ 完整生产环境配置
 
-> 提示：若家庭宽带/运营商代理导致脚本误判为公网环境，可追加 `--mode private` 强制跳过公网检测，按基础模式执行；如果自动识别到的局域网地址不是你想要的，可进一步追加 `--local-ip 192.168.x.x` 显式指定。
+> 提示：脚本不再自动判断部署模式，请显式传递 `--mode lan-http|lan-tls|public|full`。若自动检测到的局域网 IP 与预期不符，可使用 `--local-ip 192.168.x.x` 进行覆盖。
 
 ## 🔧 高级配置
 
@@ -155,7 +155,7 @@ HTTPS_PROXY=http://你的代理:7890
 NO_PROXY=localhost,127.0.0.1,backend,frontend,redis,coturn
 ```
 
-`docker-compose` 会把这些变量作为 build args 传递给前后端镜像，Dockerfile 中会自动设置为环境变量，从而让 `npm`/`pnpm` 使用代理。若无需代理，保持为空即可。
+`docker compose` 会把这些变量作为 build args 传递给前后端镜像，Dockerfile 中会自动设置为环境变量，从而让 `npm`/`pnpm` 使用代理。若无需代理，保持为空即可。
 
 ### 常用开关
 
@@ -175,31 +175,21 @@ bash ./deploy.sh --mode full --with-turn --turn-port-range 55000-55100
 
 ## 🌐 访问方式
 
-### 本机访问
+- 启用 Nginx（推荐，同源网关）
+  - lan-http/public：`http://localhost`（或 `http://<公网IP>`）
+  - lan-tls（启用 `--enable-web-https`）：`https://localhost:8443`（或 `https://<LAN IP>:8443`）
+  - full（有域名）：`https://<your-domain>`（443）
+  - 健康检查：`curl -fsS http://localhost/api/health`（lan-http/public），`curl -kfsS https://localhost:8443/api/health`（lan-tls+https），`curl -fsS https://<domain>/api/health`（full）
 
-- **前端应用**: http://localhost:3002
-- **API 接口**: http://localhost:3001
-- **健康检查**: http://localhost:3001/health
+- 未启用 Nginx（直连端口，仅调试）
+  - 前端：`http://localhost:3002`（或 `http://<LAN IP>:3002`）
+  - API：`http://localhost:3001`（或 `http://<LAN IP>:3001`）
+  - 注意：直连端口在生产/公网可能导致 CORS 或 404，不推荐对外使用。
 
-### 局域网访问
+### HTTPS 访问（lan-tls/full）
 
-部署完成后，脚本会自动显示局域网访问地址：
-
-```
-🌐 局域网访问：
-   前端应用: http://192.168.1.100:3002
-   后端API: http://192.168.1.100:3001
-```
-
-### HTTPS 访问 (如果启用)
-
-- **安全访问**: https://localhost
-- **证书位置**: `docker/ssl/ca-cert.pem`
-
-**注意**: 首次访问 HTTPS 时，浏览器会提示证书不受信任，这是正常的。可以：
-
-1. 点击"高级" → "继续访问"
-2. 或导入 `docker/ssl/ca-cert.pem` 证书到浏览器
+- lan-tls：开启 `--enable-web-https` 后通过 `https://localhost:8443` 访问（证书在 `docker/ssl/`）。首次访问需导入 `docker/ssl/ca-cert.pem` 到浏览器或系统信任。
+- full：签发 Let’s Encrypt 后通过 `https://<your-domain>` 访问（443）。
 
 ## 🔍 管理命令
 
@@ -245,7 +235,7 @@ docker compose down
 
 ```bash
 # 清理所有容器、镜像和数据
-bash deploy.sh --clean
+bash ./deploy.sh --clean
 ```
 
 ## 🛠️ 故障排除
@@ -264,7 +254,7 @@ bash deploy.sh --clean
 
 ```bash
 # 方法1: 清理旧容器
-bash deploy.sh --clean   # 或 docker compose down
+bash ./deploy.sh --clean   # 或 docker compose down
 
 # 方法2: 查找并结束占用进程
 sudo ss -tulpn | grep :3002
@@ -313,14 +303,14 @@ newgrp docker
 
 ```bash
 # 1. 检查服务状态
-docker-compose ps
+docker compose ps
 
 # 2. 检查健康状态
 curl http://localhost:3001/health
 curl http://localhost:3002/api/health
 
 # 3. 查看详细日志
-docker-compose logs -f
+docker compose logs -f
 
 # 4. 检查防火墙
 sudo ufw status
@@ -334,7 +324,7 @@ sudo ufw status
 
 ```bash
 # 启用TURN服务器
-bash deploy.sh --with-turn
+bash ./deploy.sh --with-turn
 
 # 检查网络连接
 curl -I http://localhost:3001/api/get_room
@@ -346,12 +336,16 @@ curl -I http://localhost:3001/api/get_room
 
 ```bash
 # 运行健康检查测试
-bash test-health-apis.sh
+bash ./test-health-apis.sh
 
-# 手动检查各服务
-curl http://localhost:3001/health          # 后端基础检查
-curl http://localhost:3001/health/detailed # 后端详细检查
-curl http://localhost:3002/api/health      # 前端检查
+# 手动检查各服务（直连端口）
+curl http://localhost:3001/health          # 后端基础检查（直连）
+curl http://localhost:3001/health/detailed # 后端详细检查（直连）
+curl http://localhost:3002/api/health      # 前端检查（直连）
+
+# 同源网关（启用 Nginx）
+curl -fsS http://localhost/api/health      # lan-http/public
+curl -kfsS https://localhost:8443/api/health  # lan-tls (https)
 ```
 
 ### 性能监控
@@ -374,7 +368,7 @@ docker system prune -f
 1. **启用 Nginx 缓存**:
 
 ```bash
-bash deploy.sh --with-nginx
+bash ./deploy.sh --with-nginx
 ```
 
 2. **配置资源限制**:
@@ -416,7 +410,7 @@ networks:
 
 ```bash
 # 自动启用 (需要 HTTPS)
-bash deploy.sh --mode full --with-nginx
+bash ./deploy.sh --mode full --with-nginx
 ```
 
 ## 🔒 HTTPS 与安全
@@ -521,14 +515,14 @@ logs/
 git pull origin main
 
 # 重新部署
-bash deploy.sh
+bash ./deploy.sh
 ```
 
 ### 数据备份
 
 ```bash
 # 备份Redis数据
-docker-compose exec redis redis-cli BGSAVE
+docker compose exec redis redis-cli BGSAVE
 
 # 备份SSL证书
 tar -czf ssl-backup.tar.gz docker/ssl/
@@ -553,7 +547,7 @@ docker compose up -d
 ### 命令行帮助
 
 ```bash
-bash deploy.sh --help
+bash ./deploy.sh --help
 ```
 
 ### 在线资源
@@ -565,3 +559,8 @@ bash deploy.sh --help
 ### 社区支持
 
 - GitHub Issues: 技术问题和 bug 报告
+
+### 其他提示
+
+- Docker 环境默认关闭 Next.js Image 优化（`NEXT_IMAGE_UNOPTIMIZED=true`），以避免容器内对公网 IP 回环抓取导致 `/_next/image` 502；如需开启，将其设为 `false` 并重新构建。
+- 启用 `--with-nginx` 时，前端会构建为同源 API（相对路径 `/api`、`/socket.io/`）；请优先使用脚本输出的网关入口，不要直接使用 `:3002/:3001` 对外访问，否则可能触发 CORS 或 404。

@@ -2,7 +2,7 @@
 
 > Audience & Scope: This guide targets developers/operators who prefer a non-container (bare-metal) setup.
 >
-> Recommended: Prefer the one-click Docker deployment for simplicity and robustness, including auto HTTPS and TURN. See [Docker Deployment Guide](./docs/DEPLOYMENT_docker.md).
+> Recommended: Prefer the one-click Docker deployment for simplicity and robustness, including auto HTTPS and TURN. See [Docker Deployment Guide](./DEPLOYMENT_docker.md).
 
 This guide provides comprehensive instructions for deploying the full-stack PrivyDrop application, including setting up Redis, a TURN server, the backend service, the frontend application, and configuring Nginx as a reverse proxy.
 

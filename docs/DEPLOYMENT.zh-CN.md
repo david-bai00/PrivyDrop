@@ -2,7 +2,7 @@
 
 > 说明与定位：本指南面向具备 Linux 运维能力的开发者，介绍“裸机（非容器）”部署方式。
 >
-> 推荐方案：优先使用“一键 Docker 部署”，更简单、更稳健，支持自动签发/续期证书与 TURN。详见 [Docker 部署指南](./docs/DEPLOYMENT_docker.zh-CN.md)。
+> 推荐方案：优先使用“一键 Docker 部署”，更简单、更稳健，支持自动签发/续期证书与 TURN。详见 [Docker 部署指南](./DEPLOYMENT_docker.zh-CN.md)。
 
 本指南提供部署 Privydrop 全栈应用的全面说明，包括设置 Redis、TURN 服务器、后端服务、前端应用以及配置 Nginx 作为反向代理。
 

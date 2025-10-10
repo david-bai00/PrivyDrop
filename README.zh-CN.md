@@ -53,8 +53,8 @@ bash ./deploy.sh --mode lan-http --with-turn
 # 内网 HTTPS（自签，开发/受管环境，显式开启 8443）
 bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 
-# 公网IP（无域名），含 TURN
-bash ./deploy.sh --mode public --with-turn
+# 公网IP（无域名），含 TURN（推荐同源经 Nginx）
+bash ./deploy.sh --mode public --with-turn --with-nginx
 
 # 公网域名（HTTPS + Nginx + TURN + SNI 443 分流，自动申请/续期证书）
 bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
@@ -68,7 +68,8 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
   - Nginx: `http://localhost`
   - HTTPS: `https://localhost:8443`、`https://<你的局域网IP>:8443`
   - 前端开发口（可选）: `http://localhost:3002`、`http://<你的局域网IP>:3002`
-  - 若导入了 CA，浏览器与 API 走同源 HTTPS（8443）可避免 CORS；我们已默认放开常见开发来源（`localhost`、`:3002` 等）。
+  - 启用 `--with-nginx` 时，前端与 API 同源（/api、/socket.io）更稳定；直连 `:3002/:3001` 仅用于调试，可能导致 CORS 或 404。
+  - 若启用了 `--enable-web-https` 并导入 CA，浏览器与 API 走同源 HTTPS（8443）可避免 CORS；我们已默认放开常见开发来源（`localhost`、`:3002` 等）。
 
 **部署优势**:
 
