@@ -80,7 +80,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
    * 🎯 Send string content
    */
   public async sendString(content: string, peerId: string): Promise<void> {
-    const chunkSize = TransferConfig.FILE_CONFIG.CHUNK_SIZE;
+    const chunkSize = 65000;
     const chunks: string[] = [];
 
     for (let i = 0; i < content.length; i += chunkSize) {
