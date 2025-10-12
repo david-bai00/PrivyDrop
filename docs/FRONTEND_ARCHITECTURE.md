@@ -19,7 +19,7 @@ In a recent refactor, we established a design philosophy centered on "**Separati
 - **Framework**: Next.js 14 (App Router)
 - **Language**: TypeScript
 - **UI**: React 18, Tailwind CSS, shadcn/ui (based on Radix UI)
-- **State Management**: Modular state management centered on custom React Hooks
+- **State Management**: Zustand + custom React Hooks (modular business logic with shared app state)
 - **WebRTC Signaling**: Socket.IO Client
 - **Data Fetching**: React Server Components (RSC), Fetch API
 - **Internationalization**: `next/server` middleware + dynamic JSON dictionaries
@@ -118,11 +118,16 @@ This section details how the application's most critical P2P transfer feature is
 
 ### 3.2 State Management Strategy
 
-The project uses **custom React Hooks as the core for modular state management**. We deliberately avoided introducing global state management libraries (like Redux or Zustand) for the following reasons:
+The project adopts a combined approach of **Zustand + custom Hooks**:
 
-- **Reduce Complexity**: For the current scale of the application, a global state would introduce unnecessary complexity.
-- **Promote Cohesion**: Encapsulating related state and logic within the same Hook makes the code easier to understand and maintain.
-- **Leverage React's Native Capabilities**: Passing state managed by Hooks through Context and Props is sufficient for all current needs.
+- **Zustand (shared app state)**: Manages cross-page/component application-level state such as room/connection states, send/receive progress, and UI states. Implementation lives in `frontend/stores/fileTransferStore.ts`, offering minimal boilerplate and strong type support.
+- **Custom Hooks (cohesive business logic)**: Complex flows (WebRTC connection, room management, file transfer orchestration) remain encapsulated within Hooks, preserving cohesion, testability, and reusability.
+
+Benefits:
+
+- **Clear boundaries**: Observable/shared data goes to Zustand; highly cohesive/transient state stays in each module/Hook.
+- **Less boilerplate & maintainable**: Zustand remains lightweight while Hooks keep composability and testability.
+- **Aligned with reality**: Keeps documentation consistent with the actual implementation.
 
 ### 3.3 Internationalization (i18n)
 

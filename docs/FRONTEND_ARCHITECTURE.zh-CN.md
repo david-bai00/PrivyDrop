@@ -19,7 +19,7 @@ Privydrop 是一个基于 WebRTC 的 P2P 文件/文本分享工具，旨在提�
 - **框架**: Next.js 14 (App Router)
 - **语言**: TypeScript
 - **UI**: React 18, Tailwind CSS, shadcn/ui (基于 Radix UI)
-- **状态管理**: 以自定义 React Hooks 为核心的模块化状态管理
+- **状态管理**: Zustand + 自定义 React Hooks（模块化业务逻辑与全局共享状态结合）
 - **WebRTC 信令**: Socket.IO Client
 - **数据获取**: React Server Components (RSC), Fetch API
 - **国际化**: `next/server` 中间件 + 动态 JSON 字典
@@ -118,11 +118,16 @@ graph TD
 
 ### 3.2 状态管理策略
 
-项目**以自定义 React Hooks 为核心进行模块化状态管理**。我们刻意避免了引入全局状态管理库（如 Redux, Zustand），理由如下：
+当前项目采用“Zustand + 自定义 Hooks”的组合策略：
 
-- **降低复杂性**: 对于当前应用规模，全局状态会引入不必要的复杂性。
-- **促进内聚**: 将相关联的状态和逻辑封装在同一个 Hook 内，使得代码更易于理解和维护。
-- **利用 React 原生能力**: 通过 Context 和 Props 传递由 Hooks 管理的状态，足以满足当前所有需求。
+- **Zustand（全局共享状态）**: 用于管理跨页面/跨组件的应用级状态，例如房间与连接状态、发送/接收进度、UI 活动 Tab 等。实现位于 `frontend/stores/fileTransferStore.ts`，API 简洁、零样板、类型友好。
+- **自定义 Hooks（业务内聚）**: 复杂的业务流程（如 WebRTC 连接、房间管理、文件传输编排）仍以 Hooks 为边界进行封装，保持“逻辑内聚、可测试、可复用”。
+
+这样做的收益：
+
+- **边界清晰**: 全局可观察/可共享的数据进 Zustand，强业务内聚的瞬时/局部状态放在各自 Hook/模块内。
+- **减样板与可维护**: Zustand 足够轻量，不引入冗长样板；同时保留 Hooks 的可组合性和可测试性。
+- **更贴合现状**: 与代码实现保持一致，避免文档与实现脱节。
 
 ### 3.3 国际化 (i18n)
 

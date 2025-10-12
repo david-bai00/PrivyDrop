@@ -61,6 +61,7 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 See [Docker Deployment Guide](./docs/DEPLOYMENT_docker.md) (Modes Overview, LAN TLS limitations, Let’s Encrypt auto-issue/renew)
 
 Heads-up (LAN TLS, self-signed)
+
 - Import the CA certificate into your browser (or system trust store) on first use: `docker/ssl/ca-cert.pem`. Otherwise the browser shows “certificate not valid/untrusted”.
 - Access endpoints (by default):
   - Nginx: `http://localhost`
