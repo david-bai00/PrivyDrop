@@ -283,7 +283,7 @@ export const zh: Messages = {
       noFilesForFolderMsg: "在文件夹 '{folderName}' 中未找到文件。",
       zipError: "创建 ZIP 文件时出错。",
       fileNotFoundMsg: "未找到要下载的文件 '{fileName}'。",
-      confirmLeaveWhileTransferring: "当前有文件正在传输，退出将中断传输。确定要退出吗？",
+      confirmLeaveWhileTransferring: "传输将中断，已设置保存目录时可续传。确定退出？",
       leaveWhileTransferringSuccess: "已退出房间，传输已中断",
       html: {
         senderTab: "发送",

@@ -299,7 +299,7 @@ export const ja: Messages = {
       noFilesForFolderMsg: "フォルダ '{folderName}' にファイルが見つかりません。",
       zipError: "ZIP の作成中にエラーが発生しました。",
       fileNotFoundMsg: "ダウンロードするファイル '{fileName}' が見つかりません。",
-      confirmLeaveWhileTransferring: "現在ファイルが転送中です。退出すると転送が中断されます。よろしいですか？",
+      confirmLeaveWhileTransferring: "転送が中断されます。保存先設定時は再開可能。退出しますか？",
       leaveWhileTransferringSuccess: "ルームを退出しました。転送が中断されました",
       html: {
         senderTab: "送信",

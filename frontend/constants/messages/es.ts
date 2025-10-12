@@ -306,7 +306,7 @@ export const es: Messages = {
       zipError: "Error al crear el archivo ZIP.",
       fileNotFoundMsg: "Archivo '{fileName}' no encontrado para descargar.",
       confirmLeaveWhileTransferring:
-        "Los archivos se están transfiriendo actualmente. Salir interrumpirá la transferencia. ¿Estás seguro?",
+        "Transferencia se interrumpirá. Se puede reanudar si hay directorio de guardado. ¿Salir de todos modos?",
       leaveWhileTransferringSuccess:
         "Saliste de la sala, transferencia interrumpida",
       html: {

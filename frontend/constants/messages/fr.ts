@@ -314,7 +314,7 @@ export const fr: Messages = {
       fileNotFoundMsg:
         "Fichier '{fileName}' introuvable pour le téléchargement.",
       confirmLeaveWhileTransferring:
-        "Des fichiers sont actuellement en cours de transfert. Quitter interrompra le transfert. Êtes-vous sûr?",
+        "Le transfert sera interrompu. Reprenez si un répertoire de sauvegarde est défini. Quitter quand même ?",
       leaveWhileTransferringSuccess: "Salle quittée, transfert interrompu",
       html: {
         senderTab: "Envoyer",

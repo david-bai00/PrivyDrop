@@ -38,6 +38,12 @@ export default function HomeClient({ messages, lang }: PageContentProps) {
           <ClipboardApp />
         </div>
       </section>
+      {/* How It Works Section */}
+      <section aria-label="How It Works">
+        <LazyLoadWrapper>
+          <HowItWorks messages={messages} />
+        </LazyLoadWrapper>
+      </section>
       {/* Demo Video Section */}
       <section className="mb-12" aria-label="Product Demo">
         <LazyLoadWrapper>
@@ -72,12 +78,6 @@ export default function HomeClient({ messages, lang }: PageContentProps) {
           </div>
         </LazyLoadWrapper>
       </section>
-      {/* How It Works Section */}
-      <section aria-label="How It Works">
-        <LazyLoadWrapper>
-          <HowItWorks messages={messages} />
-        </LazyLoadWrapper>
-      </section>
       {/* System Architecture Section */}
       <section aria-label="System Architecture">
         <LazyLoadWrapper>
@@ -87,8 +87,8 @@ export default function HomeClient({ messages, lang }: PageContentProps) {
       {/* Key Features */}
       <section aria-label="Key Features">
         <LazyLoadWrapper>
-          <KeyFeatures 
-            messages={messages} 
+          <KeyFeatures
+            messages={messages}
             isInToolPage
             titleClassName="text-2xl md:text-3xl"
           />
