@@ -2,6 +2,8 @@ import HomeClient from "./HomeClient";
 import { getDictionary } from "@/lib/dictionary";
 import { Metadata } from "next";
 import { supportedLocales } from "@/constants/i18n-config";
+import JsonLd from "@/components/seo/JsonLd";
+import { buildWebAppJsonLd, getSiteUrl, absoluteUrl } from "@/lib/seo/jsonld";
 
 export async function generateMetadata({
   params,
@@ -39,6 +41,23 @@ export default async function Home({
   params: { lang: string };
 }) {
   const messages = await getDictionary(lang);
+  const siteUrl = getSiteUrl();
+  const webAppLd = buildWebAppJsonLd({
+    siteUrl,
+    path: `/${lang}`,
+    name: "PrivyDrop",
+    alternateName: ["PrivyDrop", "PrivyDrop APP"],
+    description: messages.meta.home.description,
+    inLanguage: lang,
+    imageUrl: absoluteUrl("/logo.png", siteUrl),
+    applicationCategory: "UtilityApplication",
+    operatingSystem: "Web Browser",
+  });
 
-  return <HomeClient messages={messages} lang={lang} />;
+  return (
+    <>
+      <JsonLd id="home-ld" data={webAppLd} />
+      <HomeClient messages={messages} lang={lang} />
+    </>
+  );
 }

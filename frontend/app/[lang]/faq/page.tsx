@@ -2,6 +2,8 @@ import FAQSection from "@/components/web/FAQSection";
 import type { Metadata } from "next";
 import { getDictionary } from "@/lib/dictionary";
 import { supportedLocales } from "@/constants/i18n-config";
+import JsonLd from "@/components/seo/JsonLd";
+import { buildFaqJsonLd } from "@/lib/seo/jsonld";
 
 export async function generateMetadata({
   params,
@@ -38,5 +40,25 @@ export default async function FAQ({
   params: { lang: string };
 }) {
   const messages = await getDictionary(lang);
-  return <FAQSection messages={messages} />;
+  const faqsData = (messages as any).text.faqs as Record<string, string>;
+  const questionKeys = Object.keys(faqsData).filter((k) => k.startsWith("question_"));
+  const faqs = questionKeys
+    .map((qKey) => {
+      const idx = qKey.split("_")[1];
+      const aKey = `answer_${idx}`;
+      const q = faqsData[qKey];
+      const a = faqsData[aKey];
+      if (q && a) return { question: q, answer: a };
+      return null;
+    })
+    .filter(Boolean) as { question: string; answer: string }[];
+
+  const faqLd = buildFaqJsonLd({ inLanguage: lang, faqs });
+
+  return (
+    <>
+      <JsonLd id="faq-ld" data={faqLd} />
+      <FAQSection messages={messages} />
+    </>
+  );
 }

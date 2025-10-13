@@ -6,6 +6,14 @@ import { mdxOptions } from "@/lib/mdx-config";
 import { mdxComponents } from "@/components/blog/MDXComponents";
 import { TableOfContents } from "@/components/blog/TableOfContents";
 import { generateMetadata } from "./metadata";
+import JsonLd from "@/components/seo/JsonLd";
+import {
+  absoluteUrl,
+  buildBlogPostingJsonLd,
+  buildBreadcrumbJsonLd,
+  getSiteUrl,
+} from "@/lib/seo/jsonld";
+import { getDictionary } from "@/lib/dictionary";
 
 export { generateMetadata };
 
@@ -15,13 +23,37 @@ export default async function BlogPost({
   params: { slug: string; lang: string };
 }) {
   const post = await getPostBySlug(params.slug, params.lang);
+  const messages = await getDictionary(params.lang);
 
   if (!post) {
     return <div>Post not found</div>;
   }
 
+  const siteUrl = getSiteUrl();
+  const postUrl = `${siteUrl}/${params.lang}/blog/${params.slug}`;
+  const imageUrl = absoluteUrl(post.frontmatter.cover, siteUrl);
+  const postLd = buildBlogPostingJsonLd({
+    siteUrl,
+    url: postUrl,
+    title: post.frontmatter.title,
+    description: post.frontmatter.description,
+    datePublished: post.frontmatter.date,
+    dateModified: post.frontmatter.date,
+    authorName: post.frontmatter.author,
+    imageUrl,
+    inLanguage: params.lang,
+  });
+  const breadcrumbsLd = buildBreadcrumbJsonLd({
+    items: [
+      { name: messages.text.Header.Home_dis, item: `${siteUrl}/${params.lang}` },
+      { name: messages.text.Header.Blog_dis, item: `${siteUrl}/${params.lang}/blog` },
+      { name: post.frontmatter.title, item: postUrl },
+    ],
+  });
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <JsonLd id="post-ld" data={[postLd, breadcrumbsLd]} />
       {/* Use md: prefix to handle flex layout for medium screens and above */}
       <div className="block md:flex md:gap-8">
         {/* Article content area */}
