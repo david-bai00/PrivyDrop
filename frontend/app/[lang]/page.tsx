@@ -46,7 +46,11 @@ export default async function Home({
     siteUrl,
     path: `/${lang}`,
     name: "PrivyDrop",
-    alternateName: ["PrivyDrop", "PrivyDrop APP"],
+    alternateName: [
+      "PrivyDrop",
+      "PrivyDrop APP",
+      "Open-source web-based AirDrop alternative",
+    ],
     description: messages.meta.home.description,
     inLanguage: lang,
     imageUrl: absoluteUrl("/logo.png", siteUrl),

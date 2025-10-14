@@ -289,6 +289,39 @@ PM2 is a powerful process manager for Node.js. We will use it to run both backen
 
 ## 5. Troubleshooting
 
+### 5.1 Common error: Missing production build (.next not generated)
+
+- Symptoms:
+
+  - PM2/Next.js logs show: `Error: Could not find a production build in the '.next' directory. Try building your app with 'next build'...`
+  - Access via Nginx may return `502 Bad Gateway` (frontend upstream not ready).
+
+- Cause & Solution:
+
+  - After pulling the latest code, dependencies were not installed and the frontend was not built in the `frontend` directory; `frontend/.next` is missing or incomplete; or the build was run in the wrong directory (e.g., repo root).
+
+  - Run in the frontend directory:
+    ```bash
+    cd frontend
+    pnpm install --frozen-lockfile
+    pnpm build
+    # Then restart the frontend process (name depends on your PM2 config)
+    pm2 restart <frontend-app-name>
+    ```
+
+- Verify:
+
+  ```bash
+  test -f frontend/.next/BUILD_ID && echo "build ok"
+  curl -fsSI http://127.0.0.1:3002/ | head -n1  # if frontend listens on 3002
+  ```
+
+- Notes:
+  - After every `git pull` or frontend code change, rebuild and then restart the frontend process.
+  - Ensure PM2 `cwd` points to `frontend`. Prefer building and running with the same user to avoid `.next` permission issues.
+
+### 5.2 Other common issues
+
 - **Connection Issues:** Check firewall settings, Nginx proxy configurations, `CORS_ORIGIN` settings, and ensure all PM2 processes are running.
 - **Nginx Errors:** Use `sudo nginx -t` to check syntax and review `/var/log/nginx/error.log`.
 - **PM2 Issues:** Use `pm2 logs <app_name>` to view application logs.

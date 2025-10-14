@@ -288,6 +288,39 @@ PM2 是一个强大的 Node.js 进程管理器，我们将用它来运行后端�
 
 ## 5. 故障排除
 
+### 5.1 常见错误：前端生产构建缺失（.next 未生成）
+
+- 现象：
+
+  - PM2/Next.js 日志出现：`Error: Could not find a production build in the '.next' directory. Try building your app with 'next build'...`
+  - 通过 Nginx 访问可能返回 `502 Bad Gateway`（前端上游未就绪）。
+
+- 原因 & 解决：
+
+  - 拉取最新代码后未在 `frontend` 目录安装依赖并构建，`frontend/.next` 不存在或不完整；或构建在了错误目录（例如仓库根）。
+
+  - 进入前端目录执行：
+    ```bash
+    cd frontend
+    pnpm install --frozen-lockfile
+    pnpm build
+    # 然后重启前端进程（名称以你的 PM2 配置为准）
+    pm2 restart <frontend-app-name>
+    ```
+
+- 验证：
+
+  ```bash
+  test -f frontend/.next/BUILD_ID && echo "build ok"
+  curl -fsSI http://127.0.0.1:3002/ | head -n1  # 若前端监听 3002
+  ```
+
+- 备注：
+  - 每次 `git pull` 或前端代码更新后，均需重新构建再重启前端进程。
+  - 确保 PM2 的 `cwd` 指向 `frontend`，构建与运行尽量使用同一用户，避免权限导致 `.next` 不可读。
+
+### 5.2 其他常见问题
+
 - **连接问题：** 检查防火墙、Nginx 代理设置、CORS_ORIGIN 配置，确保所有 PM2 进程都在运行。
 - **Nginx 错误:** `sudo nginx -t` 检查语法，查看 `/var/log/nginx/error.log`。
 - **PM2 问题:** `pm2 logs <app_name>` 查看应用日志。
