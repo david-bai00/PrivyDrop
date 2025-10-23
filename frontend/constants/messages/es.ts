@@ -331,7 +331,15 @@ export const es: Messages = {
         readClipboard_dis: "Pegar ID de Sala",
         retrieveRoomId_placeholder: "Ingresa ID de Sala",
         RetrieveMethodTitle: "Método de recuperación",
+        // New: cached ID utils
+        saveId_dis: "Guardar ID",
+        useCachedId_dis: "Usar ID en caché",
+        saveId_tips: "Guarda el ID actual para reutilizarlo rápidamente",
+        useCachedId_tips:
+          "Usa el ID guardado previamente para evitar escribir",
       },
+      // New: cache messages
+      saveId_success: "Guardado en caché",
     },
     home: {
       h1: "Herramienta Gratuita de Portapapeles y Transferencia de Archivos en Línea Segura",

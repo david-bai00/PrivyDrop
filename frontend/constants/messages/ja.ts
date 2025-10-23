@@ -323,7 +323,14 @@ export const ja: Messages = {
         readClipboard_dis: "ルームIDを貼り付け",
         retrieveRoomId_placeholder: "ルームIDを入力",
         RetrieveMethodTitle: "取得方法",
+        // New: cached ID utils
+        saveId_dis: "ID を保存",
+        useCachedId_dis: "保存済みIDを使用",
+        saveId_tips: "現在のIDを保存して次回すぐに使えるようにします",
+        useCachedId_tips: "以前に保存したIDを使って入力を省略できます",
       },
+      // New: cache messages
+      saveId_success: "キャッシュに保存しました",
     },
     home: {
       h1: "無料で安全なオンラインクリップボード＆ファイル転送ツール",

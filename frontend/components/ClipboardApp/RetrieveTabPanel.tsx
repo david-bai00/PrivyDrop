@@ -1,15 +1,17 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   ReadClipboardButton,
   WriteClipboardButton,
 } from "@/components/common/clipboard_btn";
+import Tooltip from "@/components/Tooltip";
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import type { Messages } from "@/types/messages";
 import type { FileMeta } from "@/types/webrtc";
 
 import { useFileTransferStore } from "@/stores/fileTransferStore";
+import { getCachedId, setCachedId } from "@/lib/roomIdCache";
 
 interface RetrieveTabPanelProps {
   messages: Messages;
@@ -59,6 +61,12 @@ export function RetrieveTabPanel({
     isAnyFileTransferring,
     isReceiverInRoom,
   } = useFileTransferStore();
+
+  // Cached ID state
+  const [hasCachedId, setHasCachedId] = useState<boolean>(false);
+  useEffect(() => {
+    setHasCachedId(!!getCachedId());
+  }, []);
 
   const onLocationPick = useCallback(async (): Promise<boolean> => {
     if (!messages) return false; // Should not happen if panel is rendered
@@ -111,6 +119,46 @@ export function RetrieveTabPanel({
               title={messages.text.ClipboardApp.html.readClipboard_dis}
               onRead={setRetrieveRoomIdInput}
             />
+            {/* Save/Use Cached ID Button placed after Paste button */}
+            <Tooltip
+              content={
+                hasCachedId
+                  ? messages.text.ClipboardApp.html.useCachedId_tips
+                  : messages.text.ClipboardApp.html.saveId_tips
+              }
+            >
+              <span className="inline-block">
+                <Button
+                  className="w-full sm:w-auto px-4"
+                  variant="outline"
+                  onClick={() => {
+                    if (hasCachedId) {
+                      const cached = getCachedId();
+                      if (cached) {
+                        setRetrieveRoomIdInput(cached);
+                      }
+                    } else {
+                      const trimmed = retrieveRoomIdInput.trim();
+                      if (trimmed.length >= 8) {
+                        setCachedId(trimmed);
+                        setHasCachedId(true);
+                        putMessageInMs(
+                          messages.text.ClipboardApp.saveId_success,
+                          false
+                        );
+                      }
+                    }
+                  }}
+                  disabled={
+                    !hasCachedId && retrieveRoomIdInput.trim().length < 8
+                  }
+                >
+                  {hasCachedId
+                    ? messages.text.ClipboardApp.html.useCachedId_dis
+                    : messages.text.ClipboardApp.html.saveId_dis}
+                </Button>
+              </span>
+            </Tooltip>
             <Input
               aria-label="Retrieve Room ID"
               value={retrieveRoomIdInput}

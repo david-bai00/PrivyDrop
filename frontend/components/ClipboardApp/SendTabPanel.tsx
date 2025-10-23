@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Tooltip from "@/components/Tooltip";
 import {
   ReadClipboardButton,
   WriteClipboardButton,
@@ -13,6 +14,7 @@ import type { Messages } from "@/types/messages";
 import type { CustomFile, FileMeta } from "@/types/webrtc";
 
 import { useFileTransferStore } from "@/stores/fileTransferStore";
+import { getCachedId, setCachedId } from "@/lib/roomIdCache";
 
 // Dynamically import the RichTextEditor
 const RichTextEditor = dynamic(
@@ -39,6 +41,11 @@ interface SendTabPanelProps {
   shareMessage: string;
   currentValidatedShareRoomId: string;
   handleLeaveSenderRoom: () => void; // New prop for leaving room
+  putMessageInMs: (
+    message: string,
+    isShareEnd?: boolean,
+    displayTimeMs?: number
+  ) => void;
 }
 
 export function SendTabPanel({
@@ -53,6 +60,7 @@ export function SendTabPanel({
   shareMessage,
   currentValidatedShareRoomId,
   handleLeaveSenderRoom,
+  putMessageInMs,
 }: SendTabPanelProps) {
   // Get the status from the store
   const {
@@ -69,11 +77,17 @@ export function SendTabPanel({
   );
   // State to track ID generation mode (false = will show simple next, true = will show random next)
   const [isSimpleIdMode, setIsSimpleIdMode] = useState<boolean>(true);
+  // Cached ID state
+  const [hasCachedId, setHasCachedId] = useState<boolean>(false);
 
   // When the validatedShareRoomId from the parent component changes (e.g., after initial fetch), synchronize the local input field's value
   useEffect(() => {
     setInputFieldValue(currentValidatedShareRoomId);
   }, [currentValidatedShareRoomId]);
+
+  useEffect(() => {
+    setHasCachedId(!!getCachedId());
+  }, []);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,6 +140,31 @@ export function SendTabPanel({
     // Toggle mode for next click
     setIsSimpleIdMode(!isSimpleIdMode);
   }, [isSimpleIdMode, processRoomIdInput, setInputFieldValue]);
+
+  // Save/Use cached ID button handlers
+  const isSaveEnabled = (inputFieldValue || "").trim().length >= 8;
+  const handleSaveOrUseCachedId = useCallback(() => {
+    if (hasCachedId) {
+      const cached = getCachedId();
+      if (cached) {
+        setInputFieldValue(cached);
+      }
+      return;
+    }
+    // Save current input to cache
+    const trimmed = (inputFieldValue || "").trim();
+    if (trimmed.length >= 8) {
+      setCachedId(trimmed);
+      setHasCachedId(true);
+      // Notify via messages on sender side
+      putMessageInMs(messages.text.ClipboardApp.saveId_success, true);
+    }
+  }, [
+    hasCachedId,
+    inputFieldValue,
+    putMessageInMs,
+    messages.text.ClipboardApp.saveId_success,
+  ]);
 
   return (
     <div id="send-panel" role="tabpanel" aria-labelledby="send-tab">
@@ -183,6 +222,27 @@ export function SendTabPanel({
                 ? messages.text.ClipboardApp.html.generateRandomId_tips
                 : messages.text.ClipboardApp.html.generateSimpleId_tips}
             </Button>
+            {/* Save/Use Cached ID Button in between */}
+            <Tooltip
+              content={
+                hasCachedId
+                  ? messages.text.ClipboardApp.html.useCachedId_tips
+                  : messages.text.ClipboardApp.html.saveId_tips
+              }
+            >
+              <span className="inline-block">
+                <Button
+                  className="w-full sm:w-auto px-4"
+                  variant="outline"
+                  onClick={handleSaveOrUseCachedId}
+                  disabled={!hasCachedId && !isSaveEnabled}
+                >
+                  {hasCachedId
+                    ? messages.text.ClipboardApp.html.useCachedId_dis
+                    : messages.text.ClipboardApp.html.saveId_dis}
+                </Button>
+              </span>
+            </Tooltip>
             <Button
               className="w-full sm:w-auto px-4"
               onClick={() => joinRoom(true, inputFieldValue.trim())}

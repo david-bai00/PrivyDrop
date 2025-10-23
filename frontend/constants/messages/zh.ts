@@ -283,7 +283,8 @@ export const zh: Messages = {
       noFilesForFolderMsg: "在文件夹 '{folderName}' 中未找到文件。",
       zipError: "创建 ZIP 文件时出错。",
       fileNotFoundMsg: "未找到要下载的文件 '{fileName}'。",
-      confirmLeaveWhileTransferring: "传输将中断，已设置保存目录时可续传。确定退出？",
+      confirmLeaveWhileTransferring:
+        "传输将中断，已设置保存目录时可续传。确定退出？",
       leaveWhileTransferringSuccess: "已退出房间，传输已中断",
       html: {
         senderTab: "发送",
@@ -296,7 +297,7 @@ export const zh: Messages = {
         inputRoomIdprompt: "您的房间ID（可编辑）：",
         joinRoomBtn: "加入房间",
         generateSimpleId_tips: "简单ID",
-        generateRandomId_tips: "随机ID", 
+        generateRandomId_tips: "随机ID",
         readClipboardToRoomId: "粘贴房间ID",
         enterRoomID_placeholder: "输入房间ID",
         retrieveMethod: "接收方式",
@@ -307,7 +308,14 @@ export const zh: Messages = {
         readClipboard_dis: "粘贴房间ID",
         retrieveRoomId_placeholder: "输入房间ID",
         RetrieveMethodTitle: "接收方式",
+        // New: cached ID utils
+        saveId_dis: "保存ID",
+        useCachedId_dis: "使用缓存ID",
+        saveId_tips: "保存ID后，下次可以快捷使用该ID",
+        useCachedId_tips: "可以快捷使用之前保存的ID,避免手动输入",
       },
+      // New: cache messages
+      saveId_success: "缓存成功",
     },
     home: {
       h1: "免费安全的在线剪贴板与文件传输工具",

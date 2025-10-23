@@ -327,7 +327,15 @@ export const en: Messages = {
         readClipboard_dis: "Paste RoomID",
         retrieveRoomId_placeholder: "Enter RoomID",
         RetrieveMethodTitle: "Retrieve method",
+        // New: cached ID utils
+        saveId_dis: "Save ID",
+        useCachedId_dis: "Use cached ID",
+        saveId_tips: "Save current ID for quick reuse later",
+        useCachedId_tips:
+          "Quickly use the previously saved ID to avoid typing",
       },
+      // New: cache messages
+      saveId_success: "Saved to cache",
     },
     home: {
       h1: "Free Secure Online Clipboard & File Transfer Tool",

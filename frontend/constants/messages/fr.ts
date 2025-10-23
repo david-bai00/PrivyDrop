@@ -338,7 +338,16 @@ export const fr: Messages = {
         readClipboard_dis: "Coller l'ID de salle",
         retrieveRoomId_placeholder: "Entrez l'ID de salle",
         RetrieveMethodTitle: "Méthode de récupération",
+        // New: cached ID utils
+        saveId_dis: "Enregistrer l’ID",
+        useCachedId_dis: "Utiliser l’ID en cache",
+        saveId_tips:
+          "Enregistrez l’ID actuel pour une réutilisation rapide",
+        useCachedId_tips:
+          "Utilisez l’ID précédemment enregistré pour éviter la saisie",
       },
+      // New: cache messages
+      saveId_success: "Enregistré dans le cache",
     },
     home: {
       h1: "Outil gratuit de transfert de fichiers et de presse-papiers en ligne sécurisé",

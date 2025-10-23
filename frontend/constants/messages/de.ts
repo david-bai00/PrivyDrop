@@ -336,7 +336,15 @@ export const de: Messages = {
         readClipboard_dis: "Raum-ID einfügen",
         retrieveRoomId_placeholder: "Raum-ID eingeben",
         RetrieveMethodTitle: "Abrufmethode",
+        // New: cached ID utils
+        saveId_dis: "ID speichern",
+        useCachedId_dis: "Gespeicherte ID verwenden",
+        saveId_tips: "Aktuelle ID für spätere schnelle Nutzung speichern",
+        useCachedId_tips:
+          "Zuvor gespeicherte ID verwenden, um Tippen zu vermeiden",
       },
+      // New: cache messages
+      saveId_success: "Erfolgreich im Cache gespeichert",
     },
     home: {
       h1: "Kostenloses sicheres Online-Clipboard & Dateiübertragungstool",

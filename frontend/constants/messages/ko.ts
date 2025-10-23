@@ -321,7 +321,16 @@ export const ko: Messages = {
         readClipboard_dis: "방 ID 붙여넣기",
         retrieveRoomId_placeholder: "방 ID 입력",
         RetrieveMethodTitle: "검색 방법",
+        // New: cached ID utils
+        saveId_dis: "ID 저장",
+        useCachedId_dis: "저장된 ID 사용",
+        saveId_tips:
+          "현재 ID를 저장하여 다음에 빠르게 사용할 수 있어요",
+        useCachedId_tips:
+          "이전에 저장한 ID를 사용하여 입력을 줄입니다",
       },
+      // New: cache messages
+      saveId_success: "캐시에 저장되었습니다",
     },
     home: {
       h1: "무료 보안 온라인 클립보드 및 파일 전송 도구",

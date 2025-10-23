@@ -254,6 +254,11 @@ export type ClipboardAppHtml = {
   readClipboard_dis: string;
   retrieveRoomId_placeholder: string;
   RetrieveMethodTitle: string;
+  // New: cached ID utilities
+  saveId_dis: string;
+  useCachedId_dis: string;
+  saveId_tips: string;
+  useCachedId_tips: string;
 };
 
 export type ClipboardApp = {
@@ -274,6 +279,8 @@ export type ClipboardApp = {
   fileNotFoundMsg?: string;
   confirmLeaveWhileTransferring: string;
   leaveWhileTransferringSuccess: string;
+  // New: cache messages
+  saveId_success: string;
 };
 
 export type Home = {

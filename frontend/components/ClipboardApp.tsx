@@ -202,6 +202,7 @@ const ClipboardApp = () => {
               shareMessage={shareMessage}
               currentValidatedShareRoomId={shareRoomId}
               handleLeaveSenderRoom={handleLeaveSenderRoom}
+              putMessageInMs={putMessageInMs}
             />
           ) : (
             <RetrieveTabPanel
