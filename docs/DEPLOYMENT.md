@@ -287,40 +287,91 @@ PM2 is a powerful process manager for Node.js. We will use it to run both backen
     - Restart services: `pm2 restart all` or specific service `pm2 restart signaling-server`
     - Stop services: `pm2 stop all` or specific service `pm2 stop privydrop-frontend`
 
+### 4.7. Daily Incremental Update (Local Build + Remote Replace)
+
+This section describes how to build locally and deploy only the built artifacts to the server. It is optimized for day-to-day releases: fast, low resource usage on the server, and easy to verify.
+
+- Assumes you have completed the first-time deployment and can access the app in production.
+- The frontend runs in Next.js Standalone mode (configured in `ecosystem.config.js`), so the server does not need Next CLI or frontend dependencies installed.
+
+1. Prepare deployment configuration
+
+   - From the project root:
+     ```bash
+     cp deploy.config.example deploy.config
+     ```
+   - Edit `deploy.config` with at least:
+     ```bash
+     DEPLOY_SERVER="<your-server-ip-or-domain>"
+     DEPLOY_USER="root"              # Recommended: use ssh root for simplicity
+     DEPLOY_PATH="/root/PrivyDrop"   # Project root on the server
+     # Optional: SSH_PORT, SSH_KEY_PATH
+     ```
+   - Security notes: Use SSH key authentication, restrict source IPs, and enforce firewall rules in production.
+
+2. Build locally and deploy
+
+   - From the project root:
+     ```bash
+     bash build-and-deploy.sh
+     ```
+   - When an existing package (out.zip) is detected, the script lets you choose:
+     - 1. Deploy existing package
+     - 2. Rebuild and deploy
+   - Script flow (summary):
+     - Build frontend and backend locally
+     - Package artifacts into `out.zip`
+     - Upload to server path `/tmp/out.zip`
+     - Server-side backup to `/tmp/privydrop_backup/YYYYmmdd_HHMMSS/`
+     - Unzip and replace:
+       - Frontend: `frontend/.next` (includes `.next/standalone` and `.next/static`)
+       - Frontend static assets: `frontend/public`
+       - Frontend content: `frontend/content` (for blog file reads)
+       - Backend: `backend/dist`
+     - Restart using `pm2 start ecosystem.config.js`
+
+3. Post-deployment verification
+
+   - Check process status on the server:
+     ```bash
+     ssh root@<server> 'sudo pm2 status'
+     ```
+   - Compare frontend BUILD_ID (optional):
+     ```bash
+     ssh root@<server> 'cat /root/PrivyDrop/frontend/.next/BUILD_ID'
+     ```
+   - Force refresh the browser or use an incognito window to confirm the new version.
+
+4. Backups and manual rollback
+
+   - Each deployment creates a structured backup on the server at `/tmp/privydrop_backup/YYYYmmdd_HHMMSS/`:
+     - Frontend: `frontend/.next`
+     - Backend: `backend/dist`
+   - To rollback manually (example):
+
+     ```bash
+     # Stop PM2
+     sudo pm2 stop all && sudo pm2 delete all
+
+     # Choose a backup directory, e.g. /tmp/privydrop_backup/20241024_235959
+     export DEPLOY_PATH=/root/PrivyDrop
+     export BACKUP=/tmp/privydrop_backup/20241024_235959
+
+     # Restore frontend and backend build artifacts
+     rm -rf "$DEPLOY_PATH/frontend/.next" "$DEPLOY_PATH/backend/dist"
+     cp -a "$BACKUP/frontend/.next" "$DEPLOY_PATH/frontend/.next"
+     cp -a "$BACKUP/backend/dist" "$DEPLOY_PATH/backend/dist"
+
+     # Restart PM2
+     sudo pm2 start ecosystem.config.js
+     ```
+
+5. Common issues
+   - Page still shows the old version: clear browser cache/force refresh; compare BUILD_ID; check Nginx/CDN caching.
+   - Blog posts not loading: ensure `frontend/content/blog` exists on the server and the PM2 frontend process `cwd` is `./frontend`.
+   - `out.zip not found`: choose “Rebuild and deploy” to create a new package.
+
 ## 5. Troubleshooting
-
-### 5.1 Common error: Missing production build (.next not generated)
-
-- Symptoms:
-
-  - PM2/Next.js logs show: `Error: Could not find a production build in the '.next' directory. Try building your app with 'next build'...`
-  - Access via Nginx may return `502 Bad Gateway` (frontend upstream not ready).
-
-- Cause & Solution:
-
-  - After pulling the latest code, dependencies were not installed and the frontend was not built in the `frontend` directory; `frontend/.next` is missing or incomplete; or the build was run in the wrong directory (e.g., repo root).
-
-  - Run in the frontend directory:
-    ```bash
-    cd frontend
-    pnpm install --frozen-lockfile
-    pnpm build
-    # Then restart the frontend process (name depends on your PM2 config)
-    pm2 restart <frontend-app-name>
-    ```
-
-- Verify:
-
-  ```bash
-  test -f frontend/.next/BUILD_ID && echo "build ok"
-  curl -fsSI http://127.0.0.1:3002/ | head -n1  # if frontend listens on 3002
-  ```
-
-- Notes:
-  - After every `git pull` or frontend code change, rebuild and then restart the frontend process.
-  - Ensure PM2 `cwd` points to `frontend`. Prefer building and running with the same user to avoid `.next` permission issues.
-
-### 5.2 Other common issues
 
 - **Connection Issues:** Check firewall settings, Nginx proxy configurations, `CORS_ORIGIN` settings, and ensure all PM2 processes are running.
 - **Nginx Errors:** Use `sudo nginx -t` to check syntax and review `/var/log/nginx/error.log`.

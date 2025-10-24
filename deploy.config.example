@@ -1,0 +1,19 @@
+# Deployment configuration
+# Copy this file to 'deploy.config' and fill in your server details
+
+# Server IP or domain
+DEPLOY_SERVER="your-server-ip"
+
+# Server username (default: root)
+# Note: Using 'ssh root' is recommended here for simplicity. Ensure you understand the
+# security implications and restrict access appropriately (keys, firewall, etc.).
+DEPLOY_USER="root"
+
+# Deploy path on the server (project root)
+DEPLOY_PATH="/root/PrivyDrop"
+
+# SSH port (optional, default 22)
+# SSH_PORT="22"
+
+# SSH private key path (optional)
+# SSH_KEY_PATH="~/.ssh/id_rsa"

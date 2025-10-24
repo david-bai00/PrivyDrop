@@ -20,11 +20,13 @@ module.exports = {
     {
       name: "privydrop-frontend",
       cwd: "./frontend",
-      script: "npm",
-      args: "run start",
+      script: "node",
+      args: ".next/standalone/server.js",
       watch: false,
       env: {
-        NODE_ENV: "production"
+        NODE_ENV: "production",
+        PORT: 3002,
+        HOSTNAME: "0.0.0.0"
       },
       log_date_format: "YYYY-MM-DD HH:mm:ss",
       error_file: "/var/log/privydrop-frontend-error.log",

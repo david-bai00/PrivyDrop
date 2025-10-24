@@ -286,40 +286,91 @@ PM2 是一个强大的 Node.js 进程管理器，我们将用它来运行后端�
     - 重启服务: `pm2 restart all` 或指定服务 `pm2 restart signaling-server`
     - 停止服务: `pm2 stop all` 或指定服务 `pm2 stop privydrop-frontend`
 
+### 4.7. 日常增量更新（本地构建 + 远程替换）
+
+本小节介绍如何在本地构建后，将前后端的生产产物一并打包上传到服务器，完成“增量更新”。该流程适合日常发布，速度快、资源占用低。
+
+- 默认假设你已按“首次部署”完成环境配置（包括 PM2、Nginx/证书等），并能正常访问应用。
+- 默认使用前端 Next.js Standalone 运行方式（ecosystem.config.js 已配置），服务器无需安装前端依赖和 next CLI。
+
+1. 准备部署配置
+
+   - 在项目根目录复制示例配置：
+     ```bash
+     cp deploy.config.example deploy.config
+     ```
+   - 编辑 `deploy.config`，至少设置：
+     ```bash
+     DEPLOY_SERVER="<你的服务器IP或域名>"
+     DEPLOY_USER="root"              # 推荐使用 ssh root 登录（简单直接）
+     DEPLOY_PATH="/root/PrivyDrop"   # 你的服务器项目根目录
+     # 可选：SSH_PORT、SSH_KEY_PATH
+     ```
+   - 安全建议：生产环境请启用密钥登录、限制来源 IP、开启防火墙（仅放行必要端口）。
+
+2. 本地构建并部署
+
+   - 在项目根目录执行：
+     ```bash
+     bash build-and-deploy.sh
+     ```
+   - 当脚本检测到现有打包（out.zip）时，可选择：
+     - 1. 直接部署现有包
+     - 2. 重新构建并部署
+   - 脚本流程（简述）：
+     - 本地构建前端与后端
+     - 将产物打包为 `out.zip`
+     - 上传至服务器 `/tmp/out.zip`
+     - 服务器侧备份当前版本到 `/tmp/privydrop_backup/YYYYmmdd_HHMMSS/`
+     - 解压替换：
+       - 前端：`frontend/.next`（包含 `.next/standalone` 与 `.next/static`）
+       - 前端静态资源：`frontend/public`
+       - 前端内容：`frontend/content`（用于博客文件读取）
+       - 后端：`backend/dist`
+     - 使用 `pm2 start ecosystem.config.js` 重启应用
+
+3. 发布校验
+
+   - 服务器上查看进程状态：
+     ```bash
+     ssh root@<server> 'sudo pm2 status'
+     ```
+   - 核对前端 BUILD_ID（可选）：
+     ```bash
+     ssh root@<server> 'cat /root/PrivyDrop/frontend/.next/BUILD_ID'
+     ```
+   - 浏览器强制刷新或使用隐身模式，确认页面为新版本。
+
+4. 备份和回退（手工）
+
+   - 每次部署会在服务器保存结构化备份：`/tmp/privydrop_backup/YYYYmmdd_HHMMSS/`
+     - 前端：`frontend/.next`
+     - 后端：`backend/dist`
+   - 如需回退，可手工执行（示例）：
+
+     ```bash
+     # 停止 PM2
+     sudo pm2 stop all && sudo pm2 delete all
+
+     # 假设选定备份目录为 /tmp/privydrop_backup/20241024_235959
+     export DEPLOY_PATH=/root/PrivyDrop
+     export BACKUP=/tmp/privydrop_backup/20241024_235959
+
+     # 恢复前端与后端构建产物
+     rm -rf "$DEPLOY_PATH/frontend/.next" "$DEPLOY_PATH/backend/dist"
+     cp -a "$BACKUP/frontend/.next" "$DEPLOY_PATH/frontend/.next"
+     cp -a "$BACKUP/backend/dist" "$DEPLOY_PATH/backend/dist"
+
+     # 重启 PM2
+     sudo pm2 start ecosystem.config.js
+     ```
+
+5. 常见问题
+   - 页面仍显示旧版本：清除浏览器缓存/强制刷新；核对 BUILD_ID；检查 Nginx/CDN 缓存。
+   - 前端博客文章为空：确认服务器目录存在 `frontend/content/blog`，并确保 PM2 前端进程的 `cwd` 为 `./frontend`。
+   - 部署脚本报错 `out.zip not found`：先选择“重新构建并部署”。
+
 ## 5. 故障排除
-
-### 5.1 常见错误：前端生产构建缺失（.next 未生成）
-
-- 现象：
-
-  - PM2/Next.js 日志出现：`Error: Could not find a production build in the '.next' directory. Try building your app with 'next build'...`
-  - 通过 Nginx 访问可能返回 `502 Bad Gateway`（前端上游未就绪）。
-
-- 原因 & 解决：
-
-  - 拉取最新代码后未在 `frontend` 目录安装依赖并构建，`frontend/.next` 不存在或不完整；或构建在了错误目录（例如仓库根）。
-
-  - 进入前端目录执行：
-    ```bash
-    cd frontend
-    pnpm install --frozen-lockfile
-    pnpm build
-    # 然后重启前端进程（名称以你的 PM2 配置为准）
-    pm2 restart <frontend-app-name>
-    ```
-
-- 验证：
-
-  ```bash
-  test -f frontend/.next/BUILD_ID && echo "build ok"
-  curl -fsSI http://127.0.0.1:3002/ | head -n1  # 若前端监听 3002
-  ```
-
-- 备注：
-  - 每次 `git pull` 或前端代码更新后，均需重新构建再重启前端进程。
-  - 确保 PM2 的 `cwd` 指向 `frontend`，构建与运行尽量使用同一用户，避免权限导致 `.next` 不可读。
-
-### 5.2 其他常见问题
 
 - **连接问题：** 检查防火墙、Nginx 代理设置、CORS_ORIGIN 配置，确保所有 PM2 进程都在运行。
 - **Nginx 错误:** `sudo nginx -t` 检查语法，查看 `/var/log/nginx/error.log`。
