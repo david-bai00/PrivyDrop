@@ -47,16 +47,21 @@ const createRoomHandler: RequestHandler<{}, any, CreateRoomRequest> = async (
 
   try {
     const exists = await roomService.isRoomExist(roomId);
-    const response = {
-      success: !exists,
-      message: exists ? "roomId is already exists" : "create room success",
-    };
 
-    if (!exists) {
-      await roomService.createRoom(roomId);
+    // Idempotent behavior for long IDs (>= 8): allow reuse for reconnect scenarios.
+    // Short IDs keep strict uniqueness (prevent accidental collisions).
+    if (exists) {
+      if (roomId.length >= 8) {
+        // Do NOT refresh TTL here; actual join will refresh on success.
+        res.json({ success: true, message: "room exists (rejoin allowed)" });
+        return;
+      }
+      res.json({ success: false, message: "roomId is already exists" });
+      return;
     }
 
-    res.json(response);
+    await roomService.createRoom(roomId);
+    res.json({ success: true, message: "create room success" });
   } catch (error) {
     console.error("Error checking room:", error);
     res.status(500).json({ error: "Internal server error" });
