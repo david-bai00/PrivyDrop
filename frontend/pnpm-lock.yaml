@@ -17,6 +17,9 @@ importers:
       '@mdx-js/react':
         specifier: ^3.1.0
         version: 3.1.0(@types/react@18.3.22)(react@18.3.1)
+      '@next/env':
+        specifier: ^14.2.5
+        version: 14.2.5
       '@next/mdx':
         specifier: ^15.1.5
         version: 15.1.5(@mdx-js/loader@3.1.0(acorn@8.12.1))(@mdx-js/react@3.1.0(@types/react@18.3.22)(react@18.3.1))
@@ -44,6 +47,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@18.3.0)(@types/react@18.3.22)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@swc/helpers':
+        specifier: ^0.5.5
+        version: 0.5.5
       '@types/hast':
         specifier: ^3.0.4
         version: 3.0.4
@@ -116,6 +122,9 @@ importers:
       socket.io-client:
         specifier: ^4.7.5
         version: 4.7.5
+      styled-jsx:
+        specifier: ^5.1.1
+        version: 5.1.1(react@18.3.1)
       tailwind-merge:
         specifier: ^2.4.0
         version: 2.4.0

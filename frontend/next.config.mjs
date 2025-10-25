@@ -22,7 +22,7 @@ const nextConfig = {
       },
     ]
   },
-  // 启用standalone输出模式，用于Docker部署
+  // Enable standalone output to run without dev deps on server
   output: 'standalone',
   // 禁用telemetry
   experimental: {
