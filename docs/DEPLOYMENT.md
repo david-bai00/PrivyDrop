@@ -294,6 +294,22 @@ This section describes how to build locally and deploy only the built artifacts 
 - Assumes you have completed the first-time deployment and can access the app in production.
 - The frontend runs in Next.js Standalone mode (configured in `ecosystem.config.js`), so the server does not need Next CLI or frontend dependencies installed.
 
+0. Sync frontend production environment variables (important)
+
+   The local build reads variables from `frontend/.env.production` (e.g., `NEXT_PUBLIC_API_URL`, TURN settings, and build-time flags like `NEXT_IMAGE_UNOPTIMIZED`). To ensure the build matches production behavior, copy the production environment file from the server to your local machine before running `bash build-and-deploy.sh`.
+
+   - Example (sync from server to local):
+     ```bash
+     # Assuming the server project root is /root/PrivyDrop
+     scp root@<server>:/root/PrivyDrop/frontend/.env.production ./frontend/.env.production
+     ```
+   - If the file does not exist on the server yet, create it from the example and keep it consistent with production:
+     ```bash
+     cp frontend/.env_production_example frontend/.env.production
+     # Fill in NEXT_PUBLIC_API_URL, TURN_*, NEXT_IMAGE_UNOPTIMIZED, etc.
+     ```
+   - Note: `build-and-deploy.sh` does not auto-create or overwrite `frontend/.env.production`. Make sure it exists locally and matches production; otherwise, the built behavior may differ from the server (e.g., image optimization toggles).
+
 1. Prepare deployment configuration
 
    - From the project root:

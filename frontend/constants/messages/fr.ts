@@ -284,8 +284,7 @@ export const fr: Messages = {
         "En attente de la connexion du destinataire. Veuillez garder cette page ouverte jusqu'à la fin du transfert. Sur ordinateur, vous pouvez minimiser le navigateur ou changer d'onglet. Sur mobile, veuillez garder le navigateur au premier plan.",
       joinRoom: {
         EmptyMsg: "Avertissement, l'ID de salle est vide",
-        DuplicateMsg:
-          "L'ID de salle que vous avez entré est en double. Veuillez le réentrer.",
+        DuplicateMsg: "Cet ID de salle est déjà utilisé. Veuillez choisir un autre ID.",
         successMsg:
           "Rejoignez le salon avec succès ! Ne fermez pas cette page tant que le transfert n'est pas terminé. (Sur ordinateur, vous pouvez réduire le navigateur ou changer d'onglet ; sur mobile, ne mettez pas le navigateur en arrière-plan.)",
         notExist:
@@ -343,8 +342,7 @@ export const fr: Messages = {
         useCachedId_dis: "Utiliser l’ID en cache",
         saveId_tips:
           "Enregistrez l’ID actuel pour une réutilisation rapide",
-        useCachedId_tips:
-          "Utilisez l’ID précédemment enregistré pour éviter la saisie",
+        useCachedId_tips: "Utiliser ID enregistré rapide; double-clic pour changer mode sauvegarde",
       },
       // New: cache messages
       saveId_success: "Enregistré dans le cache",

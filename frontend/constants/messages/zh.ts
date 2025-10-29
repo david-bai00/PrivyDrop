@@ -259,7 +259,7 @@ export const zh: Messages = {
         "等待接收方连接。请保持此页面打开直到传输完成。在桌面端，您可以最小化浏览器或切换标签页。在移动端，请保持浏览器在前台。",
       joinRoom: {
         EmptyMsg: "警告，房间ID为空",
-        DuplicateMsg: "您输入的房间ID重复，请重新输入。",
+        DuplicateMsg: "该房间ID已被使用，请更换其他ID。",
         successMsg:
           "成功加入房间！在被接收之前不要关闭当前页（电脑端可以最小化浏览器或切换tab页，移动端不要将浏览器切到后台）。",
         notExist: "您尝试加入的房间不存在。只有发送方可以创建房间。",
@@ -312,7 +312,7 @@ export const zh: Messages = {
         saveId_dis: "保存ID",
         useCachedId_dis: "使用缓存ID",
         saveId_tips: "保存ID后，下次可以快捷使用该ID",
-        useCachedId_tips: "可以快捷使用之前保存的ID,避免手动输入",
+        useCachedId_tips: "快捷使用已保存ID；双击可切换保存模式",
       },
       // New: cache messages
       saveId_success: "缓存成功",

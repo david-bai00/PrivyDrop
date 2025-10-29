@@ -278,8 +278,7 @@ export const es: Messages = {
         "Esperando que el receptor se conecte. Por favor mantén esta página abierta hasta que se complete la transferencia. En escritorio, puedes minimizar el navegador o cambiar pestañas. En móvil, por favor mantén el navegador en primer plano.",
       joinRoom: {
         EmptyMsg: "Advertencia, el ID de sala está vacío",
-        DuplicateMsg:
-          "El ID de sala que ingresaste está duplicado. Por favor, vuelve a ingresar.",
+        DuplicateMsg: "Este ID de sala ya está en uso. Por favor, elige otro ID.",
         successMsg:
           "¡Ingreso exitoso al cuarto! No cierres esta página hasta que se complete la transferencia. (En escritorio, puedes minimizar el navegador o cambiar de pestaña; en móvil, no lleves el navegador al fondo.)",
         notExist:
@@ -335,8 +334,7 @@ export const es: Messages = {
         saveId_dis: "Guardar ID",
         useCachedId_dis: "Usar ID en caché",
         saveId_tips: "Guarda el ID actual para reutilizarlo rápidamente",
-        useCachedId_tips:
-          "Usa el ID guardado previamente para evitar escribir",
+        useCachedId_tips: "Usar ID guardado rápido; doble clic para cambiar modo guardar",
       },
       // New: cache messages
       saveId_success: "Guardado en caché",

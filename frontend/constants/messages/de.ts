@@ -284,8 +284,7 @@ export const de: Messages = {
         "Warten auf den Empfänger, der sich verbindet. Bitte lassen Sie diese Seite geöffnet, bis die Übertragung abgeschlossen ist. Auf dem Desktop können Sie den Browser minimieren oder zwischen Tabs wechseln. Auf mobilen Geräten sollte der Browser im Vordergrund bleiben.",
       joinRoom: {
         EmptyMsg: "Warnung, die Raum-ID ist leer",
-        DuplicateMsg:
-          "Die eingegebene Raum-ID ist doppelt. Bitte geben Sie sie erneut ein.",
+        DuplicateMsg: "Diese Raum-ID ist bereits vergeben. Bitte wählen Sie eine andere ID.",
         successMsg:
           "Raum erfolgreich betreten! Schließen Sie diese Seite nicht, bis die Übertragung abgeschlossen ist. (Am Desktop können Sie den Browser minimieren oder Tabs wechseln; auf mobilen Geräten bringen Sie den Browser nicht in den Hintergrund.)",
         notExist:
@@ -340,8 +339,7 @@ export const de: Messages = {
         saveId_dis: "ID speichern",
         useCachedId_dis: "Gespeicherte ID verwenden",
         saveId_tips: "Aktuelle ID für spätere schnelle Nutzung speichern",
-        useCachedId_tips:
-          "Zuvor gespeicherte ID verwenden, um Tippen zu vermeiden",
+        useCachedId_tips: "Gespeicherte ID schnell nutzen; Doppelklick zum Speichermodus wechseln",
       },
       // New: cache messages
       saveId_success: "Erfolgreich im Cache gespeichert",

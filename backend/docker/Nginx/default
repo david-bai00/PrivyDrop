@@ -94,6 +94,12 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
+        
+        # Add cache optimization for image optimization
+        proxy_cache_valid 200 1d;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        proxy_read_timeout 60s;
+        proxy_connect_timeout 5s;
     }
     # 2. Handle static files under the public directory and Next.js dynamic requests
     #    This location should be after specific proxies (like /api/, /socket.io/),

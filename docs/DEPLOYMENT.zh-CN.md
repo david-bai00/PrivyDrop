@@ -293,6 +293,23 @@ PM2 是一个强大的 Node.js 进程管理器，我们将用它来运行后端�
 - 默认假设你已按“首次部署”完成环境配置（包括 PM2、Nginx/证书等），并能正常访问应用。
 - 默认使用前端 Next.js Standalone 运行方式（ecosystem.config.js 已配置），服务器无需安装前端依赖和 next CLI。
 
+0. 同步前端生产环境变量（重要）
+
+   本地构建会读取 `frontend/.env.production` 中的变量（例如 `NEXT_PUBLIC_API_URL`、TURN 配置、以及构建期开关 `NEXT_IMAGE_UNOPTIMIZED` 等）。
+   为确保构建产物与线上一致，请在执行 `bash build-and-deploy.sh` 之前，将“线上部署环境的 `frontend/.env.production`”拷贝到本地对应路径。
+
+   - 示例（从服务器同步到本地）：
+     ```bash
+     # 假设服务器项目根目录为 /root/PrivyDrop
+     scp root@<server>:/root/PrivyDrop/frontend/.env.production ./frontend/.env.production
+     ```
+   - 如线上暂未建立该文件，可基于示例创建并与线上保持一致：
+     ```bash
+     cp frontend/.env_production_example frontend/.env.production
+     # 按需填写 NEXT_PUBLIC_API_URL、TURN_*、NEXT_IMAGE_UNOPTIMIZED 等
+     ```
+   - 说明：`build-and-deploy.sh` 不会自动生成/覆盖你的 `frontend/.env.production`，请确保本地文件存在且与线上一致，否则可能出现与线上不一致的行为（例如图片优化开关不同导致的差异）。
+
 1. 准备部署配置
 
    - 在项目根目录复制示例配置：

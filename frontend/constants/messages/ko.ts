@@ -272,7 +272,7 @@ export const ko: Messages = {
         "수신자가 연결될 때까지 기다리는 중입니다. 전송이 완료될 때까지 이 페이지를 열어 두세요. 데스크톱에서는 브라우저를 최소화하거나 탭을 전환할 수 있습니다. 모바일에서는 브라우저를 포그라운드에 유지하세요.",
       joinRoom: {
         EmptyMsg: "경고, 방 ID가 비어 있습니다",
-        DuplicateMsg: "입력한 방 ID가 중복되었습니다. 다시 입력해주세요.",
+        DuplicateMsg: "이 방 ID는 이미 사용 중입니다. 다른 ID를 선택해주세요.",
         successMsg:
           "방에 성공적으로 입장했습니다! 전송이 완료되기 전까지 현재 페이지를 닫지 마세요. (데스크톱에서는 브라우저를 최소화하거나 탭을 전환할 수 있으며, 모바일에서는 브라우저를 백그라운드로 이동하지 마세요.)",
         notExist:
@@ -326,8 +326,7 @@ export const ko: Messages = {
         useCachedId_dis: "저장된 ID 사용",
         saveId_tips:
           "현재 ID를 저장하여 다음에 빠르게 사용할 수 있어요",
-        useCachedId_tips:
-          "이전에 저장한 ID를 사용하여 입력을 줄입니다",
+        useCachedId_tips: "저장된 ID 빠르게 사용；더블클릭으로 저장 모드 전환",
       },
       // New: cache messages
       saveId_success: "캐시에 저장되었습니다",

@@ -278,7 +278,7 @@ export const en: Messages = {
         "Waiting for receiver to connect. Please keep this page open until the transfer is complete. On desktop, you can minimize the browser or switch tabs. On mobile, please keep the browser in the foreground.",
       joinRoom: {
         EmptyMsg: "Warning, the roomID is empty",
-        DuplicateMsg: "The room ID you entered is duplicate. Please re-enter.",
+        DuplicateMsg: "This room ID is already in use. Please choose another ID.",
         successMsg:
           "Successfully joined the room! Do not close this page until the transfer is complete. (On desktop, you can minimize the browser or switch tabs; on mobile, do not move the browser to the background.)",
         notExist:
@@ -331,8 +331,7 @@ export const en: Messages = {
         saveId_dis: "Save ID",
         useCachedId_dis: "Use cached ID",
         saveId_tips: "Save current ID for quick reuse later",
-        useCachedId_tips:
-          "Quickly use the previously saved ID to avoid typing",
+        useCachedId_tips: "Quick use saved ID; double-click to switch save mode",
       },
       // New: cache messages
       saveId_success: "Saved to cache",

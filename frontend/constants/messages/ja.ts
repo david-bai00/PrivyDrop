@@ -274,7 +274,7 @@ export const ja: Messages = {
         "受信者が接続するのを待っています。転送が完了するまでこのページを開いたままにしてください。デスクトップでは、ブラウザを最小化したり、タブを切り替えたりできます。モバイルでは、ブラウザをフォアグラウンドに保ってください。",
       joinRoom: {
         EmptyMsg: "警告、ルームIDが空です",
-        DuplicateMsg: "入力したルームIDが重複しています。再入力してください。",
+        DuplicateMsg: "このルームIDは既に使用されています。別のIDをご利用ください。",
         successMsg:
           "ルームに成功して参加しました！転送が完了するまでこのページを閉じないでください。（PCではブラウザを最小化したりタブを切り替えたりできます。モバイルではブラウザをバックグラウンドにしないでください。）",
         notExist:
@@ -327,7 +327,7 @@ export const ja: Messages = {
         saveId_dis: "ID を保存",
         useCachedId_dis: "保存済みIDを使用",
         saveId_tips: "現在のIDを保存して次回すぐに使えるようにします",
-        useCachedId_tips: "以前に保存したIDを使って入力を省略できます",
+        useCachedId_tips: "保存済みIDを即使用；ダブルクリックで保存モード切替",
       },
       // New: cache messages
       saveId_success: "キャッシュに保存しました",
