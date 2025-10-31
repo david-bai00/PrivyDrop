@@ -86,8 +86,17 @@ export function useRoomManager({
             ? shareRoomId
             : roomId;
 
+        // If sender uses a long ID (e.g., cached UUID), proactively send
+        // "initiator-online" after join to trigger receivers' re-handshake.
+        const forceInitiatorOnline =
+          isSenderSide && typeof actualRoomId === "string" && actualRoomId.length >= 8;
+
         // Directly call the service method without dependency injection
-        await webrtcService.joinRoom(actualRoomId, isSenderSide);
+        await webrtcService.joinRoom(
+          actualRoomId,
+          isSenderSide,
+          forceInitiatorOnline
+        );
 
         putMessageInMs(
           messages.text.ClipboardApp.joinRoom.successMsg,

@@ -141,7 +141,11 @@ class WebRTCService {
   }
 
   // Business methods
-  public async joinRoom(roomId: string, isSender: boolean): Promise<void> {
+  public async joinRoom(
+    roomId: string,
+    isSender: boolean,
+    forceInitiatorOnline: boolean = false
+  ): Promise<void> {
     // Ensure clean state before joining
     if (!isSender) {
       // Force reset FileReceiver state to prevent "already in progress" errors
@@ -149,7 +153,10 @@ class WebRTCService {
     }
 
     const peer = isSender ? this.sender : this.receiver;
-    await peer.joinRoom(roomId, isSender);
+    // If sender is performing a manual reconnect with a cached/long ID,
+    // optionally send an "initiator-online" after successful join so receivers
+    // can reply with "recipient-ready" to re-establish P2P.
+    await peer.joinRoom(roomId, isSender, isSender && !!forceInitiatorOnline);
 
     const setInRoom = isSender
       ? useFileTransferStore.getState().setIsSenderInRoom
