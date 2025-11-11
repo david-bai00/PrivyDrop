@@ -20,23 +20,24 @@ export interface BlogPost {
 }
 
 export async function getAllPosts(lang: string): Promise<BlogPost[]> {
-  const files = fs.readdirSync(POSTS_PATH);
-
-  const postsWithLang = files
-    .filter((file) => /\.mdx?$/.test(file))
-    .map((file) => {
-      const langFromFile = file.match(/-([a-z]{2})\.mdx?$/)?.[1];
-      return { file, langFromFile };
+  // Read all directories in the blog path
+  const directories = fs.readdirSync(POSTS_PATH)
+    .filter(file => {
+      const fullPath = path.join(POSTS_PATH, file);
+      return fs.statSync(fullPath).isDirectory();
     });
 
   const lang_dst = lang === "zh" ? "zh" : "en";
-  const filteredFiles = postsWithLang.filter(
-    ({ langFromFile }) => langFromFile === lang_dst
-  );
 
   const posts = await Promise.all(
-    filteredFiles.map(async ({ file }) => {
-      const filePath = path.join(POSTS_PATH, file);
+    directories.map(async (directory) => {
+      const filePath = path.join(POSTS_PATH, directory, `${lang_dst}.mdx`);
+
+      // Check if the language file exists
+      if (!fs.existsSync(filePath)) {
+        return null;
+      }
+
       const source = fs.readFileSync(filePath, "utf8");
       const { data, content } = matter(source);
 
@@ -52,7 +53,7 @@ export async function getAllPosts(lang: string): Promise<BlogPost[]> {
       };
 
       return {
-        slug: file.replace(/-[a-z]{2}\.mdx?$/, "").replace(/\.mdx?$/, ""),
+        slug: directory,
         frontmatter,
         content,
       } as BlogPost;
@@ -60,7 +61,7 @@ export async function getAllPosts(lang: string): Promise<BlogPost[]> {
   );
 
   return posts
-    .filter((post) => post.frontmatter.status === "published")
+    .filter((post): post is BlogPost => post !== null && post.frontmatter.status === "published")
     .sort(
       (a, b) =>
         new Date(b.frontmatter.date).getTime() -
@@ -74,7 +75,7 @@ export async function getPostBySlug(
 ): Promise<BlogPost | null> {
   try {
     const lang_dst = lang === "zh" ? "zh" : "en";
-    const filePath = path.join(POSTS_PATH, `${slug}-${lang_dst}.mdx`);
+    const filePath = path.join(POSTS_PATH, slug, `${lang_dst}.mdx`);
     const source = fs.readFileSync(filePath, "utf8");
     const { data, content } = matter(source);
 
