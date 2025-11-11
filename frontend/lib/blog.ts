@@ -21,17 +21,14 @@ export interface BlogPost {
 
 export async function getAllPosts(lang: string): Promise<BlogPost[]> {
   // Read all directories in the blog path
-  const directories = fs.readdirSync(POSTS_PATH)
-    .filter(file => {
-      const fullPath = path.join(POSTS_PATH, file);
-      return fs.statSync(fullPath).isDirectory();
-    });
-
-  const lang_dst = lang === "zh" ? "zh" : "en";
+  const directories = fs.readdirSync(POSTS_PATH).filter((file) => {
+    const fullPath = path.join(POSTS_PATH, file);
+    return fs.statSync(fullPath).isDirectory();
+  });
 
   const posts = await Promise.all(
     directories.map(async (directory) => {
-      const filePath = path.join(POSTS_PATH, directory, `${lang_dst}.mdx`);
+      const filePath = path.join(POSTS_PATH, directory, `${lang}.mdx`);
 
       // Check if the language file exists
       if (!fs.existsSync(filePath)) {
@@ -61,7 +58,10 @@ export async function getAllPosts(lang: string): Promise<BlogPost[]> {
   );
 
   return posts
-    .filter((post): post is BlogPost => post !== null && post.frontmatter.status === "published")
+    .filter(
+      (post): post is BlogPost =>
+        post !== null && post.frontmatter.status === "published"
+    )
     .sort(
       (a, b) =>
         new Date(b.frontmatter.date).getTime() -
@@ -74,8 +74,7 @@ export async function getPostBySlug(
   lang: string
 ): Promise<BlogPost | null> {
   try {
-    const lang_dst = lang === "zh" ? "zh" : "en";
-    const filePath = path.join(POSTS_PATH, slug, `${lang_dst}.mdx`);
+    const filePath = path.join(POSTS_PATH, slug, `${lang}.mdx`);
     const source = fs.readFileSync(filePath, "utf8");
     const { data, content } = matter(source);
 

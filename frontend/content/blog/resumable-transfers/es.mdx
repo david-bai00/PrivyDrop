@@ -1,0 +1,102 @@
+---
+title: "Nuevo hito de PrivyDrop: transferencias reanudables para decir adiós a la ansiedad de los archivos gigantes"
+description: "PrivyDrop se renueva: la nueva transferencia reanudable te permite afrontar cortes de red y mover archivos de varios gigas sin miedo. Descubre cómo funciona y cómo unimos fiabilidad extrema y privacidad."
+date: "2025-08-01"
+author: "david bai"
+cover: "/blog-assets/privydrop-resumable-transfer.jpg"
+tags: ["Nueva función", "Transferencias reanudables", "Transferencia de archivos", "Privacidad", "Código abierto"]
+status: "published"
+---
+
+![](/blog-assets/privydrop-resumable-transfer.jpg)
+
+## Introducción: el último tramo de “usable” a “disfrutable”
+
+En artículos anteriores presentamos [<u>**el espíritu de código abierto de PrivyDrop**</u>](/blog/privydrop-open-source) y la tecnología que lo sostiene, [<u>**WebRTC**</u>](/blog/webrtc-file-transfer). Construimos una herramienta de intercambio de archivos segura y privada, basada en P2P.
+
+Pero el valor real no está solo en que “funcione”, sino en cómo se siente en el mundo real. Imagina que, con el Wi‑Fi inestable de una cafetería, envías un vídeo de 4 GB urgente a un cliente. La barra sube… 95%… y de pronto, la red cae.
+
+Esa punzada de frustración al final, la conocemos bien.
+
+Hoy nos alegra anunciar que PrivyDrop ha recorrido ese último tramo. Lanzamos oficialmente las **transferencias reanudables**, para poner fin a tu “ansiedad de transferencia”.
+
+## La pieza clave: ¿cómo funcionan las transferencias reanudables inteligentes?
+
+Antes de usarlas, quizá te preguntes: ¿cómo “recuerda” PrivyDrop el progreso?
+
+### El principio al desnudo: ¿cómo se logra esa “memoria”?
+
+Nos gusta compararlo con montar un gran rompecabezas digital:
+
+1.  **Intercambiar el “plano”**: Antes de empezar, el emisor envía un “plano” del archivo (metadatos: nombre, tamaño total, información de fragmentos). El receptor entiende el cuadro completo.
+2.  **Piezas numeradas**: El archivo se divide en pequeños fragmentos numerados. El receptor coloca cada pieza en su lugar según llega.
+3.  **Inventario inteligente tras la interrupción**: Si se corta, el receptor conserva las piezas recibidas. Al reconectar, revisa el plano y le dice al emisor: “tengo la #1 a la #5000, empieza por la #5001”.
+
+Este mecanismo de “inventario y petición” evita empezar de cero y eleva la eficiencia y fiabilidad en archivos grandes.
+
+### Guía práctica: cómo dominar la reanudación
+
+Veamos cómo aprovecharla de verdad.
+
+**Paso 1: Activa el “modo seguro” (receptor)**
+
+Antes de recibir, pulsa **“Establecer carpeta de guardado”**. Es crucial: le dices a PrivyDrop “prepara un hogar seguro para el archivo que llega”. Así se activa la reanudación.
+
+**Paso 2: Cuando haya una interrupción**
+
+Variaciones de red, cerrar la pestaña por error, suspensión del equipo… cuando pase, calma. Tu progreso está a salvo.
+
+**Paso 3: Doble protección, tranquilidad real**
+
+PrivyDrop ofrece **dos capas de protección**:
+
+**Protección activa: botón "Guardado seguro"**
+
+Mientras se transfiere, verás un botón verde **“Guardado seguro”**. Es el “bote salvavidas” para mares agitados.
+
+- **Cuándo aparece**: Tras elegir la carpeta de guardado, estará ahí siempre que haya transferencia en curso.
+- **Cuándo usarlo**: ¿La red va pesada? ¿Temes un corte? ¿Te ausentas un momento? Haz clic cuando quieras.
+- **Qué hace**: Vuelca inmediatamente los fragmentos recibidos al disco y deja todo listo para reanudar.
+
+**💡 Consejo**: Si no te da tiempo a pulsarlo, cerrar o recargar la página activa el mismo resguardo: el mecanismo de salida guarda el progreso automáticamente.
+
+**Protección pasiva: Mecanismo de Protección al Salir**
+
+Además, el **Mecanismo de Protección al Salir** intercepta el cierre/recarga y actúa como un archivero responsable: **cierra con elegancia la escritura en disco y consolida los datos ya recibidos**. El archivo temporal se convierte en un “punto de guardado” listo para la siguiente sesión.
+
+Normalmente, si cierras una página con una descarga activa, el navegador puede descartar el temporal y perder datos. Con PrivyDrop, tu esfuerzo no se desperdicia.
+
+**Paso 4: Reanudación sin costuras**
+
+Vuelve con el emisor a la misma sala y reinicia la transferencia. Verás la barra saltar al punto exacto y seguir su camino. Eso es reanudar.
+
+## De la “tarea única” a la “colaboración continua”: tu canal de datos privado
+
+Resuelta la fiabilidad, queríamos que el intercambio fuera natural. Las herramientas tradicionales son “una y otra vez”. PrivyDrop ofrece un **canal privado persistente**.
+
+Una vez conectados, la sala es vuestro “despacho” compartido. Compartid contenido sin repetir “crear sala, compartir enlace”.
+
+1.  Envías un texto por el portapapeles.
+2.  Al recibirlo, arrastras un mockup (PNG).
+3.  Al terminar, arrastras una carpeta con todos los recursos.
+
+El flujo es conversacional, como con un colega al lado. Así, PrivyDrop deja de ser un “pasador de archivos” para ser un **espacio de colaboración ligero y privado en tiempo real**.
+
+## Cuando la “fiabilidad” se da la mano con la “privacidad”
+
+¿Todo esto sacrifica la privacidad?
+
+**En absoluto**. Cada función se construye sobre privacidad y seguridad.
+
+- **Reanudación + cifrado extremo a extremo**: Incluso los fragmentos para reanudar viajan cifrados (DTLS) y van de navegador a navegador. El servidor no puede inspeccionar, recomponer ni almacenar nada.
+- **“Tamaño ilimitado” × “reanudación”**: Nuestra combinación dorada. Sin límite de tamaño es la promesa; la reanudación es el seguro que la cumple. Copias un disco entero o mueves datasets enormes sin miedo a perder avance.
+- **Confianza de código abierto**: No solo lo decimos: lo mostramos. Cada línea está en [<u>**GitHub**</u>](https://github.com/david-bai00/PrivyDrop), abierta al escrutinio.
+
+## Cierre: te invitamos a una transferencia “sin miedo”
+
+PrivyDrop ya no es solo una herramienta: es un aliado para tus datos, inmune a los sobresaltos.
+
+Entra en [<u>**privydrop.app**</u>](https://www.privydrop.app), elige tu archivo más grande y **recarga a propósito a mitad de camino**. Siente la calma de recuperar el terreno.
+
+Si te entusiasma crear herramientas ultraseguras y fiables, déjanos una estrella en [<u>**GitHub**</u>](https://github.com/david-bai00/PrivyDrop). ¡Tu apoyo nos impulsa!
+

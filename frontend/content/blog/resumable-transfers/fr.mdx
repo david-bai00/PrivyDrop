@@ -1,0 +1,102 @@
+---
+title: "Nouveau cap pour PrivyDrop : des transferts reprenables pour en finir avec l’angoisse des gros fichiers"
+description: "PrivyDrop s’étoffe : la reprise de transfert permet d’affronter les coupures réseau et d’envoyer des fichiers de plusieurs Go sans crainte. Voici le fonctionnement et l’alliance fiabilité/confidentialité."
+date: "2025-08-01"
+author: "david bai"
+cover: "/blog-assets/privydrop-resumable-transfer.jpg"
+tags: ["Nouvelle fonctionnalité", "Transferts reprenables", "Transfert de fichiers", "Confidentialité", "Open source"]
+status: "published"
+---
+
+![](/blog-assets/privydrop-resumable-transfer.jpg)
+
+## Introduction : le dernier pas de « utilisable » à « agréable »
+
+Nous avons déjà présenté [<u>**l’esprit open‑source de PrivyDrop**</u>](/blog/privydrop-open-source) et la technologie au cœur du projet, [<u>**WebRTC**</u>](/blog/webrtc-file-transfer). Nous avons bâti un partage de fichiers sûr et privé, en P2P.
+
+Mais la valeur d’un outil ne tient pas qu’à « ça marche », elle tient à la sensation d’usage. Imagine : au café, Wi‑Fi capricieux, tu envoies un rendu vidéo de 4 Go. La barre grimpe à 95 %… et la connexion lâche.
+
+Cette défaite à la dernière seconde, on l’a tous vécue.
+
+Aujourd’hui, nous franchissons ce pas final : nous lançons les **transferts reprenables**, pour mettre un terme à l’angoisse des transferts.
+
+## L’arme maîtresse : comment fonctionne la reprise intelligente ?
+
+Avant la prise en main : comment PrivyDrop « se souvient‑il » de l’avancée ?
+
+### Le principe : d’où vient cette « mémoire » ?
+
+Pense à un gigantesque puzzle numérique :
+
+1.  **Échanger le « plan »** : Avant d’envoyer, l’expéditeur partage un plan (métadonnées : nom, taille, fragments). Le destinataire voit l’ensemble.
+2.  **Des pièces numérotées** : Le fichier est découpé en petits morceaux numérotés. Chaque pièce est posée à sa place.
+3.  **Inventaire malin après coupure**: À l’interruption, le destinataire garde ses pièces. À la reconnexion, il vérifie et dit : « j’ai #1 à #5000, reprenons à #5001 ».
+
+Ce mécanisme « inventaire + requête » évite le redémarrage et booste efficacité et fiabilité sur les gros volumes.
+
+### Guide pratique : bien utiliser la reprise
+
+Passons au concret.
+
+**Étape 1 : activer le « mode sûr » (réception)**
+
+Avant de recevoir, clique **« Définir le dossier de sauvegarde »**. Tu indiques à PrivyDrop : « prépare un foyer sûr ». La reprise s’active alors.
+
+**Étape 2 : quand une coupure survient**
+
+Réseau fluctuant, onglet fermé, mise en veille… garde ton calme. La progression est préservée.
+
+**Étape 3 : double protection pour l’esprit tranquille**
+
+PrivyDrop offre **deux protections** :
+
+**Protection active : bouton "Enregistrement sécurisé"**
+
+Pendant l’envoi, un bouton vert **« Enregistrement sécurisé »** apparaît. Notre canot de sauvetage pour mers agitées.
+
+- **Quand il s’affiche** : après choix du dossier, tant qu’un transfert est en cours.
+- **Quand cliquer** : réseau lent ? crainte d’une coupure ? besoin de s’absenter ? à tout moment.
+- **Effet** : écrit immédiatement les fragments reçus sur le disque, prêt pour la reprise.
+
+**💡 Astuce** : Pas le temps de cliquer ? Fermer ou recharger la page déclenche la même protection : le mécanisme de sortie sauvegarde automatiquement.
+
+**Protection passive : mécanisme de protection à la fermeture**
+
+En plus, le **mécanisme de protection à la fermeture** intercepte la sortie : **flux d’écriture soigneusement fermés, données déjà reçues finalisées**. Le temporaire devient un « point de sauvegarde » solide.
+
+En temps normal, fermer une page en téléchargement peut faire perdre le fichier temporaire. Avec PrivyDrop, rien n’est perdu.
+
+**Étape 4 : reprise sans couture**
+
+Reviens avec l’expéditeur dans la même salle et relance. La barre saute au bon endroit et continue paisiblement. C’est la magie de la reprise.
+
+## De la « tâche unique » à la « collaboration continue » : ton canal privé
+
+Après la fiabilité, la fluidité. Plutôt que « recommencer à chaque fois », PrivyDrop propose un **canal de données privé persistant**.
+
+Une fois connectés, la salle devient votre « bureau » partagé. Partage en continu, sans recréer/renvoyer le lien.
+
+1.  Tu envoies un texte par le presse‑papiers.
+2.  Puis tu déposes une maquette (PNG).
+3.  Ensuite un dossier avec tous les assets.
+
+Le tout se déroule comme une conversation. PrivyDrop passe d’un « utilitaire ponctuel » à un **espace de collaboration léger, privé et temps réel**.
+
+## Quand « fiabilité » rime avec « confidentialité »
+
+Ces nouveautés coûtent‑elles la vie privée ?
+
+**Absolument pas.** Tout repose sur la confidentialité et la sécurité.
+
+- **Reprise + chiffrement de bout en bout** : Même fragmenté, tout transite chifré (DTLS) de navigateur à navigateur. Le serveur ne voit, ne recompose, ni ne stocke rien.
+- **« Taille illimitée » × « reprise »** : Notre duo doré. L’absence de limite est la promesse ; la reprise, l’assurance qui la tient. Disque entier ou dataset massif, sans peur de perdre le terrain.
+- **Confiance open‑source** : Nous montrons notre code. Tout est public dans [<u>**GitHub**</u>](https://github.com/david-bai00/PrivyDrop).
+
+## Conclusion : on t’invite à un transfert « sans peur »
+
+PrivyDrop n’est plus un simple outil : c’est l’allié fiable de tes données.
+
+Visite [<u>**privydrop.app**</u>](https://www.privydrop.app), choisis ton plus gros fichier et **actualise exprès en plein transfert**. Ressens la sérénité du « retrouvé ».
+
+Si bâtir des outils ultra‑fiables te parle, offre‑nous une étoile sur [<u>**GitHub**</u>](https://github.com/david-bai00/PrivyDrop). Merci pour ton soutien !
+

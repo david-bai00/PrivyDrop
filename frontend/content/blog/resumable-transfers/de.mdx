@@ -1,0 +1,102 @@
+---
+title: "Neuer Meilenstein für PrivyDrop: Wiederaufnehmbare Übertragungen beenden die Großdatei‑Angst"
+description: "Großes Update: Mit wiederaufnehmbaren Übertragungen meisterst du Netzwerkabbrüche gelassen und sendest Gigabyte‑Dateien souverän. So funktioniert’s – und so vereinen wir maximale Zuverlässigkeit mit Privatsphäre."
+date: "2025-08-01"
+author: "david bai"
+cover: "/blog-assets/privydrop-resumable-transfer.jpg"
+tags: ["Neue Funktion", "Wiederaufnehmbare Übertragungen", "Dateiübertragung", "Privatsphäre", "Open Source"]
+status: "published"
+---
+
+![](/blog-assets/privydrop-resumable-transfer.jpg)
+
+## Einleitung: der letzte Schritt von „nutzbar“ zu „liebgewonnen“
+
+In früheren Artikeln haben wir [<u>**den Open‑Source‑Geist von PrivyDrop**</u>](/blog/privydrop-open-source) und die Grundlage [<u>**WebRTC**</u>](/blog/webrtc-file-transfer) vorgestellt. Herausgekommen ist ein sicheres, privates, P2P‑basiertes Werkzeug zum Dateien­teilen.
+
+Doch Wert entsteht nicht nur dadurch, dass etwas „funktioniert“, sondern dadurch, wie es sich im Alltag anfühlt. Stell dir vor: Im Café mit wackeligem WLAN schickst du ein dringendes 4‑GB‑Video. Die Leiste kriecht auf 95 % – dann ein Abbruch.
+
+Dieses Gefühl, im letzten Moment zu scheitern, kennen wir alle.
+
+Heute machen wir den Schritt zu Ende: Wir veröffentlichen **wiederaufnehmbare Übertragungen** – und beenden die „Transfer‑Angst“ endgültig.
+
+## Das Kernstück: Wie funktioniert die smarte Wiederaufnahme?
+
+Bevor wir zur Anwendung kommen: Wie „merkt“ sich PrivyDrop den Fortschritt?
+
+### Das Prinzip: Wie entsteht diese „Erinnerung“?
+
+Denke an ein riesiges digitales Puzzle:
+
+1.  **Den „Bauplan“ austauschen**: Vor dem Start sendet der Sender einen Bauplan (Metadaten: Name, Gesamtgröße, Chunk‑Info). Der Empfänger sieht das große Ganze.
+2.  **Nummerierte Puzzleteile**: Die Datei wird in kleine, nummerierte Stücke zerlegt. Jedes Teil landet an der vorgesehenen Stelle.
+3.  **Schlauer Kassensturz nach Abbruch**: Bei Unterbrechung behält der Empfänger alle Teile. Nach dem Neuverbinden prüft er: „#1 bis #5000 habe ich – bitte ab #5001 weiter.“
+
+Dieses „Inventar und Anfordern“ ist der Kern: Kein Neustart von vorn, deutlich höhere Effizienz und Zuverlässigkeit.
+
+### Praxisleitfaden: richtig reibungslos wiederaufnehmen
+
+So setzt du es alltagstauglich ein.
+
+**Schritt 1: „Sicherheitsmodus“ aktivieren (Empfänger)**
+
+Vor dem Empfang klicke **„Speicherverzeichnis festlegen“**. Damit sagst du: „Gib der Datei ein sicheres Zuhause.“ Erst dann ist die Wiederaufnahme aktiv.
+
+**Schritt 2: Wenn es unterbrochen wird**
+
+Netzschwankungen, Tab versehentlich geschlossen, Rechner schläft ein … keine Panik. Dein Fortschritt bleibt bestehen.
+
+**Schritt 3: Doppelte Absicherung**
+
+PrivyDrop bietet **zwei Schutzmechanismen**:
+
+**Aktiver Schutz: „Sicher speichern“‑Button**
+
+Während der Übertragung siehst du den grünen **„Sicher speichern“**‑Knopf – unser Rettungsboot für stürmische Netze.
+
+- **Wann sichtbar**: Nach Wahl des Speicherorts, immer während aktiver Übertragung.
+- **Wann nutzen**: Netz wird zäh? Droht ein Abbruch? Musst du kurz weg? Jederzeit klicken.
+- **Wirkung**: Bereits empfangene Fragmente sofort auf die Platte schreiben – bereit für den nächsten Anlauf.
+
+**💡 Tipp**: Keine Zeit zum Klicken? Schließen oder Neuladen der Seite hat den gleichen Schutzeffekt – der Exit‑Schutz speichert automatisch.
+
+**Passiver Schutz: Exit‑Schutzmechanismus**
+
+Zusätzlich greift der **Exit‑Schutzmechanismus** beim Schließen/Reload: **Schreibströme werden sauber beendet und empfangene Daten finalisiert**. Aus der temporären Datei wird ein stabiler „Speicherpunkt“.
+
+Normalerweise wirft der Browser unfertige temporäre Dateien weg, wenn man eine aktive Seite schließt. PrivyDrop lässt deinen Einsatz nicht verpuffen.
+
+**Schritt 4: Nahtlose Wiederaufnahme**
+
+Betritt mit dem Sender erneut denselben Raum und starte die Übertragung. Die Leiste springt an die alte Position und läuft gelassen weiter. Voilà.
+
+## Von der „Einzelaufgabe“ zur „laufenden Zusammenarbeit“: dein privater Datenkanal
+
+Nach der Zuverlässigkeit kommt die Natürlichkeit. Statt „jedes Mal von vorn“ bietet PrivyDrop einen **persistenten privaten Datenkanal**.
+
+Sobald ihr verbunden seid, wird der Raum zum gemeinsamen „Büro“. Inhalte teilt ihr fortlaufend, ohne den Zyklus „Raum erstellen, Link teilen“ ständig zu wiederholen.
+
+1.  Du sendest zunächst einen erklärenden Text aus der Zwischenablage.
+2.  Danach ziehst du ein Mockup (PNG) rüber.
+3.  Direkt im Anschluss eine Mappe mit allen Assets.
+
+So fließend wie ein Gespräch am Schreibtisch nebenan. Aus einem „Einmal‑Tool“ wird ein **leichtgewichtiger, hochprivater Echtzeit‑Kollaborationsraum**.
+
+## Wenn „Zuverlässigkeit“ auf „Privatsphäre“ trifft
+
+Kostet die neue Stärke Privatsphäre?
+
+**Nein.** Wir bauen Funktionen auf einem Fundament aus Privacy & Security.
+
+- **Wiederaufnahme & Ende‑zu‑Ende‑Verschlüsselung**: Auch Fragmente sind per DTLS Ende‑zu‑Ende verschlüsselt – Browser zu Browser. Der Server kann nichts einsehen, zusammensetzen oder speichern.
+- **„Unbegrenzte Größe“ × „Wiederaufnahme“**: Unser Gold‑Duo. Größenlimit frei ist das Versprechen; Wiederaufnahme ist die Versicherung. Ganze Festplatten oder große Datasets? Nur zu – ohne Angst, Fortschritt zu verlieren.
+- **Open‑Source‑Vertrauen**: Nicht nur Behauptung, sondern Einsicht in den Code: Alles liegt offen im [<u>**GitHub‑Repository**</u>](https://github.com/david-bai00/PrivyDrop).
+
+## Fazit: Willkommen zur „furchtlosen“ Übertragung
+
+PrivyDrop ist mehr als ein Werkzeug – es wird dein verlässlicher Partner für persönliche und berufliche Daten.
+
+Besuche [<u>**privydrop.app**</u>](https://www.privydrop.app), schnapp dir die größte Datei und **aktualisiere die Seite absichtlich während der Übertragung**. Spüre, wie beruhigend „Wiederfinden“ ist.
+
+Und wenn dich robuste, verlässliche Tools begeistern, gib uns einen Stern auf [<u>**GitHub**</u>](https://github.com/david-bai00/PrivyDrop). Danke für deinen Rückenwind!
+
