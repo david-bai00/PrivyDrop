@@ -124,6 +124,7 @@ We provide detailed documentation to help you dive deeper into the project's des
 - [**Frontend Architecture Deep Dive**](./docs/FRONTEND_ARCHITECTURE.md): Explore the frontend's modern, layered architecture, state management with Zustand, and the decoupled service-based approach to WebRTC.
 - [**Backend Architecture Deep Dive**](./docs/BACKEND_ARCHITECTURE.md): Dive into the backend's code structure, signaling flow, and Redis design.
 - [**Deployment Guide**](./docs/DEPLOYMENT.md): Learn how to deploy the complete PrivyDrop application in a production environment.
+- [AI Playbook (zh-CN)](./docs/ai-playbook/index.zh-CN.md) · [Collaboration Rules (zh-CN)](./docs/ai-playbook/collab-rules.zh-CN.md)
 
 ## 🤝 Contributing
 

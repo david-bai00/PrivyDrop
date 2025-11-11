@@ -135,6 +135,7 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 - [**前端架构详解**](./docs/FRONTEND_ARCHITECTURE.zh-CN.md): 深入探索前端的现代化分层架构、基于 Zustand 的状态管理，以及解耦的服务化 WebRTC 实现。
 - [**后端架构详解**](./docs/BACKEND_ARCHITECTURE.zh-CN.md): 深入探索后端的代码结构、信令流程和 Redis 设计。
 - [**部署指南**](./docs/DEPLOYMENT.zh-CN.md): 学习如何在生产环境部署完整的 PrivyDrop 应用。
+- [AI Playbook 索引](./docs/ai-playbook/index.zh-CN.md) · [协作规则](./docs/ai-playbook/collab-rules.zh-CN.md)
 
 ## 🤝 参与贡献
 
