@@ -66,6 +66,8 @@ export default class BaseWebRTC {
   protected wakeLockManager: WakeLockManager;
   // Graceful disconnect tracking
   protected gracefullyDisconnectedPeers: Set<string>;
+  // Track last socket.id used to successfully join a room
+  protected lastJoinedSocketId: string | null;
 
   constructor(config: WebRTCConfig) {
     this.iceServers = config.iceServers;
@@ -94,6 +96,7 @@ export default class BaseWebRTC {
     this.isPeerDisconnected = false;
     this.reconnectionInProgress = false;
     this.wakeLockManager = new WakeLockManager();
+    this.lastJoinedSocketId = null;
   }
   // region Logging and Error Handling
   protected log(
@@ -113,9 +116,41 @@ export default class BaseWebRTC {
   // endregion
   // Sets up event listeners for the signaling server to handle various signaling messages (connection, ICE candidates, offer, answer, etc.).
   setupCommonSocketListeners() {
-    this.socket.on("connect", () => {
+    this.socket.on("connect", async () => {
       this.peerId = this.socket.id; // Save own ID
+      this.isSocketDisconnected = false;
       this.log("log", `Connected to signaling server, peerId: ${this.peerId}`);
+
+      // Auto re-join if we previously joined a room but socket.id changed
+      const hasRoom = !!this.roomId;
+      const currentSocketId = this.socket.id ?? null;
+      const socketIdChanged =
+        this.lastJoinedSocketId !== null &&
+        this.lastJoinedSocketId !== currentSocketId;
+
+      if (hasRoom && (socketIdChanged || !this.isInRoom)) {
+        // Ensure joinRoom does not early-return
+        if (socketIdChanged) this.isInRoom = false;
+
+        if (!this.reconnectionInProgress) {
+          this.reconnectionInProgress = true;
+          try {
+            const sendInitiatorOnline = this.isInitiator;
+            await this.joinRoom(
+              this.roomId as string,
+              this.isInitiator,
+              sendInitiatorOnline
+            );
+            // Reset flags after successful auto rejoin
+            this.isSocketDisconnected = false;
+            this.isPeerDisconnected = false;
+          } catch (error) {
+            this.fireError("Auto rejoin on socket connect failed", { error });
+          } finally {
+            this.reconnectionInProgress = false;
+          }
+        }
+      }
     });
 
     this.socket.on("error", (error) => {
@@ -149,17 +184,25 @@ export default class BaseWebRTC {
   }
   protected async attemptReconnection(): Promise<void> {
     if (this.reconnectionInProgress) return;
+    if (!this.roomId) return;
 
-    if (this.isSocketDisconnected && this.isPeerDisconnected && this.roomId) {
-      // Start reconnection only after both socket and P2P connections are disconnected
+    const currentSocketId = this.socket.id ?? null;
+    const socketIdChanged =
+      this.lastJoinedSocketId !== null &&
+      this.lastJoinedSocketId !== currentSocketId;
+
+    // Widen condition: if either side disconnected or socketId changed, try to rejoin
+    if (this.isPeerDisconnected || this.isSocketDisconnected || socketIdChanged) {
       this.reconnectionInProgress = true;
       if (developmentEnv === "development") {
         postLogToBackend(
-          `Starting reconnection, socket and peer both disconnected. isInitiator:${this.isInitiator}`
+          `Starting reconnection. socketDisc:${this.isSocketDisconnected}, peerDisc:${this.isPeerDisconnected}, socketIdChanged:${socketIdChanged}, isInitiator:${this.isInitiator}`
         );
       }
 
       try {
+        // Ensure joinRoom does not early-return
+        if (socketIdChanged) this.isInRoom = false;
         const sendInitiatorOnline = this.isInitiator;
         await this.joinRoom(this.roomId, this.isInitiator, sendInitiatorOnline);
 
@@ -323,11 +366,15 @@ export default class BaseWebRTC {
       failed: async () => {
         this.cleanupExistingConnection(peerId);
         this.isPeerDisconnected = true;
+        // Attempt to reconnect as well when failed
+        this.attemptReconnection();
         await this.wakeLockManager.releaseWakeLock();
       },
       closed: async () => {
         this.cleanupExistingConnection(peerId);
         this.isPeerDisconnected = true;
+        // Attempt to reconnect when closed
+        this.attemptReconnection();
         await this.wakeLockManager.releaseWakeLock();
       },
       // The following must be added to prevent errors
@@ -437,6 +484,8 @@ export default class BaseWebRTC {
         if (response.success) {
           this.roomId = roomId;
           this.isInRoom = true;
+          // Record the socket.id used for this successful join
+          this.lastJoinedSocketId = this.socket.id ?? null;
           if (sendInitiatorOnline) {
             this.socket.emit("initiator-online", {
               roomId: this.roomId,

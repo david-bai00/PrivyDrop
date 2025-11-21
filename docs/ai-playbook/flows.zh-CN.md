@@ -634,8 +634,14 @@ async requestWakeLock(): Promise<void> {
 **网络切换适应**：
 
 - **连接检测**：监听 `connectionstatechange` 事件检测网络质量变化
-- **自动重连**：`iceConnectionState: 'disconnected'` 时触发重连流程
+- **自动重连**：`connectionState: 'disconnected' | 'failed' | 'closed'` 时均触发重连流程（统一走 attemptReconnection）
 - **状态恢复**：重连成功后恢复房间状态和传输进度
+
+**移动端后台/前台切换补充策略**：
+
+- **socket 连接恢复自动入房**：`socket.on('connect')` 时，若已持有 `roomId` 且（`lastJoinedSocketId !== socket.id` 或 `!isInRoom`），则强制重新 `joinRoom(roomId, isInitiator, isInitiator)`；发送端会自动广播 `initiator-online`，接收端回复 `recipient-ready`。
+- **身份追踪**：成功 `joinRoom` 后记录 `lastJoinedSocketId = socket.id`，用以检测“后台恢复时 socketId 更换”的情形。
+- **门槛放宽**：`attemptReconnection` 只要满足“`roomId` 存在，且满足任一：P2P 断开 / socket 断开 / socketId 改变”，即可发起重连；不再强依赖“socket 与 P2P 同时断开”。
 
 ### 重连调试要点
 
