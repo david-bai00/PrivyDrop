@@ -45,6 +45,14 @@ export const ja: Messages = {
       description:
         "PrivyDropの利用規約を確認しましょう。サービスの適切な使用、データプライバシーとセキュリティ、責任の制限に関する情報が含まれます。",
     },
+    blog: {
+      title:
+        "PrivyDrop ブログ - プライベートなP2Pファイル共有とコラボレーション",
+      description:
+        "安全なファイル共有のヒント、プライバシー重視のコラボレーション戦略、そしてP2PとWebRTCを活用したより安全なデータ転送について学びましょう。",
+      keywords:
+        "安全なファイル共有,p2pファイル転送,プライベートコラボレーション,webrtc,エンドツーエンド暗号化,チームコラボレーション,プライバシーツール",
+    },
   },
   text: {
     Header: {
@@ -62,6 +70,19 @@ export const ja: Messages = {
       Terms_dis: "利用規約",
       Privacy_dis: "プライバシーポリシー",
       SupportedLanguages: "対応言語",
+    },
+    blog: {
+      list_title: "ブログ",
+      list_subtitle: "最新の記事と更新",
+      recent_posts: "最新の投稿",
+      tags: "タグ",
+      read_more: "続きを読む",
+      by: "著者",
+      post_not_found: "記事が見つかりません",
+      toc_title: "目次",
+      tag_title_prefix: "タグ",
+      tag_subtitle_template: "「{tag}」のタグが付いた記事",
+      tag_empty: "このタグの記事は見つかりません。",
     },
     privacy: {
       PrivacyPolicy_dis: "プライバシーポリシー",

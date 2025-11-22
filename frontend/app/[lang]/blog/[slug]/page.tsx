@@ -26,7 +26,7 @@ export default async function BlogPost({
   const messages = await getDictionary(params.lang);
 
   if (!post) {
-    return <div>Post not found</div>;
+    return <div>{messages.text.blog.post_not_found}</div>;
   }
 
   const siteUrl = getSiteUrl();
@@ -64,7 +64,7 @@ export default async function BlogPost({
             </h1>
             <div className="flex flex-wrap items-center text-gray-600 gap-2 sm:gap-4">
               <time className="text-sm">
-                {new Date(post.frontmatter.date).toLocaleDateString("en-US", {
+                {new Date(post.frontmatter.date).toLocaleDateString(params.lang, {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -72,7 +72,7 @@ export default async function BlogPost({
               </time>
               <span className="hidden sm:inline">·</span>
               <span className="text-sm">
-                by <span className="font-bold">{post.frontmatter.author}</span>
+                {messages.text.blog.by} <span className="font-bold">{post.frontmatter.author}</span>
               </span>
             </div>
           </header>
@@ -92,7 +92,7 @@ export default async function BlogPost({
             />
           </div>
         </article>
-        <TableOfContents content={post.content} />
+        <TableOfContents content={post.content} title={messages.text.blog.toc_title} />
       </div>
     </div>
   );

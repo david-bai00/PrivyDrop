@@ -14,6 +14,7 @@ export type Meta = {
   help: MetaData;
   privacy: MetaData;
   terms: MetaData;
+  blog: MetaData;
 };
 
 export type Header = {
@@ -103,6 +104,20 @@ export type HowItWorks = {
 export type SystemDiagram = {
   h2: string;
   h2_P: string;
+};
+
+export type BlogTexts = {
+  list_title: string;
+  list_subtitle: string;
+  recent_posts: string;
+  tags: string;
+  read_more: string;
+  by: string;
+  post_not_found: string;
+  toc_title: string;
+  tag_title_prefix: string;
+  tag_subtitle_template: string; // use {tag} as placeholder
+  tag_empty: string;
 };
 
 export type KeyFeatures = {
@@ -312,6 +327,7 @@ export type Text = {
   RetrieveMethod: RetrieveMethod;
   ClipboardApp: ClipboardApp;
   home: Home;
+  blog: BlogTexts;
 };
 
 export type Messages = {

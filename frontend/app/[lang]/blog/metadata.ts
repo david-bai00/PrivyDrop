@@ -1,29 +1,28 @@
 import { supportedLocales } from "@/constants/i18n-config";
 import { Metadata } from "next";
+import { getDictionary } from "@/lib/dictionary";
 
 export async function generateMetadata({
   params,
 }: {
   params: { lang: string };
 }): Promise<Metadata> {
+  const messages = await getDictionary(params.lang);
+
   return {
-    title: "PrivyDrop Blog - Private P2P File Sharing & Collaboration",
-    description:
-      "Discover secure file sharing tips, privacy-focused collaboration strategies, and how to leverage P2P technology for safer data transfer. Learn about WebRTC, end-to-end encryption, and team collaboration.",
-    keywords:
-      "secure file sharing, p2p file transfer, private collaboration, webrtc, end-to-end encryption, team collaboration, privacy tools",
+    title: messages.meta.blog.title,
+    description: messages.meta.blog.description,
+    keywords: messages.meta.blog.keywords,
     metadataBase: new URL("https://www.privydrop.app"),
     alternates: {
       canonical: `/${params.lang}/blog`,
-      languages: {
-        en: "/en/blog",
-        zh: "/zh/blog",
-      },
+      languages: Object.fromEntries(
+        supportedLocales.map((l) => [l, `/${l}/blog`])
+      ),
     },
     openGraph: {
-      title: "PrivyDrop Blog - Private P2P File Sharing & Collaboration",
-      description:
-        "Explore secure file sharing, private collaboration tools, and data privacy best practices. Join our community of privacy-conscious professionals.",
+      title: messages.meta.blog.title,
+      description: messages.meta.blog.description,
       url: `https://www.privydrop.app/${params.lang}/blog`,
       siteName: "PrivyDrop",
       locale: params.lang,

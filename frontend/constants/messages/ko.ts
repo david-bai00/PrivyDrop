@@ -45,6 +45,14 @@ export const ko: Messages = {
       description:
         "PrivyDrop의 이용 약관을 검토하세요. 서비스의 허용 가능한 사용, 데이터 개인 정보 보호 및 보안, 책임 제한에 대한 정보를 포함합니다.",
     },
+    blog: {
+      title:
+        "PrivyDrop 블로그 - 개인 P2P 파일 공유 및 협업",
+      description:
+        "안전한 파일 공유 팁, 개인 정보 중심의 협업 전략, 그리고 P2P와 WebRTC를 활용한 더 안전한 데이터 전송 방법을 알아보세요.",
+      keywords:
+        "안전한 파일 공유,p2p 파일 전송,개인 협업,webrtc,종단간 암호화,팀 협업,프라이버시 도구",
+    },
   },
   text: {
     Header: {
@@ -62,6 +70,19 @@ export const ko: Messages = {
       Terms_dis: "이용 약관",
       Privacy_dis: "개인정보 보호정책",
       SupportedLanguages: "지원 언어",
+    },
+    blog: {
+      list_title: "블로그",
+      list_subtitle: "최신 글과 업데이트",
+      recent_posts: "최근 글",
+      tags: "태그",
+      read_more: "더 보기",
+      by: "작성자",
+      post_not_found: "게시글을 찾을 수 없습니다",
+      toc_title: "목차",
+      tag_title_prefix: "태그",
+      tag_subtitle_template: "{tag} 태그가 달린 글",
+      tag_empty: "해당 태그의 글이 없습니다.",
     },
 
     privacy: {

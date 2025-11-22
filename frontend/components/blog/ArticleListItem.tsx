@@ -1,13 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { type BlogPost } from "@/lib/blog";
+import { Messages } from "@/types/messages";
 
 interface ArticleListItemProps {
   post: BlogPost;
   lang: string;
+  messages: Messages;
 }
 
-export function ArticleListItem({ post, lang }: ArticleListItemProps) {
+export function ArticleListItem({ post, lang, messages }: ArticleListItemProps) {
   return (
     <article className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
       <div className="relative h-80 w-full">
@@ -24,7 +26,11 @@ export function ArticleListItem({ post, lang }: ArticleListItemProps) {
       <div className="p-8">
         <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
           <time className="font-medium">
-            {new Date(post.frontmatter.date).toLocaleDateString()}
+            {new Date(post.frontmatter.date).toLocaleDateString(lang, {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
           </time>
           <span>·</span>
           <div className="flex gap-2 flex-wrap">
@@ -53,7 +59,7 @@ export function ArticleListItem({ post, lang }: ArticleListItemProps) {
             href={`/${lang}/blog/${post.slug}`}
             className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center text-lg"
           >
-            Read more
+            {messages.text.blog.read_more}
             <svg
               className="w-5 h-5 ml-2"
               viewBox="0 0 24 24"
@@ -71,7 +77,7 @@ export function ArticleListItem({ post, lang }: ArticleListItemProps) {
 
           <div className="flex items-center gap-3">
             <span className="text-sm">
-              by <span className="font-bold">{post.frontmatter.author}</span>
+              {messages.text.blog.by} <span className="font-bold">{post.frontmatter.author}</span>
             </span>
           </div>
         </div>

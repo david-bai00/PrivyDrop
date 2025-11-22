@@ -45,6 +45,14 @@ export const es: Messages = {
       description:
         "Revise los términos de uso de PrivyDrop, incluyendo información sobre el uso aceptable del servicio, privacidad y seguridad de datos, y limitaciones de responsabilidad.",
     },
+    blog: {
+      title:
+        "Blog de PrivyDrop - Compartición de archivos P2P privada y colaboración",
+      description:
+        "Descubre consejos de compartición segura de archivos, estrategias de colaboración con enfoque en la privacidad y cómo aprovechar P2P y WebRTC para transferencias más seguras.",
+      keywords:
+        "compartición segura de archivos,transferencia de archivos p2p,colaboración privada,webrtc,cifrado de extremo a extremo,colaboración en equipo,herramientas de privacidad",
+    },
   },
   text: {
     Header: {
@@ -62,6 +70,19 @@ export const es: Messages = {
       Terms_dis: "Términos de Uso",
       Privacy_dis: "Política de Privacidad",
       SupportedLanguages: "Idiomas soportados",
+    },
+    blog: {
+      list_title: "Blog",
+      list_subtitle: "Últimos artículos y actualizaciones",
+      recent_posts: "Entradas recientes",
+      tags: "Etiquetas",
+      read_more: "Leer más",
+      by: "por",
+      post_not_found: "Artículo no encontrado",
+      toc_title: "Tabla de contenidos",
+      tag_title_prefix: "Etiqueta",
+      tag_subtitle_template: "Artículos etiquetados con {tag}",
+      tag_empty: "No se encontraron artículos para esta etiqueta.",
     },
     privacy: {
       PrivacyPolicy_dis: "Política de Privacidad",

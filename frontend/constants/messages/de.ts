@@ -45,6 +45,14 @@ export const de: Messages = {
       description:
         "Überprüfen Sie die Nutzungsbedingungen für PrivyDrop, einschließlich Informationen zur akzeptablen Nutzung des Dienstes, Datenschutz und -sicherheit sowie Haftungsbeschränkungen.",
     },
+    blog: {
+      title:
+        "PrivyDrop Blog - Private P2P-Dateifreigabe & Zusammenarbeit",
+      description:
+        "Entdecken Sie Tipps für sicheres Dateifreigeben, datenschutzorientierte Zusammenarbeit und wie man P2P und WebRTC für sicherere Übertragungen nutzt.",
+      keywords:
+        "sichere Dateifreigabe,p2p Dateiübertragung,private Zusammenarbeit,webrtc,Ende-zu-Ende-Verschlüsselung,Teamzusammenarbeit,Datenschutz-Tools",
+    },
   },
   text: {
     Header: {
@@ -62,6 +70,19 @@ export const de: Messages = {
       Terms_dis: "Nutzungsbedingungen",
       Privacy_dis: "Datenschutzrichtlinie",
       SupportedLanguages: "Unterstützte Sprachen",
+    },
+    blog: {
+      list_title: "Blog",
+      list_subtitle: "Neueste Artikel und Updates",
+      recent_posts: "Neueste Beiträge",
+      tags: "Schlagwörter",
+      read_more: "Weiterlesen",
+      by: "von",
+      post_not_found: "Beitrag nicht gefunden",
+      toc_title: "Inhaltsverzeichnis",
+      tag_title_prefix: "Schlagwort",
+      tag_subtitle_template: "Artikel mit dem Schlagwort {tag}",
+      tag_empty: "Keine Artikel für dieses Schlagwort gefunden.",
     },
 
     privacy: {

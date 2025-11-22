@@ -42,6 +42,13 @@ export const zh: Messages = {
       description:
         "查看PrivyDrop使用条款，包括服务使用规范、数据隐私和安全性，以及责任限制等信息。",
     },
+    blog: {
+      title: "PrivyDrop 博客 - 私密 P2P 文件分享与协作",
+      description:
+        "探索安全的文件分享方法、隐私优先的团队协作策略，以及如何利用 P2P 与 WebRTC 实现更安全的数据传输。",
+      keywords:
+        "安全文件分享,P2P文件传输,私密协作,WebRTC,端到端加密,团队协作,隐私工具",
+    },
   },
   text: {
     Header: {
@@ -59,6 +66,19 @@ export const zh: Messages = {
       Terms_dis: "使用条款",
       Privacy_dis: "隐私政策",
       SupportedLanguages: "支持的语言",
+    },
+    blog: {
+      list_title: "博客",
+      list_subtitle: "最新文章与更新",
+      recent_posts: "最新文章",
+      tags: "标签",
+      read_more: "阅读更多",
+      by: "作者",
+      post_not_found: "未找到文章",
+      toc_title: "目录",
+      tag_title_prefix: "标签",
+      tag_subtitle_template: "包含 {tag} 标签的文章",
+      tag_empty: "没有找到相关文章。",
     },
     privacy: {
       PrivacyPolicy_dis: "隐私政策",

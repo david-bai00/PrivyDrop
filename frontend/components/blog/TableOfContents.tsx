@@ -10,10 +10,12 @@ interface TocItem {
 
 interface TableOfContentsProps {
   content: string;
+  title?: string;
 }
 
 export const TableOfContents: React.FC<TableOfContentsProps> = ({
   content,
+  title = "Table of contents",
 }) => {
   const [activeId, setActiveId] = useState<string>("");
   const [toc, setToc] = useState<TocItem[]>([]);
@@ -110,7 +112,7 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
 
   return (
     <nav className="hidden lg:block sticky top-8 p-6 bg-gray-50 rounded-lg max-h-[calc(100vh-4rem)] overflow-y-auto">
-      <h4 className="text-lg font-semibold mb-4">Table of contents</h4>
+      <h4 className="text-lg font-semibold mb-4">{title}</h4>
       <ul className="space-y-2">
         {toc.map((item) => (
           <li

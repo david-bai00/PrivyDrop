@@ -2,6 +2,8 @@
 import { Metadata } from "next";
 import { getPostBySlug } from "@/lib/blog";
 import { generateMetadata as generateBlogMetadata } from "../metadata";
+import { getDictionary } from "@/lib/dictionary";
+import { supportedLocales } from "@/constants/i18n-config";
 
 export async function generateMetadata({
   params,
@@ -16,8 +18,12 @@ export async function generateMetadata({
     return generateBlogMetadata({ params: { lang: params.lang } });
   }
 
+  const messages = await getDictionary(params.lang);
+  const blogWord = messages.text.Header.Blog_dis;
+  const blogCap = blogWord.charAt(0).toUpperCase() + blogWord.slice(1);
+
   return {
-    title: `${post.frontmatter.title} | PrivyDrop Blog`,
+    title: `${post.frontmatter.title} | PrivyDrop ${blogCap}`,
     description: post.frontmatter.description,
     keywords: `${post.frontmatter.tags.join(
       ", "
@@ -25,10 +31,9 @@ export async function generateMetadata({
     metadataBase: new URL("https://www.privydrop.app"),
     alternates: {
       canonical: `/${params.lang}/blog/${params.slug}`,
-      languages: {
-        en: `/en/blog/${params.slug}`,
-        zh: `/zh/blog/${params.slug}`,
-      },
+      languages: Object.fromEntries(
+        supportedLocales.map((l) => [l, `/${l}/blog/${params.slug}`])
+      ),
     },
     openGraph: {
       title: post.frontmatter.title,

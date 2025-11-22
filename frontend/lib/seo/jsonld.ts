@@ -1,5 +1,6 @@
+// Use hardcoded site URL to keep consistent with sitemap and deployment
 export const getSiteUrl = (): string => {
-  return process.env.NEXT_PUBLIC_SITE_URL || "https://www.privydrop.app";
+  return "https://www.privydrop.app";
 };
 
 export const absoluteUrl = (path: string, siteUrl = getSiteUrl()): string => {
@@ -132,4 +133,3 @@ export function buildBreadcrumbJsonLd(params: {
     })),
   };
 }
-
