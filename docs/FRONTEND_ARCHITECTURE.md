@@ -135,6 +135,14 @@ Benefits:
 - **Automatic Detection**: `middleware.ts` intercepts requests and automatically redirects to the appropriate language path based on the `Accept-Language` header or a cookie.
 - **Dynamic Loading**: The `getDictionary` function in `lib/dictionary.ts` asynchronously loads the corresponding `messages/*.json` file based on the `lang` parameter, enabling code splitting.
 
+### 3.4 State & Connection Lifecycle (In-App Navigation)
+
+- **Singleton Store (Zustand)**: `frontend/stores/fileTransferStore.ts` is a module-level singleton, preserving in-memory state across routes (e.g., share content, files to send, received files/meta, progress states).
+- **Singleton Connection Service (webrtcService)**: `frontend/lib/webrtcService.ts` holds `RTCPeerConnection`/`RTCDataChannel` and FileSender/FileReceiver as a singleton. App Router page switches do not tear it down.
+- **Effect**: In the same browser tab, in-app navigation (App Router page switches) does not interrupt ongoing transfers, and selected/received content remains intact.
+- **Boundary**: Page refresh/closing the tab or opening in a new tab is not covered; when changing layout hierarchy/SSR behavior, avoid cleaning the connection in layout unmount.
+- **Note**: Do not call `webrtcService.leaveRoom()` or reset the global Store inside route-change side effects; only do so on explicit user actions.
+
 ## 4. Summary and Outlook
 
 The current frontend architecture successfully deconstructs a complex WebRTC application into a series of clean, maintainable modules through layered design and Hook-centric logic encapsulation. The boundaries between UI, business logic, and underlying libraries are clear, laying a solid foundation for future feature expansion and maintenance.

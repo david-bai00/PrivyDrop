@@ -77,3 +77,8 @@ graph TD
 - **Privacy First**: Core file data is never uploaded to the server. The server only acts as an "introducer" or "matchmaker."
 - **Frontend-Backend Separation**: Responsibilities are clearly separated. The frontend handles all user interaction and the complex logic of WebRTC; the backend provides lightweight, efficient signaling and room management services.
 - **Horizontal Scalability**: The backend is stateless (with state managed in Redis), which theoretically allows it to be scaled horizontally by adding more Node.js instances to handle a large volume of concurrent signaling requests.
+
+## 4. Runtime Session Model (Frontend)
+
+- **SPA In-App Navigation Persistence**: The frontend is an SPA (App Router). Within the same browser tab, in-app navigation does not tear down the singleton app state (Zustand) nor the WebRTC connection service (webrtcService). Ongoing transfers continue, and selected/received content remains available.
+- **Boundary**: Page refresh, closing the tab, or opening in a new tab are not covered. If changing layout/SSR strategy, avoid cleaning the connection during layout unmount.

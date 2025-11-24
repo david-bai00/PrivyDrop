@@ -247,6 +247,7 @@ Core Services (webrtcService) + Store (fileTransferStore)
 6. **全局拖拽优化**：ClipboardApp 使用 dragCounter 防止拖拽状态误判，支持 webkitGetAsEntry 文件树遍历
 7. **剪贴板兼容性**：useClipboardActions 支持现代 navigator.clipboard API 和 document.execCommand 降级方案
 8. **富文本安全处理**：useRichTextToPlainText 服务端渲染安全，客户端 DOM 转换处理块级元素
+9. **站内导航不中断（同一标签页）**：依赖 `frontend/stores/fileTransferStore.ts`（Zustand 单例）与 `frontend/lib/webrtcService.ts`（服务单例）。App Router 页面切换不打断传输且保留已选择/已接收内容。注意不要在路由切换副作用中调用 `webrtcService.leaveRoom()` 或重置 Store；刷新/新标签不在保证范围内。
 
 ### 前端组件架构特化
 

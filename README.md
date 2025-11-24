@@ -29,6 +29,7 @@ We believe everyone should have control over their own data. PrivyDrop was creat
 - 🔗 **Convenient Sharing**: Easily share a room and establish a connection via a link or QR code.
 - 📱 **Multi-Device Support**: Responsive design supports both desktop and mobile browsers.
 - 🌐 **Internationalization**: Supports multiple languages, including English and Chinese.
+- 🧭 **In-App Navigation Persistence**: For in-app navigation within the same browser tab (Next.js App Router page switches), ongoing transfers are not interrupted, and selected-to-send items and already-displayed received content are preserved. Powered by a singleton app state (Zustand Store) and a singleton connection service (webrtcService).
 
 ## 🛠️ Tech Stack
 

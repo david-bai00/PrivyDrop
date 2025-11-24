@@ -135,6 +135,14 @@ graph TD
 - **自动检测**: `middleware.ts` 拦截请求，根据 `Accept-Language` 头或 Cookie 自动重定向到合适的语言路径。
 - **动态加载**: `lib/dictionary.ts` 中的 `getDictionary` 函数根据 `lang` 参数异步加载对应的 `messages/*.json` 文件，实现了代码分割。
 
+### 3.4 状态与连接生命周期（站内导航保持）
+
+- **单例 Store（Zustand）**：`frontend/stores/fileTransferStore.ts` 为模块级单例，跨路由保持内存状态（如分享内容、待发送文件、已接收文件/元信息、进度等）。
+- **单例连接服务（webrtcService）**：`frontend/lib/webrtcService.ts` 单例持有 `RTCPeerConnection`/`RTCDataChannel` 与 FileSender/FileReceiver。App Router 的页面切换不会销毁该实例。
+- **效果**：在同一标签页内的站内跳转（App Router 页面切换），进行中的传输不会中断，已选择/已接收的内容保持不丢失。
+- **边界**：刷新/关闭标签页或新开标签页不在此保证范围内；SSR/布局层级调整时需确保不在布局卸载处做连接清理。
+- **注意**：不要在路由切换副作用中调用 `webrtcService.leaveRoom()` 或重置全局 Store；离开房间应仅在用户显式操作时触发。
+
 ## 四、 总结与展望
 
 当前的前端架构通过分层设计和以 Hooks 为中心的逻辑封装，成功地将一个复杂的 WebRTC 应用拆解为一系列清晰、可维护的模块。UI、业务逻辑和底层库之间的界限分明，为未来的功能扩展和维护奠定了坚实的基础。

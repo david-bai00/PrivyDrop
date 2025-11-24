@@ -16,6 +16,8 @@ coverage/
 .next/
 # Ignore out/ directories in all subdirectories
 out/
+out.zip
+deploy.config*
 
 # production
 # Ignore build/ directories in all subdirectories
