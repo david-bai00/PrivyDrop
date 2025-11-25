@@ -469,17 +469,73 @@ export default class BaseWebRTC {
     }
     this.isInitiator = isInitiator;
     return new Promise<void>((resolve, reject) => {
-      // Set timeout (5 seconds)
+      let settled = false; // Prevent multiple resolve/reject
+
+      // Helper to cleanup listeners and timer
+      const cleanup = (
+        joinResponseHandler?: (response: JoinRoomResponse) => void,
+        eqHandlers?: Array<{ event: string; handler: (...args: any[]) => void }>
+      ) => {
+        clearTimeout(timeout);
+        if (joinResponseHandler) {
+          this.socket.off("joinResponse", joinResponseHandler);
+        } else {
+          // Safety off in case we didn't hold reference
+          this.socket.off("joinResponse");
+        }
+        eqHandlers?.forEach(({ event, handler }) => this.socket.off(event, handler));
+      };
+
+      // Set timeout (15 seconds) for challenging networks/polling fallback
       const timeout = setTimeout(() => {
-        this.socket.off("joinResponse");
-        reject(new Error("Join room timeout"));
+        if (settled) return;
+        settled = true;
+        cleanup(joinResponseHandler, eqHandlers);
         this.isInRoom = false;
         this.roomId = null;
-      }, 5000);
+        reject(new Error("Join room timeout"));
+      }, 15000);
+
+      // Equivalent success resolver
+      const resolveAsJoined = (reason: string) => {
+        if (settled) return;
+        settled = true;
+        this.roomId = roomId;
+        this.isInRoom = true;
+        this.lastJoinedSocketId = this.socket.id ?? null;
+        if (sendInitiatorOnline) {
+          this.socket.emit("initiator-online", {
+            roomId: this.roomId,
+          });
+        }
+        if (developmentEnv === "development")
+          postLogToBackend(
+            `peerId:${this.socket.id} Early-joined (${reason}) room:${roomId}, isInitiator:${this.isInitiator}`
+          );
+        cleanup(joinResponseHandler, eqHandlers);
+        resolve();
+      };
+
+      // Attach equivalent success listeners during join in-progress
+      const eqHandlers: Array<{ event: string; handler: (...args: any[]) => void }> = [];
+      if (isInitiator) {
+        const onReady = (_payload: any) => resolveAsJoined("ready");
+        const onRecipientReady = (_payload: any) => resolveAsJoined("recipient-ready");
+        this.socket.on("ready", onReady);
+        this.socket.on("recipient-ready", onRecipientReady);
+        eqHandlers.push({ event: "ready", handler: onReady });
+        eqHandlers.push({ event: "recipient-ready", handler: onRecipientReady });
+      } else {
+        const onOffer = (_payload: any) => resolveAsJoined("offer");
+        this.socket.on("offer", onOffer);
+        eqHandlers.push({ event: "offer", handler: onOffer });
+      }
 
       // Listen for join room response -- once
-      this.socket.once("joinResponse", (response: JoinRoomResponse) => {
-        clearTimeout(timeout); // Clear timeout timer
+      const joinResponseHandler = (response: JoinRoomResponse) => {
+        if (settled) return; // Already resolved via equivalent signal
+        settled = true;
+        cleanup(undefined, eqHandlers);
 
         if (response.success) {
           this.roomId = roomId;
@@ -504,16 +560,20 @@ export default class BaseWebRTC {
           this.fireError("Failed to join room", { message: response.message });
           reject(new Error(response.message));
         }
-      });
+      };
+      this.socket.once("joinResponse", joinResponseHandler);
 
       // Send join room request
       try {
         this.socket.emit("join", { roomId });
       } catch (error) {
-        clearTimeout(timeout);
-        this.isInRoom = false;
-        this.roomId = null;
-        reject(error);
+        if (!settled) {
+          settled = true;
+          cleanup(joinResponseHandler, eqHandlers);
+          this.isInRoom = false;
+          this.roomId = null;
+          reject(error);
+        }
       }
     });
   }
