@@ -23,7 +23,9 @@
 - `frontend/components/` — UI，包括协调器与子组件。
 
   - `frontend/components/ClipboardApp.tsx` — 顶层 UI 协调器，集成 5 个业务 hooks（useWebRTCConnection/useFileTransferHandler/useRoomManager/usePageSetup/useClipboardAppMessages），处理全局拖拽事件和双标签页（发送/接收）管理。
+    - 体验增强：切到接收端（retrieve）且满足“未在房间、URL 无 roomId、输入为空、存在缓存ID”时自动填充并加入房间（读取 `frontend/lib/roomIdCache.ts`）。
   - `frontend/components/ClipboardApp/SendTabPanel.tsx` — 发送面板，集成富文本编辑器、文件上传、房间 ID 生成（支持 4 位数字/UUID 两种模式）、分享链接生成。
+    - 体验增强：点击“使用缓存ID”将立即触发加入房间（sender 侧），减少一次手动点击。
   - `frontend/components/ClipboardApp/RetrieveTabPanel.tsx` — 接收面板，处理房间加入、文件接收、目录选择（File System Access API）、富文本内容显示。
   - `frontend/components/ClipboardApp/FileListDisplay.tsx` — 文件列表显示组件，支持文件/文件夹分组显示、进度跟踪、多浏览器下载策略（Chrome 自动下载/其他浏览器手动保存）、下载计数统计。
   - `frontend/components/ClipboardApp/FullScreenDropZone.tsx` — 全屏拖拽提示组件，文件拖拽时的视觉反馈。
@@ -32,6 +34,7 @@
   - `frontend/components/blog/` — 博客相关组件，包含 TableOfContents（支持中文目录生成和滚动跟踪）、Mermaid 图表渲染、MDXComponents、ArticleListItem 文章列表。
   - `frontend/components/common/` — 通用组件，包含 clipboard_btn（读写剪贴板按钮）、AutoPopupDialog（自动弹出对话框）、LazyLoadWrapper（懒加载包装器）、YouTubePlayer（YouTube 播放器）。
   - `frontend/components/web/` — 网站页面组件，包含 Header（响应式导航和多语言支持）、Footer（版权和语言链接）、FAQSection（可配置 FAQ 展示）、HowItWorks（步骤说明和视频演示）、SystemDiagram（系统架构图）、KeyFeatures（功能特性展示）、theme-provider 主题提供者。
+    - `frontend/components/web/ThemeToggle.tsx` — 主题切换按钮（单按钮 Light/Dark 切换），集成于 Header（桌面与移动）。
   - `frontend/components/seo/JsonLd.tsx` — SEO 结构化数据组件，支持多类型 JSON-LD 数据生成。
   - `frontend/components/LanguageSwitcher.tsx` — 语言切换器。
   - `frontend/components/ui/*` — 基础 UI 原子组件（基于 Radix UI 和 shadcn/ui），包含 Button（多变体按钮）、Accordion（手风琴）、Dialog（模态对话框）、Card（卡片）、Tooltip（工具提示）、Select、Input、Textarea、Checkbox、DropdownMenu、Toast 通知系统和 AnimatedButton 动画按钮。

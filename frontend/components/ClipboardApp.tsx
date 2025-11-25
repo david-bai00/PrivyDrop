@@ -14,6 +14,7 @@ import { RetrieveTabPanel } from "./ClipboardApp/RetrieveTabPanel";
 import FullScreenDropZone from "./ClipboardApp/FullScreenDropZone";
 import { traverseFileTree } from "@/lib/fileUtils";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
+import { getCachedId } from "@/lib/roomIdCache";
 
 const ClipboardApp = () => {
   const { shareMessage, retrieveMessage, putMessageInMs } =
@@ -37,6 +38,9 @@ const ClipboardApp = () => {
     setIsDragging,
     setRetrieveRoomIdInput,
     setActiveTab,
+    // for auto-join on receiver side
+    isReceiverInRoom,
+    retrieveRoomIdInput,
   } = useFileTransferStore();
 
   const richTextToPlainText = useRichTextToPlainText();
@@ -143,6 +147,32 @@ const ClipboardApp = () => {
       window.removeEventListener("drop", handleDrop);
     };
   }, [activeTab, handleFileDrop, setIsDragging]);
+
+  // Auto-join on switching to receiver tab when cached ID exists
+  useEffect(() => {
+    if (activeTab !== "retrieve") return;
+    if (isReceiverInRoom) return;
+
+    // Do not auto-join if URL already specifies a roomId (URL 优先)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("roomId")) return;
+
+    // Do not override user's existing input
+    if ((retrieveRoomIdInput || "").trim().length > 0) return;
+
+    const cached = getCachedId();
+    if (!cached || cached.trim().length === 0) return;
+
+    // Fill input then join directly to improve UX
+    setRetrieveRoomIdInput(cached);
+    joinRoom(false, cached);
+  }, [
+    activeTab,
+    isReceiverInRoom,
+    retrieveRoomIdInput,
+    setRetrieveRoomIdInput,
+    joinRoom,
+  ]);
 
   if (isLoadingMessages || !messages) {
     return (

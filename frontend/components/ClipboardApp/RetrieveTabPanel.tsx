@@ -156,7 +156,7 @@ export function RetrieveTabPanel({
       </div>
       {retrievedContent && (
         <div className="my-3 p-3 border rounded-md">
-          <div className="bg-white p-3 rounded border border-gray-200 text-sm leading-relaxed">
+          <div className="bg-card text-card-foreground p-3 rounded border text-sm leading-relaxed">
             <div dangerouslySetInnerHTML={{ __html: retrievedContent }} />
           </div>
           <div className="flex justify-start">

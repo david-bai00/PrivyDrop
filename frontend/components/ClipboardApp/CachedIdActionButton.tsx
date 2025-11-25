@@ -62,6 +62,10 @@ type Props = {
   size?: "default" | "sm" | "lg" | "icon";
   dblClickWindowMs?: number; // default 400ms
   saveModeDurationMs?: number; // default 3000ms
+  // Optional: called after a cached ID is applied (single-click "Use cached ID")
+  onUseCached?: (cachedId: string) => void;
+  // Optional: external disabled flag
+  disabled?: boolean;
 };
 
 export default function CachedIdActionButton({
@@ -75,6 +79,8 @@ export default function CachedIdActionButton({
   size = "default",
   dblClickWindowMs = 400,
   saveModeDurationMs = 3000,
+  onUseCached,
+  disabled = false,
 }: Props) {
   const [hasCachedId, setHasCachedId] = useState<boolean>(false);
   const [showSaveOverride, setShowSaveOverride] = useState<boolean>(false);
@@ -128,6 +134,8 @@ export default function CachedIdActionButton({
           const cached = getCachedId();
           if (cached) {
             setInputValue(cached);
+            // Notify caller after applying cached value
+            onUseCached?.(cached);
           }
         }
         clickCountRef.current = 0;
@@ -161,6 +169,7 @@ export default function CachedIdActionButton({
     isShareEnd,
     dblClickWindowMs,
     saveModeDurationMs,
+    onUseCached,
   ]);
 
   return (
@@ -177,7 +186,9 @@ export default function CachedIdActionButton({
           variant={variant}
           size={size}
           onClick={handleClick}
-          disabled={isSaveMode ? !isSaveEnabled : !hasCachedId}
+          disabled={
+            disabled || (isSaveMode ? !isSaveEnabled : !hasCachedId)
+          }
         >
           {isSaveMode
             ? messages.text.ClipboardApp.html.saveId_dis

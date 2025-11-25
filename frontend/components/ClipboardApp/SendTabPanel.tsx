@@ -197,6 +197,11 @@ export function SendTabPanel({
               setInputValue={setInputFieldValue}
               putMessageInMs={putMessageInMs}
               isShareEnd={true}
+              disabled={isSenderInRoom}
+              onUseCached={(id) => {
+                // Immediately join as sender after applying cached ID
+                joinRoom(true, id.trim());
+              }}
             />
             <Button
               className="w-full sm:w-auto px-4"

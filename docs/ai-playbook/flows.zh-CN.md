@@ -248,6 +248,9 @@ Core Services (webrtcService) + Store (fileTransferStore)
 7. **剪贴板兼容性**：useClipboardActions 支持现代 navigator.clipboard API 和 document.execCommand 降级方案
 8. **富文本安全处理**：useRichTextToPlainText 服务端渲染安全，客户端 DOM 转换处理块级元素
 9. **站内导航不中断（同一标签页）**：依赖 `frontend/stores/fileTransferStore.ts`（Zustand 单例）与 `frontend/lib/webrtcService.ts`（服务单例）。App Router 页面切换不打断传输且保留已选择/已接收内容。注意不要在路由切换副作用中调用 `webrtcService.leaveRoom()` 或重置 Store；刷新/新标签不在保证范围内。
+10. **切到接收端自动加入（缓存ID）**：当用户切换到接收端、未在房间、URL 无 `roomId`、输入框为空且本地存在缓存 ID 时，自动填充并直接调用加入房间以提升体验。入口：`frontend/components/ClipboardApp.tsx`（监听 `activeTab` 变化，读取 `frontend/lib/roomIdCache.ts`）。
+11. **发送端“使用缓存ID”即刻加入**：发送端在 `SendTabPanel` 点击“使用缓存ID”后会立即调用加入房间（而非仅填充输入框）。入口：`frontend/components/ClipboardApp/CachedIdActionButton.tsx`（`onUseCached` 回调）+ `frontend/components/ClipboardApp/SendTabPanel.tsx`。
+12. **深色主题切换**：提供单按钮 Light/Dark 切换，入口：`frontend/components/web/ThemeToggle.tsx`；集成位置：`frontend/components/web/Header.tsx`（桌面与移动）；局部样式从硬编码颜色迁移为设计令牌（例如接收面板使用 `bg-card text-card-foreground`）。
 
 ### 前端组件架构特化
 

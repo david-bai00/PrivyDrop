@@ -8,6 +8,7 @@ import Image from "next/image";
 import { Menu, X, Github } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Messages } from "@/types/messages";
+import ThemeToggle from "@/components/web/ThemeToggle";
 
 /**
  * Props interface for the Header component
@@ -91,6 +92,7 @@ const Header = ({ messages, lang }: HeaderProps) => {
                   <Github className="h-5 w-5" />
                 </Link>
               </Button>
+              <ThemeToggle />
               <LanguageSwitcher />
             </div>
           </div>
@@ -98,6 +100,7 @@ const Header = ({ messages, lang }: HeaderProps) => {
           {/* Mobile menu controls */}
           <div className="md:hidden flex items-center space-x-2">
             <LanguageSwitcher />
+            <ThemeToggle />
             <Button asChild variant="ghost" size="icon">
               <Link
                 href={githubUrl}
