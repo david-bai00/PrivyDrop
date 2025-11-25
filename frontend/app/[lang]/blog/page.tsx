@@ -22,7 +22,7 @@ export default async function BlogPage({
         <main className="lg:col-span-8">
           <div className="mb-12">
             <h1 className="text-4xl font-bold mb-4">{messages.text.blog.list_title}</h1>
-            <p className="text-gray-600 text-lg">{messages.text.blog.list_subtitle}</p>
+            <p className="text-muted-foreground text-lg">{messages.text.blog.list_subtitle}</p>
           </div>
 
           {/* Articles List */}
@@ -37,14 +37,14 @@ export default async function BlogPage({
         <aside className="lg:col-span-4">
           <div className="sticky top-8">
             {/* Recent Posts */}
-            <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <div className="bg-card rounded-xl shadow-lg p-8 mb-8">
               <h2 className="text-xl font-bold mb-6">{messages.text.blog.recent_posts}</h2>
               <div className="space-y-4">
                 {posts.slice(0, 5).map((post) => (
                   <Link
                     key={post.slug}
                     href={`/${lang}/blog/${post.slug}`}
-                    className="block hover:text-blue-600 text-base font-medium"
+                    className="block hover:text-primary text-base font-medium"
                   >
                     {post.frontmatter.title}
                   </Link>
@@ -52,7 +52,7 @@ export default async function BlogPage({
               </div>
             </div>
             {/* tags */}
-            <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="bg-card rounded-xl shadow-lg p-8">
               <h2 className="text-xl font-bold mb-6">{messages.text.blog.tags}</h2>
               <div className="space-y-3">
                 {/* Get all tags and deduplicate */}
@@ -62,10 +62,10 @@ export default async function BlogPage({
                   <Link
                     key={tag}
                     href={`/${lang}/blog/tag/${slugifyTag(tag)}`} // Jump to the tag filtering page
-                    className="flex items-center justify-between hover:text-blue-600"
+                    className="flex items-center justify-between hover:text-primary"
                   >
-                    <span className="text-gray-700 font-medium">{tag}</span>
-                    <span className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-600">
+                    <span className="text-foreground font-medium">{tag}</span>
+                    <span className="bg-muted px-3 py-1 rounded-full text-sm text-muted-foreground">
                       {
                         posts.filter((p) => p.frontmatter.tags.includes(tag))
                           .length

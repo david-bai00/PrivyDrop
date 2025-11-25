@@ -59,7 +59,7 @@ const FileTransferButton = ({
     if (isSavedToDisk) {
       return {
         variant: "ghost" as const,
-        className: "mr-2 text-gray-500",
+        className: "mr-2 text-muted-foreground",
       };
     }
     if (isCurrentFileTransferring) {
@@ -70,20 +70,19 @@ const FileTransferButton = ({
     }
     if (isPendingSave) {
       return {
-        variant: "default" as const, // 使用更明显的样式
-        className: "mr-2 bg-green-600 hover:bg-green-700 text-white",
+        variant: "default" as const,
+        className: "mr-2",
       };
     }
     if (isOtherFileTransferring) {
       return {
         variant: "outline" as const,
-        className:
-          "mr-2 cursor-not-allowed bg-gray-100 border-gray-300 text-gray-500",
+        className: "mr-2 cursor-not-allowed bg-muted text-muted-foreground",
       };
     }
     return {
       variant: "outline" as const,
-      className: "mr-2 hover:bg-blue-50",
+      className: "mr-2 hover:bg-accent",
     };
   };
 
@@ -118,10 +117,7 @@ const FileTransferButton = ({
             </Button>
           </span>
         </TooltipTrigger>
-        <TooltipContent
-          side="top"
-          className="bg-gray-800 text-white px-3 py-2 rounded-md text-sm"
-        >
+        <TooltipContent side="top" className="px-3 py-2 rounded-md text-sm">
           {getTooltipContent()}
         </TooltipContent>
       </Tooltip>

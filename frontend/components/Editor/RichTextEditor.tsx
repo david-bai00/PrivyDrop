@@ -129,7 +129,7 @@ const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = "" }) => {
     <div className="w-full space-x-2 mb-4">
       <div className="border rounded-lg shadow-sm overflow-hidden">
         {/* Toolbar - Add light gray background and bottom border */}
-        <div className="flex flex-wrap gap-1 p-2 bg-gray-50 border-b">
+        <div className="flex flex-wrap gap-1 p-2 bg-muted border-b border-border">
           {/* Basic format tool group */}
           <BasicFormatTools
             isStyleActive={isStyleActive}
@@ -158,10 +158,10 @@ const RichTextEditor: React.FC<EditorProps> = ({ onChange, value = "" }) => {
           />
         </div>
 
-        {/* Editor area - Add pure white background and inner shadow effect */}
+        {/* Editor area - use theme tokens for background */}
         <div
           ref={editorRef}
-          className="p-4 min-h-[200px] md:min-h-[400px] focus:outline-none bg-white shadow-inner"
+          className="p-4 min-h-[200px] md:min-h-[400px] focus:outline-none bg-card shadow-inner"
           contentEditable
           onPaste={handlePaste}
           onInput={handleChange}

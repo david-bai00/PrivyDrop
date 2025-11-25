@@ -14,21 +14,21 @@ export function InsertTools({
   return (
     <div className="flex flex-wrap gap-1">
       <button
-        className="p-1.5 hover:bg-gray-200 rounded"
+        className="p-1.5 hover:bg-accent rounded"
         onClick={insertLink}
         title="Insert url"
       >
         <Link2 className="w-3.5 h-3.5" />
       </button>
       <button
-        className="p-1.5 hover:bg-gray-200 rounded"
+        className="p-1.5 hover:bg-accent rounded"
         onClick={insertImage}
         title="Upload image"
       >
         <Image className="w-3.5 h-3.5" />
       </button>
       <button
-        className="p-1.5 hover:bg-gray-200 rounded"
+        className="p-1.5 hover:bg-accent rounded"
         onClick={insertCodeBlock}
         title="Insert code"
       >

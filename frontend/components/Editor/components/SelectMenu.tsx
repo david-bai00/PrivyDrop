@@ -10,7 +10,7 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
 }) => (
   <div className="relative inline-block">
     <select
-      className={`appearance-none bg-transparent border rounded p-1.5 pr-6 hover:bg-gray-200 focus:outline-none ${className}`}
+      className={`appearance-none bg-transparent border border-border rounded p-1.5 pr-6 hover:bg-accent focus:outline-none ${className}`}
       onChange={(e) => onChange(e.target.value)}
     >
       <option value="">{placeholder}</option>

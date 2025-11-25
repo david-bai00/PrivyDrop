@@ -120,21 +120,21 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
     return <div>Loading...</div>;
   }
   return (
-    <div className="bg-blue-50 p-2 sm:p-4 rounded-lg border border-blue-200">
-      <p className="text-blue-700 mb-3 sm:mb-4 text-sm sm:text-base">
+    <div className="bg-primary/10 p-2 sm:p-4 rounded-lg border border-primary/20">
+      <p className="text-primary mb-3 sm:mb-4 text-sm sm:text-base">
         {messages.text.RetrieveMethod.P}
       </p>
 
       {/* Mobile-first responsive layout */}
       <div className="space-y-3 sm:space-y-4">
         {/* RoomID section */}
-        <div className="bg-white p-2 sm:p-3 rounded-lg border border-blue-100">
+        <div className="bg-card p-2 sm:p-3 rounded-lg border border-border">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-700">
+            <p className="text-sm font-medium text-foreground">
               {messages.text.RetrieveMethod.RoomId_tips}
             </p>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <code className="flex-1 bg-gray-100 px-2 py-1 rounded text-sm font-mono break-all">
+              <code className="flex-1 bg-muted px-2 py-1 rounded text-sm font-mono break-all">
                 {RoomID}
               </code>
               <WriteClipboardButton
@@ -146,12 +146,12 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
         </div>
 
         {/* URL section */}
-        <div className="bg-white p-2 sm:p-3 rounded-lg border border-blue-100">
+        <div className="bg-card p-2 sm:p-3 rounded-lg border border-border">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-700">
+            <p className="text-sm font-medium text-foreground">
               {messages.text.RetrieveMethod.url_tips}
             </p>
-            <div className="bg-gray-100 px-2 py-2 rounded text-xs sm:text-sm break-all font-mono">
+            <div className="bg-muted px-2 py-2 rounded text-xs sm:text-sm break-all font-mono">
               {shareLink}
             </div>
             <div className="flex justify-start">
@@ -164,15 +164,15 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
         </div>
 
         {/* QR Code section */}
-        <div className="bg-white p-2 sm:p-3 rounded-lg border border-blue-100">
+        <div className="bg-card p-2 sm:p-3 rounded-lg border border-border">
           <div className="space-y-3">
-            <p className="text-sm font-medium text-gray-700">
+            <p className="text-sm font-medium text-foreground">
               {messages.text.RetrieveMethod.scanQR_tips}
             </p>
 
             {/* QR Code display area - moved up for better mobile UX */}
             <div className="flex justify-center">
-              <div className="inline-block border-2 p-2 sm:p-4 bg-gray-50 rounded-lg">
+              <div className="inline-block border-2 p-2 sm:p-4 bg-muted rounded-lg">
                 <div ref={qrRef}>
                   <QRCodeSVG
                     value={shareLink}

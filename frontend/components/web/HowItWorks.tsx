@@ -33,7 +33,7 @@ export default function HowItWorks({ messages }: PageContentProps) {
         <h2 className="text-3xl md:text-4xl font-bold mb-6">
           {messages.text.HowItWorks.h2}
         </h2>
-        <p className="text-gray-600 mb-8">{messages.text.HowItWorks.h2_P}</p>
+        <p className="text-muted-foreground mb-8">{messages.text.HowItWorks.h2_P}</p>
         <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-full px-8 py-6 text-lg">
           {messages.text.HowItWorks.btn_try}
         </Button>
@@ -60,7 +60,7 @@ export default function HowItWorks({ messages }: PageContentProps) {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold mb-2">{step.title}</h3>
-                  <p className="text-gray-600">{step.description}</p>
+                  <p className="text-muted-foreground">{step.description}</p>
                 </div>
               </div>
             ))}
@@ -69,7 +69,7 @@ export default function HowItWorks({ messages }: PageContentProps) {
 
         {/* Right Side - Demo Animation */}
         <div className="w-full md:w-1/2">
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className="bg-card rounded-lg shadow-lg overflow-hidden">
             <video autoPlay loop muted playsInline width="1920" height="75">
               <source src="/HowItWorks.webm" type="video/webm" />
             </video>

@@ -160,14 +160,14 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
   return (
     <>
       <div
-        className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer"
+        className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer"
         onClick={handleZoneClick}
       >
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-muted-foreground mb-4">
           {messages.text.fileUploadHandler.chooseFileTips}
         </p>
-        <Upload className="h-12 w-12 mx-auto mb-4 text-blue-500" />
-        <p className="text-sm text-gray-600">{fileText}</p>
+        <Upload className="h-12 w-12 mx-auto mb-4 text-primary" />
+        <p className="text-sm text-muted-foreground">{fileText}</p>
 
         <Input
           id="file-upload"
@@ -202,13 +202,13 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
           <div className="flex justify-center gap-4 mt-6">
             <button
               onClick={handleSelectFile}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              className="px-4 py-2 rounded transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {messages.text.fileUploadHandler.SelectFile_dis}
             </button>
             <button
               onClick={handleSelectFolder}
-              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+              className="px-4 py-2 rounded transition-colors bg-secondary text-secondary-foreground hover:bg-secondary/80"
             >
               {messages.text.fileUploadHandler.SelectFolder_dis}
             </button>

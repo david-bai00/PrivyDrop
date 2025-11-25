@@ -111,7 +111,7 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
   if (toc.length === 0) return null;
 
   return (
-    <nav className="hidden lg:block sticky top-8 p-6 bg-gray-50 rounded-lg max-h-[calc(100vh-4rem)] overflow-y-auto">
+    <nav className="hidden lg:block sticky top-8 p-6 bg-muted rounded-lg max-h-[calc(100vh-4rem)] overflow-y-auto">
       <h4 className="text-lg font-semibold mb-4">{title}</h4>
       <ul className="space-y-2">
         {toc.map((item) => (
@@ -125,10 +125,10 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
             <button
               onClick={() => scrollToHeader(item.id)}
               className={clsx(
-                "block w-full text-left py-1 text-sm hover:text-blue-600 transition-colors",
+                "block w-full text-left py-1 text-sm hover:text-primary transition-colors",
                 activeId === item.id
-                  ? "text-blue-600 font-medium"
-                  : "text-gray-600"
+                  ? "text-primary font-medium"
+                  : "text-muted-foreground"
               )}
             >
               {item.text}

@@ -88,7 +88,7 @@ export const mdxOptions = {
             if (node.tagName === "table") {
               (node as ExtendedElement).properties = {
                 ...((node as ExtendedElement).properties || {}),
-                className: "min-w-full divide-y divide-gray-300",
+                className: "min-w-full divide-y divide-border",
               };
             }
           }) as BuildVisitor<Root, "element">);

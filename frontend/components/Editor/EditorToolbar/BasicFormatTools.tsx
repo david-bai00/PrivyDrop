@@ -14,7 +14,7 @@ export function BasicFormatTools({
     <div className="flex flex-wrap gap-1">
       <button
         className={`p-1.5 rounded ${
-          isStyleActive("bold") ? "bg-gray-200" : "hover:bg-gray-200"
+          isStyleActive("bold") ? "bg-accent" : "hover:bg-accent"
         }`}
         onClick={() => formatText("bold")}
         title="Bold"
@@ -23,7 +23,7 @@ export function BasicFormatTools({
       </button>
       <button
         className={`p-1.5 rounded ${
-          isStyleActive("italic") ? "bg-gray-200" : "hover:bg-gray-200"
+          isStyleActive("italic") ? "bg-accent" : "hover:bg-accent"
         }`}
         onClick={() => formatText("italic")}
         title="Italic"
@@ -32,7 +32,7 @@ export function BasicFormatTools({
       </button>
       <button
         className={`p-1.5 rounded ${
-          isStyleActive("underline") ? "bg-gray-200" : "hover:bg-gray-200"
+          isStyleActive("underline") ? "bg-accent" : "hover:bg-accent"
         }`}
         onClick={() => formatText("underline")}
         title="Underline"

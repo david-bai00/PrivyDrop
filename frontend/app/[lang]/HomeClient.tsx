@@ -50,13 +50,13 @@ export default function HomeClient({ messages, lang }: PageContentProps) {
           <h2 className="text-3xl font-bold mb-6 text-center">
             {messages.text.home.h2_demo}
           </h2>
-          <p className="text-center mb-6 text-gray-600">
+          <p className="text-center mb-6 text-muted-foreground">
             {messages.text.home.h2P_demo}
           </p>
           <YouTubePlayer videoId={youtube_videoId} />
 
           <div className="mt-4 text-center">
-            <p className="mb-3 text-gray-700">
+            <p className="mb-3 text-foreground">
               {messages.text.home.watch_tips}
             </p>
             <a

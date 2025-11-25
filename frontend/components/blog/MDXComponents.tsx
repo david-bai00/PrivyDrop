@@ -71,7 +71,7 @@ export type MDXComponents = {
 // Custom MDX components
 export const mdxComponents: MDXComponents = {
   p: ({ children, ...props }) => (
-    <div className="mb-6 leading-relaxed text-gray-700" {...props}>
+    <div className="mb-6 leading-relaxed text-foreground" {...props}>
       {children}
     </div>
   ),
@@ -92,7 +92,7 @@ export const mdxComponents: MDXComponents = {
           alt={props.alt || ""}
         />
         {props.alt && (
-          <div className="text-center text-sm text-gray-600 mt-2 italic">
+          <div className="text-center text-sm text-muted-foreground mt-2 italic">
             {props.alt}
           </div>
         )}
@@ -101,7 +101,7 @@ export const mdxComponents: MDXComponents = {
   },
   pre: ({ children, ...props }) => (
     <pre
-      className="relative my-6 rounded-lg bg-gray-50 border border-gray-200 p-4 overflow-x-auto"
+      className="relative my-6 rounded-lg bg-muted border border-border p-4 overflow-x-auto"
       {...props}
     >
       {children}
@@ -111,13 +111,13 @@ export const mdxComponents: MDXComponents = {
     const isInlineCode = !className;
     return isInlineCode ? (
       <code
-        className="bg-gray-50 rounded px-1.5 py-0.5 text-gray-800 border border-gray-200 text-sm"
+        className="bg-muted rounded px-1.5 py-0.5 text-foreground border border-border text-sm"
         {...props}
       >
         {children}
       </code>
     ) : (
-      <code className="block text-gray-800 text-sm" {...props}>
+      <code className="block text-foreground text-sm" {...props}>
         {children}
       </code>
     );
@@ -125,7 +125,7 @@ export const mdxComponents: MDXComponents = {
   table: ({ children, ...props }) => (
     <div className="my-8 w-full overflow-x-auto">
       <table
-        className="min-w-full divide-y divide-gray-300 border border-gray-300"
+        className="min-w-full divide-y divide-border border border-border"
         {...props}
       >
         {children}
@@ -133,23 +133,23 @@ export const mdxComponents: MDXComponents = {
     </div>
   ),
   thead: ({ children, ...props }) => (
-    <thead className="bg-gray-50" {...props}>
+    <thead className="bg-muted" {...props}>
       {children}
     </thead>
   ),
   tbody: ({ children, ...props }) => (
-    <tbody className="divide-y divide-gray-200 bg-white" {...props}>
+    <tbody className="divide-y divide-border bg-card" {...props}>
       {children}
     </tbody>
   ),
   tr: ({ children, ...props }) => (
-    <tr className="hover:bg-gray-50" {...props}>
+    <tr className="hover:bg-accent" {...props}>
       {children}
     </tr>
   ),
   th: ({ children, ...props }) => (
     <th
-      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r last:border-r-0"
+      className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r last:border-r-0"
       {...props}
     >
       {children}
@@ -157,7 +157,7 @@ export const mdxComponents: MDXComponents = {
   ),
   td: ({ children, ...props }) => (
     <td
-      className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r last:border-r-0"
+      className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground border-r last:border-r-0"
       {...props}
     >
       {children}
@@ -165,7 +165,7 @@ export const mdxComponents: MDXComponents = {
   ),
   blockquote: ({ children, ...props }) => (
     <blockquote
-      className="border-l-4 border-blue-500 pl-4 my-4 italic text-gray-600 bg-gray-50 py-2 rounded-r-lg"
+      className="border-l-4 border-primary pl-4 my-4 italic text-muted-foreground bg-muted py-2 rounded-r-lg"
       {...props}
     >
       {children}
@@ -173,7 +173,7 @@ export const mdxComponents: MDXComponents = {
   ),
   ul: ({ children, ...props }) => (
     <ul
-      className="list-disc list-outside ml-6 my-6 space-y-2 text-gray-700"
+      className="list-disc list-outside ml-6 my-6 space-y-2 text-foreground"
       {...props}
     >
       {children}
@@ -181,7 +181,7 @@ export const mdxComponents: MDXComponents = {
   ),
   ol: ({ children, ...props }) => (
     <ol
-      className="list-decimal list-outside ml-6 my-6 space-y-2 text-gray-700"
+      className="list-decimal list-outside ml-6 my-6 space-y-2 text-foreground"
       {...props}
     >
       {children}

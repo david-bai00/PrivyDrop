@@ -98,7 +98,7 @@ export function RetrieveTabPanel({
 
   return (
     <div id="retrieve-panel" role="tabpanel" aria-labelledby="retrieve-tab">
-      <div className="mb-3 text-sm text-gray-600">
+      <div className="mb-3 text-sm text-muted-foreground">
         {retrieveRoomStatusText ||
           (isReceiverInRoom
             ? messages.text.ClipboardApp.roomStatus.connected_dis
@@ -178,7 +178,7 @@ export function RetrieveTabPanel({
         saveType={getReceiverSaveType()}
       />
       {retrieveMessage && (
-        <p className="mt-3 text-sm text-blue-600">{retrieveMessage}</p>
+        <p className="mt-3 text-sm text-primary">{retrieveMessage}</p>
       )}
     </div>
   );

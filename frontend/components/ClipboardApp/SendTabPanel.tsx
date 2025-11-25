@@ -21,7 +21,7 @@ const RichTextEditor = dynamic(
   {
     ssr: false, // This component is client-side only
     loading: () => (
-      <div className="p-4 border rounded-lg min-h-[200px] md:min-h-[400px] bg-gray-50 flex items-center justify-center">
+      <div className="p-4 border rounded-lg min-h-[200px] md:min-h-[400px] bg-muted flex items-center justify-center">
         Loading Editor...
       </div>
     ),
@@ -136,7 +136,7 @@ export function SendTabPanel({
 
   return (
     <div id="send-panel" role="tabpanel" aria-labelledby="send-tab">
-      <div className="mb-3 text-sm text-gray-600">
+      <div className="mb-3 text-sm text-muted-foreground">
         {shareRoomStatusText ||
           (isSenderInRoom
             ? messages.text.ClipboardApp.roomStatus.onlyOneMsg
@@ -166,7 +166,7 @@ export function SendTabPanel({
       <div className="space-y-3 mb-4">
         {/* Room ID input section */}
         <div className="space-y-2">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             {messages.text.ClipboardApp.html.inputRoomId_tips}
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -243,7 +243,7 @@ export function SendTabPanel({
         </div>
       </div>
       {shareMessage && (
-        <p className="mt-3 text-sm text-blue-600">{shareMessage}</p>
+        <p className="mt-3 text-sm text-primary">{shareMessage}</p>
       )}
     </div>
   );

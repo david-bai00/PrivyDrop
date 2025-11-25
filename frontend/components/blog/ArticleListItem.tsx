@@ -11,7 +11,7 @@ interface ArticleListItemProps {
 
 export function ArticleListItem({ post, lang, messages }: ArticleListItemProps) {
   return (
-    <article className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
+    <article className="bg-card rounded-xl shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
       <div className="relative h-80 w-full">
         <Image
           src={post.frontmatter.cover}
@@ -24,7 +24,7 @@ export function ArticleListItem({ post, lang, messages }: ArticleListItemProps) 
       </div>
 
       <div className="p-8">
-        <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
           <time className="font-medium">
             {new Date(post.frontmatter.date).toLocaleDateString(lang, {
               year: "numeric",
@@ -37,7 +37,7 @@ export function ArticleListItem({ post, lang, messages }: ArticleListItemProps) 
             {post.frontmatter.tags.map((tag) => (
               <span
                 key={tag}
-                className="bg-gray-100 px-3 py-1 rounded-full hover:bg-gray-200 transition-colors"
+                className="bg-muted px-3 py-1 rounded-full hover:bg-accent transition-colors"
               >
                 {tag}
               </span>
@@ -45,19 +45,19 @@ export function ArticleListItem({ post, lang, messages }: ArticleListItemProps) 
           </div>
         </div>
         <Link href={`/${lang}/blog/${post.slug}`}>
-          <h2 className="text-3xl font-bold mb-4 hover:text-blue-600 transition-colors leading-tight">
+          <h2 className="text-3xl font-bold mb-4 hover:text-primary transition-colors leading-tight">
             {post.frontmatter.title}
           </h2>
         </Link>
 
-        <p className="text-gray-600 mb-6 text-lg leading-relaxed line-clamp-3">
+        <p className="text-muted-foreground mb-6 text-lg leading-relaxed line-clamp-3">
           {post.frontmatter.description}
         </p>
 
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+        <div className="flex items-center justify-between pt-4 border-t border-border">
           <Link
             href={`/${lang}/blog/${post.slug}`}
-            className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center text-lg"
+            className="text-primary hover:text-primary/80 font-medium inline-flex items-center text-lg"
           >
             {messages.text.blog.read_more}
             <svg

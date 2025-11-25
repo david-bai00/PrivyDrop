@@ -51,7 +51,7 @@ export default async function TagPage({
         <main className="lg:col-span-8">
           <div className="mb-12">
             <h1 className="text-4xl font-bold mb-4">{messages.text.blog.tag_title_prefix}: {decodedTag}</h1>
-            <p className="text-gray-600 text-lg">
+            <p className="text-muted-foreground text-lg">
               {messages.text.blog.tag_subtitle_template.replace("{tag}", decodedTag)}
             </p>
           </div>

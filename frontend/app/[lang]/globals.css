@@ -69,15 +69,16 @@
 }
 
 /* Custom prose styles */
+
 .prose {
-  @apply text-gray-600;
+  @apply text-muted-foreground;
 }
 
 .prose h1,
 .prose h2,
 .prose h3,
 .prose h4 {
-  @apply text-gray-900 font-bold mt-8 mb-4;
+  @apply text-foreground font-bold mt-8 mb-4;
 }
 
 .prose h1 {
@@ -106,31 +107,31 @@
 }
 
 .prose code {
-  @apply text-sm bg-gray-50 rounded px-1.5 py-0.5 text-gray-800 border border-gray-200;
+  @apply text-sm bg-muted rounded px-1.5 py-0.5 text-foreground border border-border;
 }
 
 .prose pre {
-  @apply my-6 p-4 bg-gray-50 rounded-lg overflow-x-auto border border-gray-200;
+  @apply my-6 p-4 bg-muted rounded-lg overflow-x-auto border border-border;
 }
 
 .prose pre code {
-  @apply bg-transparent text-gray-800 p-0 border-0;
+  @apply bg-transparent text-foreground p-0 border-0;
 }
 
 .prose blockquote {
-  @apply border-l-4 border-blue-500 pl-4 my-6 italic text-gray-600;
+  @apply border-l-4 border-primary pl-4 my-6 italic text-muted-foreground;
 }
 
 .prose table {
-  @apply min-w-full divide-y divide-gray-200 my-6;
+  @apply min-w-full divide-y divide-border my-6;
 }
 
 .prose th {
-  @apply px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+  @apply px-6 py-3 bg-muted text-left text-xs font-medium text-muted-foreground uppercase tracking-wider;
 }
 
 .prose td {
-  @apply px-6 py-4 whitespace-nowrap text-sm text-gray-500;
+  @apply px-6 py-4 whitespace-nowrap text-sm text-muted-foreground;
 }
 
 .prose img {
@@ -138,7 +139,7 @@
 }
 
 .prose figure figcaption {
-  @apply text-center text-sm text-gray-600 mt-2 italic;
+  @apply text-center text-sm text-muted-foreground mt-2 italic;
 }
 
 /* Hide GitHub ribbon on small screens */

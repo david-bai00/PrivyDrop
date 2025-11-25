@@ -394,7 +394,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
     return (
       <div
         key={item.name}
-        className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2 p-2 sm:p-3 border border-gray-100 rounded-lg"
+        className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2 p-2 sm:p-3 border border-border rounded-lg"
       >
         <Tooltip content={tooltipContent}>
           <div className="flex-1 min-w-0">
@@ -404,7 +404,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
                 ? `${item.name.slice(0, filenameDisplayLen - 3)}...`
                 : item.name}
             </span>
-            <span className="text-xs sm:text-sm text-gray-500">
+            <span className="text-xs sm:text-sm text-muted-foreground">
               {isFolder
                 ? `${formatFolderDis(
                     messages!.text.FileListDisplay.folder_dis_template,

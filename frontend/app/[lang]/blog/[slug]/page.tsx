@@ -59,10 +59,10 @@ export default async function BlogPost({
         {/* Article content area */}
         <article className="w-full md:flex-1 max-w-4xl">
           <header className="mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-foreground">
               {post.frontmatter.title}
             </h1>
-            <div className="flex flex-wrap items-center text-gray-600 gap-2 sm:gap-4">
+            <div className="flex flex-wrap items-center text-muted-foreground gap-2 sm:gap-4">
               <time className="text-sm">
                 {new Date(post.frontmatter.date).toLocaleDateString(params.lang, {
                   year: "numeric",
@@ -83,7 +83,7 @@ export default async function BlogPost({
               components={{
                 ...mdxComponents,
                 wrapper: ({ children }) => (
-                  <div className="space-y-4 text-gray-700 overflow-x-auto">
+                  <div className="space-y-4 text-foreground overflow-x-auto">
                     {children}
                   </div>
                 ),
