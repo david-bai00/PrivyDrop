@@ -89,6 +89,15 @@
    - `answer` → 后端 → 转发给对端。
    - `ice-candidate` → 后端 → 转发给对端。
 
+### Join 成功条件与超时策略（前端容错增强）
+
+- 首选成功条件：收到 `joinResponse(success=true)`（后端完成房间校验与 socket↔room 绑定）。
+- 等效成功信号（容错，任一满足即判定已入房并清理监听/定时器）：
+  - 发起方（Initiator）：收到 `ready` 或 `recipient-ready`；
+  - 接收方（Recipient）：收到 `offer`。
+- 超时时间：15 秒。用于兼容弱网、移动端与 Socket.IO 轮询降级造成的 joinResponse 迟到。
+- 说明：`ready/recipient-ready` 为房间广播事件，`offer` 为点对点握手起点；能收到这些事件即表明“已在房间且握手已开始”，可视为等效成功，避免“Join room timeout”的误报。
+
 重连机制细节（移动端网络切换支持）：
 
 - **双重断开检测**：Socket.IO 断开触发 `disconnect` 事件 → 标记 `isSocketDisconnected = true`；P2P 连接断开触发 `disconnected` 状态 → 标记 `isPeerDisconnected = true`，自动调用 `cleanupExistingConnection()` 清理资源
@@ -152,6 +161,7 @@ Socket.IO 事件处理流程：
   - WebRTC 数据类型兼容性：支持 `ArrayBuffer`/`Blob`/`Uint8Array`/`TypedArray` 多种格式，解决 Firefox 兼容性问题
   - 连接状态监控：`connectionState` 变化时触发相应的处理逻辑（connected/disconnected/failed/closed）
   - 背压控制：DataChannel 设置 `bufferedAmountLowThreshold = 256KB`，发送时检查 `bufferedAmount` 状态
+  - Join 误报识别：若出现“Join room timeout”但紧接着能看到 `offer/answer/connected` 等日志，通常是 joinResponse 迟到所致，并非真实失败；15 秒超时窗口与“等效成功信号”会自动纠偏。
 
 ## 6）前端组件系统与业务中枢协作流程
 

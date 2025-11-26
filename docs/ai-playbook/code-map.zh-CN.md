@@ -53,7 +53,7 @@
 - `frontend/lib/` — 核心库与工具。
 
   - WebRTC 基础与角色
-    - `frontend/lib/webrtc_base.ts` — WebRTC 基础类，提供 Socket.IO 信令、RTCPeerConnection 管理、ICE 候选者队列、双重断开检测重连机制、唤醒锁管理、数据通道发送重试（5 次递增间隔）、优雅断开跟踪（gracefullyDisconnectedPeers Set）和多格式数据类型兼容性支持（ArrayBuffer/Blob/Uint8Array/TypedArray）。
+    - `frontend/lib/webrtc_base.ts` — WebRTC 基础类，提供 Socket.IO 信令、RTCPeerConnection 管理、ICE 候选者队列、双重断开检测重连机制、唤醒锁管理、数据通道发送重试（5 次递增间隔）、优雅断开跟踪（gracefullyDisconnectedPeers Set）和多格式数据类型兼容性支持（ArrayBuffer/Blob/Uint8Array/TypedArray）。加入房间（joinRoom）采用 15 秒超时，并在 join 未返回时启用“等效成功信号”提前判定成功：Initiator 收到 `ready/recipient-ready`，Recipient 收到 `offer`；触发后立即设置 inRoom 并清理监听/定时器，降低弱网下误报。
     - `frontend/lib/webrtc_Initiator.ts` — 发起方实现，处理`ready`/`recipient-ready`事件，创建 RTCPeerConnection 和主动式 DataChannel，发送 offer，处理 answer 响应，支持 256KB 缓冲阈值配置。
     - `frontend/lib/webrtc_Recipient.ts` — 接收方实现，处理`offer`事件，创建 RTCPeerConnection 和响应式 DataChannel（ondatachannel），生成并发送 answer，处理`initiator-online`重连信号和现有连接清理。
     - `frontend/lib/webrtcService.ts` — WebRTC 服务单例封装（跨路由常驻），管理 sender/receiver 实例，提供统一业务接口，处理连接状态变更、数据广播、文件请求和连接断开清理。
