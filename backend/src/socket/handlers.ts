@@ -59,8 +59,10 @@ export function setupSocketHandlers(io: Server): void {
           message: "Successfully joined room",
           roomId: targetRoomId,
         });
+        console.log(`[sig] join ok socket:${socket.id} room:${targetRoomId}`);
         // Notify all other users in the room that a new member has joined
         socket.to(targetRoomId).emit("ready", { peerId: socket.id });
+        console.log(`[sig] ready broadcast room:${targetRoomId} from:${socket.id}`);
       } catch (error) {
         console.error("Error joining room:", error);
         socket.emit("joinResponse", {
@@ -75,40 +77,54 @@ export function setupSocketHandlers(io: Server): void {
     // offer: When a client initiates a connection request, it sends an offer to the server, which forwards it to other clients in the same room.
     // answer: The invited client receives the offer, generates an answer, and sends it back to the initiating client via the server.
     // ice-candidate: When WebRTC needs to traverse NAT firewalls, it generates ICE candidates. Clients exchange this information through the server to help establish a P2P connection.
-    socket.on("offer", (data: SignalingData) => {
+    socket.on("offer", async (data: SignalingData) => {
       socket.to(data.peerId).emit("offer", {
         offer: data.offer,
         from: data.from,
         peerId: socket.id, // Sender's ID
       });
+      try {
+        const r = await roomService.getRoomBySocketId(socket.id);
+        console.log(`[sig] offer from:${socket.id} -> to:${data.peerId} room:${r || "?"}`);
+      } catch (_) {}
     });
 
-    socket.on("answer", (data: SignalingData) => {
+    socket.on("answer", async (data: SignalingData) => {
       socket.to(data.peerId).emit("answer", {
         answer: data.answer,
         from: data.from,
         peerId: socket.id,
       });
+      try {
+        const r = await roomService.getRoomBySocketId(socket.id);
+        console.log(`[sig] answer from:${socket.id} -> to:${data.peerId} room:${r || "?"}`);
+      } catch (_) {}
     });
 
-    socket.on("ice-candidate", (data: SignalingData) => {
+    socket.on("ice-candidate", async (data: SignalingData) => {
       socket.to(data.peerId).emit("ice-candidate", {
         candidate: data.candidate,
         from: data.from,
         peerId: socket.id,
       });
+      try {
+        const r = await roomService.getRoomBySocketId(socket.id);
+        console.log(`[sig] candidate from:${socket.id} -> to:${data.peerId} room:${r || "?"}`);
+      } catch (_) {}
     });
     // Handle notification for initiator coming back online -- broadcast to other users in the room
     socket.on("initiator-online", (data: InitiatorData) => {
       socket.to(data.roomId).emit("initiator-online", {
         roomId: data.roomId,
       });
+      console.log(`[sig] initiator-online room:${data.roomId} from:${socket.id}`);
     });
     // Handle recipient's response
     socket.on("recipient-ready", (data: RecipientData) => {
       socket.to(data.roomId).emit("recipient-ready", {
         peerId: data.peerId,
       });
+      console.log(`[sig] recipient-ready room:${data.roomId} peer:${data.peerId}`);
     });
 
     socket.on("disconnect", async () => {
@@ -117,6 +133,7 @@ export function setupSocketHandlers(io: Server): void {
       if (roomId) {
         // Notify other users in the room that this peer has left
         socket.to(roomId).emit("peer-disconnected", { peerId: socket.id });
+        console.log(`[sig] peer-disconnected room:${roomId} peer:${socket.id}`);
         await roomService.unbindSocketFromRoom(socket.id, roomId);
         if (await roomService.isRoomEmpty(roomId)) {
           // await deleteRoom(roomId);

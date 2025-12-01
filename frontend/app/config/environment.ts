@@ -20,10 +20,10 @@ export const getIceServers = () => {
     if (!config.TURN_HOST || !config.TURN_USERNAME || !config.TURN_CREDENTIAL) {
       console.warn(
         "TURN server configuration incomplete in HTTPS environment. " +
-        "Please set NEXT_PUBLIC_TURN_HOST, NEXT_PUBLIC_TURN_USERNAME, and NEXT_PUBLIC_TURN_PASSWORD " +
-        "environment variables for better connectivity. Falling back to Google STUN server."
+          "Please set NEXT_PUBLIC_TURN_HOST, NEXT_PUBLIC_TURN_USERNAME, and NEXT_PUBLIC_TURN_PASSWORD " +
+          "environment variables for better connectivity. Falling back to Google STUN server."
       );
-      
+
       // Fallback to Google STUN server
       iceServers.push({
         urls: "stun:stun.l.google.com:19302",
@@ -35,12 +35,12 @@ export const getIceServers = () => {
           urls: `stun:${config.TURN_HOST}:3478`,
         },
         {
-          urls: `turns:${config.TURN_HOST}:443`,
+          urls: `turns:${config.TURN_HOST}:443?transport=tcp`,
           username: config.TURN_USERNAME,
           credential: config.TURN_CREDENTIAL,
         },
         {
-          urls: `turn:${config.TURN_HOST}:3478`,
+          urls: `turn:${config.TURN_HOST}:3478?transport=tcp`,
           username: config.TURN_USERNAME,
           credential: config.TURN_CREDENTIAL,
         }

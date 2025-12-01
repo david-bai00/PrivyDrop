@@ -2,11 +2,8 @@ import WebRTC_Initiator from "@/lib/webrtc_Initiator";
 import WebRTC_Recipient from "@/lib/webrtc_Recipient";
 import FileSender from "@/lib/fileSender";
 import FileReceiver from "@/lib/fileReceiver";
-import {
-  getIceServers,
-  getSocketOptions,
-  config,
-} from "@/app/config/environment";
+import { getIceServers, getSocketOptions, config } from "@/app/config/environment";
+import { postLogToBackend } from "@/app/config/api";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 
 class WebRTCService {
@@ -46,6 +43,7 @@ class WebRTCService {
     // Sender event handling
     this.sender.onConnectionStateChange = (state, peerId) => {
       console.log(`[WebRTC Service] Sender connection state: ${state} for peer ${peerId}`);
+      try { postLogToBackend(`[WebRTC Service] sender state:${state} peer:${peerId} peers:${this.sender.peerConnections.size}`); } catch (_) {}
       
       useFileTransferStore.getState().setShareConnectionState(state as any);
       if (state === "connected") {
@@ -67,11 +65,13 @@ class WebRTCService {
       useFileTransferStore.getState().setIsSenderInRoom(true);
       // Automatically broadcast current content
       this.broadcastDataToAllPeers();
+      try { postLogToBackend(`[WebRTC Service] Sender datachannel open`); } catch (_) {}
     };
 
     this.sender.onPeerDisconnected = (peerId) => {
       console.log(`[WebRTC Service] Sender peer disconnected: ${peerId}`);
       this.handleConnectionDisconnect(peerId, true, "PEER_DISCONNECTED");
+      try { postLogToBackend(`[WebRTC Service] sender peer disconnected:${peerId}`); } catch (_) {}
     };
 
     this.sender.onError = (error) => {
@@ -83,6 +83,7 @@ class WebRTCService {
     // Receiver event handling
     this.receiver.onConnectionStateChange = (state, peerId) => {
       console.log(`[WebRTC Service] Receiver connection state: ${state} for peer ${peerId}`);
+      try { postLogToBackend(`[WebRTC Service] receiver state:${state} peer:${peerId} peers:${this.receiver.peerConnections.size}`); } catch (_) {}
       
       useFileTransferStore.getState().setRetrieveConnectionState(state as any);
 
@@ -105,11 +106,13 @@ class WebRTCService {
       this.fileSender.handlePeerReconnection(peerId);
       useFileTransferStore.getState().setSenderDisconnected(false);
       useFileTransferStore.getState().setIsReceiverInRoom(true);
+      try { postLogToBackend(`[WebRTC Service] receiver onConnectionEstablished peer:${peerId}`); } catch (_) {}
     };
 
     this.receiver.onPeerDisconnected = (peerId) => {
       console.log(`[WebRTC Service] Receiver peer disconnected: ${peerId}`);
       this.handleConnectionDisconnect(peerId, false, "PEER_DISCONNECTED");
+      try { postLogToBackend(`[WebRTC Service] receiver peer disconnected:${peerId}`); } catch (_) {}
     };
 
     this.fileReceiver.onStringReceived = (data) => {

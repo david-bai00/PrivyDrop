@@ -98,6 +98,30 @@ export default class BaseWebRTC {
     this.wakeLockManager = new WakeLockManager();
     this.lastJoinedSocketId = null;
   }
+
+  // region Debug helpers (always on: simple API posting without buffering)
+  protected dbg(message: string, data?: Record<string, any>) {
+    try {
+      const suffix = data ? ` ${JSON.stringify(data)}` : "";
+      // fire-and-forget
+      postLogToBackend(`[${(this as any).constructor?.name || "BaseWebRTC"}] ${message}${suffix}`);
+    } catch (_) {
+      // swallow
+    }
+  }
+
+  private static parseCandidateType(candidate?: string): string | undefined {
+    if (!candidate) return undefined;
+    const m = candidate.match(/ typ ([a-zA-Z]+)/);
+    return m?.[1];
+  }
+
+  private static parseCandidateProto(candidate?: string): string | undefined {
+    if (!candidate) return undefined;
+    const m = candidate.match(/ (udp|tcp) /);
+    return m?.[1];
+  }
+  // endregion
   // region Logging and Error Handling
   protected log(
     level: "log" | "warn" | "error",
@@ -120,6 +144,11 @@ export default class BaseWebRTC {
       this.peerId = this.socket.id; // Save own ID
       this.isSocketDisconnected = false;
       this.log("log", `Connected to signaling server, peerId: ${this.peerId}`);
+      this.dbg("socket connect", {
+        peerId: this.peerId,
+        isInitiator: this.isInitiator,
+        roomId: this.roomId,
+      });
 
       // Auto re-join if we previously joined a room but socket.id changed
       const hasRoom = !!this.roomId;
@@ -160,16 +189,23 @@ export default class BaseWebRTC {
     this.socket.on("ice-candidate", ({ candidate, peerId, from }) => {
       // Recipient's peerId
       // console.log(`Received ICE candidate from ${from} for ${peerId}`);
+      try {
+        this.dbg("signaling: ice-candidate received", {
+          from,
+          forPeer: peerId,
+          type: BaseWebRTC.parseCandidateType(candidate?.candidate),
+          proto: BaseWebRTC.parseCandidateProto(candidate?.candidate),
+        });
+      } catch (_) {}
       this.handleIceCandidate({ candidate, peerId, from });
     });
     // Add listener for socket disconnection
     this.socket.on("disconnect", () => {
       this.isInRoom = false;
       this.isSocketDisconnected = true;
-      if (developmentEnv === "development")
-        postLogToBackend(
-          `${this.peerId} disconnect on socket,isInitiator:${this.isInitiator},isInRoom:${this.isInRoom}`
-        );
+      postLogToBackend(
+        `${this.peerId} disconnect on socket,isInitiator:${this.isInitiator},isInRoom:${this.isInRoom}`
+      );
       // Attempt to reconnect. On mobile, switching to the background disconnects both P2P and socket connections.
       // The disconnect code executes upon returning, so reconnect directly here; send a new signal to start reconnection.
       this.attemptReconnection();
@@ -234,6 +270,12 @@ export default class BaseWebRTC {
         this.iceCandidatesQueue.set(from, []);
       }
       this.iceCandidatesQueue.get(from)?.push(candidate);
+      this.dbg("ice: queued (no peerConnection)", {
+        from,
+        type: BaseWebRTC.parseCandidateType(candidate?.candidate),
+        proto: BaseWebRTC.parseCandidateProto(candidate?.candidate),
+        queued: this.iceCandidatesQueue.get(from)?.length,
+      });
       return;
     }
     try {
@@ -244,6 +286,11 @@ export default class BaseWebRTC {
         peerConnection.connectionState !== "closed"
       ) {
         await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        this.dbg("ice: add ok", {
+          from,
+          type: BaseWebRTC.parseCandidateType(candidate?.candidate),
+          proto: BaseWebRTC.parseCandidateProto(candidate?.candidate),
+        });
         // this.log('log',`Successfully added ICE candidate for ${from}`);
       } else {
         // this.log('warn',`Remote description not set or connection closed for ${from}, queuing candidate`);
@@ -252,9 +299,16 @@ export default class BaseWebRTC {
           this.iceCandidatesQueue.set(from, []);
         }
         this.iceCandidatesQueue.get(from)?.push(candidate);
+        this.dbg("ice: queued (waiting remote description)", {
+          from,
+          type: BaseWebRTC.parseCandidateType(candidate?.candidate),
+          proto: BaseWebRTC.parseCandidateProto(candidate?.candidate),
+          queued: this.iceCandidatesQueue.get(from)?.length,
+        });
       }
     } catch (e) {
       this.fireError(`Error adding ICE candidate for ${from}`, { error: e });
+      this.dbg("ice: add failed", { from, error: (e as any)?.message || String(e) });
       // If adding fails, also add it to the queue
       if (!this.iceCandidatesQueue.has(from)) {
         this.iceCandidatesQueue.set(from, []);
@@ -278,24 +332,30 @@ export default class BaseWebRTC {
     ) {
       // this.log('log',`Adding ${candidates.length} queued candidates for ${peerId}`);
 
+      let ok = 0;
+      let fail = 0;
       for (const candidate of candidates) {
         try {
           await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+          ok += 1;
           // this.log('log',`Successfully added queued candidate for ${peerId}`);
         } catch (e) {
           this.fireError("Error adding queued ice candidates", {
             error: e,
             peerId,
           });
+          fail += 1;
         }
       }
       // Only clear the queue after successfully adding all candidates
       this.iceCandidatesQueue.delete(peerId);
+      this.dbg("ice: addQueued done", { peerId, tried: (ok + fail), ok, fail });
     } else {
       this.log(
         "warn",
         `Connection not ready for ${peerId}, keeping candidates queued`
       );
+      this.dbg("ice: keep queued (conn not ready)", { peerId, queued: candidates?.length || 0 });
       // this.log('warn',`remoteDescription`,peerConnection?.remoteDescription);
     }
   }
@@ -328,7 +388,40 @@ export default class BaseWebRTC {
           peerId: peerId,
           from: this.socket.id, // Add sender ID
         });
+        try {
+          const candStr = (event.candidate as any)?.candidate as string | undefined;
+          this.dbg("ice: local candidate", {
+            forPeer: peerId,
+            type: BaseWebRTC.parseCandidateType(candStr),
+            proto: BaseWebRTC.parseCandidateProto(candStr),
+          });
+        } catch (_) {}
       }
+    };
+
+    newPeerConnection.oniceconnectionstatechange = () => {
+      this.dbg("iceConnectionState change", {
+        peerId,
+        state: newPeerConnection.iceConnectionState,
+      });
+    };
+    (newPeerConnection as any).onicegatheringstatechange = () => {
+      this.dbg("iceGatheringState change", {
+        peerId,
+        state: (newPeerConnection as any).iceGatheringState,
+      });
+    };
+    newPeerConnection.onsignalingstatechange = () => {
+      this.dbg("signalingState change", {
+        peerId,
+        state: newPeerConnection.signalingState,
+      });
+    };
+    (newPeerConnection as any).onicecandidateerror = (e: any) => {
+      this.dbg("icecandidateerror", {
+        peerId,
+        error: e?.errorText || e?.message || String(e),
+      });
     };
 
     this.peerConnections.set(peerId, newPeerConnection);
@@ -342,6 +435,11 @@ export default class BaseWebRTC {
   ): void {
     const state = peerConnection.connectionState;
     // this.log('log','Connection state change:', state);
+    this.dbg("connectionState change", {
+      peerId,
+      state,
+      ice: peerConnection.iceConnectionState,
+    });
 
     const stateHandlers = {
       connected: async () => {
@@ -399,6 +497,11 @@ export default class BaseWebRTC {
       setTimeout(() => {
         this.onDataChannelOpen?.(peerId);
       }, 50);
+      this.dbg("datachannel open", {
+        peerId,
+        state: dataChannel.readyState,
+        buffered: dataChannel.bufferedAmount,
+      });
     };
 
     dataChannel.onmessage = (event) => {
@@ -445,16 +548,17 @@ export default class BaseWebRTC {
         this.log("log", `Data channel closed by user for peer ${peerId}`, {
           error,
         });
+        this.dbg("datachannel closed by user", { peerId });
       } else {
         this.log("error", `Data channel error for peer ${peerId}`, { error });
+        this.dbg("datachannel error", { peerId });
       }
     };
 
     dataChannel.onclose = () => {
-      if (developmentEnv === "development") {
-        postLogToBackend(`DataChannel closed for peer: ${peerId}`);
-      }
+      postLogToBackend(`DataChannel closed for peer: ${peerId}`);
       this.log("log", `Data channel with ${peerId} closed.`);
+      this.dbg("datachannel close", { peerId });
     };
   }
   // Join a room. sendInitiatorOnline indicates whether to send "initiator online" message after joining.
@@ -493,9 +597,11 @@ export default class BaseWebRTC {
         cleanup(joinResponseHandler, eqHandlers);
         this.isInRoom = false;
         this.roomId = null;
+        this.dbg("join timeout", { roomId, isInitiator });
         reject(new Error("Join room timeout"));
       }, 15000);
 
+      this.dbg("join start", { roomId, isInitiator, sendInitiatorOnline });
       // Equivalent success resolver
       const resolveAsJoined = (reason: string) => {
         if (settled) return;
@@ -508,10 +614,10 @@ export default class BaseWebRTC {
             roomId: this.roomId,
           });
         }
-        if (developmentEnv === "development")
-          postLogToBackend(
-            `peerId:${this.socket.id} Early-joined (${reason}) room:${roomId}, isInitiator:${this.isInitiator}`
-          );
+        postLogToBackend(
+          `peerId:${this.socket.id} Early-joined (${reason}) room:${roomId}, isInitiator:${this.isInitiator}`
+        );
+        this.dbg("join success (equivalent)", { roomId, reason, isInitiator });
         cleanup(joinResponseHandler, eqHandlers);
         resolve();
       };
@@ -547,17 +653,17 @@ export default class BaseWebRTC {
               roomId: this.roomId,
             });
           }
-          if (developmentEnv === "development")
-            postLogToBackend(
-              `peerId:${this.socket.id} Successfully joined room: ${response.roomId},isInitiator:${this.isInitiator},isInRoom:${this.isInRoom}`
-            );
+          postLogToBackend(
+            `peerId:${this.socket.id} Successfully joined room: ${response.roomId},isInitiator:${this.isInitiator},isInRoom:${this.isInRoom}`
+          );
+          this.dbg("join success", { roomId: response.roomId, isInitiator: this.isInitiator });
           resolve();
         } else {
           this.isInRoom = false;
           this.roomId = null;
-          if (developmentEnv === "development")
-            postLogToBackend(`Failed to join room,message:${response.message}`);
+          postLogToBackend(`Failed to join room,message:${response.message}`);
           this.fireError("Failed to join room", { message: response.message });
+          this.dbg("join failed", { roomId, message: response.message });
           reject(new Error(response.message));
         }
       };
@@ -566,12 +672,14 @@ export default class BaseWebRTC {
       // Send join room request
       try {
         this.socket.emit("join", { roomId });
+        this.dbg("join emit", { roomId, isInitiator });
       } catch (error) {
         if (!settled) {
           settled = true;
           cleanup(joinResponseHandler, eqHandlers);
           this.isInRoom = false;
           this.roomId = null;
+          this.dbg("join emit error", { roomId, isInitiator, error: (error as any)?.message || String(error) });
           reject(error);
         }
       }
