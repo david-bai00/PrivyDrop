@@ -1,6 +1,5 @@
 // Recipient flow: Join room; receive 'offer' event -> createPeerConnection + createDataChannel -> send answer
 import BaseWebRTC, { WebRTCConfig } from "./webrtc_base";
-import { postLogToBackend } from "@/app/config/api";
 
 interface AnswerPayload {
   answer: RTCSessionDescriptionInit;
@@ -14,12 +13,12 @@ export default class WebRTC_Recipient extends BaseWebRTC {
 
   private setupRecipientSocketListeners(): void {
     this.socket.on("offer", ({ peerId, offer, from }) => {
-      try { postLogToBackend(`[Recipient] offer received from ${from}`); } catch (_) {}
+      try { this.dbg(`offer received from ${from}`); } catch (_) {}
       this.handleOffer({ peerId, offer, from });
     });
 
     this.socket.on("answer", ({ answer, peerId }) => {
-      try { postLogToBackend(`[Recipient] answer received from ${peerId}`); } catch (_) {}
+      try { this.dbg(`answer received from ${peerId}`); } catch (_) {}
       this.handleAnswer({ answer, peerId });
     });
 
@@ -37,7 +36,7 @@ export default class WebRTC_Recipient extends BaseWebRTC {
         roomId: this.roomId,
         peerId: this.socket.id,
       });
-      try { postLogToBackend(`[Recipient] initiator-online -> recipient-ready sent`); } catch (_) {}
+      try { this.dbg(`initiator-online -> recipient-ready sent`); } catch (_) {}
     });
   }
   // Recipient creates a connection upon receiving an offer
@@ -51,7 +50,7 @@ export default class WebRTC_Recipient extends BaseWebRTC {
     from: string;
   }): Promise<void> {
     this.log("log", `Handling offer from peer ${from}`);
-    try { postLogToBackend(`[Recipient] handleOffer from ${from}`); } catch (_) {}
+    try { this.dbg(`handleOffer from ${from}`); } catch (_) {}
     try {
       // 1. Clean up existing connections
       await this.cleanupExistingConnection(from);
@@ -65,12 +64,12 @@ export default class WebRTC_Recipient extends BaseWebRTC {
       await peerConnection.setRemoteDescription(
         new RTCSessionDescription(offer)
       );
-      try { postLogToBackend(`[Recipient] setRemote(offer) ok from ${from}`); } catch (_) {}
+      try { this.dbg(`setRemote(offer) ok from ${from}`); } catch (_) {}
       // Create and set the local description (answer)
       // console.log(`Creating answer for peer ${from}`);
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
-      try { postLogToBackend(`[Recipient] create/setLocal(answer) ok`); } catch (_) {}
+      try { this.dbg(`create/setLocal(answer) ok`); } catch (_) {}
       // Send the answer
       this.log("log", `Sending answer to peer ${from}`);
       this.socket.emit("answer", {
@@ -78,15 +77,15 @@ export default class WebRTC_Recipient extends BaseWebRTC {
         peerId: from,
         from: this.socket.id,
       });
-      try { postLogToBackend(`[Recipient] answer sent to ${from}`); } catch (_) {}
+      try { this.dbg(`answer sent to ${from}`); } catch (_) {}
       // Finally, process the cached ICE candidates
       await this.addQueuedIceCandidates(from);
-      try { postLogToBackend(`[Recipient] addQueuedIceCandidates done for ${from}`); } catch (_) {}
+      try { this.dbg(`addQueuedIceCandidates done for ${from}`); } catch (_) {}
     } catch (error) {
       this.fireError("Error handling offer", { error, from });
       // Clean up the failed connection
       await this.cleanupExistingConnection(from);
-      try { postLogToBackend(`[Recipient] handleOffer error: ${(error as any)?.message || String(error)}`); } catch (_) {}
+      try { this.dbg(`handleOffer error: ${(error as any)?.message || String(error)}`); } catch (_) {}
     }
   }
 
@@ -116,7 +115,7 @@ export default class WebRTC_Recipient extends BaseWebRTC {
     peerConnection.ondatachannel = (event) => {
       this.setupDataChannel(event.channel, peerId);
       this.dataChannels.set(peerId, event.channel);
-      try { postLogToBackend(`[Recipient] ondatachannel set for ${peerId}`); } catch (_) {}
+      try { this.dbg(`ondatachannel set for ${peerId}`); } catch (_) {}
     };
   }
 }

@@ -14,6 +14,8 @@ import { checkRateLimit } from "../services/rateLimit";
 // Use peerId for peer-to-peer communication (socket.to(peerId).emit())
 // Scenarios: All signaling during WebRTC connection setup, like offer, answer, ice-candidate.
 export function setupSocketHandlers(io: Server): void {
+  const DEBUG_ROOM_ID = "155533333ffff";
+  const DBG_PREFIX = "[PD-ROOM-DEBUG]";
   io.on("connection", (socket: Socket) => {
     console.log("New client connected:", socket.id);
 
@@ -59,10 +61,12 @@ export function setupSocketHandlers(io: Server): void {
           message: "Successfully joined room",
           roomId: targetRoomId,
         });
-        console.log(`[sig] join ok socket:${socket.id} room:${targetRoomId}`);
+        if (targetRoomId === DEBUG_ROOM_ID)
+          console.log(`${DBG_PREFIX} [sig] join ok socket:${socket.id} room:${targetRoomId}`);
         // Notify all other users in the room that a new member has joined
         socket.to(targetRoomId).emit("ready", { peerId: socket.id });
-        console.log(`[sig] ready broadcast room:${targetRoomId} from:${socket.id}`);
+        if (targetRoomId === DEBUG_ROOM_ID)
+          console.log(`${DBG_PREFIX} [sig] ready broadcast room:${targetRoomId} from:${socket.id}`);
       } catch (error) {
         console.error("Error joining room:", error);
         socket.emit("joinResponse", {
@@ -85,7 +89,8 @@ export function setupSocketHandlers(io: Server): void {
       });
       try {
         const r = await roomService.getRoomBySocketId(socket.id);
-        console.log(`[sig] offer from:${socket.id} -> to:${data.peerId} room:${r || "?"}`);
+        if (r === DEBUG_ROOM_ID)
+          console.log(`${DBG_PREFIX} [sig] offer from:${socket.id} -> to:${data.peerId} room:${r || "?"}`);
       } catch (_) {}
     });
 
@@ -97,7 +102,8 @@ export function setupSocketHandlers(io: Server): void {
       });
       try {
         const r = await roomService.getRoomBySocketId(socket.id);
-        console.log(`[sig] answer from:${socket.id} -> to:${data.peerId} room:${r || "?"}`);
+        if (r === DEBUG_ROOM_ID)
+          console.log(`${DBG_PREFIX} [sig] answer from:${socket.id} -> to:${data.peerId} room:${r || "?"}`);
       } catch (_) {}
     });
 
@@ -109,7 +115,8 @@ export function setupSocketHandlers(io: Server): void {
       });
       try {
         const r = await roomService.getRoomBySocketId(socket.id);
-        console.log(`[sig] candidate from:${socket.id} -> to:${data.peerId} room:${r || "?"}`);
+        if (r === DEBUG_ROOM_ID)
+          console.log(`${DBG_PREFIX} [sig] candidate from:${socket.id} -> to:${data.peerId} room:${r || "?"}`);
       } catch (_) {}
     });
     // Handle notification for initiator coming back online -- broadcast to other users in the room
@@ -117,14 +124,16 @@ export function setupSocketHandlers(io: Server): void {
       socket.to(data.roomId).emit("initiator-online", {
         roomId: data.roomId,
       });
-      console.log(`[sig] initiator-online room:${data.roomId} from:${socket.id}`);
+      if (data.roomId === DEBUG_ROOM_ID)
+        console.log(`${DBG_PREFIX} [sig] initiator-online room:${data.roomId} from:${socket.id}`);
     });
     // Handle recipient's response
     socket.on("recipient-ready", (data: RecipientData) => {
       socket.to(data.roomId).emit("recipient-ready", {
         peerId: data.peerId,
       });
-      console.log(`[sig] recipient-ready room:${data.roomId} peer:${data.peerId}`);
+      if (data.roomId === DEBUG_ROOM_ID)
+        console.log(`${DBG_PREFIX} [sig] recipient-ready room:${data.roomId} peer:${data.peerId}`);
     });
 
     socket.on("disconnect", async () => {
@@ -133,14 +142,16 @@ export function setupSocketHandlers(io: Server): void {
       if (roomId) {
         // Notify other users in the room that this peer has left
         socket.to(roomId).emit("peer-disconnected", { peerId: socket.id });
-        console.log(`[sig] peer-disconnected room:${roomId} peer:${socket.id}`);
+        if (roomId === DEBUG_ROOM_ID)
+          console.log(`${DBG_PREFIX} [sig] peer-disconnected room:${roomId} peer:${socket.id}`);
         await roomService.unbindSocketFromRoom(socket.id, roomId);
         if (await roomService.isRoomEmpty(roomId)) {
           // await deleteRoom(roomId);
           await roomService.refreshRoom(roomId, 900);
-          console.log(
-            `Room ${roomId} is empty and will be deleted in 15 min due to disconnect.`
-          );
+          if (roomId === DEBUG_ROOM_ID)
+            console.log(
+              `${DBG_PREFIX} Room ${roomId} is empty and will be deleted in 15 min due to disconnect.`
+            );
         }
       }
     });

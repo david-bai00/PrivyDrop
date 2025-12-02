@@ -1,6 +1,5 @@
 // Initiator flow: Join room; receive 'ready' event (this event is triggered by the socket server after a new recipient enters) -> createPeerConnection + createDataChannel -> createAndSendOffer
 import BaseWebRTC, { WebRTCConfig } from "./webrtc_base";
-import { postLogToBackend } from "@/app/config/api";
 const developmentEnv = process.env.NODE_ENV; // Development environment
 
 export default class WebRTC_Initiator extends BaseWebRTC {
@@ -12,19 +11,17 @@ export default class WebRTC_Initiator extends BaseWebRTC {
   private setupInitiatorSocketListeners() {
     this.socket.on("ready", ({ peerId }) => {
       // The peerId of the new recipient who entered the room
-      try {
-        postLogToBackend(`[Initiator] ready from recipient: ${peerId}`);
-      } catch (_) {}
+      this.dbg(`ready from recipient: ${peerId}`);
       this.handleReady({ peerId });
     });
     // Add listener for recipient's response
     this.socket.on("recipient-ready", ({ peerId }) => {
-      postLogToBackend(`[Initiator] recipient-ready from: ${peerId}`);
+      this.dbg(`recipient-ready from: ${peerId}`);
       this.handleReady({ peerId });
     });
     // Add answer handler listener
     this.socket.on("answer", ({ answer, peerId, from }) => {
-      try { postLogToBackend(`[Initiator] answer received from ${from}`); } catch (_) {}
+      try { this.dbg(`answer received from ${from}`); } catch (_) {}
       this.handleAnswer({ answer, peerId, from });
     });
   }
@@ -33,7 +30,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
   private async handleReady({ peerId }: { peerId: string }): Promise<void> {
     // Recipient peerId
     // this.log('log',`Received ready signal from peer ${peerId}`);
-    postLogToBackend(`Received ready signal from peer ${peerId}`);
+    this.dbg(`Received ready signal from peer ${peerId}`);
     await this.createPeerConnection(peerId);
     await this.createDataChannel(peerId);
     await this.createAndSendOffer(peerId);
@@ -48,7 +45,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
     from: string;
   }): Promise<void> {
     // this.log('log',`Handling answer from peer ${from}`);
-    postLogToBackend(`Handling answer from peer ${from}`);
+    this.dbg(`Handling answer from peer ${from}`);
     const peerConnection = this.peerConnections.get(from);
     if (!peerConnection) {
       this.fireError(`No peer connection found for peer ${from}`, { from });
@@ -82,11 +79,9 @@ export default class WebRTC_Initiator extends BaseWebRTC {
 
       this.setupDataChannel(dataChannel, peerId);
       this.dataChannels.set(peerId, dataChannel);
-      try { postLogToBackend(`[Initiator] createDataChannel ok for ${peerId}`); } catch (_) {}
+      try { this.dbg(`createDataChannel ok for ${peerId}`); } catch (_) {}
     } catch (error) {
-      postLogToBackend(
-        `Error creating DataChannel - peer: ${peerId}, error: ${error}`
-      );
+      this.dbg(`Error creating DataChannel - peer: ${peerId}, error: ${(error as any)?.message || String(error)}`);
       this.fireError(`Error creating data channel for peer ${peerId}`, {
         error,
         peerId,
@@ -96,7 +91,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
   // If it is the initiator, create and send an offer to the signaling server to negotiate a connection with the recipient.
   private async createAndSendOffer(peerId: string): Promise<void> {
     // this.log('log', `Creating and sending offer to ${peerId}`);
-    postLogToBackend(`createAndSendOffer for peerId: ${peerId}`);
+    this.dbg(`createAndSendOffer for peerId: ${peerId}`);
     const peerConnection = this.peerConnections.get(peerId);
     if (!peerConnection) {
       this.fireError(`No peer connection found for peer ${peerId}`, { peerId });
@@ -113,7 +108,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
         offer: offer,
         from: this.socket.id,
       });
-      try { postLogToBackend(`[Initiator] offer sent to ${peerId}`); } catch (_) {}
+      try { this.dbg(`offer sent to ${peerId}`); } catch (_) {}
     } catch (error) {
       this.fireError("Error creating and sending offer", { error, peerId });
     }
