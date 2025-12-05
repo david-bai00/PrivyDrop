@@ -306,6 +306,18 @@ export const en: Messages = {
           "The room you are trying to join does not exist. Only the sender can create a room.",
         failMsg: "Failed to join room:",
       },
+      // Connection feedback (weak/VPN network scenarios)
+      join_inProgress:
+        "Joining the room… this may take 5–30 seconds on slow networks",
+      join_slow: "Feels slow—check your network/VPN or try again shortly",
+      join_timeout:
+        "Join timed out (network may be restricted). Please try again",
+      rtc_slow:
+        "Network may be restricted — try turning off VPN or try again shortly",
+      rtc_negotiating: "In the room—establishing a direct P2P connection…",
+      rtc_connected: "Connected",
+      rtc_reconnecting: "Reconnecting…",
+      rtc_restored: "Connection restored",
       pickSaveMsg: "Save Directly to Disk ?",
       pickSaveUnsupported: "Directory picker not supported.",
       pickSaveSuccess: "Save location set.",

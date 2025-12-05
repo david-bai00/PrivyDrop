@@ -24,6 +24,21 @@
 
   - `frontend/components/ClipboardApp.tsx` — 顶层 UI 协调器，集成 5 个业务 hooks（useWebRTCConnection/useFileTransferHandler/useRoomManager/usePageSetup/useClipboardAppMessages），处理全局拖拽事件和双标签页（发送/接收）管理。
     - 体验增强：切到接收端（retrieve）且满足“未在房间、URL 无 roomId、输入为空、存在缓存ID”时自动填充并加入房间（读取 `frontend/lib/roomIdCache.ts`）。
+    - 连接反馈：集成 `useConnectionFeedback`（`frontend/hooks/useConnectionFeedback.ts`），桥接 WebRTC 连接态到 UI 文案，含协商中提示、8s 慢连接提示、断开/重连/恢复提示（前台可见时提示）。
+
+- `frontend/hooks/` — 业务中枢 Hooks。
+  - `useRoomManager.ts`
+    - 入房流程：`join_inProgress`（立即）、`join_slow`（3s）、`join_timeout`（15s）；join 成功/失败均清理定时器。
+    - 等效成功信号：在 `joinResponse` 之前若收到 `ready/recipient-ready/offer`，提前判定入房成功并清理 3s/15s 定时器。
+    - 其他：房间状态文案、分享链接生成、离开房间、输入校验（750ms 防抖）。
+  - `useConnectionFeedback.ts`
+    - 状态归一化：`new/connecting`→`negotiating`；`failed/closed`→`disconnected`。
+    - 协商慢提示：8s 定时器（`rtc_slow`），单次协商仅提示一次；若在后台到时则挂起，回到前台且仍协商时补发一次。
+    - 一次性提示：首次 `connected`（`rtc_connected`）仅提示一次；断开前台重连（`rtc_reconnecting`）与恢复（`rtc_restored`）。
+
+- i18n 文案与类型
+  - 文案定义：`frontend/constants/messages/*.{ts}`（已补齐 zh/en/ja/es/de/fr/ko）。
+  - 类型定义：`frontend/types/messages.ts`（`ClipboardApp` 下包含 `join_*` 与 `rtc_*` 文案键）。
   - `frontend/components/ClipboardApp/SendTabPanel.tsx` — 发送面板，集成富文本编辑器、文件上传、房间 ID 生成（支持 4 位数字/UUID 两种模式）、分享链接生成。
     - 体验增强：点击“使用缓存ID”将立即触发加入房间（sender 侧），减少一次手动点击。
   - `frontend/components/ClipboardApp/RetrieveTabPanel.tsx` — 接收面板，处理房间加入、文件接收、目录选择（File System Access API）、富文本内容显示。

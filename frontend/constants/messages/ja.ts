@@ -302,6 +302,19 @@ export const ja: Messages = {
           "参加しようとしているルームは存在しません。送信者のみがルームを作成できます。",
         failMsg: "ルームへの参加に失敗しました：",
       },
+      // Connection feedback (weak/VPN network scenarios)
+      join_inProgress:
+        "ルームに参加中…（回線が遅い環境では 5〜30 秒かかることがあります）",
+      join_slow:
+        "少し時間がかかっています—ネットワーク/VPN をご確認のうえ、しばらくしてからお試しください",
+      join_timeout:
+        "参加がタイムアウトしました（ネットワーク制限の可能性）。再試行してください",
+      rtc_slow:
+        "ネットワークが制限されている可能性があります — VPN をオフにするか、しばらくしてから再試行してください",
+      rtc_negotiating: "入室済み—P2P 接続を確立しています…",
+      rtc_connected: "接続しました",
+      rtc_reconnecting: "再接続中…",
+      rtc_restored: "接続が回復しました",
       pickSaveMsg: "ディスクに直接保存しますか？",
       pickSaveUnsupported: "ディレクトリピッカーはサポートされていません。",
       pickSaveSuccess: "保存場所が設定されました。",

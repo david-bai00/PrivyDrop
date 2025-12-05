@@ -312,6 +312,19 @@ export const fr: Messages = {
           "La salle que vous essayez de rejoindre n'existe pas. Seul l'expéditeur peut créer une salle.",
         failMsg: "Échec de la connexion à la salle :",
       },
+      // Connection feedback (weak/VPN network scenarios)
+      join_inProgress:
+        "Rejoindre la salle… (sur un réseau lent, 5–30 s possibles)",
+      join_slow:
+        "C’est un peu lent — vérifiez votre réseau/VPN ou réessayez bientôt",
+      join_timeout:
+        "Délai dépassé pour rejoindre (réseau possiblement restreint). Réessayez",
+      rtc_slow:
+        "Réseau possiblement restreint — essayez de désactiver le VPN ou réessayez bientôt",
+      rtc_negotiating: "Dans la salle — établissement d’un lien P2P direct…",
+      rtc_connected: "Connecté",
+      rtc_reconnecting: "Reconnexion…",
+      rtc_restored: "Connexion rétablie",
       pickSaveMsg: "Enregistrer directement sur le disque ?",
       pickSaveUnsupported: "Sélecteur de répertoire non pris en charge.",
       pickSaveSuccess: "Emplacement de sauvegarde défini.",

@@ -296,6 +296,16 @@ export type ClipboardApp = {
   leaveWhileTransferringSuccess: string;
   // New: cache messages
   saveId_success: string;
+  // UI connection feedback
+  join_inProgress: string;
+  join_slow: string;
+  join_timeout: string;
+  // Slow P2P negotiation hint
+  rtc_slow: string;
+  rtc_negotiating: string;
+  rtc_connected: string;
+  rtc_reconnecting: string;
+  rtc_restored: string;
 };
 
 export type Home = {

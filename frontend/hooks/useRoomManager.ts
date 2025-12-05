@@ -51,7 +51,26 @@ export function useRoomManager({
     async (isSenderSide: boolean, roomId: string) => {
       if (!messages) return;
 
+      // UI: Joining feedback and slow network hint
+      let slowJoinTimer: any | null = null;
+      const clearJoinTimers = () => {
+        if (slowJoinTimer) {
+          clearTimeout(slowJoinTimer);
+          slowJoinTimer = null;
+        }
+      };
+
       try {
+        // Immediate feedback on click
+        const joinInProgressMsg = messages.text.ClipboardApp.join_inProgress;
+        putMessageInMs(joinInProgressMsg, isSenderSide, 6000);
+
+        // 3s slow-network hint
+        slowJoinTimer = setTimeout(() => {
+          const joinSlowMsg = messages.text.ClipboardApp.join_slow;
+          putMessageInMs(joinSlowMsg, isSenderSide, 6000);
+        }, 3000);
+
         // If it's the sender side and the room ID is not the initial ID, need to create the room first
         if (
           isSenderSide &&
@@ -65,6 +84,7 @@ export function useRoomManager({
                 messages.text.ClipboardApp.joinRoom.DuplicateMsg,
                 isSenderSide
               );
+              clearJoinTimers();
               return;
             }
             setShareRoomId(roomId);
@@ -74,6 +94,7 @@ export function useRoomManager({
                 ` (Create room error)`,
               isSenderSide
             );
+            clearJoinTimers();
             return;
           }
         }
@@ -89,7 +110,9 @@ export function useRoomManager({
         // If sender uses a long ID (e.g., cached UUID), proactively send
         // "initiator-online" after join to trigger receivers' re-handshake.
         const forceInitiatorOnline =
-          isSenderSide && typeof actualRoomId === "string" && actualRoomId.length >= 8;
+          isSenderSide &&
+          typeof actualRoomId === "string" &&
+          actualRoomId.length >= 8;
 
         // Directly call the service method without dependency injection
         await webrtcService.joinRoom(
@@ -98,6 +121,7 @@ export function useRoomManager({
           forceInitiatorOnline
         );
 
+        clearJoinTimers();
         putMessageInMs(
           messages.text.ClipboardApp.joinRoom.successMsg,
           isSenderSide,
@@ -119,8 +143,12 @@ export function useRoomManager({
           errorMsg =
             error.message === "Room does not exist"
               ? messages.text.ClipboardApp.joinRoom.notExist
+              : error.message === "Join room timeout"
+              ? messages.text.ClipboardApp.join_timeout
               : `${messages.text.ClipboardApp.joinRoom.failMsg} ${error.message}`;
         }
+        // Clear joining timers on failure
+        clearJoinTimers();
         putMessageInMs(errorMsg, isSenderSide);
       }
     },
@@ -162,7 +190,9 @@ export function useRoomManager({
 
     // Check if files are transferring and show confirmation
     if (isAnyFileTransferring) {
-      const confirmed = window.confirm(messages.text.ClipboardApp.confirmLeaveWhileTransferring);
+      const confirmed = window.confirm(
+        messages.text.ClipboardApp.confirmLeaveWhileTransferring
+      );
       if (!confirmed) return;
     }
 
@@ -175,7 +205,7 @@ export function useRoomManager({
         );
       }
 
-      const message = isAnyFileTransferring 
+      const message = isAnyFileTransferring
         ? messages.text.ClipboardApp.leaveWhileTransferringSuccess
         : messages.text.ClipboardApp.roomStatus.leftRoomMsg;
       putMessageInMs(message, false);
@@ -216,7 +246,9 @@ export function useRoomManager({
 
     // Check if files are transferring and show confirmation
     if (isAnyFileTransferring) {
-      const confirmed = window.confirm(messages.text.ClipboardApp.confirmLeaveWhileTransferring);
+      const confirmed = window.confirm(
+        messages.text.ClipboardApp.confirmLeaveWhileTransferring
+      );
       if (!confirmed) return;
     }
 
@@ -229,7 +261,7 @@ export function useRoomManager({
         );
       }
 
-      const message = isAnyFileTransferring 
+      const message = isAnyFileTransferring
         ? messages.text.ClipboardApp.leaveWhileTransferringSuccess
         : messages.text.ClipboardApp.roomStatus.leftRoomMsg;
       putMessageInMs(message, true);
@@ -243,7 +275,7 @@ export function useRoomManager({
   }, [messages, putMessageInMs, resetSenderAppState, isAnyFileTransferring]);
 
   // Room ID input processing
-    const processRoomIdInput = useCallback(
+  const processRoomIdInput = useCallback(
     debounce(async (input: string) => {
       if (!input.trim() || !messages) return;
 

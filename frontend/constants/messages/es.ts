@@ -306,6 +306,19 @@ export const es: Messages = {
           "La sala a la que intentas unirte no existe. Solo el remitente puede crear una sala.",
         failMsg: "Error al unirse a la sala:",
       },
+      // Connection feedback (weak/VPN network scenarios)
+      join_inProgress:
+        "Uniéndose a la sala… (en redes lentas puede tardar 5–30 s)",
+      join_slow:
+        "Va algo lento—revisa tu red/VPN o inténtalo de nuevo en breve",
+      join_timeout:
+        "La unión ha caducado (posibles restricciones de red). Vuelve a intentarlo",
+      rtc_slow:
+        "La red puede estar restringida — prueba desactivar la VPN o inténtalo de nuevo en breve",
+      rtc_negotiating: "Dentro de la sala—estableciendo conexión P2P directa…",
+      rtc_connected: "Conectado",
+      rtc_reconnecting: "Reconectando…",
+      rtc_restored: "Conexión restaurada",
       pickSaveMsg: "¿Guardar Directamente en Disco?",
       pickSaveUnsupported: "Selector de directorio no compatible.",
       pickSaveSuccess: "Ubicación de guardado establecida.",

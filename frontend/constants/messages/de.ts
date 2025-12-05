@@ -312,6 +312,19 @@ export const de: Messages = {
           "Der Raum, dem Sie beitreten möchten, existiert nicht. Nur der Sender kann einen Raum erstellen.",
         failMsg: "Fehler beim Beitreten zum Raum:",
       },
+      // Connection feedback (weak/VPN network scenarios)
+      join_inProgress:
+        "Beitritt zum Raum… (in langsamen Netzen 5–30 Sekunden)",
+      join_slow:
+        "Wirkt etwas langsam – Netzwerk/VPN prüfen oder später erneut versuchen",
+      join_timeout:
+        "Beitritt zeitüberschritten (mögliche Netzbeschränkung). Bitte erneut versuchen",
+      rtc_slow:
+        "Netzwerk möglicherweise eingeschränkt — VPN deaktivieren oder später erneut versuchen",
+      rtc_negotiating: "Im Raum – direkte P2P‑Verbindung wird aufgebaut…",
+      rtc_connected: "Verbunden",
+      rtc_reconnecting: "Wiederverbinden…",
+      rtc_restored: "Verbindung wiederhergestellt",
       pickSaveMsg: "Direkt auf Festplatte speichern?",
       pickSaveUnsupported: "Verzeichnisauswahl nicht unterstützt.",
       pickSaveSuccess: "Speicherort festgelegt.",

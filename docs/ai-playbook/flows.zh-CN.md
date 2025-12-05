@@ -258,6 +258,37 @@ Core Services (webrtcService) + Store (fileTransferStore)
 7. **剪贴板兼容性**：useClipboardActions 支持现代 navigator.clipboard API 和 document.execCommand 降级方案
 8. **富文本安全处理**：useRichTextToPlainText 服务端渲染安全，客户端 DOM 转换处理块级元素
 9. **站内导航不中断（同一标签页）**：依赖 `frontend/stores/fileTransferStore.ts`（Zustand 单例）与 `frontend/lib/webrtcService.ts`（服务单例）。App Router 页面切换不打断传输且保留已选择/已接收内容。注意不要在路由切换副作用中调用 `webrtcService.leaveRoom()` 或重置 Store；刷新/新标签不在保证范围内。
+
+### UI 连接反馈状态机（弱网/VPN 提示）
+
+- 入房阶段（join）
+  - 立即：`join_inProgress`（“正在加入房间…”）。
+  - 3s 未完成：`join_slow`（“连接较慢，建议检查网络/VPN…”）。
+  - 15s 超时：`join_timeout`（“加入超时…”）。
+  - 等效成功信号：在等待 `joinResponse` 期间，若收到 `ready/recipient-ready/offer`，视为提前入房成功并即时清理 3s/15s 定时器与提示，避免“成功后再出现慢/超时提示”。
+- 协商阶段（WebRTC）
+  - 进入 `new/connecting`：归一为 “协商中” → `rtc_negotiating`。
+  - 8s 未连上：`rtc_slow`（“网络可能受限，尝试关闭 VPN 或稍后再试”）。仅在页面前台可见时触发；同一次协商尝试仅提示一次（发送端/接收端任一进入协商即启动计时，提示归属以最先进入协商的一侧为准）。
+- 连接与重连
+  - 首次 `connected`：`rtc_connected`（仅一次）。
+  - 前台断开：`rtc_reconnecting` → 恢复后 `rtc_restored`。
+  - 后台断开不提示；回到前台若仍断开立即提示 `rtc_reconnecting`。
+  - 已断开期间若页面在后台，返回前台时若仍处于协商态且此前触发了慢协商计时，则会补发一次 `rtc_slow` 并标记本次协商已提示，以避免重复。
+
+实现位置：
+- `frontend/hooks/useRoomManager.ts`：入房阶段提示与定时器管理（3s 慢网、15s 超时），并在 join 成功/失败时清理定时器；支持“等效成功信号”提前判定成功（`ready/recipient-ready/offer`）。
+- `frontend/hooks/useConnectionFeedback.ts`：桥接 WebRTC 连接态到 UI 提示。
+  - 状态归一化（mapPhase）：`new/connecting`→`negotiating`；`failed/closed`→`disconnected`。
+  - 协商慢提示：8s 定时器、前后台可见性节制、单次协商尝试仅提示一次（含挂起→前台补发）。
+  - 一次性提示：首次 `connected` 只显示一次；断开→恢复显示 `rtc_restored`；仅前台显示 `rtc_reconnecting`。
+
+文案与 i18n：
+- 文案键均位于 `frontend/constants/messages/*.{ts}`，类型定义见 `frontend/types/messages.ts`。
+- 关键键：`join_inProgress`、`join_slow`、`join_timeout`、`rtc_negotiating`、`rtc_slow`、`rtc_connected`、`rtc_reconnecting`、`rtc_restored`（已在 en/ja/es/de/fr/ko 全部补齐）。
+
+节流与展示：
+- 所有提示默认 4–6 秒自动消失；通过 `useClipboardAppMessages.putMessageInMs(message, isShareEnd, ms)` 统一展示。
+- 连接反馈提示在“状态迁移 + ever/wasDisc 标记 + 可见性判断”三重约束下触发，避免提示风暴。
 10. **切到接收端自动加入（缓存ID）**：当用户切换到接收端、未在房间、URL 无 `roomId`、输入框为空且本地存在缓存 ID 时，自动填充并直接调用加入房间以提升体验。入口：`frontend/components/ClipboardApp.tsx`（监听 `activeTab` 变化，读取 `frontend/lib/roomIdCache.ts`）。
 11. **发送端“使用缓存ID”即刻加入**：发送端在 `SendTabPanel` 点击“使用缓存ID”后会立即调用加入房间（而非仅填充输入框）。入口：`frontend/components/ClipboardApp/CachedIdActionButton.tsx`（`onUseCached` 回调）+ `frontend/components/ClipboardApp/SendTabPanel.tsx`。
 12. **深色主题切换**：提供单按钮 Light/Dark 切换，入口：`frontend/components/web/ThemeToggle.tsx`；集成位置：`frontend/components/web/Header.tsx`（桌面与移动）；局部样式从硬编码颜色迁移为设计令牌（例如接收面板使用 `bg-card text-card-foreground`）。

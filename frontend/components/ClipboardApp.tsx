@@ -15,6 +15,7 @@ import FullScreenDropZone from "./ClipboardApp/FullScreenDropZone";
 import { traverseFileTree } from "@/lib/fileUtils";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { getCachedId } from "@/lib/roomIdCache";
+import { useConnectionFeedback } from "@/hooks/useConnectionFeedback";
 
 const ClipboardApp = () => {
   const { shareMessage, retrieveMessage, putMessageInMs } =
@@ -29,7 +30,7 @@ const ClipboardApp = () => {
     retrieveJoinRoomBtnRef,
   });
 
-  // 从 store 中获取状态
+  // Get state from store
   const {
     activeTab,
     isDragging,
@@ -173,6 +174,9 @@ const ClipboardApp = () => {
     setRetrieveRoomIdInput,
     joinRoom,
   ]);
+
+  // Connection feedback observer (Hook)
+  useConnectionFeedback({ messages, putMessageInMs });
 
   if (isLoadingMessages || !messages) {
     return (

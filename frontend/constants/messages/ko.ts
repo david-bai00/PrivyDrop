@@ -300,6 +300,19 @@ export const ko: Messages = {
           "참여하려는 방이 존재하지 않습니다. 보내는 사람만 방을 만들 수 있습니다.",
         failMsg: "방 참여 실패:",
       },
+      // Connection feedback (weak/VPN network scenarios)
+      join_inProgress:
+        "방에 참여 중… (느린 네트워크에서는 5–30초가 걸릴 수 있어요)",
+      join_slow:
+        "조금 느려 보여요 — 네트워크/VPN을 확인하거나 잠시 후 다시 시도해 주세요",
+      join_timeout:
+        "참여 시간이 초과되었습니다(네트워크가 제한될 수 있음). 다시 시도해 주세요",
+      rtc_slow:
+        "네트워크가 제한되어 있을 수 있어요 — VPN을 끄거나 잠시 후 다시 시도해 주세요",
+      rtc_negotiating: "입장 완료 — P2P 직접 연결을 설정하는 중…",
+      rtc_connected: "연결되었습니다",
+      rtc_reconnecting: "재연결 중…",
+      rtc_restored: "연결이 복구되었습니다",
       pickSaveMsg: "직접 디스크에 저장하시겠습니까?",
       pickSaveUnsupported: "디렉토리 선택기가 지원되지 않습니다.",
       pickSaveSuccess: "저장 위치가 설정되었습니다.",
