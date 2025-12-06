@@ -24,16 +24,16 @@
 
   - `frontend/components/ClipboardApp.tsx` — 顶层 UI 协调器，集成 5 个业务 hooks（useWebRTCConnection/useFileTransferHandler/useRoomManager/usePageSetup/useClipboardAppMessages），处理全局拖拽事件和双标签页（发送/接收）管理。
     - 体验增强：切到接收端（retrieve）且满足“未在房间、URL 无 roomId、输入为空、存在缓存ID”时自动填充并加入房间（读取 `frontend/lib/roomIdCache.ts`）。
-    - 连接反馈：集成 `useConnectionFeedback`（`frontend/hooks/useConnectionFeedback.ts`），桥接 WebRTC 连接态到 UI 文案，含协商中提示、8s 慢连接提示、断开/重连/恢复提示（前台可见时提示）。
+    - 连接反馈：集成 `useConnectionFeedback`（`frontend/hooks/useConnectionFeedback.ts`），桥接 WebRTC 连接态到 UI 文案，含协商中提示、8s 慢连接提示、断开/重连/恢复提示（前台可见时提示）。慢提示统一复用 `frontend/utils/useOneShotSlowHint.ts`。
 
 - `frontend/hooks/` — 业务中枢 Hooks。
   - `useRoomManager.ts`
-    - 入房流程：`join_inProgress`（立即）、`join_slow`（3s）、`join_timeout`（15s）；join 成功/失败均清理定时器。
+    - 入房流程：`join_inProgress`（立即）、`join_slow`（3s，复用 `useOneShotSlowHint`）、`join_timeout`（15s）；join 成功/失败均清理定时器。
     - 等效成功信号：在 `joinResponse` 之前若收到 `ready/recipient-ready/offer`，提前判定入房成功并清理 3s/15s 定时器。
     - 其他：房间状态文案、分享链接生成、离开房间、输入校验（750ms 防抖）。
   - `useConnectionFeedback.ts`
-    - 状态归一化：`new/connecting`→`negotiating`；`failed/closed`→`disconnected`。
-    - 协商慢提示：8s 定时器（`rtc_slow`），单次协商仅提示一次；若在后台到时则挂起，回到前台且仍协商时补发一次。
+    - 状态归一化：`new/connecting`→`negotiating`；`failed/closed`→`disconnected`（复用 `utils/rtcPhase.ts`）。
+    - 协商慢提示：8s 定时器（`rtc_slow`），单次协商仅提示一次；若在后台到时则挂起，回到前台且仍协商时补发一次（复用 `useOneShotSlowHint`）。
     - 一次性提示：首次 `connected`（`rtc_connected`）仅提示一次；断开前台重连（`rtc_reconnecting`）与恢复（`rtc_restored`）。
 
 - i18n 文案与类型

@@ -1,25 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import type { Messages } from "@/types/messages";
-
-type Phase = "idle" | "negotiating" | "connected" | "disconnected";
-const SLOW_RTC_MS = 8000; // 8s threshold for slow P2P negotiation
-
-function mapPhase(state?: string): Phase {
-  if (!state) return "idle";
-  if (state === "new" || state === "connecting") return "negotiating";
-  if (state === "connected") return "connected";
-  if (state === "disconnected" || state === "failed" || state === "closed")
-    return "disconnected";
-  // store may already map to these values
-  if (
-    state === "idle" ||
-    (state as any) === "negotiating" ||
-    (state as any) === "disconnected"
-  )
-    return state as Phase;
-  return "idle";
-}
+import { mapPhase, type Phase } from "@/utils/rtcPhase";
+import { useOneShotSlowHint } from "@/utils/useOneShotSlowHint";
 
 interface UseConnectionFeedbackProps {
   messages: Messages | null;
@@ -46,12 +29,28 @@ export function useConnectionFeedback({
   const wasDiscRecvRef = useRef<boolean>(false);
   const sharePhaseRef = useRef<Phase>("idle");
   const recvPhaseRef = useRef<Phase>("idle");
-  // Slow negotiation hint management
-  const slowTimerShareRef = useRef<number | null>(null);
-  const slowTimerRecvRef = useRef<number | null>(null);
-  const slowShownRef = useRef<boolean>(false);
-  const slowTriggerSideRef = useRef<"share" | "recv" | null>(null);
-  const slowPendingRef = useRef<boolean>(false);
+  // Which side first entered negotiating, to infer message side
+  const rtcSlowTriggerSideRef = useRef<"share" | "recv" | null>(null);
+
+  // One-shot slow hint for negotiating ≥ 8s (front-visible, once per attempt)
+  const { arm: armRtcSlow, disarm: disarmRtcSlow, reset: resetRtcSlow } = useOneShotSlowHint({
+    thresholdMs: 8000,
+    putMessageInMs,
+    displayMs: 6000,
+    getMessage: () => {
+      if (!messages) return null;
+      const text = messages.text.ClipboardApp.rtc_slow;
+      if (!text) return null;
+      const isShareEnd =
+        rtcSlowTriggerSideRef.current === "share"
+          ? true
+          : rtcSlowTriggerSideRef.current === "recv"
+          ? false
+          : sharePhaseRef.current === "negotiating";
+      return { text, isShareEnd };
+    },
+    visibilityGate: true,
+  });
 
   // Bridge RTC connection state changes to UI messages
   useEffect(() => {
@@ -67,76 +66,12 @@ export function useConnectionFeedback({
     sharePhaseRef.current = nowShare;
     recvPhaseRef.current = nowRecv;
 
-    // Helper: start slow negotiation timer for a side
-    const startSlowTimer = (side: "share" | "recv") => {
-      if (side === "share") {
-        if (slowTimerShareRef.current) return;
-        if (!slowTriggerSideRef.current) slowTriggerSideRef.current = "share";
-        slowTimerShareRef.current = window.setTimeout(() => {
-          // Only show if still negotiating at timeout
-          const stillNegotiating =
-            sharePhaseRef.current === "negotiating" ||
-            recvPhaseRef.current === "negotiating";
-          if (!stillNegotiating || slowShownRef.current) return;
-          if (document.visibilityState !== "visible") {
-            slowPendingRef.current = true;
-            return;
-          }
-          const msg = messages.text.ClipboardApp.rtc_slow;
-          if (msg) {
-            const isShareEnd =
-              slowTriggerSideRef.current === "share"
-                ? true
-                : slowTriggerSideRef.current === "recv"
-                ? false
-                : sharePhaseRef.current === "negotiating";
-            putMessageInMs(msg, isShareEnd, 6000);
-            slowShownRef.current = true;
-          }
-        }, SLOW_RTC_MS) as unknown as number;
-      } else {
-        if (slowTimerRecvRef.current) return;
-        if (!slowTriggerSideRef.current) slowTriggerSideRef.current = "recv";
-        slowTimerRecvRef.current = window.setTimeout(() => {
-          const stillNegotiating =
-            sharePhaseRef.current === "negotiating" ||
-            recvPhaseRef.current === "negotiating";
-          if (!stillNegotiating || slowShownRef.current) return;
-          if (document.visibilityState !== "visible") {
-            slowPendingRef.current = true;
-            return;
-          }
-          const msg = messages.text.ClipboardApp.rtc_slow;
-          if (msg) {
-            const isShareEnd =
-              slowTriggerSideRef.current === "share"
-                ? true
-                : slowTriggerSideRef.current === "recv"
-                ? false
-                : sharePhaseRef.current === "negotiating";
-            putMessageInMs(msg, isShareEnd, 6000);
-            slowShownRef.current = true;
-          }
-        }, SLOW_RTC_MS) as unknown as number;
-      }
-    };
-
-    const clearSlowTimer = (side: "share" | "recv") => {
-      if (side === "share" && slowTimerShareRef.current) {
-        clearTimeout(slowTimerShareRef.current);
-        slowTimerShareRef.current = null;
-      }
-      if (side === "recv" && slowTimerRecvRef.current) {
-        clearTimeout(slowTimerRecvRef.current);
-        slowTimerRecvRef.current = null;
-      }
-    };
-
     // Sender side mapping
     if (nowShare === "negotiating" && prevShare !== "negotiating") {
       const msg = messages.text.ClipboardApp.rtc_negotiating;
       if (msg) putMessageInMs(msg, true, 4000);
-      startSlowTimer("share");
+      if (!rtcSlowTriggerSideRef.current) rtcSlowTriggerSideRef.current = "share";
+      armRtcSlow("rtc-negotiating");
     }
     if (nowShare === "connected") {
       if (!everShareRef.current) {
@@ -149,7 +84,7 @@ export function useConnectionFeedback({
       }
       everShareRef.current = true;
       wasDiscShareRef.current = false;
-      clearSlowTimer("share");
+      disarmRtcSlow();
     }
     if (nowShare === "disconnected") {
       const isForeground = document.visibilityState === "visible";
@@ -158,14 +93,15 @@ export function useConnectionFeedback({
         if (msg) putMessageInMs(msg, true, 4000);
         wasDiscShareRef.current = true;
       }
-      clearSlowTimer("share");
+      disarmRtcSlow();
     }
 
     // Receiver side mapping
     if (nowRecv === "negotiating" && prevRecv !== "negotiating") {
       const msg = messages.text.ClipboardApp.rtc_negotiating;
       if (msg) putMessageInMs(msg, false, 4000);
-      startSlowTimer("recv");
+      if (!rtcSlowTriggerSideRef.current) rtcSlowTriggerSideRef.current = "recv";
+      armRtcSlow("rtc-negotiating");
     }
     if (nowRecv === "connected") {
       if (!everRecvRef.current) {
@@ -178,7 +114,7 @@ export function useConnectionFeedback({
       }
       everRecvRef.current = true;
       wasDiscRecvRef.current = false;
-      clearSlowTimer("recv");
+      disarmRtcSlow();
     }
     if (nowRecv === "disconnected") {
       const isForeground = document.visibilityState === "visible";
@@ -187,22 +123,19 @@ export function useConnectionFeedback({
         if (msg) putMessageInMs(msg, false, 4000);
         wasDiscRecvRef.current = true;
       }
-      clearSlowTimer("recv");
+      disarmRtcSlow();
     }
 
     // If both sides are not negotiating, reset slow hint state for next attempt
     if (nowShare !== "negotiating" && nowRecv !== "negotiating") {
-      slowShownRef.current = false;
-      slowTriggerSideRef.current = null;
-      slowPendingRef.current = false;
-      clearSlowTimer("share");
-      clearSlowTimer("recv");
+      resetRtcSlow();
+      rtcSlowTriggerSideRef.current = null;
     }
 
     // Save previous for next comparison
     prevShareRef.current = nowShare;
     prevRecvRef.current = nowRecv;
-  }, [messages, shareConnectionState, retrieveConnectionState, putMessageInMs]);
+  }, [messages, shareConnectionState, retrieveConnectionState, putMessageInMs, armRtcSlow, disarmRtcSlow, resetRtcSlow]);
 
   // Visibility change: when returning to foreground, if still disconnected, hint "reconnecting"
   useEffect(() => {
@@ -229,26 +162,6 @@ export function useConnectionFeedback({
         if (msg) putMessageInMs(msg, false, 4000);
         wasDiscRecvRef.current = true;
       }
-
-      // If a slow hint was pending while hidden and still negotiating, show it once
-      if (
-        slowPendingRef.current &&
-        !slowShownRef.current &&
-        (nowShare === "negotiating" || nowRecv === "negotiating")
-      ) {
-        const msg = messages.text.ClipboardApp.rtc_slow;
-        if (msg) {
-          const isShareEnd =
-            slowTriggerSideRef.current === "share"
-              ? true
-              : slowTriggerSideRef.current === "recv"
-              ? false
-              : nowShare === "negotiating";
-          putMessageInMs(msg, isShareEnd, 6000);
-          slowShownRef.current = true;
-          slowPendingRef.current = false;
-        }
-      }
     };
 
     document.addEventListener("visibilitychange", onVisibilityChange);
@@ -256,12 +169,4 @@ export function useConnectionFeedback({
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [messages, putMessageInMs]);
-
-  // Cleanup on unmount: clear any running timers
-  useEffect(() => {
-    return () => {
-      if (slowTimerShareRef.current) clearTimeout(slowTimerShareRef.current);
-      if (slowTimerRecvRef.current) clearTimeout(slowTimerRecvRef.current);
-    };
-  }, []);
 }

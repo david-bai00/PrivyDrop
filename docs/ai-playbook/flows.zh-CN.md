@@ -281,6 +281,7 @@ Core Services (webrtcService) + Store (fileTransferStore)
   - 状态归一化（mapPhase）：`new/connecting`→`negotiating`；`failed/closed`→`disconnected`。
   - 协商慢提示：8s 定时器、前后台可见性节制、单次协商尝试仅提示一次（含挂起→前台补发）。
   - 一次性提示：首次 `connected` 只显示一次；断开→恢复显示 `rtc_restored`；仅前台显示 `rtc_reconnecting`。
+  - 复用：慢提示定时与前后台补发由 `frontend/utils/useOneShotSlowHint.ts` 统一实现；状态归一化由 `frontend/utils/rtcPhase.ts` 提供。
 
 文案与 i18n：
 - 文案键均位于 `frontend/constants/messages/*.{ts}`，类型定义见 `frontend/types/messages.ts`。

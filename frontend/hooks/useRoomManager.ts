@@ -1,9 +1,10 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { webrtcService } from "@/lib/webrtcService";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { fetchRoom, createRoom, checkRoom, leaveRoom } from "@/app/config/api";
 import { debounce } from "lodash";
 import type { Messages } from "@/types/messages";
+import { useOneShotSlowHint } from "@/utils/useOneShotSlowHint";
 
 function format_peopleMsg(template: string, peerCount: number) {
   return template.replace("{peerCount}", peerCount.toString());
@@ -46,19 +47,31 @@ export function useRoomManager({
     resetSenderApp,
   } = useFileTransferStore();
 
+  // A ref to indicate join side for slow-hint message orientation
+  const joinSideRef = useRef<boolean>(true);
+
+  // One-shot join slow hint (3s), per join attempt
+  const { arm: armJoinSlow, disarm: disarmJoinSlow, reset: resetJoinSlow } = useOneShotSlowHint({
+    thresholdMs: 3000,
+    putMessageInMs,
+    displayMs: 6000,
+    getMessage: () => {
+      if (!messages) return null;
+      const text = messages.text.ClipboardApp.join_slow;
+      if (!text) return null;
+      return { text, isShareEnd: joinSideRef.current };
+    },
+    visibilityGate: true,
+  });
+
   // Join room method - directly use webrtcService
   const joinRoom = useCallback(
     async (isSenderSide: boolean, roomId: string) => {
       if (!messages) return;
 
-      // UI: Joining feedback and slow network hint
-      let slowJoinTimer: any | null = null;
-      const clearJoinTimers = () => {
-        if (slowJoinTimer) {
-          clearTimeout(slowJoinTimer);
-          slowJoinTimer = null;
-        }
-      };
+      // UI: Joining feedback and slow network hint (one-shot)
+      joinSideRef.current = isSenderSide;
+      resetJoinSlow();
 
       try {
         // Immediate feedback on click
@@ -66,10 +79,7 @@ export function useRoomManager({
         putMessageInMs(joinInProgressMsg, isSenderSide, 6000);
 
         // 3s slow-network hint
-        slowJoinTimer = setTimeout(() => {
-          const joinSlowMsg = messages.text.ClipboardApp.join_slow;
-          putMessageInMs(joinSlowMsg, isSenderSide, 6000);
-        }, 3000);
+        armJoinSlow("join");
 
         // If it's the sender side and the room ID is not the initial ID, need to create the room first
         if (
@@ -84,7 +94,7 @@ export function useRoomManager({
                 messages.text.ClipboardApp.joinRoom.DuplicateMsg,
                 isSenderSide
               );
-              clearJoinTimers();
+              disarmJoinSlow();
               return;
             }
             setShareRoomId(roomId);
@@ -94,7 +104,7 @@ export function useRoomManager({
                 ` (Create room error)`,
               isSenderSide
             );
-            clearJoinTimers();
+            disarmJoinSlow();
             return;
           }
         }
@@ -121,7 +131,7 @@ export function useRoomManager({
           forceInitiatorOnline
         );
 
-        clearJoinTimers();
+        disarmJoinSlow();
         putMessageInMs(
           messages.text.ClipboardApp.joinRoom.successMsg,
           isSenderSide,
@@ -147,8 +157,8 @@ export function useRoomManager({
               ? messages.text.ClipboardApp.join_timeout
               : `${messages.text.ClipboardApp.joinRoom.failMsg} ${error.message}`;
         }
-        // Clear joining timers on failure
-        clearJoinTimers();
+        // Clear joining slow-hint on failure
+        disarmJoinSlow();
         putMessageInMs(errorMsg, isSenderSide);
       }
     },
@@ -160,6 +170,9 @@ export function useRoomManager({
       shareRoomId,
       setShareRoomId,
       setShareLink,
+      armJoinSlow,
+      disarmJoinSlow,
+      resetJoinSlow,
     ]
   );
 
