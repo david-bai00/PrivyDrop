@@ -87,7 +87,8 @@ export function useConnectionFeedback({
       disarmRtcSlow();
     }
     if (nowShare === "disconnected") {
-      const isForeground = document.visibilityState === "visible";
+      const isForeground =
+        typeof document !== "undefined" && document.visibilityState === "visible";
       if ((everShareRef.current || wasDiscShareRef.current) && isForeground) {
         const msg = messages.text.ClipboardApp.rtc_reconnecting;
         if (msg) putMessageInMs(msg, true, 4000);
@@ -117,7 +118,8 @@ export function useConnectionFeedback({
       disarmRtcSlow();
     }
     if (nowRecv === "disconnected") {
-      const isForeground = document.visibilityState === "visible";
+      const isForeground =
+        typeof document !== "undefined" && document.visibilityState === "visible";
       if ((everRecvRef.current || wasDiscRecvRef.current) && isForeground) {
         const msg = messages.text.ClipboardApp.rtc_reconnecting;
         if (msg) putMessageInMs(msg, false, 4000);
@@ -141,6 +143,7 @@ export function useConnectionFeedback({
   useEffect(() => {
     if (!messages) return;
     const onVisibilityChange = () => {
+      if (typeof document === "undefined") return;
       if (document.visibilityState !== "visible") return;
 
       const nowShare = sharePhaseRef.current;
@@ -164,9 +167,12 @@ export function useConnectionFeedback({
       }
     };
 
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-    };
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisibilityChange);
+      return () => {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      };
+    }
+    return;
   }, [messages, putMessageInMs]);
 }

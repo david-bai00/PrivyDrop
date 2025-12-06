@@ -38,6 +38,8 @@ export function usePageSetup({
 
   // Track referrer and handle URL 'roomId' parameter
   useEffect(() => {
+    // Guard in SSR
+    if (typeof window === "undefined") return;
     trackReferrer(); // Call on component mount
 
     const urlParams = new URLSearchParams(window.location.search);

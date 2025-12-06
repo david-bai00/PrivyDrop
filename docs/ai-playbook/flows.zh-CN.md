@@ -259,6 +259,27 @@ Core Services (webrtcService) + Store (fileTransferStore)
 8. **富文本安全处理**：useRichTextToPlainText 服务端渲染安全，客户端 DOM 转换处理块级元素
 9. **站内导航不中断（同一标签页）**：依赖 `frontend/stores/fileTransferStore.ts`（Zustand 单例）与 `frontend/lib/webrtcService.ts`（服务单例）。App Router 页面切换不打断传输且保留已选择/已接收内容。注意不要在路由切换副作用中调用 `webrtcService.leaveRoom()` 或重置 Store；刷新/新标签不在保证范围内。
 
+## 7）SSR 与 DOM 访问防护（必读）
+
+为避免“服务端异常（Application error）”这类 SSR 侧报错，前端改动需遵循以下守卫清单：
+
+- 仅在客户端生命周期中访问 DOM/Navigator
+  - 将 `document/window/navigator` 的访问放入 `useEffect`、事件回调或显式的客户端组件（文件顶部包含 `"use client";`）。
+  - 在回调内使用前加守卫：`typeof document !== 'undefined'`、`typeof window !== 'undefined'`、`typeof navigator !== 'undefined'`。
+- 定时器与可见性判断
+  - 使用全局 `setTimeout`/`clearTimeout`，避免直接引用 `window.setTimeout`。
+  - 监听可见性：注册/移除 `visibilitychange` 事件前先判断 `typeof document !== 'undefined'`。
+- 事件监听的清理
+  - 所有 `addEventListener` 都应在 `useEffect` 返回函数中对称 `removeEventListener`，并在服务端（无 `document`）时跳过注册。
+- 单例与模块副作用（重要）
+  - 禁止在模块顶层初始化依赖浏览器环境的实例（如 Socket、WebRTC、WakeLock 等）。应在客户端首次需要时惰性创建（lazy-init）。
+
+参考实现：
+
+- `frontend/utils/useOneShotSlowHint.ts`：在 `useEffect` 中对 `document` 做判空；定时器使用全局 `setTimeout`。
+- `frontend/hooks/useConnectionFeedback.ts`：读取 `document.visibilityState` 前判空；仅在客户端注册 `visibilitychange`。
+- `frontend/hooks/usePageSetup.ts`、`frontend/lib/tracking.ts`：读取 `window.location` 前判空。
+
 ### UI 连接反馈状态机（弱网/VPN 提示）
 
 - 入房阶段（join）
@@ -331,7 +352,7 @@ Core Services (webrtcService) + Store (fileTransferStore)
 - **错误处理标准化**：统一的消息提示机制（putMessageInMs）
 - **国际化集成**：useLocale + getDictionary 提供多语言支持
 
-## 7）背压与分片策略深度分析
+## 8）背压与分片策略深度分析
 
 ### 发送侧双层缓冲架构
 

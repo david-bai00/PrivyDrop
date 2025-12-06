@@ -1,6 +1,7 @@
 import { setTrack } from "@/app/config/api";
 // The website tracks the source through ?ref=reddit..., here to get the source, for example https://yourdomain.com?ref=producthunt
 export const trackReferrer = async () => {
+  if (typeof window === "undefined") return;
   // Get URL parameters
   const urlParams = new URLSearchParams(window.location.search);
   let ref = urlParams.get("ref");
