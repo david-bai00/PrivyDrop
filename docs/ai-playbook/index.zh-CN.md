@@ -11,6 +11,10 @@
 
 ## 文档索引
 
+- README
+
+  - `README.zh-CN.md`
+
 - AI Playbook
 
   - 代码地图：`docs/ai-playbook/code-map.zh-CN.md`

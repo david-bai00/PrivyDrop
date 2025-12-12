@@ -20,8 +20,9 @@ We believe everyone should have control over their own data. PrivyDrop was creat
 
 ## ✨ Key Features
 
-- 🔄 **Unlimited File Transfer** - Support files of any size through Chrome's direct-to-disk streaming (Need to set the save directory)
 - 🔒 **End-to-End Encryption**: Leverages P2P direct connections via WebRTC. All files and text are transferred directly between browsers without passing through any central server.
+- 🔄 **Unlimited File Transfer** - Support files of any size through Chrome's direct-to-disk streaming (Need to set the save directory)
+- 👥 **Multi-receiver Support** - A single room can have multiple receivers simultaneously downloading files/text, and newcomers can join without disrupting ongoing transfers.
 - 📂 **File & Folder Transfer**: Supports transferring multiple files and entire folders.
 - ⏸️ **Resume Transfer**: Resume file transfer from the point of interruption. Simply set the save directory to enable this feature, ensuring your large files are delivered safely even with unstable networks. If interrupted, you currently need to refresh both the sender and receiver web pages to restart the transfer.
 - ⚡ **Real-time & Efficient**: Displays real-time transfer progress and automatically calculates transfer speed.
