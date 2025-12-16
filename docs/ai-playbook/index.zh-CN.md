@@ -19,6 +19,7 @@
 
   - 代码地图：`docs/ai-playbook/code-map.zh-CN.md`
   - 流程（含微方案模板）：`docs/ai-playbook/flows.zh-CN.md`
+  - 流程（深度阅读拆分）：`docs/ai-playbook/flows/frontend.zh-CN.md`、`docs/ai-playbook/flows/backpressure-chunking.zh-CN.md`、`docs/ai-playbook/flows/resume.zh-CN.md`、`docs/ai-playbook/flows/reconnect-consistency.zh-CN.md`
   - 协作规则：`docs/ai-playbook/collab-rules.zh-CN.md`
 
 - 系统与架构
