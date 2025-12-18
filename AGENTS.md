@@ -1,18 +1,19 @@
-# AGENTS — PrivyDrop Repository Rules（简版）
+# AGENTS — PrivyDrop Repository Rules (Short)
 
-最重要的原则
+## First Principles
 
-- 用中文沟通：与项目负责人沟通一律使用中文（简体）。代码注释、命名、提交信息、PR 标题与描述统一使用英文。
-- 方案与代码遵循最佳实践：优先选择与现有技术栈一致、被验证过的实现；小步迭代、易回滚。
-- 计划先行：任何实现前须提交并获批变更计划（目标、范围/文件、方案、风险、验收、回滚、需更新文档、验证方式）。模板见 docs/ai-playbook/collab-rules.zh-CN.md。
-- 单一主题：每次改动只解决一个明确目标，避免“顺手修复”无关问题，保持最小可回滚。
-- 隐私与架构红线：后端仅做信令与房间管理；严禁任何形式的文件数据中转、存储或上报至第三方。
-- 传输护栏：保持既定分片/背压/重试等关键参数与机制；任何破坏性或参数层变更需先获批。
-- 依赖与基建：未经批准不得新增依赖/组件库/基础设施或进行大规模重构。
-- 文档同步：涉及流程、接口或入口文件路径的改动，必须在同一 PR 内同步更新 docs/ai-playbook/flows.zh-CN.md 与 docs/ai-playbook/code-map.zh-CN.md。
-- 验证要求：前端需构建通过（next build）；列出关键手测用例与回归点。
+- Communicate in Chinese: Always use Simplified Chinese when communicating with the project owner/maintainers. Use English for code comments, naming, commit messages, and PR titles/descriptions.
+- Best practices, aligned with the existing stack: Prefer proven approaches consistent with what the repo already uses; iterate in small steps and keep changes easy to roll back.
+- Plan first: Before implementing anything, propose a change plan and get approval (goals, scope/files, approach, risks, acceptance, rollback, docs updates, validation). Template: `docs/ai-playbook/collab-rules.md` (or `docs/ai-playbook/collab-rules.zh-CN.md`).
+- One change, one purpose: Each change should solve one clear goal; avoid “while I’m here” fixes; keep it minimal and reversible.
+- Privacy & architecture red line: The backend is for signaling and room coordination only. Do not relay, store, or upload any user file data to the server or third parties in any form.
+- Transport guardrails: Keep established chunking/backpressure/retry parameters and mechanisms; any breaking change or parameter-level change must be approved first.
+- Dependencies & infrastructure: Do not add new dependencies/component libraries/infrastructure or do large refactors without approval.
+- Docs must stay in sync: If a change affects flows, interfaces, or entry file paths, update `docs/ai-playbook/flows.zh-CN.md` and `docs/ai-playbook/code-map.zh-CN.md` in the same PR.
+- Verification required: Frontend must build (`next build`); list key manual test cases and regression points.
 
-优先级与冲突
+## Priority & Conflicts
 
-- 显式用户指令优先于本文件；如有冲突需在计划中说明并征得同意。
-- 更多细则、示例与校验清单以 docs/ai-playbook/collab-rules.zh-CN.md 为准（本文件仅保留最原则条款）。
+- Explicit user instructions override this file; if there’s a conflict, call it out in the plan and get approval.
+- For detailed rules, examples, and checklists, follow `docs/ai-playbook/collab-rules.md` (this file only keeps the highest-level principles).
+
