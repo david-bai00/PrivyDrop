@@ -1,0 +1,301 @@
+---
+title: "把 AI 变成可协作队友：AGENTS.md + AI Playbook + 计划先行（附模板）"
+description: "一套可复制的 AI 协作工程化方法：规则外化（AGENTS.md）、外部记忆（AI Playbook）、计划先行（变更计划模板）与上下文续航，让新增特性/修复 bug 更快、更稳、更可回滚。"
+date: "2025-12-20"
+author: "david bai"
+cover: "/blog-assets/privydrop-open-source.jpg"
+tags:
+  ["AI Collaboration", "Codex", "Engineering Process", "Open Source", "Next.js"]
+status: "published"
+---
+
+![](/blog-assets/privydrop-open-source.jpg)
+
+如果你把 AI 当成“更快的搜索框”，它确实能提速；但当你把 AI 当成“可协作的队友”时，你会立刻遇到另外一类问题：它会猜位置、会跑偏、会顺手大改、会在上下文变长后逐渐失真。
+
+这篇文章是一个**教程**：把 AI 协作从“玄学 prompt”落到**可执行的工程流程**。你最终会得到一套可以直接复制进任意代码仓库的最小结构：
+
+- `AGENTS.md`：项目级硬约束（红线、默认值、验收方式）
+- `docs/ai-playbook/index.md`：一页式索引入口（高信噪比导航）
+- `docs/ai-playbook/code-map.md`：代码地图（去哪改）
+- `docs/ai-playbook/flows.md`：关键流程（怎么跑）
+- `docs/ai-playbook/collab-rules.md`：协作规则 + 变更计划模板（怎么协作）
+
+本文的所有示例都来自开源仓库 PrivyDrop，你可以直接对照实现：
+https://github.com/david-bai00/PrivyDrop
+
+另外，我们也会引用 OpenAI 的一篇实践文章作为“外部佐证”（你会发现方法论非常一致）：
+https://openai.com/zh-Hans-CN/index/shipping-sora-for-android-with-codex/
+
+---
+
+## Step 0：先定义边界与 Done（不要从 prompt 开始）
+
+这一步只做一件事：把“什么是做完”写清楚，否则 AI 只会拼命让代码“跑起来”，而不是按你团队期望的方式“长期可维护地跑起来”。
+
+建议先定 3 类最小约束：
+
+1. **边界（Boundary）**：哪些事永远不能做（隐私/架构红线、协议兼容、关键参数护栏）
+2. **范围（Scope）**：一次只做一个目标，禁止“顺手修复”
+3. **验收（Done）**：构建/测试/手测回归点，必须写出来
+
+可以把它们压缩成一句话，放在每次需求的开头：
+
+```text
+目标明确、单一主题、先交计划再动手；不得越过隐私/架构红线；完成必须可构建并列出回归点。
+```
+
+---
+
+## Step 1：写 `AGENTS.md`（项目级硬约束，强制稳定复用）
+
+把 `AGENTS.md` 理解为：你团队“默认值”和“红线”的机器可读版本。它的作用不是解释原理，而是**在每次会话中都能被重复应用**。
+
+在 PrivyDrop 里，建议重点展示这 5 条（足够代表“工程协作约束”的核心）：
+
+- 计划先行：`AGENTS.zh-CN.md:7`
+- 单一主题：`AGENTS.zh-CN.md:8`
+- 隐私与架构红线：`AGENTS.zh-CN.md:9`
+- 文档同步：`AGENTS.zh-CN.md:12`
+- 验证要求：`AGENTS.zh-CN.md:13`
+
+对应文件（可直接阅读/复制）：  
+https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.zh-CN.md
+
+如果你想从零写一个最小版本，可以用下面这个结构（建议保持短、硬、可执行）：
+
+```md
+# AGENTS — Repo Rules
+
+最重要的原则
+
+- Plan-first：任何改动先交变更计划，获批后再写代码
+- Single-scope：一次只解决一个目标，禁止顺手修复
+- Redlines：隐私/架构/协议/关键参数不得突破
+- Docs-sync：涉及流程/入口/接口变更必须同步更新 playbook
+- Validation：必须给出构建/测试/关键手测回归点
+```
+
+---
+
+## Step 2：写 `docs/ai-playbook/index.md`（高信噪比入口索引）
+
+AI 最常见的跑偏原因之一是：**不知道你家代码“入口在哪”**。这会导致它用“猜”的方式找文件、提方案。
+
+索引页要做到两件事：
+
+- 30 秒读完：只放“项目快照 + 链接索引”
+- 一键跳转：把读者/AI 带到 code-map / flows / collab-rules
+
+参考实现：`docs/ai-playbook/index.zh-CN.md`  
+https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/index.zh-CN.md
+
+最小模板（可直接复制）：
+
+```md
+# AI Playbook — Index
+
+## 项目快照
+
+- 栈：Next.js / Node / ...
+- 红线：...
+
+## 文档索引
+
+- 代码地图：docs/ai-playbook/code-map.md
+- 关键流程：docs/ai-playbook/flows.md
+- 协作规则：docs/ai-playbook/collab-rules.md
+```
+
+---
+
+## Step 3：写 `code-map.md`（去哪改：入口文件 + 职责一句话）
+
+代码地图的目标是“快速定位”，不是“教你怎么改”。写法也很简单：
+
+- 只列关键目录与关键入口文件
+- 每个入口文件只写一句话职责
+- 看到需求时，先在 code-map 里命中 3–8 个候选文件，再深入读
+
+参考实现：`docs/ai-playbook/code-map.zh-CN.md`  
+https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/code-map.zh-CN.md
+
+可选：也可以加一段“常见需求 → 入口文件”的速查表，进一步降低定位成本：
+
+```md
+常见需求定位
+
+- 新增页面/SEO：frontend/app/\*\*/page.tsx + metadata.ts
+- i18n 文案：frontend/constants/messages/\*
+- 博客：frontend/content/blog/\* + frontend/lib/blog.ts
+```
+
+code-map 怎么生成（以及如何迭代）：
+
+- 初版：让 AI 基于对整个代码库的理解，先做一次“目录 + 关键入口文件”的梳理，目标是帮助定位而不是追求完备。
+- 迭代：把它当作活文档维护。每次有实质性改动时，让 AI 根据本次变更（PR/commit/文件清单）做增量更新，避免一次性重写。
+
+---
+
+## Step 4：写 `flows.md`（怎么跑：关键流程 + 调试要点 + 微方案模板）
+
+如果 code-map 解决“去哪改”，flows 解决的就是“怎么跑”。它对 AI 的价值非常大：
+
+- 把时序与不变量写清楚，AI 就不需要“凭感觉改”
+- 你可以把“历史上踩过的坑”压缩为调试要点，直接复用
+
+参考实现：`docs/ai-playbook/flows.zh-CN.md`（并拆分了深度阅读小节）  
+https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/flows.zh-CN.md
+
+建议至少包含三块内容：
+
+1. **关键流程/时序**（必要时给 Mermaid）
+2. **调试要点**（哪些日志/状态最关键）
+3. **微方案模板**（让 AI 先写计划再动手）
+
+flows 怎么生成（以及如何迭代）：
+
+- 初版：让 AI 先复述“端到端流程 + 关键时序 + 不变量”，你负责校正（尤其是边界/红线/不变量），再把结果沉淀进文档。
+- 迭代：同样按增量维护。每次流程/接口/时序变化，优先更新 flows，而不是让它慢慢过时。
+
+---
+
+## Step 5：把“计划先行”工程化（计划 = 迷你设计文档）
+
+这是提速的关键：把评审从“读 diff”前移到“读计划”。
+
+建议在 `collab-rules.md` 里固化计划模板，并把它当成强约束。PrivyDrop 的模板在这里：
+
+- `docs/ai-playbook/collab-rules.zh-CN.md`  
+  https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/collab-rules.zh-CN.md
+
+模板可以直接复用其中的结构（目标/范围/方案/风险/验收/回滚/验证）,参考如下:
+
+```text
+Title: <简明标题>
+
+Goals
+- <预期达成的目标>
+
+Scope / Files
+- <将修改与新增的文件路径清单 + 原因>
+
+Approach
+- <实现思路与关键设计点>
+
+Risks & Mitigations
+- <主要风险> → <缓解策略>
+
+Acceptance Criteria
+- <可验证的验收项>
+
+Rollback
+- <如何快速回滚>
+
+Docs to Update
+- docs/ai-playbook/index.md / code-map.md / flows.md / collab-rules.md / others?
+
+Validation
+- Build: next build
+- Manual: <列出关键用例与回归点>
+```
+
+实践中更稳的做法是：让 AI 先做两步，再进入写计划阶段：
+
+1. 读 playbook 的 index + code-map + flows（只读，不动代码）
+2. 用自己的话复述现状与约束（你纠正一次）
+3. 再产出变更计划（你批准后才允许写代码）
+
+---
+
+## Step 5.1：上下文续航（对话变长就“存档换对话”）
+
+长任务进行到一半时，AI 输出质量下降几乎是必然的。可以把“续航”变成固定动作：当开始出现猜测、遗忘约束、跑偏时，先把当前状态写成一个文件，然后开新对话继续；或者先执行一次“压缩/总结（compress）”把上下文收敛，再继续推进。
+
+最小续航文档模板（建议放到 `docs/ai-playbook/handoff.md` 或临时文件里）：
+
+```md
+# Handoff
+
+## 问题定义（3–5 句）
+
+## 已确认的计划（逐条）
+
+## 已完成 / 未完成
+
+## 关键文件与入口
+
+## 红线与不变量
+
+## 验收与回归清单
+
+## 下一步 checklist
+```
+
+这一步的目标不是“写漂亮文档”，而是把上下文从“对话窗口”转成“可被下一次会话稳定读取的文件”。
+
+---
+
+## Step 6：形成协作闭环（像带新同事一样带 agent）
+
+当你把前面几步做完，协作会变成一种稳定的“流水线”：
+
+1. 需求 → 约束（引用 `AGENTS.md`）
+2. 定位 → 入口（引用 `index + code-map`）
+3. 对齐 → 流程（引用 `flows`）
+4. 计划 → 迷你设计文档（引用 `collab-rules` 模板）
+5. 实现 → 小步单一主题（便于回滚）
+6. 验证 → `next build` + 关键手测回归点
+7. 同步 → 文档不落后（playbook 及时更新）
+
+我最直观的收益是：现在新增特性/修复 bug 的节奏明显更快、更稳。更重要的是，“快”不是靠冒险，而是靠**减少返工**：
+
+- 计划阶段先纠偏，避免写完再推倒重来
+- 单一主题让回滚成本变低，合并也更容易
+- flows 把历史坑浓缩成 checklist，减少重复踩坑
+
+需要加一道“门禁”时，可以把这两条写进 PR 模板：
+
+- 本 PR 是否包含变更计划链接/摘要？
+- 是否更新了 `docs/ai-playbook/*`（如涉及入口/流程/接口）？
+
+---
+
+## 业界对照：OpenAI 如何用 Codex 组织冲刺（外部佐证）
+
+OpenAI 在《我们如何使用 Codex 在 28 天内构建 Android 版 Sora》里总结了一套非常相似的工作模型：
+https://openai.com/zh-Hans-CN/index/shipping-sora-for-android-with-codex/
+
+可以重点对齐这几个点（与本文的方法一一对应）：
+
+- 把 agent 当“新入职的资深工程师”：能力强，但需要明确架构/规范/限制条件
+- 规则要外化：他们提到在代码库中创建并维护大量 `AGENTS.md` 很实用
+- 实质性变更先做计划：计划像微型设计文档，先调试计划再调试代码
+- 上下文续航：当达到背景窗口限制时，把计划写入文件供下一次会话继续
+- 多会话并行：更像在“管理一个团队”，而不是使用单一工具
+
+规模不必照搬，但方法值得借鉴：**先把输入变好，输出自然会稳定**。
+
+---
+
+## 可直接复制的最小目录结构
+
+```text
+AGENTS.md
+docs/
+  ai-playbook/
+    index.md
+    code-map.md
+    flows.md
+    collab-rules.md
+```
+
+如果你已经有文档但分散在各处：先做 index，把入口收束；然后再补 code-map/flows/模板即可。
+
+---
+
+## 结语
+
+AI 辅助开发不会减少严谨性要求，反而会增加。真正能把效率变成“可持续复利”的，不是更长的 prompt，而是更强的工程约束：规则外化、计划先行、流程固化、上下文续航。
+
+如果希望进一步工程化，这套方法也可以演进为“可复制的仓库脚手架”：包含 PR 模板、issue 模板，以及一份可直接用的 `AGENTS.md`/playbook 初始化内容。
