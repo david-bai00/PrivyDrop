@@ -53,7 +53,12 @@ export function useOneShotSlowHint({
     if (shownRef.current) return;
     const payload = getMessage();
     if (!payload || !payload.text) return;
-    if (visibilityGate && typeof document !== "undefined") {
+    if (visibilityGate) {
+      if (typeof document === "undefined") {
+        // In SSR, defer showing until client becomes visible
+        pendingRef.current = true;
+        return;
+      }
       if (document.visibilityState !== "visible") {
         pendingRef.current = true;
         return;
@@ -67,7 +72,8 @@ export function useOneShotSlowHint({
   const arm = useCallback(
     (_key?: string) => {
       if (timerRef.current) return; // already armed
-      timerRef.current = window.setTimeout(() => {
+      // Use global setTimeout to avoid SSR window reference
+      timerRef.current = setTimeout(() => {
         fireIfEligible();
       }, thresholdMs) as unknown as number;
     },
@@ -77,6 +83,7 @@ export function useOneShotSlowHint({
   // Visibility change handling: if pending, try to fire once when visible
   useEffect(() => {
     if (!visibilityGate) return;
+    if (typeof document === "undefined") return;
     const handler = () => {
       if (document.visibilityState !== "visible") return;
       if (pendingRef.current && !shownRef.current) {
@@ -92,4 +99,3 @@ export function useOneShotSlowHint({
 
   return { arm, disarm, reset } as const;
 }
-
