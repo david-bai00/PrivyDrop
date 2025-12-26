@@ -1,0 +1,381 @@
+---
+title: "Keep AI on Track: A Practical, Repeatable Collaboration Playbook (with Templates)"
+description: "Tired of AI-written code going off the rails? Turn Codex/Claude into a real teammate with AGENTS.md, an AI Playbook, and a plan-first workflow—less rework, more maintainable code. Includes real Next.js examples."
+date: "2025-12-26"
+author: "david bai"
+cover: "/blog-assets/privydrop-open-source.jpg"
+tags:
+  ["AI Collaboration", "Codex", "Engineering Process", "Open Source", "Next.js"]
+status: "published"
+---
+
+![](/blog-assets/privydrop-open-source.jpg)
+
+Have you ever been in this situation?
+
+- You ask AI to fix a bug, and it “helpfully” changes unrelated code—then you end up reverting by hand
+- You write a mountain of prompts, and AI still can’t find the right files; it just “guesses”
+- Halfway through a long chat, AI forgets the constraints and quality drops off a cliff
+
+If you treat AI as “a faster search box,” these issues stay hidden. But the moment you treat AI as “a collaborator,” they hit delivery quality head-on.
+
+This post walks through an **actionable engineering workflow** that turns AI collaboration from “prompt witchcraft” into a **repeatable process**. After adopting it in PrivyDrop, shipping features and fixing bugs got noticeably faster and steadier—not by taking bigger risks, but by doing less rework.
+
+By the end, you’ll have a minimal structure you can copy into any repo:
+
+- `AGENTS.md`: repo-level hard constraints (red lines, defaults, definition of done)
+- `docs/ai-playbook/index.md`: a one-page, high-signal entry point
+- `docs/ai-playbook/code-map.md`: a code map (where to change)
+- `docs/ai-playbook/flows.md`: key flows (how it runs)
+- `docs/ai-playbook/collab-rules.md`: collaboration rules + change-plan template (how we work)
+
+All examples come from the open-source project PrivyDrop—feel free to follow along:
+[https://github.com/david-bai00/PrivyDrop](https://github.com/david-bai00/PrivyDrop)
+
+Also, OpenAI recently published a hands-on write-up with a very similar mindset:
+[https://openai.com/index/shipping-sora-for-android-with-codex/](https://openai.com/index/shipping-sora-for-android-with-codex/)
+
+---
+
+## Step 0: Define boundaries and “done” (don’t start with prompts)
+
+This step does only one thing: make “what done looks like” explicit. Otherwise AI will do everything it can to make the code “run,” not to make it “run in the maintainable way your team expects.”
+
+Start with three minimal constraints:
+
+1. **Boundary**: what must never happen (privacy/architecture red lines, protocol compatibility, guardrails on key parameters)
+2. **Scope**: one change, one goal—no “while I’m here”
+3. **Done**: build/tests/manual regression checklist must be written down
+
+Compress them into a single sentence and put it at the top of every request:
+
+```text
+Single goal, plan first; never cross privacy/architecture red lines; done means it builds and includes a regression checklist.
+```
+
+---
+
+## ❌ Common anti-patterns (avoid these traps)
+
+Before we begin, here are the three most common wrong approaches:
+
+1. **Tell AI to “change code” without a plan**
+   - Result: 10 files changed, then you realize the direction is wrong—rollback becomes painful
+   - Better: require a change plan first; implement only after approval
+
+2. **Dump every document into the prompt**
+   - Result: context overload; AI can’t see the signal (it can’t even locate entry points)
+   - Better: provide a high-signal index + code map
+
+3. **Let AI “optimize things on the side”**
+   - Result: one PR mixes multiple goals; review cost doubles; bugs get harder to roll back
+   - Better: single-scope changes that are easy to revert
+
+---
+
+## Step 1: Write `AGENTS.md` (repo-level hard constraints, consistently reused)
+
+Think of `AGENTS.md` as a machine-readable version of your team’s “defaults” and “red lines.” Its job isn’t to explain theory—it’s to be **reapplied in every session**.
+
+In PrivyDrop, five lines are enough to cover the core of engineering collaboration constraints:
+
+- Plan first: `AGENTS.en.md`
+- One change, one purpose: `AGENTS.en.md`
+- Privacy & architecture red line: `AGENTS.en.md`
+- Docs must stay in sync: `AGENTS.en.md`
+- Verification required: `AGENTS.en.md`
+
+File: [AGENTS.en.md](https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.en.md)
+
+If you want a minimal starter, here’s a good shape (keep it short, strict, and executable):
+
+```md
+# AGENTS — Repo Rules
+
+First Principles
+
+- Plan-first: Propose a change plan and get approval before writing code
+- Single-scope: One PR solves one goal; avoid “while I’m here” fixes
+- Redlines: Never cross privacy/architecture/protocol/key-parameter guardrails
+- Docs-sync: If flows/entry points/interfaces change, update the playbook docs
+- Validation: Must include build/tests and key manual regression checklist
+```
+
+### Multi-language support
+
+If your repo needs multilingual collaboration, a pragmatic pattern is:
+
+- Keep `AGENTS.en.md` as the canonical version
+- Add localized variants as needed (e.g. `AGENTS.<locale>.md`)
+- After cloning, each contributor can create a language-specific symlink locally:
+
+```bash
+# English users
+ln -s AGENTS.en.md AGENTS.md
+```
+
+- Add `AGENTS.md` to `.gitignore` to avoid symlink conflicts
+
+> 💡 **Key insight**  
+> The secret of reliable AI collaboration isn’t “better prompts.” It’s “making constraints part of the repo.” `AGENTS.md` makes rules reusable, and the AI Playbook makes context durable.
+
+---
+
+## Step 2: Write `docs/ai-playbook/index.md` (a high-signal entry point)
+
+One of the most common reasons AI goes off track: **it can’t find your real entry points**. Then it “guesses” where to change things.
+
+Your index page should do two things:
+
+- Readable in 30 seconds: only “project snapshot + link index”
+- One-click navigation: send readers/AI to code-map / flows / collab-rules
+
+Reference implementation: [docs/ai-playbook/index.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/index.md)
+
+Minimal template (copy-pasteable):
+
+```md
+# AI Playbook — Index
+
+## Project Snapshot
+
+- Stack: Next.js / Node / ...
+- Red lines: ...
+
+## Document Index
+
+- Code map: docs/ai-playbook/code-map.md
+- Key flows: docs/ai-playbook/flows.md
+- Collaboration rules: docs/ai-playbook/collab-rules.md
+```
+
+---
+
+## Step 3: Write `code-map.md` (where to change: entry points + one-line responsibilities)
+
+The code map is for “fast navigation,” not “teaching you how to implement.” The writing rules are simple:
+
+- List only key directories and key entry files
+- One sentence per entry file: what it’s responsible for
+- When a new request arrives: hit 3–8 candidate files in the code map before deep reading
+
+Reference implementation: [docs/ai-playbook/code-map.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/code-map.md)
+
+Optional: add a “common requests → entry points” cheat sheet to reduce search cost further:
+
+```md
+Common request routing
+
+- New page / SEO: frontend/app/**/page.tsx + metadata.ts
+- i18n copy: frontend/constants/messages/*
+- Blog: frontend/content/blog/* + frontend/lib/blog.ts
+```
+
+How to generate (and iterate) a code map:
+
+- First version: ask AI to summarize “directories + key entry points” for navigation—not completeness.
+- Iteration: treat it as a living doc. Update it incrementally per PR/commit (file list), instead of rewriting it from scratch.
+
+---
+
+## Step 4: Write `flows.md` (how it runs: key sequences + debug points + micro-plan template)
+
+If code-map answers “where to change,” flows answers “how it runs.” This is hugely valuable for AI:
+
+- If you write down the sequence and invariants, AI stops “patching by vibes”
+- You can compress past pitfalls into a reusable debug checklist
+
+Reference implementation: [docs/ai-playbook/flows.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/flows.md) (with split deep dives)
+
+At minimum, include:
+
+1. **Key flow / sequence** (Mermaid if useful)
+2. **Debug checklist** (the most important logs/states)
+3. **Micro-plan template** (force plan-first before coding)
+
+How to generate (and iterate) flows:
+
+- First version: ask AI to restate the end-to-end flow + key sequence + invariants. You review/correct (especially red lines and invariants), then commit it to docs.
+- Iteration: keep it up to date incrementally when interfaces/sequences change.
+
+---
+
+## Step 5: Make “plan first” enforceable (a plan = a mini design doc)
+
+This is where the speed-up really comes from: move the review earlier—from “reading diff” to “reading the plan.”
+
+Put the plan template in `collab-rules.md` and treat it as a hard constraint.
+
+PrivyDrop template: [docs/ai-playbook/collab-rules.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/collab-rules.md)
+
+You can reuse this structure directly (goals/scope/approach/risks/acceptance/rollback/validation):
+
+```text
+Title: <short, clear title>
+
+Goals
+- <what you want to achieve>
+
+Scope / Files
+- <list of files you’ll change/add + why>
+
+Approach
+- <implementation plan and key design points>
+
+Risks & Mitigations
+- <risk> → <mitigation>
+
+Acceptance Criteria
+- <verifiable acceptance items>
+
+Rollback
+- <how to revert quickly>
+
+Docs to Update
+- docs/ai-playbook/index.md / code-map.md / flows.md / collab-rules.md / others?
+
+Validation
+- Build: next build
+- Manual: <key cases & regression points>
+```
+
+In practice, a steadier workflow is:
+
+1. Read playbook index + code-map + flows (read-only, no code changes)
+2. Restate the current state and constraints in your own words (you correct once)
+3. Produce a change plan (implementation only after approval)
+
+> ⚠️ **Pitfall avoidance**  
+> Correct direction during the plan stage; avoid building and then tearing down. Single-scope changes keep rollback cheap and merging easier.
+
+---
+
+## Step 5.1: Context endurance (checkpoint → new chat)
+
+In long tasks, output quality dropping is almost inevitable. Make “endurance” a standard move: when you see guessing, forgotten constraints, or drift—write the state into a file, then continue in a new chat; or run a “compress/summarize” step to shrink context before continuing.
+
+Minimal handoff template (put it in `docs/ai-playbook/handoff.md` or a temporary file):
+
+```md
+# Handoff
+
+## Problem statement (3–5 sentences)
+
+## Confirmed plan (bullets)
+
+## Done / Not done
+
+## Key files and entry points
+
+## Red lines and invariants
+
+## Acceptance & regression checklist
+
+## Next-step checklist
+```
+
+The goal isn’t “beautiful docs.” It’s moving context from the chat window into a file that the next session can read reliably.
+
+---
+
+## Step 6: Close the collaboration loop (treat the agent like a new teammate)
+
+Once you have the pieces above, collaboration becomes a stable pipeline:
+
+1. Request → constraints (cite `AGENTS.md`)
+2. Navigation → entry points (cite `index + code-map`)
+3. Alignment → sequences (cite `flows`)
+4. Planning → mini design doc (cite `collab-rules` template)
+5. Implementation → small, single-scope change (easy rollback)
+6. Verification → `next build` + key manual regression points
+7. Sync → keep playbook docs up to date
+
+The most visible benefit for me: shipping features and fixing bugs is faster and steadier. More importantly, “fast” comes from **less rework**, not more risk:
+
+- Correct direction at plan time; avoid throwing work away
+- Single-scope changes keep rollback cheap and merges easy
+- Flows turn past pitfalls into a checklist you can reuse
+
+If you want a gate, put these two questions into your PR template:
+
+- Does this PR include a change plan link/summary?
+- Did you update `docs/ai-playbook/*` (if entry points/flows/interfaces changed)?
+
+## 💬 Prompt examples (ready to copy)
+
+Once your AI Playbook exists, you can start a collaboration session with something like this:
+
+---
+
+**Role**
+
+You are a senior Next.js full-stack engineer with strong product instincts. Your collaboration quality determines whether this repo can iterate sustainably—be thorough and professional.
+
+**Task kickoff**
+
+Please read `docs/ai-playbook/index.md` to understand the project context, code map, and collaboration rules. The current request is: "xxx".
+
+**Working style**
+
+Please deeply read relevant docs/code. Think systematically, ask clarifying questions, then propose analysis + a change plan for review. Implement only after approval.
+
+---
+
+**Why this works**
+
+- **Role**: sets quality bar and responsibility boundaries
+- **Kickoff**: forces reading the playbook instead of guessing
+- **Working style**: makes “plan first” part of the workflow
+
+---
+
+## Industry reference: How OpenAI uses Codex to run a sprint
+
+In “How we used Codex to build Sora for Android in 28 days,” OpenAI describes a workflow that matches this playbook closely:
+[https://openai.com/index/shipping-sora-for-android-with-codex/](https://openai.com/index/shipping-sora-for-android-with-codex/)
+
+Key points to align with:
+
+- Treat the agent like a new senior engineer: capable, but needs clear architecture/constraints
+- Externalize rules: maintaining a strong `AGENTS.md` pays off
+- Plan before real changes: plans are mini design docs—debug the plan before debugging the code
+- Context endurance: when you hit context limits, write plans to files for the next session
+- Multi-session parallelism: it’s closer to “managing a team” than using a single tool
+
+Android and web are different, but the method transfers: **improve inputs, and outputs stabilize**.
+
+---
+
+## A minimal directory structure you can copy
+
+```text
+AGENTS.en.md             # Canonical rules (English)
+AGENTS.<locale>.md       # Optional localized rules
+AGENTS.md                # Symlink (created locally after git clone)
+docs/
+  ai-playbook/
+    index.md             # High-signal entry point
+    code-map.md
+    flows.md
+    collab-rules.md
+```
+
+If you already have docs scattered everywhere: start with `index.md` to unify entry points; then fill in code-map/flows/templates.
+
+---
+
+## 🚀 Next steps
+
+1. **Start now**: copy the minimal structure into your repo and begin with `AGENTS.md`
+2. **Reference implementation**: visit [PrivyDrop GitHub](https://github.com/david-bai00/PrivyDrop) and browse the full AI Playbook
+3. **Feedback**: if this helps (or you hit pitfalls), open an issue on GitHub or leave a comment
+4. **Star**: if it’s valuable, consider starring PrivyDrop 🌟
+
+---
+
+## Closing
+
+AI-assisted development doesn’t reduce the need for rigor—it increases it. The sustainable speed-up doesn’t come from longer prompts, but from stronger engineering constraints: externalize rules, plan first, codify flows, and make context durable.
+
+If you want to go further, this can evolve into a “copyable repo scaffold”: PR templates, issue templates, and a ready-to-use `AGENTS.md` + playbook starter kit.
+

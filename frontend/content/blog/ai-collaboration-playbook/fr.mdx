@@ -1,0 +1,162 @@
+---
+title: "Empêcher l’IA de dérailler : une méthode de collaboration vraiment applicable (avec templates)"
+description: "Votre IA part dans tous les sens quand elle code ? Transformez Codex/Claude en vrai coéquipier grâce à AGENTS.md, un AI Playbook et un workflow plan-first : moins de retours en arrière, plus de maintenabilité. Exemples Next.js inclus."
+date: "2025-12-26"
+author: "david bai"
+cover: "/blog-assets/privydrop-open-source.jpg"
+tags:
+  ["Collaboration IA", "Codex", "Processus d’ingénierie", "Open Source", "Next.js"]
+status: "published"
+---
+
+![](/blog-assets/privydrop-open-source.jpg)
+
+Vous avez déjà vécu ça ?
+
+- Vous demandez à l’IA de corriger un bug et elle modifie aussi du code hors sujet — puis vous devez revert à la main
+- Vous écrivez des tonnes de prompts, mais elle ne trouve pas les bons fichiers et finit par “deviner”
+- Au milieu d’une longue discussion, elle oublie les contraintes et la qualité chute brutalement
+
+Si vous utilisez l’IA comme “une recherche plus rapide”, ces problèmes restent invisibles. Mais dès que vous la considérez comme “un coéquipier”, ils impactent directement la qualité de livraison.
+
+Cet article présente une **méthode d’ingénierie exécutable** pour transformer la collaboration IA — de la “magie de prompts” vers un **processus reproductible**. Dans PrivyDrop, après adoption, l’ajout de features et les bugfixes sont devenus plus rapides et plus stables : non pas en prenant plus de risques, mais en réduisant les retours en arrière.
+
+À la fin, vous obtenez une structure minimale copiable dans n’importe quel repo :
+
+- `AGENTS.md` : contraintes du repo (lignes rouges, valeurs par défaut, définition de done)
+- `docs/ai-playbook/index.md` : point d’entrée 1 page (haute densité de signal)
+- `docs/ai-playbook/code-map.md` : carte du code (où changer)
+- `docs/ai-playbook/flows.md` : flows clés (comment ça tourne)
+- `docs/ai-playbook/collab-rules.md` : règles de collaboration + template de plan de changement (comment on travaille)
+
+Tous les exemples viennent du repo open source PrivyDrop :
+[https://github.com/david-bai00/PrivyDrop](https://github.com/david-bai00/PrivyDrop)
+
+OpenAI a aussi publié un retour d’expérience très proche dans l’esprit :
+[https://openai.com/index/shipping-sora-for-android-with-codex/](https://openai.com/index/shipping-sora-for-android-with-codex/)
+
+---
+
+## Step 0 : définir les limites et le “done” (ne pas commencer par les prompts)
+
+Ce step fait une seule chose : rendre explicite ce que “terminé” veut dire. Sinon, l’IA optimise pour “ça marche”, pas pour “ça marche durablement et maintenablement”.
+
+Trois contraintes minimales :
+
+1. **Boundary** : ce qui ne doit jamais arriver (privacy/architecture red lines, compatibilité de protocole, guardrails de paramètres critiques)
+2. **Scope** : un objectif par changement, pas de “tant qu’on y est…”
+3. **Done** : build/tests + checklist de régression manuelle à écrire
+
+À mettre en une phrase en tête de chaque demande :
+
+```text
+Un seul objectif, plan d’abord ; ne jamais franchir les red lines privacy/architecture ; done = build OK + checklist de régression.
+```
+
+---
+
+## ❌ Anti‑patterns fréquents
+
+1. **Demander à l’IA de “modifier le code” sans plan**
+2. **Tout jeter dans le prompt (overload de contexte)**
+3. **Laisser l’IA “optimiser au passage”**
+
+Le remède est toujours le même : index + code-map + flows, puis un plan approuvé avant d’implémenter.
+
+---
+
+## Step 1 : écrire `AGENTS.md` (contraintes du repo, réutilisables)
+
+`AGENTS.md` = la version “machine‑readable” de vos règles et lignes rouges. Dans PrivyDrop, cinq points suffisent :
+
+- Plan first : `AGENTS.en.md`
+- One change, one purpose : `AGENTS.en.md`
+- Privacy & architecture red line : `AGENTS.en.md`
+- Docs must stay in sync : `AGENTS.en.md`
+- Verification required : `AGENTS.en.md`
+
+Fichier : [AGENTS.en.md](https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.en.md)
+
+```md
+# AGENTS — Repo Rules
+
+First Principles
+
+- Plan-first: Propose a change plan and get approval before writing code
+- Single-scope: One PR solves one goal; avoid “while I’m here” fixes
+- Redlines: Never cross privacy/architecture/protocol/key-parameter guardrails
+- Docs-sync: Keep the playbook docs in sync when entry points/flows/interfaces change
+- Validation: Must include build/tests and key manual regression checklist
+```
+
+---
+
+## Step 2 : `docs/ai-playbook/index.md` (entrée haute‑signal)
+
+Référence : [docs/ai-playbook/index.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/index.md)
+
+---
+
+## Step 3 : `code-map.md` (où changer)
+
+Référence : [docs/ai-playbook/code-map.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/code-map.md)
+
+---
+
+## Step 4 : `flows.md` (comment ça tourne)
+
+Référence : [docs/ai-playbook/flows.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/flows.md)
+
+---
+
+## Step 5 : rendre “plan first” obligatoire
+
+Template : [docs/ai-playbook/collab-rules.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/collab-rules.md)
+
+---
+
+## 💬 Prompt de démarrage (copiable)
+
+---
+
+**Role**
+
+You are a senior Next.js full-stack engineer with strong product instincts. Your collaboration quality determines whether this repo can iterate sustainably—be thorough and professional.
+
+**Task kickoff**
+
+Please read `docs/ai-playbook/index.md` to understand the project context, code map, and collaboration rules. The current request is: "xxx".
+
+**Working style**
+
+Please deeply read relevant docs/code. Think systematically, ask clarifying questions, then propose analysis + a change plan for review. Implement only after approval.
+
+---
+
+## Référence OpenAI
+
+[https://openai.com/index/shipping-sora-for-android-with-codex/](https://openai.com/index/shipping-sora-for-android-with-codex/)
+
+---
+
+## Structure minimale (copiable)
+
+```text
+AGENTS.en.md             # Canonical rules (English)
+AGENTS.<locale>.md       # Optional localized rules
+AGENTS.md                # Symlink (created locally after git clone)
+docs/
+  ai-playbook/
+    index.md             # High-signal entry point
+    code-map.md
+    flows.md
+    collab-rules.md
+```
+
+---
+
+## Conclusion
+
+Le développement assisté par IA ne réduit pas l’exigence de rigueur : il l’augmente. La vitesse durable vient de contraintes claires, de plans approuvés, de flows documentés et d’un contexte qui survit aux conversations.
+
+

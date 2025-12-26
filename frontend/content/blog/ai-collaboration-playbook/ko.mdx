@@ -1,0 +1,162 @@
+---
+title: "AI가 엇나가지 않게: 바로 적용 가능한 협업 엔지니어링 방법 (템플릿 포함)"
+description: "AI로 코드를 쓰면 자꾸 탈선하나요? AGENTS.md, AI Playbook, plan-first 워크플로로 Codex/Claude를 ‘함께 일하는 동료’로 만들 수 있습니다. 재작업을 줄이고 유지보수성을 높입니다. Next.js 실전 예시 포함."
+date: "2025-12-26"
+author: "david bai"
+cover: "/blog-assets/privydrop-open-source.jpg"
+tags:
+  ["AI 협업", "Codex", "엔지니어링 프로세스", "오픈 소스", "Next.js"]
+status: "published"
+---
+
+![](/blog-assets/privydrop-open-source.jpg)
+
+이런 상황을 겪어본 적 있나요?
+
+- AI에게 버그를 고쳐 달라고 했더니, 상관없는 코드까지 손대서 결국 수동으로 되돌렸다
+- 프롬프트를 잔뜩 써도 올바른 파일을 못 찾고, 결국 “찍어서” 수정한다
+- 대화가 길어지면 제약을 잊기 시작하고 품질이 급격히 떨어진다
+
+AI를 “더 빠른 검색창”으로만 쓰면 이런 문제는 드러나지 않습니다. 하지만 AI를 “협업하는 동료”로 다루는 순간, 이 문제들은 곧바로 납기와 품질에 영향을 줍니다.
+
+이 글은 AI 협업을 “프롬프트 요술”이 아니라 **재현 가능한 프로세스**로 바꾸는, **실행 가능한 엔지니어링 방법**을 소개합니다. PrivyDrop에서는 이 방식을 적용한 뒤 기능 추가/버그 수정 속도가 더 빠르고 안정적으로 변했습니다. 비결은 더 큰 모험이 아니라 **재작업이 줄어든 것**입니다.
+
+마지막에는 어떤 저장소든 그대로 복사해 넣을 수 있는 최소 구조를 얻게 됩니다:
+
+- `AGENTS.md`: 저장소 레벨의 하드 제약(레드라인, 기본값, Done 정의)
+- `docs/ai-playbook/index.md`: 1페이지 인덱스(고신호 진입점)
+- `docs/ai-playbook/code-map.md`: 코드 맵(어디를 고칠지)
+- `docs/ai-playbook/flows.md`: 핵심 플로우(어떻게 동작하는지)
+- `docs/ai-playbook/collab-rules.md`: 협업 규칙 + 변경 계획 템플릿(어떻게 일할지)
+
+모든 예시는 오픈소스 PrivyDrop에서 가져왔습니다:
+[https://github.com/david-bai00/PrivyDrop](https://github.com/david-bai00/PrivyDrop)
+
+OpenAI의 실전 글도 접근 방식이 매우 비슷합니다:
+[https://openai.com/index/shipping-sora-for-android-with-codex/](https://openai.com/index/shipping-sora-for-android-with-codex/)
+
+---
+
+## Step 0: 경계와 Done을 먼저 정의하기 (프롬프트부터 시작하지 말기)
+
+이 단계는 한 가지를 합니다. “무엇이 완료인가”를 명확히 쓰는 것. 그렇지 않으면 AI는 코드가 “돌아가게” 만드는 데 최적화하고, 팀이 원하는 “오래 유지보수 가능한 방식으로 돌아가게” 만드는 데는 최적화하지 않습니다.
+
+최소 제약 3가지를 먼저 정합니다:
+
+1. **Boundary(경계)**: 절대 하면 안 되는 것(프라이버시/아키텍처 레드라인, 프로토콜 호환, 핵심 파라미터 가드레일)
+2. **Scope(범위)**: 한 번에 한 목표. “겸사겸사” 금지
+3. **Done(완료)**: 빌드/테스트/수동 회귀 체크리스트를 반드시 작성
+
+요청 맨 앞에 붙일 한 문장으로 압축하면:
+
+```text
+목표는 하나, 먼저 계획; 프라이버시/아키텍처 레드라인을 넘지 말 것; Done은 빌드 통과 + 회귀 체크리스트 포함.
+```
+
+---
+
+## ❌ 흔한 안티패턴
+
+1. **계획 없이 “코드 고쳐줘”부터 시작**
+2. **문서를 전부 프롬프트에 던지기(문맥 과부하)**
+3. **“겸사겸사 최적화” 허용**
+
+해법은 같습니다: index + code-map + flows로 길을 잡고, 계획을 승인받은 뒤에만 구현합니다.
+
+---
+
+## Step 1: `AGENTS.md` 쓰기 (하드 제약을 반복 적용)
+
+`AGENTS.md`는 팀의 “기본값과 레드라인”을 기계가 읽을 수 있게 만든 버전입니다. PrivyDrop에서는 아래 다섯 가지가 핵심입니다:
+
+- Plan first: `AGENTS.en.md`
+- One change, one purpose: `AGENTS.en.md`
+- Privacy & architecture red line: `AGENTS.en.md`
+- Docs must stay in sync: `AGENTS.en.md`
+- Verification required: `AGENTS.en.md`
+
+파일: [AGENTS.en.md](https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.en.md)
+
+```md
+# AGENTS — Repo Rules
+
+First Principles
+
+- Plan-first: Propose a change plan and get approval before writing code
+- Single-scope: One PR solves one goal; avoid “while I’m here” fixes
+- Redlines: Never cross privacy/architecture/protocol/key-parameter guardrails
+- Docs-sync: Keep the playbook docs in sync when entry points/flows/interfaces change
+- Validation: Must include build/tests and key manual regression checklist
+```
+
+---
+
+## Step 2: `docs/ai-playbook/index.md` 만들기 (고신호 진입점)
+
+참고 구현: [docs/ai-playbook/index.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/index.md)
+
+---
+
+## Step 3: `code-map.md` 만들기 (어디를 고칠지)
+
+참고 구현: [docs/ai-playbook/code-map.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/code-map.md)
+
+---
+
+## Step 4: `flows.md` 만들기 (어떻게 동작하는지)
+
+참고 구현: [docs/ai-playbook/flows.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/flows.md)
+
+---
+
+## Step 5: “plan first”를 강제하기
+
+템플릿: [docs/ai-playbook/collab-rules.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/collab-rules.md)
+
+---
+
+## 💬 바로 쓸 수 있는 프롬프트 예시
+
+---
+
+**Role**
+
+You are a senior Next.js full-stack engineer with strong product instincts. Your collaboration quality determines whether this repo can iterate sustainably—be thorough and professional.
+
+**Task kickoff**
+
+Please read `docs/ai-playbook/index.md` to understand the project context, code map, and collaboration rules. The current request is: "xxx".
+
+**Working style**
+
+Please deeply read relevant docs/code. Think systematically, ask clarifying questions, then propose analysis + a change plan for review. Implement only after approval.
+
+---
+
+## OpenAI 참고
+
+[https://openai.com/index/shipping-sora-for-android-with-codex/](https://openai.com/index/shipping-sora-for-android-with-codex/)
+
+---
+
+## 그대로 복사 가능한 최소 디렉터리 구조
+
+```text
+AGENTS.en.md             # Canonical rules (English)
+AGENTS.<locale>.md       # Optional localized rules
+AGENTS.md                # Symlink (created locally after git clone)
+docs/
+  ai-playbook/
+    index.md             # High-signal entry point
+    code-map.md
+    flows.md
+    collab-rules.md
+```
+
+---
+
+## 마무리
+
+AI 보조 개발은 엄밀함을 줄이지 않습니다. 오히려 더 필요합니다. 지속 가능한 속도는 더 긴 프롬프트가 아니라 더 강한 엔지니어링 제약에서 나옵니다: 규칙 외부화, 계획 선행, 플로우 문서화, 그리고 문맥의 지속성.
+
+

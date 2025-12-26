@@ -1,0 +1,318 @@
+---
+title: "Damit KI nicht mehr abschweift: ein praxistaugliches Collaboration‑Playbook (mit Vorlagen)"
+description: "Geht KI‑Code ständig am Thema vorbei? Mit AGENTS.md, einem AI Playbook und einem plan-first‑Workflow wird Codex/Claude zum echten Teammate: weniger Nacharbeit, bessere Wartbarkeit. Mit Next.js‑Praxisbeispielen."
+date: "2025-12-26"
+author: "david bai"
+cover: "/blog-assets/privydrop-open-source.jpg"
+tags:
+  ["KI‑Zusammenarbeit", "Codex", "Engineering‑Prozess", "Open Source", "Next.js"]
+status: "published"
+---
+
+![](/blog-assets/privydrop-open-source.jpg)
+
+Kommt dir das bekannt vor?
+
+- Du bittest KI, einen Bug zu fixen—und sie ändert gleich „hilfsbereit“ auch Unrelated‑Code. Am Ende revertierst du von Hand.
+- Du schreibst endlose Prompts, aber die KI findet die richtigen Dateien nicht und „rät“.
+- Mitten in einer langen Unterhaltung vergisst sie Constraints; die Qualität fällt abrupt ab.
+
+Wenn du KI nur als „schnellere Suche“ nutzt, fallen diese Probleme kaum auf. Sobald du KI aber als „kollaborierenden Teammate“ behandelst, wirken sie direkt auf Delivery‑Qualität.
+
+Dieser Artikel zeigt einen **umsetzbaren Engineering‑Prozess**, der KI‑Zusammenarbeit von „Prompt‑Magie“ zu einem **reproduzierbaren Workflow** macht. In PrivyDrop wurden Feature‑Entwicklung und Bugfixing spürbar schneller und stabiler—nicht durch mehr Risiko, sondern durch weniger Nacharbeit.
+
+Am Ende hast du eine minimale Struktur, die du in jedes Repo kopieren kannst:
+
+- `AGENTS.md`: harte Repo‑Constraints (Red Lines, Defaults, Definition of Done)
+- `docs/ai-playbook/index.md`: ein einseitiger High‑Signal‑Index
+- `docs/ai-playbook/code-map.md`: Code‑Landkarte (wo ändern)
+- `docs/ai-playbook/flows.md`: zentrale Flows (wie es läuft)
+- `docs/ai-playbook/collab-rules.md`: Kollaborationsregeln + Change‑Plan‑Template (wie wir arbeiten)
+
+Alle Beispiele stammen aus dem Open‑Source‑Repo PrivyDrop:
+[https://github.com/david-bai00/PrivyDrop](https://github.com/david-bai00/PrivyDrop)
+
+Und OpenAI hat kürzlich eine sehr ähnliche Praxisperspektive veröffentlicht:
+[https://openai.com/index/shipping-sora-for-android-with-codex/](https://openai.com/index/shipping-sora-for-android-with-codex/)
+
+---
+
+## Step 0: Grenzen und „done“ definieren (nicht mit Prompts starten)
+
+Dieser Schritt macht nur eins: „Was heißt fertig?“ glasklar definieren. Sonst optimiert KI auf „läuft irgendwie“, nicht auf „läuft langfristig wartbar nach Teamstandard“.
+
+Drei minimale Constraints:
+
+1. **Boundary**: was niemals passieren darf (Privacy/Architektur‑Redlines, Protokoll‑Kompatibilität, Guardrails für kritische Parameter)
+2. **Scope**: ein Ziel pro Änderung, keine „wenn ich schon dabei bin…“
+3. **Done**: Build/Tests + manuelle Regression‑Checkliste müssen stehen
+
+In einem Satz zusammengefasst (und an den Anfang jeder Anfrage):
+
+```text
+Ein Ziel, zuerst der Plan; Privacy/Architektur‑Redlines nie brechen; done heißt: Build grün + Regression‑Checklist.
+```
+
+---
+
+## ❌ Häufige Anti‑Patterns (bitte vermeiden)
+
+Drei Klassiker:
+
+1. **„Ändere den Code“ ohne Plan**
+   - Folge: 10 Dateien später stellst du fest, dass die Richtung falsch war—Rollback wird teuer
+   - Besser: zuerst Change‑Plan, Implementierung erst nach Approval
+
+2. **Alle Dokus in den Prompt kippen**
+   - Folge: Kontext‑Overload; die KI verliert das Wesentliche (findet nicht mal Entry Points)
+   - Besser: High‑Signal‑Index + Code‑Map
+
+3. **„Nebenbei optimieren“ erlauben**
+   - Folge: ein PR mit mehreren Zielen; Review wird schwer, Bugs schwerer revertierbar
+   - Besser: Single‑Scope, minimal, gut roll‑backbar
+
+---
+
+## Step 1: `AGENTS.md` schreiben (harte Constraints, stabil wiederverwendet)
+
+Sieh `AGENTS.md` als maschinenlesbare Version eurer „Defaults“ und „Red Lines“. Nicht Theorie—sondern **wiederverwendbare Regeln pro Session**.
+
+In PrivyDrop reichen fünf Punkte:
+
+- Plan first: `AGENTS.en.md`
+- One change, one purpose: `AGENTS.en.md`
+- Privacy & architecture red line: `AGENTS.en.md`
+- Docs must stay in sync: `AGENTS.en.md`
+- Verification required: `AGENTS.en.md`
+
+Datei: [AGENTS.en.md](https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.en.md)
+
+Minimale Starter‑Struktur:
+
+```md
+# AGENTS — Repo Rules
+
+First Principles
+
+- Plan-first: Propose a change plan and get approval before writing code
+- Single-scope: One PR solves one goal; avoid “while I’m here” fixes
+- Redlines: Never cross privacy/architecture/protocol/key-parameter guardrails
+- Docs-sync: Keep the playbook docs in sync when entry points/flows/interfaces change
+- Validation: Must include build/tests and key manual regression checklist
+```
+
+### Mehrsprachigkeit
+
+Pragmatischer Ansatz:
+
+- `AGENTS.en.md` als kanonische Version
+- Lokalisierte Varianten nach Bedarf (z. B. `AGENTS.<locale>.md`)
+- Nach dem Clone lokal den passenden Symlink setzen:
+
+```bash
+# English users
+ln -s AGENTS.en.md AGENTS.md
+```
+
+- `AGENTS.md` in `.gitignore`, um Symlink‑Konflikte zu vermeiden
+
+> 💡 **Kern‑Insight**  
+> Zuverlässige KI‑Zusammenarbeit entsteht nicht durch „bessere Prompts“, sondern indem Constraints Teil des Repos werden. `AGENTS.md` macht Regeln wiederverwendbar, der AI Playbook macht Kontext langlebig.
+
+---
+
+## Step 2: `docs/ai-playbook/index.md` schreiben (High‑Signal‑Einstieg)
+
+Ein Hauptgrund für Drift: **KI kennt eure echten Einstiegspunkte nicht**. Dann werden Dateien „erraten“ statt gezielt gefunden.
+
+Das Index‑Dokument soll:
+
+- in 30 Sekunden lesbar sein (Snapshot + Link‑Index)
+- per Klick zu code-map / flows / collab-rules führen
+
+Referenz: [docs/ai-playbook/index.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/index.md)
+
+Minimal‑Template:
+
+```md
+# AI Playbook — Index
+
+## Project Snapshot
+
+- Stack: Next.js / Node / ...
+- Red lines: ...
+
+## Document Index
+
+- Code map: docs/ai-playbook/code-map.md
+- Key flows: docs/ai-playbook/flows.md
+- Collaboration rules: docs/ai-playbook/collab-rules.md
+```
+
+---
+
+## Step 3: `code-map.md` schreiben (wo ändern)
+
+Ziel: schnelle Orientierung, nicht Vollständigkeit.
+
+- nur Schlüsselverzeichnisse und Entry‑Files
+- pro Entry‑File ein Satz: Verantwortlichkeit
+- bei einer Anfrage: erst 3–8 Kandidaten aus der Code‑Map, dann Deep‑Dive
+
+Referenz: [docs/ai-playbook/code-map.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/code-map.md)
+
+Optional: „Common requests → Entry Points“:
+
+```md
+Common request routing
+
+- New page / SEO: frontend/app/**/page.tsx + metadata.ts
+- i18n copy: frontend/constants/messages/*
+- Blog: frontend/content/blog/* + frontend/lib/blog.ts
+```
+
+---
+
+## Step 4: `flows.md` schreiben (wie es läuft)
+
+Wenn code-map „wo“ beantwortet, beantwortet flows „wie“. Das verhindert KI‑Voodoo:
+
+- Sequenz + Invarianten => weniger „Bauchgefühl‑Patches“
+- Debug‑Pitfalls werden zur wiederverwendbaren Checklist
+
+Referenz: [docs/ai-playbook/flows.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/flows.md)
+
+Mindestens enthalten:
+
+1. **Key flow / sequence** (Mermaid wenn sinnvoll)
+2. **Debug‑Checkliste**
+3. **Micro‑Plan‑Template** (Plan‑first erzwingen)
+
+---
+
+## Step 5: „Plan first“ erzwingen (Plan = Mini‑Design‑Doc)
+
+Der echte Hebel: Reviews nach vorne ziehen—vom „Diff lesen“ zum „Plan lesen“.
+
+Template in `collab-rules.md` fixieren:
+[docs/ai-playbook/collab-rules.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/collab-rules.md)
+
+```text
+Title: <short, clear title>
+
+Goals
+- <what you want to achieve>
+
+Scope / Files
+- <list of files you’ll change/add + why>
+
+Approach
+- <implementation plan and key design points>
+
+Risks & Mitigations
+- <risk> → <mitigation>
+
+Acceptance Criteria
+- <verifiable acceptance items>
+
+Rollback
+- <how to revert quickly>
+
+Docs to Update
+- docs/ai-playbook/index.md / code-map.md / flows.md / collab-rules.md / others?
+
+Validation
+- Build: next build
+- Manual: <key cases & regression points>
+```
+
+Stabiler Ablauf:
+
+1. index + code-map + flows lesen (read‑only)
+2. Zustand + Constraints in eigenen Worten restaten (einmal korrigieren)
+3. Change‑Plan schreiben (erst dann implementieren)
+
+---
+
+## Step 5.1: Context Endurance (Checkpoint → neuer Chat)
+
+Bei langen Aufgaben sinkt Qualität oft. Standard‑Move: Zustand in eine Datei schreiben, dann im neuen Chat fortsetzen; oder Context vorher komprimieren.
+
+```md
+# Handoff
+
+## Problem statement (3–5 sentences)
+
+## Confirmed plan (bullets)
+
+## Done / Not done
+
+## Key files and entry points
+
+## Red lines and invariants
+
+## Acceptance & regression checklist
+
+## Next-step checklist
+```
+
+---
+
+## Step 6: Den Loop schließen (Agent wie ein neues Teammitglied behandeln)
+
+Pipeline:
+
+1. Anfrage → Constraints (`AGENTS.md`)
+2. Navigation → Entry Points (`index + code-map`)
+3. Alignment → Sequenzen (`flows`)
+4. Plan → Mini‑Design‑Doc (`collab-rules`)
+5. Umsetzung → klein & single‑scope
+6. Verifikation → `next build` + manuelle Regression
+7. Sync → Playbook‑Docs aktuell halten
+
+---
+
+## 💬 Prompt‑Beispiele (copy‑ready)
+
+---
+
+**Role**
+
+You are a senior Next.js full-stack engineer with strong product instincts. Your collaboration quality determines whether this repo can iterate sustainably—be thorough and professional.
+
+**Task kickoff**
+
+Please read `docs/ai-playbook/index.md` to understand the project context, code map, and collaboration rules. The current request is: "xxx".
+
+**Working style**
+
+Please deeply read relevant docs/code. Think systematically, ask clarifying questions, then propose analysis + a change plan for review. Implement only after approval.
+
+---
+
+## Industry‑Referenz: OpenAI und Codex
+
+[https://openai.com/index/shipping-sora-for-android-with-codex/](https://openai.com/index/shipping-sora-for-android-with-codex/)
+
+---
+
+## Minimale Ordnerstruktur (kopierbar)
+
+```text
+AGENTS.en.md             # Canonical rules (English)
+AGENTS.<locale>.md       # Optional localized rules
+AGENTS.md                # Symlink (created locally after git clone)
+docs/
+  ai-playbook/
+    index.md             # High-signal entry point
+    code-map.md
+    flows.md
+    collab-rules.md
+```
+
+---
+
+## Schluss
+
+KI‑gestützte Entwicklung reduziert Rigorosität nicht—sie erhöht sie. Nachhaltige Geschwindigkeit kommt aus starken Constraints: Regeln externalisieren, plan-first, Flows dokumentieren, Kontext langlebig machen.
+

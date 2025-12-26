@@ -1,19 +1,27 @@
 ---
-title: "把 AI 变成可协作队友：AGENTS.md + AI Playbook + 计划先行（附模板）"
-description: "一套可复制的 AI 协作工程化方法：规则外化（AGENTS.md）、外部记忆（AI Playbook）、计划先行（变更计划模板）与上下文续航，让新增特性/修复 bug 更快、更稳、更可回滚。"
-date: "2025-12-20"
+title: "让 AI 不再跑偏：可落地的协作工程化方法（附模板）"
+description: "用 AI 写代码总跑偏？这套方法让 Claude code/Codex 变成可协作队友：AGENTS.md、AI Playbook、变更计划模板，减少返工、提升代码可维护性。附完整实现与 Next.js 实战案例。"
+date: "2025-12-26"
 author: "david bai"
 cover: "/blog-assets/privydrop-open-source.jpg"
 tags:
-  ["AI Collaboration", "Codex", "Engineering Process", "Open Source", "Next.js"]
+  ["AI 协作", "Codex", "工程流程", "开源", "Next.js"]
 status: "published"
 ---
 
 ![](/blog-assets/privydrop-open-source.jpg)
 
-如果你把 AI 当成“更快的搜索框”，它确实能提速；但当你把 AI 当成“可协作的队友”时，你会立刻遇到另外一类问题：它会猜位置、会跑偏、会顺手大改、会在上下文变长后逐渐失真。
+你是否遇到过这样的场景：
 
-这篇文章是一个**教程**：把 AI 协作从“玄学 prompt”落到**可执行的工程流程**。你最终会得到一套可以直接复制进任意代码仓库的最小结构：
+- 让 AI 修复一个 bug，结果它把不相关的代码也改了，最后还得手动回滚
+- 写了一堆 prompt，AI 还是找不到正确的文件位置，只能靠"猜"
+- 对话进行到一半，AI 开始遗忘之前的约束，输出质量断崖式下降
+
+如果你把 AI 当成"更快的搜索框"，这些问题不会暴露；但当你把 AI 当成"可协作的队友"时，这些问题会直接影响交付质量。
+
+本文会展示一套**可执行的工程化方法**，让 AI 协作从"玄学 prompt"变成**可复制的流程**。PrivyDrop 项目实践后，新增特性/修复 bug 的节奏明显更快、更稳——不是靠冒险，而是靠减少返工。
+
+你最终会得到一套可以直接复制进任意代码仓库的最小结构：
 
 - `AGENTS.md`：项目级硬约束（红线、默认值、验收方式）
 - `docs/ai-playbook/index.md`：一页式索引入口（高信噪比导航）
@@ -22,10 +30,10 @@ status: "published"
 - `docs/ai-playbook/collab-rules.md`：协作规则 + 变更计划模板（怎么协作）
 
 本文的所有示例都来自开源仓库 PrivyDrop，你可以直接对照实现：
-https://github.com/david-bai00/PrivyDrop
+[https://github.com/david-bai00/PrivyDrop](https://github.com/david-bai00/PrivyDrop)
 
-另外，我们也会引用 OpenAI 的一篇实践文章作为“外部佐证”（你会发现方法论非常一致）：
-https://openai.com/zh-Hans-CN/index/shipping-sora-for-android-with-codex/
+另外，最近 OpenAI 的一篇实践文章也有相似的方法论：
+[https://openai.com/index/shipping-sora-for-android-with-codex/](https://openai.com/index/shipping-sora-for-android-with-codex/)
 
 ---
 
@@ -47,20 +55,37 @@ https://openai.com/zh-Hans-CN/index/shipping-sora-for-android-with-codex/
 
 ---
 
+## ❌ 常见反模式：别踩这些坑
+
+在开始之前，先看看最常见的 3 个错误做法：
+
+1. **直接让 AI "改代码"，不要计划**
+   - 后果：改了 10 个文件，最后发现方向错了，回滚成本巨大
+   - 正确做法：先让 AI 输出变更计划，你批准后再动手
+
+2. **把所有文档都塞给 AI**
+   - 后果：上下文爆炸，AI 反而抓不住重点（连"入口文件在哪"都找不到）
+   - 正确做法：用 index + code-map 提供高信噪比导航
+
+3. **让 AI "顺手优化"其他代码**
+   - 后果：一次 PR 混杂多个目标，code review 成本翻倍，出 bug 难回滚
+   - 正确做法：单一主题，一次只解决一个明确目标
+
+---
+
 ## Step 1：写 `AGENTS.md`（项目级硬约束，强制稳定复用）
 
 把 `AGENTS.md` 理解为：你团队“默认值”和“红线”的机器可读版本。它的作用不是解释原理，而是**在每次会话中都能被重复应用**。
 
-在 PrivyDrop 里，建议重点展示这 5 条（足够代表“工程协作约束”的核心）：
+在 PrivyDrop 里，建议重点展示这 5 条（足够代表"工程协作约束"的核心）：
 
-- 计划先行：`AGENTS.zh-CN.md:7`
-- 单一主题：`AGENTS.zh-CN.md:8`
-- 隐私与架构红线：`AGENTS.zh-CN.md:9`
-- 文档同步：`AGENTS.zh-CN.md:12`
-- 验证要求：`AGENTS.zh-CN.md:13`
+- 计划先行：`AGENTS.zh-CN.md`
+- 单一主题：`AGENTS.zh-CN.md`
+- 隐私与架构红线：`AGENTS.zh-CN.md`
+- 文档同步：`AGENTS.zh-CN.md`
+- 验证要求：`AGENTS.zh-CN.md`
 
-对应文件（可直接阅读/复制）：  
-https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.zh-CN.md
+对应文件：[AGENTS.zh-CN.md](https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.zh-CN.md)
 
 如果你想从零写一个最小版本，可以用下面这个结构（建议保持短、硬、可执行）：
 
@@ -76,6 +101,26 @@ https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.zh-CN.md
 - Validation：必须给出构建/测试/关键手测回归点
 ```
 
+### 多语言支持
+
+如果你的项目需要支持多语言协作（比如中英文团队），建议：
+
+- 创建 `AGENTS.zh-CN.md` 和 `AGENTS.en.md`
+- 每个协作者首次 clone 仓库后，根据语言选择创建符号链接：
+  ```bash
+  # 中文用户
+  ln -s AGENTS.zh-CN.md AGENTS.md
+  
+  # 英文用户
+  ln -s AGENTS.en.md AGENTS.md
+  ```
+- 在 `.gitignore` 中添加 `AGENTS.md`，避免符号链接冲突
+
+不同语言版本的 `AGENTS.md` 已经包含了各自语言的其他文档引用路径。
+
+> 💡 **核心洞察**  
+> AI 协作的本质不是"写更好的 prompt"，而是"把约束变成代码库的一部分"。AGENTS.md 让规则可复用，AI Playbook 让上下文可延续。
+
 ---
 
 ## Step 2：写 `docs/ai-playbook/index.md`（高信噪比入口索引）
@@ -84,11 +129,10 @@ AI 最常见的跑偏原因之一是：**不知道你家代码“入口在哪”
 
 索引页要做到两件事：
 
-- 30 秒读完：只放“项目快照 + 链接索引”
+- 30 秒读完：只放"项目快照 + 链接索引"
 - 一键跳转：把读者/AI 带到 code-map / flows / collab-rules
 
-参考实现：`docs/ai-playbook/index.zh-CN.md`  
-https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/index.zh-CN.md
+参考实现：[docs/ai-playbook/index.zh-CN.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/index.zh-CN.md)
 
 最小模板（可直接复制）：
 
@@ -117,8 +161,7 @@ https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/index.zh-CN.
 - 每个入口文件只写一句话职责
 - 看到需求时，先在 code-map 里命中 3–8 个候选文件，再深入读
 
-参考实现：`docs/ai-playbook/code-map.zh-CN.md`  
-https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/code-map.zh-CN.md
+参考实现：[docs/ai-playbook/code-map.zh-CN.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/code-map.zh-CN.md)
 
 可选：也可以加一段“常见需求 → 入口文件”的速查表，进一步降低定位成本：
 
@@ -141,11 +184,10 @@ code-map 怎么生成（以及如何迭代）：
 
 如果 code-map 解决“去哪改”，flows 解决的就是“怎么跑”。它对 AI 的价值非常大：
 
-- 把时序与不变量写清楚，AI 就不需要“凭感觉改”
-- 你可以把“历史上踩过的坑”压缩为调试要点，直接复用
+- 把时序与不变量写清楚，AI 就不需要"凭感觉改"
+- 你可以把"历史上踩过的坑"压缩为调试要点，直接复用
 
-参考实现：`docs/ai-playbook/flows.zh-CN.md`（并拆分了深度阅读小节）  
-https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/flows.zh-CN.md
+参考实现：[docs/ai-playbook/flows.zh-CN.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/flows.zh-CN.md)（并拆分了深度阅读小节）
 
 建议至少包含三块内容：
 
@@ -162,12 +204,11 @@ flows 怎么生成（以及如何迭代）：
 
 ## Step 5：把“计划先行”工程化（计划 = 迷你设计文档）
 
-这是提速的关键：把评审从“读 diff”前移到“读计划”。
+这是提速的关键：把评审从"读 diff"前移到"读计划"。
 
-建议在 `collab-rules.md` 里固化计划模板，并把它当成强约束。PrivyDrop 的模板在这里：
+建议在 `collab-rules.md` 里固化计划模板，并把它当成强约束。
 
-- `docs/ai-playbook/collab-rules.zh-CN.md`  
-  https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/collab-rules.zh-CN.md
+PrivyDrop 的模板：[docs/ai-playbook/collab-rules.zh-CN.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/collab-rules.zh-CN.md)
 
 模板可以直接复用其中的结构（目标/范围/方案/风险/验收/回滚/验证）,参考如下:
 
@@ -206,9 +247,12 @@ Validation
 2. 用自己的话复述现状与约束（你纠正一次）
 3. 再产出变更计划（你批准后才允许写代码）
 
+> ⚠️ **避坑指南**  
+> 计划阶段先纠偏，避免写完再推倒重来；单一主题让回滚成本变低，合并也更容易。
+
 ---
 
-## Step 5.1：上下文续航（对话变长就“存档换对话”）
+## Step 5.1：上下文续航（对话变长就"存档换对话"）
 
 长任务进行到一半时，AI 输出质量下降几乎是必然的。可以把“续航”变成固定动作：当开始出现猜测、遗忘约束、跑偏时，先把当前状态写成一个文件，然后开新对话继续；或者先执行一次“压缩/总结（compress）”把上下文收敛，再继续推进。
 
@@ -259,12 +303,38 @@ Validation
 - 本 PR 是否包含变更计划链接/摘要？
 - 是否更新了 `docs/ai-playbook/*`（如涉及入口/流程/接口）？
 
+## 💬 实战提示词样例
+
+当你准备好 AI Playbook 后，可以用类似下面的提示词启动协作：
+
+---
+
+**角色设定**
+
+你是一名资深的 Next.js 全栈工程师，擅长全栈开发、重构优化、bug 定位修复，做了很多成功的在线产品。你的协作质量直接决定了这个开源项目能否长期稳定迭代，请发挥你的专业能力。
+
+**任务启动**
+
+请你阅读 `docs/ai-playbook/index.zh-CN.md` 了解项目背景、代码地图、协作规范等，现在有一个需求为"xxx"。
+
+**工作方式**
+
+请你深入阅读项目相关文档和代码，在充分理解的基础上，结合你丰富的经验和知识，请你系统性、周全的思考，多向我提问来澄清可疑点，然后输出分析结果和行动计划和我讨论，待我同意后实施。
+
+---
+
+**为什么这样写？**
+
+- **角色设定**：明确 AI 的专业身份和责任范围，避免它"不知道该以什么标准输出"
+- **任务启动**：强制 AI 先读 playbook，避免凭空猜测
+- **工作方式**：把"计划先行"固化为工作流程，避免直接动手改代码
+
 ---
 
 ## 业界对照：OpenAI 如何用 Codex 组织冲刺（外部佐证）
 
 OpenAI 在《我们如何使用 Codex 在 28 天内构建 Android 版 Sora》里总结了一套非常相似的工作模型：
-https://openai.com/zh-Hans-CN/index/shipping-sora-for-android-with-codex/
+[https://openai.com/index/shipping-sora-for-android-with-codex/](https://openai.com/index/shipping-sora-for-android-with-codex/)
 
 可以重点对齐这几个点（与本文的方法一一对应）：
 
@@ -274,23 +344,39 @@ https://openai.com/zh-Hans-CN/index/shipping-sora-for-android-with-codex/
 - 上下文续航：当达到背景窗口限制时，把计划写入文件供下一次会话继续
 - 多会话并行：更像在“管理一个团队”，而不是使用单一工具
 
-规模不必照搬，但方法值得借鉴：**先把输入变好，输出自然会稳定**。
+虽然安卓开发与web开发领域不一样，但方法值得借鉴：**先把输入变好，输出自然会稳定**。
 
 ---
 
 ## 可直接复制的最小目录结构
 
 ```text
-AGENTS.md
+AGENTS.zh-CN.md          # 中文规则
+AGENTS.en.md             # 英文规则
+AGENTS.md                # 符号链接（git clone 后手动创建）
 docs/
   ai-playbook/
-    index.md
+    index.zh-CN.md       # 中文索引
+    index.md          # 英文索引
+    code-map.zh-CN.md
     code-map.md
+    flows.zh-CN.md
     flows.md
+    collab-rules.zh-CN.md
     collab-rules.md
 ```
 
+
 如果你已经有文档但分散在各处：先做 index，把入口收束；然后再补 code-map/flows/模板即可。
+
+---
+
+## 🚀 下一步行动
+
+1. **立即开始**：复制最小目录结构到你的项目，从 `AGENTS.md` 开始
+2. **参考实现**：访问 [PrivyDrop GitHub](https://github.com/david-bai00/PrivyDrop)，查看完整 AI Playbook
+3. **给我反馈**：如果这套方法对你有帮助（或踩坑了），欢迎在 GitHub 提 issue 或评论区交流
+4. **Star 支持**：如果觉得有价值，给 PrivyDrop 一个 star 🌟
 
 ---
 

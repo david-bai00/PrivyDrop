@@ -71,3 +71,5 @@ logs/
 # Temporary files
 .temp/
 .tmp/
+
+AGENTS.md

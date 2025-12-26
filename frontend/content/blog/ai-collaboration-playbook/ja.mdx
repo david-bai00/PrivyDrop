@@ -1,0 +1,381 @@
+---
+title: "AIを迷走させない：すぐ使える協働のエンジニアリング手法（テンプレ付き）"
+description: "AIにコードを書かせると脱線しがち？AGENTS.md・AI Playbook・Plan-first の型で、Codex/Claude を“協働できる相棒”に。手戻りを減らし、保守性を上げる。Next.js 実戦例つき。"
+date: "2025-12-26"
+author: "david bai"
+cover: "/blog-assets/privydrop-open-source.jpg"
+tags:
+  ["AI協働", "Codex", "エンジニアリングプロセス", "オープンソース", "Next.js"]
+status: "published"
+---
+
+![](/blog-assets/privydrop-open-source.jpg)
+
+こんな経験はありませんか？
+
+- AI にバグ修正を頼んだら、関係ないコードまで“親切に”直されて、結局手で戻す羽目になる
+- プロンプトを山ほど書いても、AI が正しいファイルに辿り着けず、最後は“当てずっぽう”
+- 会話が長くなると制約を忘れはじめ、出力品質が急降下する
+
+AI を「速い検索ボックス」として使うなら、これらの問題は表面化しません。けれど AI を「一緒に作る相棒」として扱った瞬間、納期と品質に直撃します。
+
+この記事では、AI 協働を「プロンプトの呪文」から **再現可能なプロセス** に変える、**実行可能なエンジニアリング手法** を紹介します。PrivyDrop では、この型を導入してから機能追加・バグ修正のテンポが明らかに速く、そして安定しました。速さの理由は冒険ではなく、**手戻りが減った** ことです。
+
+最終的に、どんなリポジトリにもそのまま移植できる最小セットが手に入ります：
+
+- `AGENTS.md`：プロジェクトのハード制約（レッドライン、デフォルト、Done の定義）
+- `docs/ai-playbook/index.md`：高シグナルな入口（1ページ索引）
+- `docs/ai-playbook/code-map.md`：コード地図（どこを触るか）
+- `docs/ai-playbook/flows.md`：重要フロー（どう動くか）
+- `docs/ai-playbook/collab-rules.md`：協働ルール + 変更計画テンプレ（どう進めるか）
+
+例はすべて OSS の PrivyDrop から。実装と照らし合わせて読めます：
+[https://github.com/david-bai00/PrivyDrop](https://github.com/david-bai00/PrivyDrop)
+
+さらに、OpenAI の実践記事も考え方が近いです：
+[https://openai.com/index/shipping-sora-for-android-with-codex/](https://openai.com/index/shipping-sora-for-android-with-codex/)
+
+---
+
+## Step 0：境界と Done を先に決める（プロンプトから始めない）
+
+このステップでやることは 1 つだけ。「何をもって完了とするか」を明文化します。そうしないと AI は、とにかくコードを「動かす」方向に全力を出してしまい、チームが求める「長期的に保守できる形で動かす」にはなりません。
+
+まずは最小限の 3 つを定義します：
+
+1. **Boundary（境界）**：絶対にやってはいけないこと（プライバシー/アーキテクチャのレッドライン、プロトコル互換、重要パラメータの護栏）
+2. **Scope（範囲）**：一度に一つの目的。「ついで修正」禁止
+3. **Done（完了条件）**：ビルド/テスト/手動回帰チェックは必ず書く
+
+短く 1 文に圧縮して、毎回の依頼の冒頭に置きます：
+
+```text
+目的は単一、まず計画。プライバシー/アーキテクチャのレッドラインを越えない。完了は build が通り、回帰チェックが書かれていること。
+```
+
+---
+
+## ❌ よくあるアンチパターン：ここは踏まない
+
+始める前に、ありがちな 3 つの間違い：
+
+1. **計画なしで AI に「コードを直して」と言う**
+   - 結果：10 ファイル変わってから方向違いに気づき、戻すコストが爆発する
+   - 正解：先に変更計画を出させ、承認してから実装
+
+2. **ドキュメントを全部 AI に投げる**
+   - 結果：文脈が飽和して要点が消える（入口ファイルすら見つけられない）
+   - 正解：高シグナルな index + code-map に絞る
+
+3. **AI に「ついでに最適化」させる**
+   - 結果：PR が複数目的で混ざり、レビューが重く、バグの切り戻しも難しい
+   - 正解：単一テーマで最小・可逆に
+
+---
+
+## Step 1：`AGENTS.md` を書く（ハード制約を強制的に再利用する）
+
+`AGENTS.md` は、チームの「デフォルト」と「レッドライン」を機械可読にしたものだと捉えると分かりやすいです。目的は理屈の説明ではなく、**毎回の会話で確実に効かせること**。
+
+PrivyDrop では、工学的な協働に必要な要点は 5 行に集約できます：
+
+- Plan first：`AGENTS.en.md`
+- One change, one purpose：`AGENTS.en.md`
+- Privacy & architecture red line：`AGENTS.en.md`
+- Docs must stay in sync：`AGENTS.en.md`
+- Verification required：`AGENTS.en.md`
+
+ファイル： [AGENTS.en.md](https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.en.md)
+
+ゼロから最小版を作るなら、例えばこの形（短く・硬く・実行可能に）：
+
+```md
+# AGENTS — Repo Rules
+
+First Principles
+
+- Plan-first: Propose a change plan and get approval before writing code
+- Single-scope: One PR solves one goal; avoid “while I’m here” fixes
+- Redlines: Never cross privacy/architecture/protocol/key-parameter guardrails
+- Docs-sync: Keep the playbook docs in sync when entry points/flows/interfaces change
+- Validation: Must include build/tests and key manual regression checklist
+```
+
+### 多言語対応
+
+多言語で運用するなら、現実的にはこうすると安定します：
+
+- `AGENTS.en.md` をカノニカル（基準）として保つ
+- 必要に応じてローカライズ版（例：`AGENTS.<locale>.md`）を追加する
+- clone 後、各自がローカルで言語に合わせた symlink を作る：
+
+```bash
+# English users
+ln -s AGENTS.en.md AGENTS.md
+```
+
+- symlink 衝突を避けるため `.gitignore` に `AGENTS.md` を入れる
+
+> 💡 **核心の洞察**  
+> AI 協働の本質は「良いプロンプト」ではなく「制約をリポジトリの一部にすること」。`AGENTS.md` はルールを再利用可能にし、AI Playbook は文脈を持続可能にします。
+
+---
+
+## Step 2：`docs/ai-playbook/index.md`（高シグナルな入口索引）を書く
+
+AI が脱線する最大要因のひとつは、**あなたのコードの“入口”を知らない** こと。結果、ファイルを推測で探し、提案も推測になります。
+
+索引ページの目的は 2 つ：
+
+- 30 秒で読める：プロジェクト概要 + リンク索引だけ
+- 1 クリックで飛べる：読者/AI を code-map / flows / collab-rules に誘導する
+
+参考実装： [docs/ai-playbook/index.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/index.md)
+
+最小テンプレ（そのままコピー可）：
+
+```md
+# AI Playbook — Index
+
+## Project Snapshot
+
+- Stack: Next.js / Node / ...
+- Red lines: ...
+
+## Document Index
+
+- Code map: docs/ai-playbook/code-map.md
+- Key flows: docs/ai-playbook/flows.md
+- Collaboration rules: docs/ai-playbook/collab-rules.md
+```
+
+---
+
+## Step 3：`code-map.md`（どこを触るか）を書く：入口ファイル + 役割 1 行
+
+コード地図のゴールは「素早く当てる」ことで、「教科書」ではありません。書き方はシンプルです：
+
+- 重要ディレクトリと入口ファイルだけ列挙
+- 入口ファイルは 1 行で責務を書く
+- 依頼が来たら、まず code-map で 3–8 個の候補を当ててから深掘り
+
+参考実装： [docs/ai-playbook/code-map.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/code-map.md)
+
+オプション：よくある依頼 → 入口の早見表も便利です：
+
+```md
+Common request routing
+
+- New page / SEO: frontend/app/**/page.tsx + metadata.ts
+- i18n copy: frontend/constants/messages/*
+- Blog: frontend/content/blog/* + frontend/lib/blog.ts
+```
+
+生成と運用：
+
+- 初版：AI に「ディレクトリ + 入口ファイル」を要約させ、完璧さより“当てやすさ”を優先
+- 更新：PR ごとに差分でメンテ。丸ごと書き直しは避ける
+
+---
+
+## Step 4：`flows.md`（どう動くか）を書く：時系列 + デバッグ要点 + マイクロ計画
+
+code-map が「どこを触るか」なら、flows は「どう動くか」です。AI にとって価値が大きい理由は：
+
+- 時系列と不変条件が書かれていれば、AI は“雰囲気修正”をしなくなる
+- 過去の落とし穴をチェックリストに圧縮して再利用できる
+
+参考実装： [docs/ai-playbook/flows.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/flows.md)
+
+最低限入れたい 3 つ：
+
+1. **重要フロー / 時系列**（必要なら Mermaid）
+2. **デバッグ要点**（見るべきログ/状態）
+3. **マイクロ計画テンプレ**（計画→承認→実装を強制）
+
+運用のコツ：
+
+- 初版：AI に E2E フロー + 重要時系列 + 不変条件を復唱させ、あなたが修正して文書化
+- 更新：インターフェース/時系列が変わったら差分で追従
+
+---
+
+## Step 5：「Plan first」を工程化する（計画 = ミニ設計書）
+
+ここが一番効きます。レビューを「diff を読む」から「計画を読む」へ前倒しします。
+
+`collab-rules.md` に計画テンプレを固定し、強制ルールとして運用します。
+
+PrivyDrop テンプレ： [docs/ai-playbook/collab-rules.md](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/collab-rules.md)
+
+構造はこのまま再利用できます：
+
+```text
+Title: <short, clear title>
+
+Goals
+- <what you want to achieve>
+
+Scope / Files
+- <list of files you’ll change/add + why>
+
+Approach
+- <implementation plan and key design points>
+
+Risks & Mitigations
+- <risk> → <mitigation>
+
+Acceptance Criteria
+- <verifiable acceptance items>
+
+Rollback
+- <how to revert quickly>
+
+Docs to Update
+- docs/ai-playbook/index.md / code-map.md / flows.md / collab-rules.md / others?
+
+Validation
+- Build: next build
+- Manual: <key cases & regression points>
+```
+
+実運用でさらに安定する流れ：
+
+1. index + code-map + flows を読む（読み取り専用、コードは触らない）
+2. 現状と制約を自分の言葉で復唱する（あなたが 1 回だけ矯正）
+3. 変更計画を書く（承認後に実装）
+
+> ⚠️ **避坑**  
+> 計画段階で方向を直す。書いてから壊すのを避ける。単一テーマは rollback とマージを軽くします。
+
+---
+
+## Step 5.1：文脈の持久力（チェックポイント → 新しい会話）
+
+長いタスクで品質が落ちるのはほぼ必然です。そこで“持久力”を作業手順にします：推測が増えた/制約を忘れた/脱線したら、状態をファイルに書き出して新しい会話へ。あるいは compress/summarize で文脈を圧縮して続けます。
+
+最小の引き継ぎテンプレ（`docs/ai-playbook/handoff.md` か一時ファイルに）：
+
+```md
+# Handoff
+
+## Problem statement (3–5 sentences)
+
+## Confirmed plan (bullets)
+
+## Done / Not done
+
+## Key files and entry points
+
+## Red lines and invariants
+
+## Acceptance & regression checklist
+
+## Next-step checklist
+```
+
+狙いは“綺麗な文書”ではなく、文脈をチャットからファイルへ移し、次のセッションでも安定して読めるようにすることです。
+
+---
+
+## Step 6：協働を閉ループにする（新入社員を迎えるように agent を扱う）
+
+上の部品が揃うと、協働は安定したパイプラインになります：
+
+1. 依頼 → 制約（`AGENTS.md` を引用）
+2. 位置特定 → 入口（`index + code-map` を引用）
+3. すり合わせ → 時系列（`flows` を引用）
+4. 計画 → ミニ設計書（`collab-rules` テンプレ）
+5. 実装 → 小さく単一テーマ（切り戻しやすい）
+6. 検証 → `next build` + 手動回帰点
+7. 同期 → playbook を最新に保つ
+
+体感のメリットは明確で、機能追加/バグ修正が速く、そして安定します。重要なのは「速さ」は冒険ではなく **手戻りの削減** から来ること：
+
+- 計画で方向を直し、作って壊すを減らす
+- 単一テーマで rollback を軽く、マージを簡単に
+- flows で過去の罠を checklist 化して再利用
+
+門番を置くなら、PR テンプレにこの 2 行を入れると効きます：
+
+- 変更計画のリンク/要約はあるか？
+- 入口/フロー/IF が変わったなら `docs/ai-playbook/*` を更新したか？
+
+## 💬 すぐ使えるプロンプト例
+
+AI Playbook ができたら、例えばこう始められます：
+
+---
+
+**Role**
+
+You are a senior Next.js full-stack engineer with strong product instincts. Your collaboration quality determines whether this repo can iterate sustainably—be thorough and professional.
+
+**Task kickoff**
+
+Please read `docs/ai-playbook/index.md` to understand the project context, code map, and collaboration rules. The current request is: "xxx".
+
+**Working style**
+
+Please deeply read relevant docs/code. Think systematically, ask clarifying questions, then propose analysis + a change plan for review. Implement only after approval.
+
+---
+
+**Why this works**
+
+- **Role**: sets quality bar and responsibility boundaries
+- **Kickoff**: forces reading the playbook instead of guessing
+- **Working style**: makes “plan first” part of the workflow
+
+---
+
+## 業界参照：OpenAI は Codex でスプリントをどう回すか
+
+OpenAI の「28 日で Android 版 Sora を作るために Codex をどう使ったか」は、この playbook と驚くほど一致します：
+[https://openai.com/index/shipping-sora-for-android-with-codex/](https://openai.com/index/shipping-sora-for-android-with-codex/)
+
+合わせたいポイント：
+
+- agent は“新しいシニアエンジニア”として扱う：強いが、制約とアーキテクチャの明確化が必要
+- ルールの外部化：強い `AGENTS.md` を保守するのは効く
+- 実装前に計画：計画はミニ設計書。コードより先に計画をデバッグ
+- 文脈の持久力：限界が来たら計画をファイルへ書き、次のセッションへ
+- マルチセッション並列：単一ツールより“チームを運用する”に近い
+
+領域は違っても方法は移植できます：**入力を良くすれば、出力は安定します**。
+
+---
+
+## そのままコピーできる最小ディレクトリ構成
+
+```text
+AGENTS.en.md             # Canonical rules (English)
+AGENTS.<locale>.md       # Optional localized rules
+AGENTS.md                # Symlink (created locally after git clone)
+docs/
+  ai-playbook/
+    index.md             # High-signal entry point
+    code-map.md
+    flows.md
+    collab-rules.md
+```
+
+すでに文書が散らばっているなら、まず `index.md` で入口を収束させ、その後に code-map/flows/テンプレを埋めるのが近道です。
+
+---
+
+## 🚀 次にやること
+
+1. **今すぐ始める**：最小構成をあなたのリポジトリにコピーし、まず `AGENTS.md` から
+2. **参考実装**： [PrivyDrop GitHub](https://github.com/david-bai00/PrivyDrop) で AI Playbook 全体を見る
+3. **フィードバック**：役立った/詰まったら issue やコメントで共有
+4. **Star**：価値があれば PrivyDrop に star を 🌟
+
+---
+
+## 結び
+
+AI 支援開発は厳密さを減らすのではなく、むしろ増やします。持続可能なスピードは、長いプロンプトではなく強い工程制約から生まれます：ルールの外部化、Plan-first、フローの文書化、そして文脈の持久力。
+
+さらに工程化するなら、PR/issue テンプレと、すぐ使える `AGENTS.md`/playbook 初期セットを含む「コピーできるリポジトリ雛形」に進化させるのも良いです。
+
