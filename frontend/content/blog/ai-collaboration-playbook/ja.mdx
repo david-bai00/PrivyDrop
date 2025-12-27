@@ -3,13 +3,13 @@ title: "AIを迷走させない：すぐ使える協働のエンジニアリン�
 description: "AIにコードを書かせると脱線しがち？AGENTS.md・AI Playbook・Plan-first の型で、Codex/Claude を“協働できる相棒”に。手戻りを減らし、保守性を上げる。Next.js 実戦例つき。"
 date: "2025-12-26"
 author: "david bai"
-cover: "/blog-assets/privydrop-open-source.jpg"
+cover: "/blog-assets/ai-collaboration-playbook.webp"
 tags:
   ["AI協働", "Codex", "エンジニアリングプロセス", "オープンソース", "Next.js"]
 status: "published"
 ---
 
-![](/blog-assets/privydrop-open-source.jpg)
+![](/blog-assets/ai-collaboration-playbook.webp)
 
 こんな経験はありませんか？
 
@@ -24,7 +24,7 @@ AI を「速い検索ボックス」として使うなら、これらの問題�
 最終的に、どんなリポジトリにもそのまま移植できる最小セットが手に入ります：
 
 - `AGENTS.md`：プロジェクトのハード制約（レッドライン、デフォルト、Done の定義）
-- `docs/ai-playbook/index.md`：高シグナルな入口（1ページ索引）
+- `docs/ai-playbook/index.md`：高シグナルな入口（1 ページ索引）
 - `docs/ai-playbook/code-map.md`：コード地図（どこを触るか）
 - `docs/ai-playbook/flows.md`：重要フロー（どう動くか）
 - `docs/ai-playbook/collab-rules.md`：協働ルール + 変更計画テンプレ（どう進めるか）
@@ -60,10 +60,12 @@ AI を「速い検索ボックス」として使うなら、これらの問題�
 始める前に、ありがちな 3 つの間違い：
 
 1. **計画なしで AI に「コードを直して」と言う**
+
    - 結果：10 ファイル変わってから方向違いに気づき、戻すコストが爆発する
    - 正解：先に変更計画を出させ、承認してから実装
 
 2. **ドキュメントを全部 AI に投げる**
+
    - 結果：文脈が飽和して要点が消える（入口ファイルすら見つけられない）
    - 正解：高シグナルな index + code-map に絞る
 
@@ -79,11 +81,11 @@ AI を「速い検索ボックス」として使うなら、これらの問題�
 
 PrivyDrop では、工学的な協働に必要な要点は 5 行に集約できます：
 
-- Plan first：`AGENTS.en.md`
-- One change, one purpose：`AGENTS.en.md`
-- Privacy & architecture red line：`AGENTS.en.md`
-- Docs must stay in sync：`AGENTS.en.md`
-- Verification required：`AGENTS.en.md`
+- Plan first：`AGENTS.en.md:7`
+- One change, one purpose：`AGENTS.en.md:8`
+- Privacy & architecture red line：`AGENTS.en.md:9`
+- Docs must stay in sync：`AGENTS.en.md:12`
+- Verification required：`AGENTS.en.md:13`
 
 ファイル： [AGENTS.en.md](https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.en.md)
 
@@ -166,9 +168,9 @@ AI が脱線する最大要因のひとつは、**あなたのコードの“入
 ```md
 Common request routing
 
-- New page / SEO: frontend/app/**/page.tsx + metadata.ts
-- i18n copy: frontend/constants/messages/*
-- Blog: frontend/content/blog/* + frontend/lib/blog.ts
+- New page / SEO: frontend/app/\*\*/page.tsx + metadata.ts
+- i18n copy: frontend/constants/messages/\*
+- Blog: frontend/content/blog/\* + frontend/lib/blog.ts
 ```
 
 生成と運用：
@@ -191,7 +193,7 @@ code-map が「どこを触るか」なら、flows は「どう動くか」で�
 
 1. **重要フロー / 時系列**（必要なら Mermaid）
 2. **デバッグ要点**（見るべきログ/状態）
-3. **マイクロ計画テンプレ**（計画→承認→実装を強制）
+3. **マイクロ計画テンプレ**（計画 → 承認 → 実装を強制）
 
 運用のコツ：
 
@@ -378,4 +380,3 @@ docs/
 AI 支援開発は厳密さを減らすのではなく、むしろ増やします。持続可能なスピードは、長いプロンプトではなく強い工程制約から生まれます：ルールの外部化、Plan-first、フローの文書化、そして文脈の持久力。
 
 さらに工程化するなら、PR/issue テンプレと、すぐ使える `AGENTS.md`/playbook 初期セットを含む「コピーできるリポジトリ雛形」に進化させるのも良いです。
-

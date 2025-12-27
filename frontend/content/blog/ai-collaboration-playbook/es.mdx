@@ -3,13 +3,19 @@ title: "Que la IA no se desvíe: un método de colaboración realmente aplicable
 description: "¿La IA escribe código y se sale del tema? Convierte Codex/Claude en un compañero de equipo con AGENTS.md, un AI Playbook y un flujo plan-first: menos retrabajo, más mantenibilidad. Con ejemplos reales en Next.js."
 date: "2025-12-26"
 author: "david bai"
-cover: "/blog-assets/privydrop-open-source.jpg"
+cover: "/blog-assets/ai-collaboration-playbook.webp"
 tags:
-  ["Colaboración con IA", "Codex", "Proceso de ingeniería", "Código abierto", "Next.js"]
+  [
+    "Colaboración con IA",
+    "Codex",
+    "Proceso de ingeniería",
+    "Código abierto",
+    "Next.js",
+  ]
 status: "published"
 ---
 
-![](/blog-assets/privydrop-open-source.jpg)
+![](/blog-assets/ai-collaboration-playbook.webp)
 
 ¿Te suena alguno de estos escenarios?
 
@@ -60,10 +66,12 @@ Un solo objetivo, primero el plan; no cruzar líneas rojas de privacidad/arquite
 Antes de empezar, tres errores típicos:
 
 1. **Pedirle a la IA “cambia el código” sin plan**
+
    - Resultado: cambia 10 archivos y luego descubres que la dirección era incorrecta; revertir duele
    - Correcto: exigir un plan primero; implementar solo tras aprobarlo
 
 2. **Meter todos los documentos en el prompt**
+
    - Resultado: explosión de contexto; la IA pierde la señal (ni encuentra los entry points)
    - Correcto: usar index + code-map como navegación de alta señal
 
@@ -79,11 +87,11 @@ Piensa en `AGENTS.md` como la versión “legible por máquina” de los valores
 
 En PrivyDrop, cinco puntos bastan para cubrir el núcleo:
 
-- Plan first: `AGENTS.en.md`
-- One change, one purpose: `AGENTS.en.md`
-- Privacy & architecture red line: `AGENTS.en.md`
-- Docs must stay in sync: `AGENTS.en.md`
-- Verification required: `AGENTS.en.md`
+- Plan first: `AGENTS.en.md:7`
+- One change, one purpose: `AGENTS.en.md:8`
+- Privacy & architecture red line: `AGENTS.en.md:9`
+- Docs must stay in sync: `AGENTS.en.md:12`
+- Verification required: `AGENTS.en.md:13`
 
 Archivo: [AGENTS.en.md](https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.en.md)
 
@@ -166,9 +174,9 @@ Opcional: añade una tabla de “solicitud común → entry points”:
 ```md
 Common request routing
 
-- New page / SEO: frontend/app/**/page.tsx + metadata.ts
-- i18n copy: frontend/constants/messages/*
-- Blog: frontend/content/blog/* + frontend/lib/blog.ts
+- New page / SEO: frontend/app/\*\*/page.tsx + metadata.ts
+- i18n copy: frontend/constants/messages/\*
+- Blog: frontend/content/blog/\* + frontend/lib/blog.ts
 ```
 
 Cómo generarlo y mantenerlo:
@@ -364,4 +372,3 @@ Si ya tienes docs dispersas: empieza por `index.md` para unificar el acceso; lue
 ## Cierre
 
 El desarrollo asistido por IA no reduce la necesidad de rigor; la incrementa. La velocidad sostenible no viene de prompts más largos, sino de restricciones más fuertes: reglas externalizadas, plan-first, flows codificados y contexto durable.
-

@@ -3,13 +3,12 @@ title: "让 AI 不再跑偏：可落地的协作工程化方法（附模板）"
 description: "用 AI 写代码总跑偏？这套方法让 Claude code/Codex 变成可协作队友：AGENTS.md、AI Playbook、变更计划模板，减少返工、提升代码可维护性。附完整实现与 Next.js 实战案例。"
 date: "2025-12-26"
 author: "david bai"
-cover: "/blog-assets/privydrop-open-source.jpg"
-tags:
-  ["AI 协作", "Codex", "工程流程", "开源", "Next.js"]
+cover: "/blog-assets/ai-collaboration-playbook.webp"
+tags: ["AI 协作", "Codex", "工程流程", "开源", "Next.js"]
 status: "published"
 ---
 
-![](/blog-assets/privydrop-open-source.jpg)
+![](/blog-assets/ai-collaboration-playbook.webp)
 
 你是否遇到过这样的场景：
 
@@ -60,10 +59,12 @@ status: "published"
 在开始之前，先看看最常见的 3 个错误做法：
 
 1. **直接让 AI "改代码"，不要计划**
+
    - 后果：改了 10 个文件，最后发现方向错了，回滚成本巨大
    - 正确做法：先让 AI 输出变更计划，你批准后再动手
 
 2. **把所有文档都塞给 AI**
+
    - 后果：上下文爆炸，AI 反而抓不住重点（连"入口文件在哪"都找不到）
    - 正确做法：用 index + code-map 提供高信噪比导航
 
@@ -79,11 +80,11 @@ status: "published"
 
 在 PrivyDrop 里，建议重点展示这 5 条（足够代表"工程协作约束"的核心）：
 
-- 计划先行：`AGENTS.zh-CN.md`
-- 单一主题：`AGENTS.zh-CN.md`
-- 隐私与架构红线：`AGENTS.zh-CN.md`
-- 文档同步：`AGENTS.zh-CN.md`
-- 验证要求：`AGENTS.zh-CN.md`
+- 计划先行：`AGENTS.zh-CN.md:7`
+- 单一主题：`AGENTS.zh-CN.md:8`
+- 隐私与架构红线：`AGENTS.zh-CN.md:9`
+- 文档同步：`AGENTS.zh-CN.md:12`
+- 验证要求：`AGENTS.zh-CN.md:13`
 
 对应文件：[AGENTS.zh-CN.md](https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.zh-CN.md)
 
@@ -107,13 +108,15 @@ status: "published"
 
 - 创建 `AGENTS.zh-CN.md` 和 `AGENTS.en.md`
 - 每个协作者首次 clone 仓库后，根据语言选择创建符号链接：
+
   ```bash
   # 中文用户
   ln -s AGENTS.zh-CN.md AGENTS.md
-  
+
   # 英文用户
   ln -s AGENTS.en.md AGENTS.md
   ```
+
 - 在 `.gitignore` 中添加 `AGENTS.md`，避免符号链接冲突
 
 不同语言版本的 `AGENTS.md` 已经包含了各自语言的其他文档引用路径。
@@ -344,7 +347,7 @@ OpenAI 在《我们如何使用 Codex 在 28 天内构建 Android 版 Sora》里
 - 上下文续航：当达到背景窗口限制时，把计划写入文件供下一次会话继续
 - 多会话并行：更像在“管理一个团队”，而不是使用单一工具
 
-虽然安卓开发与web开发领域不一样，但方法值得借鉴：**先把输入变好，输出自然会稳定**。
+虽然安卓开发与 web 开发领域不一样，但方法值得借鉴：**先把输入变好，输出自然会稳定**。
 
 ---
 
@@ -365,7 +368,6 @@ docs/
     collab-rules.zh-CN.md
     collab-rules.md
 ```
-
 
 如果你已经有文档但分散在各处：先做 index，把入口收束；然后再补 code-map/flows/模板即可。
 

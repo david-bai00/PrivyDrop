@@ -3,13 +3,13 @@ title: "Keep AI on Track: A Practical, Repeatable Collaboration Playbook (with T
 description: "Tired of AI-written code going off the rails? Turn Codex/Claude into a real teammate with AGENTS.md, an AI Playbook, and a plan-first workflow—less rework, more maintainable code. Includes real Next.js examples."
 date: "2025-12-26"
 author: "david bai"
-cover: "/blog-assets/privydrop-open-source.jpg"
+cover: "/blog-assets/ai-collaboration-playbook.webp"
 tags:
   ["AI Collaboration", "Codex", "Engineering Process", "Open Source", "Next.js"]
 status: "published"
 ---
 
-![](/blog-assets/privydrop-open-source.jpg)
+![](/blog-assets/ai-collaboration-playbook.webp)
 
 Have you ever been in this situation?
 
@@ -60,10 +60,12 @@ Single goal, plan first; never cross privacy/architecture red lines; done means 
 Before we begin, here are the three most common wrong approaches:
 
 1. **Tell AI to “change code” without a plan**
+
    - Result: 10 files changed, then you realize the direction is wrong—rollback becomes painful
    - Better: require a change plan first; implement only after approval
 
 2. **Dump every document into the prompt**
+
    - Result: context overload; AI can’t see the signal (it can’t even locate entry points)
    - Better: provide a high-signal index + code map
 
@@ -79,11 +81,11 @@ Think of `AGENTS.md` as a machine-readable version of your team’s “defaults�
 
 In PrivyDrop, five lines are enough to cover the core of engineering collaboration constraints:
 
-- Plan first: `AGENTS.en.md`
-- One change, one purpose: `AGENTS.en.md`
-- Privacy & architecture red line: `AGENTS.en.md`
-- Docs must stay in sync: `AGENTS.en.md`
-- Verification required: `AGENTS.en.md`
+- Plan first: `AGENTS.en.md:7`
+- One change, one purpose: `AGENTS.en.md:8`
+- Privacy & architecture red line: `AGENTS.en.md:9`
+- Docs must stay in sync: `AGENTS.en.md:12`
+- Verification required: `AGENTS.en.md:13`
 
 File: [AGENTS.en.md](https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.en.md)
 
@@ -166,9 +168,9 @@ Optional: add a “common requests → entry points” cheat sheet to reduce sea
 ```md
 Common request routing
 
-- New page / SEO: frontend/app/**/page.tsx + metadata.ts
-- i18n copy: frontend/constants/messages/*
-- Blog: frontend/content/blog/* + frontend/lib/blog.ts
+- New page / SEO: frontend/app/\*\*/page.tsx + metadata.ts
+- i18n copy: frontend/constants/messages/\*
+- Blog: frontend/content/blog/\* + frontend/lib/blog.ts
 ```
 
 How to generate (and iterate) a code map:
@@ -378,4 +380,3 @@ If you already have docs scattered everywhere: start with `index.md` to unify en
 AI-assisted development doesn’t reduce the need for rigor—it increases it. The sustainable speed-up doesn’t come from longer prompts, but from stronger engineering constraints: externalize rules, plan first, codify flows, and make context durable.
 
 If you want to go further, this can evolve into a “copyable repo scaffold”: PR templates, issue templates, and a ready-to-use `AGENTS.md` + playbook starter kit.
-

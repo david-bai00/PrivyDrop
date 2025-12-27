@@ -3,13 +3,19 @@ title: "Damit KI nicht mehr abschweift: ein praxistaugliches Collaboration‑Pla
 description: "Geht KI‑Code ständig am Thema vorbei? Mit AGENTS.md, einem AI Playbook und einem plan-first‑Workflow wird Codex/Claude zum echten Teammate: weniger Nacharbeit, bessere Wartbarkeit. Mit Next.js‑Praxisbeispielen."
 date: "2025-12-26"
 author: "david bai"
-cover: "/blog-assets/privydrop-open-source.jpg"
+cover: "/blog-assets/ai-collaboration-playbook.webp"
 tags:
-  ["KI‑Zusammenarbeit", "Codex", "Engineering‑Prozess", "Open Source", "Next.js"]
+  [
+    "KI‑Zusammenarbeit",
+    "Codex",
+    "Engineering‑Prozess",
+    "Open Source",
+    "Next.js",
+  ]
 status: "published"
 ---
 
-![](/blog-assets/privydrop-open-source.jpg)
+![](/blog-assets/ai-collaboration-playbook.webp)
 
 Kommt dir das bekannt vor?
 
@@ -60,10 +66,12 @@ Ein Ziel, zuerst der Plan; Privacy/Architektur‑Redlines nie brechen; done hei�
 Drei Klassiker:
 
 1. **„Ändere den Code“ ohne Plan**
+
    - Folge: 10 Dateien später stellst du fest, dass die Richtung falsch war—Rollback wird teuer
    - Besser: zuerst Change‑Plan, Implementierung erst nach Approval
 
 2. **Alle Dokus in den Prompt kippen**
+
    - Folge: Kontext‑Overload; die KI verliert das Wesentliche (findet nicht mal Entry Points)
    - Besser: High‑Signal‑Index + Code‑Map
 
@@ -79,11 +87,11 @@ Sieh `AGENTS.md` als maschinenlesbare Version eurer „Defaults“ und „Red Li
 
 In PrivyDrop reichen fünf Punkte:
 
-- Plan first: `AGENTS.en.md`
-- One change, one purpose: `AGENTS.en.md`
-- Privacy & architecture red line: `AGENTS.en.md`
-- Docs must stay in sync: `AGENTS.en.md`
-- Verification required: `AGENTS.en.md`
+- Plan first: `AGENTS.en.md:7`
+- One change, one purpose: `AGENTS.en.md:8`
+- Privacy & architecture red line: `AGENTS.en.md:9`
+- Docs must stay in sync: `AGENTS.en.md:12`
+- Verification required: `AGENTS.en.md:13`
 
 Datei: [AGENTS.en.md](https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.en.md)
 
@@ -166,9 +174,9 @@ Optional: „Common requests → Entry Points“:
 ```md
 Common request routing
 
-- New page / SEO: frontend/app/**/page.tsx + metadata.ts
-- i18n copy: frontend/constants/messages/*
-- Blog: frontend/content/blog/* + frontend/lib/blog.ts
+- New page / SEO: frontend/app/\*\*/page.tsx + metadata.ts
+- i18n copy: frontend/constants/messages/\*
+- Blog: frontend/content/blog/\* + frontend/lib/blog.ts
 ```
 
 ---
@@ -315,4 +323,3 @@ docs/
 ## Schluss
 
 KI‑gestützte Entwicklung reduziert Rigorosität nicht—sie erhöht sie. Nachhaltige Geschwindigkeit kommt aus starken Constraints: Regeln externalisieren, plan-first, Flows dokumentieren, Kontext langlebig machen.
-
