@@ -38,8 +38,8 @@ PrivyDrop を初めて使うと、よくある小さな引っかかりが二つ�
 この判定はタブ切り替え時に走ります。条件一致なら、入力欄を埋めてからそのまま入室ロジックを呼び出し、貼り付け/クリックを 1 回減らします。
 
 - コード参照：
-  - 受信側の自動入室 useEffect: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp.tsx#L151
-  - キャッシュユーティリティ（localStorage）: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/roomIdCache.ts#L1
+  - 受信側の自動入室 useEffect: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp.tsx#L151**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp.tsx#L151)
+  - キャッシュユーティリティ（localStorage）: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/roomIdCache.ts#L1**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/roomIdCache.ts#L1)
 
 発動しないとき：
 
@@ -64,8 +64,8 @@ PrivyDrop を初めて使うと、よくある小さな引っかかりが二つ�
 - 8 文字未満は保存不可にして、短い ID の誤保存を防止。
 
 - コード参照：
-  - シングル/ダブルタップとタイマーのクリーンアップ: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp/CachedIdActionButton.tsx#L112
-  - 「キャッシュ ID を使用」で即入室（送信側）: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp/SendTabPanel.tsx#L193
+  - シングル/ダブルタップとタイマーのクリーンアップ: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp/CachedIdActionButton.tsx#L112**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp/CachedIdActionButton.tsx#L112)
+  - 「キャッシュ ID を使用」で即入室（送信側）: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp/SendTabPanel.tsx#L193**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp/SendTabPanel.tsx#L193)
 
 ---
 
@@ -78,16 +78,16 @@ PrivyDrop を初めて使うと、よくある小さな引っかかりが二つ�
 - `socketId` の変化を能動チェック：Socket 復旧時に再確認。
 
 - コード参照：
-  - Socket 接続後の自動再入室: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L121
-  - 再接続の統一エントリ: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L185
-  - `lastJoinedSocketId` の記録と必要時の `initiator-online` 送出: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L460
-  - 送信側の `recipient-ready` 受信と再ネゴシエーション開始: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Initiator.ts#L12
-  - 受信側の `initiator-online` 受信と `recipient-ready` 応答: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Recipient.ts#L14
+  - Socket 接続後の自動再入室: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L121**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L121)
+  - 再接続の統一エントリ: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L185**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L185)
+  - `lastJoinedSocketId` の記録と必要時の `initiator-online` 送出: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L460**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L460)
+  - 送信側の `recipient-ready` 受信と再ネゴシエーション開始: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Initiator.ts#L12**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Initiator.ts#L12)
+  - 受信側の `initiator-online` 受信と `recipient-ready` 応答: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Recipient.ts#L14**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Recipient.ts#L14)
   - バックエンドの信令リレー：
-    - ready: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L63
-    - initiator-online: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L102
-    - recipient-ready: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L108
-    - peer-disconnected: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L119
+    - ready: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L63**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L63)
+    - initiator-online: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L102**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L102)
+    - recipient-ready: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L108**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L108)
+    - peer-disconnected: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L119**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L119)
 
 ### シーケンス（Mermaid）
 
@@ -112,15 +112,15 @@ sequenceDiagram
 
 ### 信頼性ディテール
 
-- ICE 候補キュー：リモート記述が未確立、または接続がクローズ系なら候補をキューイングし、後でまとめて反映；https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L219-L256。
-- DataChannel の背圧と分割送信：送信側しきい値 `bufferedAmountLowThreshold=256KB`（https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Initiator.ts#L82）；ネットワーク制御は `maxBuffer≈3MB / lowThreshold≈512KB / 64KB チャンク`（https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/transfer/NetworkTransmitter.ts#L66-L111, https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/transfer/NetworkTransmitter.ts#L160-L210）。
+- ICE 候補キュー：リモート記述が未確立、または接続がクローズ系なら候補をキューイングし、後でまとめて反映；[<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L219-L256。**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L219-L256。)
+- DataChannel の背圧と分割送信：送信側しきい値 `bufferedAmountLowThreshold=256KB`（[<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Initiator.ts#L82）；ネットワーク制御は**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Initiator.ts#L82）；ネットワーク制御は) `maxBuffer≈3MB / lowThreshold≈512KB / 64KB チャンク`（[<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/transfer/NetworkTransmitter.ts#L66-L111,**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/transfer/NetworkTransmitter.ts#L66-L111,) [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/transfer/NetworkTransmitter.ts#L160-L210）。**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/transfer/NetworkTransmitter.ts#L160-L210）。)
 - モバイルの Wake Lock：接続時に取得、切断/失敗で解放。バックグラウンド遷移による中断を低減。
 - エラー包みとリトライ：まれな `sendData failed` を捕捉し、表面化＆再試行（`sendWithBackpressure` を参照）。
 
 ### 短い ID と長い ID の使い分け
 
-- 短い ID（4 桁）は「空室で切断」時、バックエンドが 15 分（900s）の TTL に更新。猶予内は再接続が容易；https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L119-L125。
-- 既定の部屋期限は 24 時間。空室切断のときのみ 15 分の一時保持に切替；https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/services/redis.ts#L6。
+- 短い ID（4 桁）は「空室で切断」時、バックエンドが 15 分（900s）の TTL に更新。猶予内は再接続が容易；[<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L119-L125。**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L119-L125。)
+- 既定の部屋期限は 24 時間。空室切断のときのみ 15 分の一時保持に切替；[<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/services/redis.ts#L6。**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/services/redis.ts#L6。)
 - 長い ID（UUID 相当）はセッション横断・デバイス横断の再利用に向く。キャッシュ ID ボタンと組み合わせると最良。
 
 ---
@@ -145,15 +145,15 @@ sequenceDiagram
 
 “するり”とつながるほど、P2P の価値は増幅します。受信側のキャッシュ ID 自動入室と、スタック全体の再接続により、PrivyDrop は現実のネット環境でいっそう頑丈で頼れる存在になりました。
 
-もし気に入っていただけたら、ぜひ GitHub で Star をお願いします（<u>https://github.com/david-bai00/PrivyDrop</u>）。見つけてもらいやすくなるだけでなく、私たちの磨き込みの原動力にもなります。
+もし気に入っていただけたら、ぜひ GitHub で Star をお願いします（[<u>**https://github.com/david-bai00/PrivyDrop**</u>](https://github.com/david-bai00/PrivyDrop)）。見つけてもらいやすくなるだけでなく、私たちの磨き込みの原動力にもなります。
 
-オンライン体験：<u>https://www.privydrop.app</u>。Issue から体験フィードバックや改善提案も歓迎します。“なめらかな体験”を、さらに厚くしていきましょう。
+オンライン体験：[<u>**https://www.privydrop.app**</u>](https://www.privydrop.app)。Issue から体験フィードバックや改善提案も歓迎します。“なめらかな体験”を、さらに厚くしていきましょう。
 
 なお、ドメインは Cloudflare CDN による加速を有効化。地域間の速度と安定性が向上し、より多くのユーザーがストレスなくアクセスできます。
 
 関連記事：
 
-- [なぜ PrivyDrop をオープンソース化したのか](/blog/privydrop-open-source)
-- [WebRTC はどうやってブラウザ直送を実現するのか](/blog/webRTC-file-transfer)
-- [レジューム転送：大容量でも焦らない](/blog/resumable-transfers)
+- [<u>**なぜ PrivyDrop をオープンソース化したのか**</u>](/blog/privydrop-open-source)
+- [<u>**WebRTC はどうやってブラウザ直送を実現するのか**</u>](/blog/webRTC-file-transfer)
+- [<u>**レジューム転送：大容量でも焦らない**</u>](/blog/resumable-transfers)
 

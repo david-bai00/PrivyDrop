@@ -38,8 +38,8 @@ When you switch to the Receiver tab, if the following conditions are met, the la
 This logic triggers on tab switch. If matched, we first fill the input, then immediately call the join routine—one less paste/click.
 
 - Code anchors:
-  - Receiver‑side auto‑join useEffect: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp.tsx#L151
-  - Cache helper (localStorage): https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/roomIdCache.ts#L1
+  - Receiver‑side auto‑join useEffect: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp.tsx#L151**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp.tsx#L151)
+  - Cache helper (localStorage): [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/roomIdCache.ts#L1**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/roomIdCache.ts#L1)
 
 When will it not trigger?
 
@@ -64,8 +64,8 @@ Implementation notes:
 - We don’t allow saving IDs shorter than 8 chars to avoid accidental short saves.
 
 - Code anchors:
-  - Single/double‑tap with timer cleanup: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp/CachedIdActionButton.tsx#L112
-  - Auto‑join immediately on “Use Cached ID” (Sender): https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp/SendTabPanel.tsx#L193
+  - Single/double‑tap with timer cleanup: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp/CachedIdActionButton.tsx#L112**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp/CachedIdActionButton.tsx#L112)
+  - Auto‑join immediately on “Use Cached ID” (Sender): [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp/SendTabPanel.tsx#L193**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/components/ClipboardApp/SendTabPanel.tsx#L193)
 
 ---
 
@@ -78,16 +78,16 @@ We watch for disconnects from three entry points and trigger reconnection:
 - Proactive `socketId` change check: on socket recovery, we validate once more.
 
 - Code anchors:
-  - Auto re‑join after socket connects: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L121
-  - Unified attemptReconnection entry: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L185
-  - Track `lastJoinedSocketId` and trigger `initiator-online` when needed: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L460
-  - Sender handles `recipient-ready` and restarts negotiation: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Initiator.ts#L12
-  - Receiver responds to `initiator-online` with `recipient-ready`: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Recipient.ts#L14
+  - Auto re‑join after socket connects: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L121**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L121)
+  - Unified attemptReconnection entry: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L185**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L185)
+  - Track `lastJoinedSocketId` and trigger `initiator-online` when needed: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L460**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L460)
+  - Sender handles `recipient-ready` and restarts negotiation: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Initiator.ts#L12**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Initiator.ts#L12)
+  - Receiver responds to `initiator-online` with `recipient-ready`: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Recipient.ts#L14**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Recipient.ts#L14)
   - Backend signaling relay:
-    - ready: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L63
-    - initiator-online: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L102
-    - recipient-ready: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L108
-    - peer-disconnected: https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L119
+    - ready: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L63**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L63)
+    - initiator-online: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L102**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L102)
+    - recipient-ready: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L108**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L108)
+    - peer-disconnected: [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L119**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L119)
 
 ### Sequence (Mermaid)
 
@@ -112,15 +112,15 @@ sequenceDiagram
 
 ### Reliability Details
 
-- ICE candidate queue: if the remote description isn’t ready or the connection is closing/closed, candidates are queued and flushed later; see https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L219-L256.
-- DataChannel backpressure & chunking: Sender threshold `bufferedAmountLowThreshold=256KB` (https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Initiator.ts#L82); network control `maxBuffer≈3MB / lowThreshold≈512KB / 64KB chunks` (https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/transfer/NetworkTransmitter.ts#L66-L111, https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/transfer/NetworkTransmitter.ts#L160-L210).
+- ICE candidate queue: if the remote description isn’t ready or the connection is closing/closed, candidates are queued and flushed later; see [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L219-L256.**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_base.ts#L219-L256.)
+- DataChannel backpressure & chunking: Sender threshold `bufferedAmountLowThreshold=256KB` ([<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Initiator.ts#L82**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/webrtc_Initiator.ts#L82)); network control `maxBuffer≈3MB / lowThreshold≈512KB / 64KB chunks` ([<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/transfer/NetworkTransmitter.ts#L66-L111,**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/transfer/NetworkTransmitter.ts#L66-L111,) [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/transfer/NetworkTransmitter.ts#L160-L210**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/frontend/lib/transfer/NetworkTransmitter.ts#L160-L210)).
 - Mobile wake lock: request Wake Lock when connected; release on disconnect/failure to reduce background interruptions.
 - Error wrapping & retries: rare `sendData failed` paths are wrapped, surfaced, and retried (see `sendWithBackpressure`).
 
 ### Short vs Long IDs: Reuse Strategy
 
-- Short IDs (4‑digit) get a 15‑minute (900s) grace TTL when a room becomes empty after a disconnect—allowing quick reconnection within the window; see https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L119-L125.
-- Default room expiry is 24 hours; only empty‑room disconnects switch to the temporary 15‑minute keepalive; see https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/services/redis.ts#L6.
+- Short IDs (4‑digit) get a 15‑minute (900s) grace TTL when a room becomes empty after a disconnect—allowing quick reconnection within the window; see [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L119-L125.**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/socket/handlers.ts#L119-L125.)
+- Default room expiry is 24 hours; only empty‑room disconnects switch to the temporary 15‑minute keepalive; see [<u>**https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/services/redis.ts#L6.**</u>](https://github.com/david-bai00/PrivyDrop/blob/v1.1.1/backend/src/services/redis.ts#L6.)
 - Long IDs (UUID‑like) are better for cross‑session/cross‑device reuse; pair them with the cached‑ID button for best ergonomics.
 
 ---
@@ -145,15 +145,15 @@ Mobile/poor network scenarios:
 
 Smoother connections amplify the value of P2P. Cached‑ID auto‑join on the receiver and resilient reconnect across the stack make PrivyDrop sturdier and more dependable in the real world.
 
-If you find this useful, please star us on GitHub (<u>https://github.com/david-bai00/PrivyDrop</u>) so more people can discover it. Your star directly affects search and recommendation signals—and fuels our motivation to keep polishing.
+If you find this useful, please star us on GitHub ([<u>**https://github.com/david-bai00/PrivyDrop**</u>](https://github.com/david-bai00/PrivyDrop)) so more people can discover it. Your star directly affects search and recommendation signals—and fuels our motivation to keep polishing.
 
-Try it online: <u>https://www.privydrop.app</u>. We also welcome issues with your feedback and suggestions—help us make the “smooth experience” even smoother.
+Try it online: [<u>**https://www.privydrop.app**</u>](https://www.privydrop.app). We also welcome issues with your feedback and suggestions—help us make the “smooth experience” even smoother.
 
 Additionally, our domain is accelerated via Cloudflare CDN (saintly cyber help), significantly improving cross‑region speed and stability so more users can open the site without hiccups.
 
 Further Reading:
 
-- [Why I Open‑Sourced PrivyDrop](/blog/privydrop-open-source)
-- [How WebRTC Enables Browser‑Direct Transfer](/blog/webRTC-file-transfer)
-- [Resumable Transfers: Say Goodbye to Big‑File Anxiety](/blog/resumable-transfers)
+- [<u>**Why I Open‑Sourced PrivyDrop**</u>](/blog/privydrop-open-source)
+- [<u>**How WebRTC Enables Browser‑Direct Transfer**</u>](/blog/webRTC-file-transfer)
+- [<u>**Resumable Transfers: Say Goodbye to Big‑File Anxiety**</u>](/blog/resumable-transfers)
 
