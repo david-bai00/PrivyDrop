@@ -54,19 +54,31 @@ OpenAI의 실전 글도 접근 방식이 매우 비슷합니다:
 
 ---
 
-## ❌ 흔한 안티패턴
+## 흔한 안티패턴
+
+시작하기 전에, 가장 흔한 3가지 실수부터 짚고 갑니다:
 
 1. **계획 없이 “코드 고쳐줘”부터 시작**
-2. **문서를 전부 프롬프트에 던지기(문맥 과부하)**
-3. **“겸사겸사 최적화” 허용**
 
-해법은 같습니다: index + code-map + flows로 길을 잡고, 계획을 승인받은 뒤에만 구현합니다.
+   - 결과: 10개 파일을 고친 뒤 방향이 틀렸다는 걸 깨닫고, 롤백 비용이 급격히 커진다
+   - 더 나은 방법: 먼저 변경 계획을 요구하고, 승인 후에만 구현한다
+
+2. **문서를 전부 프롬프트에 던지기(문맥 과부하)**
+
+   - 결과: 문맥이 과부하되어 신호를 못 보고(엔트리 포인트조차 못 찾고) 결국 “찍어서” 고친다
+   - 더 나은 방법: 고신호 인덱스 + 코드 맵으로 길을 먼저 잡는다
+
+3. **“겸사겸사 최적화” 허용**
+   - 결과: 한 PR에 여러 목표가 섞여 리뷰 비용이 폭증하고, 버그가 나면 되돌리기도 더 어려워진다
+   - 더 나은 방법: single-scope로 작게 쪼개서, 쉽게 되돌릴 수 있게 만든다
 
 ---
 
 ## Step 1: `AGENTS.md` 쓰기 (하드 제약을 반복 적용)
 
-`AGENTS.md`는 팀의 “기본값과 레드라인”을 기계가 읽을 수 있게 만든 버전입니다. PrivyDrop에서는 아래 다섯 가지가 핵심입니다:
+`AGENTS.md`는 팀의 “기본값과 레드라인”을 기계가 읽을 수 있게 만든 버전입니다. 원리를 설명하기 위한 문서가 아니라, **매 세션마다 재사용되는 규칙**이어야 합니다.
+
+PrivyDrop에서는 아래 다섯 줄이면 충분합니다:
 
 - Plan first: `AGENTS.en.md:7`
 - One change, one purpose: `AGENTS.en.md:8`
@@ -75,6 +87,8 @@ OpenAI의 실전 글도 접근 방식이 매우 비슷합니다:
 - Verification required: `AGENTS.en.md:13`
 
 파일: [<u>**AGENTS.en.md**</u>](https://github.com/david-bai00/PrivyDrop/blob/main/AGENTS.en.md)
+
+처음부터 최소 버전을 만들고 싶다면, 아래 구조가 깔끔합니다(짧고, 단단하고, 실행 가능하게):
 
 ```md
 # AGENTS — Repo Rules
@@ -88,11 +102,53 @@ First Principles
 - Validation: Must include build/tests and key manual regression checklist
 ```
 
+### 다국어 지원
+
+여러 언어로 협업해야 한다면, 현실적인 패턴은 다음과 같습니다:
+
+- `AGENTS.en.md`를 canonical(기준) 버전으로 둔다
+- 필요에 따라 현지화 버전(예: `AGENTS.<locale>.md`)을 추가한다
+- clone 이후 각 협업자가 자신의 언어에 맞는 symlink를 로컬에서 만든다:
+
+```bash
+# 영어 사용자
+ln -s AGENTS.en.md AGENTS.md
+```
+
+- symlink 충돌을 피하려면 `.gitignore`에 `AGENTS.md`를 추가한다
+
+> **핵심 인사이트**  
+> 신뢰할 수 있는 AI 협업의 비밀은 “더 나은 프롬프트”가 아니라, “제약을 저장소의 일부로 만드는 것”입니다. `AGENTS.md`는 규칙을 재사용 가능하게 만들고, AI Playbook은 문맥을 오래 살립니다.
+
 ---
 
 ## Step 2: `docs/ai-playbook/index.md` 만들기 (고신호 진입점)
 
 참고 구현: [<u>**docs/ai-playbook/index.md**</u>](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/index.md)
+
+AI가 엇나가는 가장 흔한 이유 중 하나는 **진짜 엔트리 포인트를 못 찾는 것**입니다. 그러면 “어디를 고쳐야 하는지”를 결국 추측으로 때우게 됩니다.
+
+인덱스 페이지는 두 가지를 해야 합니다:
+
+- 30초 안에 읽히기: “프로젝트 스냅샷 + 링크 인덱스”만
+- 원클릭 내비게이션: code-map / flows / collab-rules로 바로 이동
+
+최소 템플릿(복붙용):
+
+```md
+# AI Playbook — Index
+
+## Project Snapshot
+
+- Stack: Next.js / Node / ...
+- Red lines: ...
+
+## Document Index
+
+- Code map: docs/ai-playbook/code-map.md
+- Key flows: docs/ai-playbook/flows.md
+- Collaboration rules: docs/ai-playbook/collab-rules.md
+```
 
 ---
 
@@ -100,21 +156,155 @@ First Principles
 
 참고 구현: [<u>**docs/ai-playbook/code-map.md**</u>](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/code-map.md)
 
+코드 맵의 목표는 “빠른 탐색”이지 “구현 교육”이 아닙니다. 작성 규칙은 간단합니다:
+
+- 핵심 디렉터리와 핵심 엔트리 파일만 나열
+- 엔트리 파일당 한 문장: 책임(무슨 역할인지)
+- 새 요청이 오면: 코드 맵에서 3–8개 후보 파일을 먼저 찍고, 그다음 깊게 읽기
+
+옵션: “자주 쓰는 요청 → 엔트리 포인트” 치트시트를 넣으면 탐색 비용이 더 줄어듭니다:
+
+```md
+자주 쓰는 요청 라우팅
+
+- 새 페이지 / SEO: frontend/app/\*\*/page.tsx + metadata.ts
+- i18n 문구: frontend/constants/messages/\*
+- 블로그: frontend/content/blog/\* + frontend/lib/blog.ts
+```
+
+code-map 생성/운영 팁:
+
+- 초안: AI에게 “디렉터리 + 핵심 엔트리 포인트”를 탐색용으로 정리시키기(완벽함이 아니라 길 찾기가 목적)
+- 유지: PR/커밋 단위(파일 리스트 기준)로 조금씩 갱신하기. 한 번에 갈아엎지 않기.
+
 ---
 
 ## Step 4: `flows.md` 만들기 (어떻게 동작하는지)
 
 참고 구현: [<u>**docs/ai-playbook/flows.md**</u>](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/flows.md)
 
+code-map이 “어디를 고칠지”를 알려준다면, flows는 “어떻게 돌아가는지”를 알려줍니다. AI에게는 특히 큰 가치가 있습니다:
+
+- 시퀀스와 불변식을 써두면, AI가 “감으로 패치”하는 일을 줄일 수 있습니다
+- 과거에 밟았던 함정을 디버그 체크리스트로 압축해 재사용할 수 있습니다
+
+최소로라도 아래 3가지는 포함하세요:
+
+1. **Key flow / sequence** (필요하면 Mermaid)
+2. **Debug checklist** (가장 중요한 로그/상태)
+3. **Micro-plan template** (코딩 전에 plan-first 강제)
+
+flows 생성/운영 팁:
+
+- 초안: AI에게 end-to-end 흐름 + 핵심 시퀀스 + 불변식을 먼저 복기시키기 → 사람이(특히 레드라인/불변식) 교정 → 문서화
+- 유지: 인터페이스/시퀀스가 바뀔 때마다 인크리멘탈로 갱신하기
+
 ---
 
 ## Step 5: “plan first”를 강제하기
 
-템플릿: [<u>**docs/ai-playbook/collab-rules.md**</u>](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/collab-rules.md)
+여기서 진짜 속도가 나옵니다. 리뷰를 “diff를 읽는 것”에서 “계획을 읽는 것”으로 앞당기기 때문입니다.
+
+`collab-rules.md`에 계획 템플릿을 넣고, 하드 제약으로 취급하세요.
+
+PrivyDrop 템플릿: [<u>**docs/ai-playbook/collab-rules.md**</u>](https://github.com/david-bai00/PrivyDrop/blob/main/docs/ai-playbook/collab-rules.md)
+
+아래 구조는 그대로 재사용할 수 있습니다(goals/scope/approach/risks/acceptance/rollback/validation):
+
+```text
+Title: <short, clear title>
+
+Goals
+- <what you want to achieve>
+
+Scope / Files
+- <list of files you’ll change/add + why>
+
+Approach
+- <implementation plan and key design points>
+
+Risks & Mitigations
+- <risk> → <mitigation>
+
+Acceptance Criteria
+- <verifiable acceptance items>
+
+Rollback
+- <how to revert quickly>
+
+Docs to Update
+- docs/ai-playbook/index.md / code-map.md / flows.md / collab-rules.md / others?
+
+Validation
+- Build: next build
+- Manual: <key cases & regression points>
+```
+
+실제로 더 안정적인 워크플로는 다음과 같습니다:
+
+1. index + code-map + flows를 먼저 읽기(read-only, 코드 수정 금지)
+2. 현재 상태와 제약을 “자기 말로” 다시 말하기(사람이 1회 교정)
+3. 변경 계획을 작성하기(승인 후에만 구현)
+
+> **주의사항**  
+> 계획 단계에서 방향을 바로잡아 “만들고 나서 갈아엎는” 일을 줄이세요. single-scope는 롤백 비용을 낮추고, 머지도 쉽게 만듭니다.
 
 ---
 
-## 💬 바로 쓸 수 있는 프롬프트 예시
+## Step 5.1: 문맥 지속력 (checkpoint → 새 대화)
+
+긴 작업에서는 품질 하락이 거의 필연입니다. “지속력”을 루틴으로 만드세요: 추측/제약 망각/드리프트가 보이면, 현재 상태를 파일로 남기고 새 대화에서 이어가거나, “compress/summarize”로 문맥을 먼저 압축한 뒤 계속 진행합니다.
+
+최소 handoff 템플릿(`docs/ai-playbook/handoff.md` 또는 임시 파일에 저장):
+
+```md
+# Handoff
+
+## Problem statement (3–5 sentences)
+
+## Confirmed plan (bullets)
+
+## Done / Not done
+
+## Key files and entry points
+
+## Red lines and invariants
+
+## Acceptance & regression checklist
+
+## Next-step checklist
+```
+
+목표는 “예쁜 문서”가 아니라, 문맥을 채팅창에서 파일로 옮겨 다음 세션이 안정적으로 읽게 만드는 것입니다.
+
+---
+
+## Step 6: 협업을 닫힌 루프로 만들기 (새 동료를 온보딩하듯 agent 대하기)
+
+위의 조각들이 갖춰지면 협업은 안정적인 파이프라인이 됩니다:
+
+1. 요청 → 제약( `AGENTS.md` 인용)
+2. 탐색 → 엔트리 포인트( `index + code-map` 인용)
+3. 정렬 → 시퀀스( `flows` 인용)
+4. 계획 → 미니 설계 문서( `collab-rules` 템플릿 인용)
+5. 구현 → 작고 single-scope(쉽게 롤백)
+6. 검증 → `next build` + 핵심 수동 회귀 포인트
+7. 동기화 → playbook 문서 최신화
+
+제가 체감한 가장 큰 효과는 기능 추가/버그 수정이 더 빠르고 안정적으로 된다는 점입니다. 더 중요한 건 “빠름”이 **리스크**가 아니라 **재작업 감소**에서 나온다는 것:
+
+- 계획 단계에서 방향을 바로잡아, 나중에 버리는 일을 줄인다
+- single-scope는 롤백 비용을 낮추고 머지를 쉽게 만든다
+- flows는 과거의 함정을 체크리스트로 바꿔 재사용한다
+
+게이트를 하나 더 두고 싶다면 PR 템플릿에 이 두 질문을 넣으세요:
+
+- 이 PR에 변경 계획 링크/요약이 포함되어 있나?
+- 엔트리 포인트/플로우/인터페이스가 바뀌었다면 `docs/ai-playbook/*`를 업데이트했나?
+
+## 바로 쓸 수 있는 프롬프트 예시
+
+AI Playbook이 준비되면, 아래처럼 세션을 시작할 수 있습니다:
 
 ---
 
@@ -136,6 +326,29 @@ Please deeply read relevant docs/code. Think systematically, ask clarifying ques
 
 [<u>**https://openai.com/index/shipping-sora-for-android-with-codex/**</u>](https://openai.com/index/shipping-sora-for-android-with-codex/)
 
+**왜 이렇게 쓰나**
+
+- **Role**: 품질 기준과 책임 범위를 고정한다
+- **Task kickoff**: playbook을 강제로 읽게 만들어, 추측을 줄인다
+- **Working style**: “plan first”를 워크플로의 일부로 만든다
+
+---
+
+## 업계 사례: OpenAI는 Codex로 스프린트를 어떻게 굴리나
+
+OpenAI는 “How we used Codex to build Sora for Android in 28 days”에서 이 글과 거의 같은 흐름을 설명합니다:
+[<u>**https://openai.com/index/shipping-sora-for-android-with-codex/**</u>](https://openai.com/index/shipping-sora-for-android-with-codex/)
+
+맞춰볼 포인트:
+
+- agent를 “새로 온 시니어”로 대하기: 능력은 강하지만, 아키텍처/제약이 명확해야 한다
+- 규칙 외부화: 강한 `AGENTS.md`는 시간이 갈수록 이득이다
+- 실질 변경 전에 계획: 계획은 미니 설계 문서 — 코드를 디버그하기 전에 계획을 디버그한다
+- 문맥 지속력: 문맥 한계에 닿으면, 계획을 파일로 남겨 다음 세션에서 이어간다
+- 멀티 세션 병렬: 단일 도구가 아니라 “팀을 운영”하는 감각에 가깝다
+
+Android와 웹은 다르지만, 방법은 그대로 옮겨옵니다: **입력을 개선하면 출력은 안정됩니다**.
+
 ---
 
 ## 그대로 복사 가능한 최소 디렉터리 구조
@@ -154,6 +367,21 @@ docs/
 
 ---
 
+문서가 이미 여기저기 흩어져 있다면: 먼저 `index.md`로 진입점을 묶고, 그다음 code-map/flows/템플릿을 채우는 게 가장 빠릅니다.
+
+---
+
+## 다음 행동
+
+1. **바로 시작**: 최소 구조를 저장소에 복사하고, `AGENTS.md`부터 시작하기
+2. **참고 구현**: [<u>**PrivyDrop GitHub**</u>](https://github.com/david-bai00/PrivyDrop)에서 전체 AI Playbook 보기
+3. **피드백**: 도움이 됐거나(혹은 함정에 빠졌다면) GitHub issue를 열거나 댓글로 공유하기
+4. **Star**: 가치가 있다면 PrivyDrop에 star를 🌟
+
+---
+
 ## 마무리
 
 AI 보조 개발은 엄밀함을 줄이지 않습니다. 오히려 더 필요합니다. 지속 가능한 속도는 더 긴 프롬프트가 아니라 더 강한 엔지니어링 제약에서 나옵니다: 규칙 외부화, 계획 선행, 플로우 문서화, 그리고 문맥의 지속성.
+
+더 나아가고 싶다면, 이 방법을 “복사 가능한 저장소 스캐폴드”로 확장할 수도 있습니다: PR 템플릿, 이슈 템플릿, 그리고 바로 쓸 수 있는 `AGENTS.md` + playbook 스타터 킷.
