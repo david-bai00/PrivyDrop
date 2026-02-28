@@ -145,15 +145,14 @@
   - `backend/Dockerfile`、`backend/.dockerignore` — Docker 配置。
   - `backend/health-check.js` — 健康检查脚本。
   - `backend/scripts/export-tracking-data.js` — 数据导出脚本。
-  - `backend/docker/` — Docker 相关配置与脚本（包含 Nginx、TURN 服务器配置）。
 
 ## 部署与运维
 
 - **根目录配置**
 
-  - `docker-compose.yml`、`ecosystem.config.js` — Docker Compose 与 PM2 配置。
-  - `build-and-deploy.sh`、`deploy.sh` — 构建与部署脚本。
-  - `deploy.config_prod`、`deploy.config_test` — 生产与测试环境配置。
+  - `deploy.sh` — Docker 一键部署入口（环境检测、配置生成、证书自动化、启动/清理）。
+  - `docker-compose.yml` — Docker Compose 编排（frontend/backend/redis/nginx/turn）。
+  - `.env` — Docker 部署环境变量（由脚本生成/维护）。
 
 - **Docker 基础设施**
 

@@ -145,15 +145,14 @@ This map is designed for quick orientation. It lists directories and key entry f
   - `backend/Dockerfile`, `backend/.dockerignore` — Docker configuration.
   - `backend/health-check.js` — health-check script.
   - `backend/scripts/export-tracking-data.js` — data export script.
-  - `backend/docker/` — Docker-related configs/scripts (Nginx, TURN server config).
 
 ## Deployment & Ops
 
 - **Root-level config**
 
-  - `docker-compose.yml`, `ecosystem.config.js` — Docker Compose and PM2 config.
-  - `build-and-deploy.sh`, `deploy.sh` — build and deploy scripts.
-  - `deploy.config_prod`, `deploy.config_test` — prod/test deployment config.
+  - `deploy.sh` — Docker one-click entry (env checks, config generation, cert automation, start/clean).
+  - `docker-compose.yml` — Docker Compose services (frontend/backend/redis/nginx/turn).
+  - `.env` — Docker deployment env vars (generated/maintained by scripts).
 
 - **Docker infrastructure**
 
@@ -167,4 +166,3 @@ This map is designed for quick orientation. It lists directories and key entry f
   - `build/` — ignore this temporary directory.
   - `test-health-apis.sh` — health API test script.
   - `README.md`, `README.zh-CN.md`, `ROADMAP.md`, `ROADMAP.zh-CN.md` — project docs.
-
