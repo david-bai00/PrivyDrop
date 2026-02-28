@@ -14,8 +14,8 @@ bash ./deploy.sh --mode lan-http --with-turn
 # LAN HTTPS (self-signed; dev/managed env; explicitly enable 8443)
 bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 
-# Public IP without domain (with TURN)
-bash ./deploy.sh --mode public --with-turn
+# Public IP without domain (with TURN; recommended with Nginx for same-origin)
+bash ./deploy.sh --mode public --with-turn --with-nginx
 
 # Public domain (HTTPS + Nginx + TURN + SNI 443, auto-issue/renew certs)
 bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
@@ -80,8 +80,8 @@ cd PrivyDrop
 ### 2. One-Click Deployment
 
 ```bash
-# Basic deployment (recommended for beginners)
-bash ./deploy.sh
+# Always pass an explicit deployment mode
+bash ./deploy.sh --mode lan-http
 ```
 
 That's it! 🎉
@@ -162,17 +162,14 @@ NO_PROXY=localhost,127.0.0.1,backend,frontend,redis,coturn
 ### Common Flags
 
 ```bash
-# Enable only Nginx reverse proxy
-bash ./deploy.sh --with-nginx
-
-# Enable TURN (recommended in public/full)
-bash ./deploy.sh --with-turn
-
-# Explicitly enable SNI 443 (auto-enabled in full+domain; use --no-sni443 to disable)
-bash ./deploy.sh --with-sni443
+# Always include an explicit --mode (examples)
+bash ./deploy.sh --mode lan-http --with-nginx
+bash ./deploy.sh --mode lan-http --with-turn
+bash ./deploy.sh --mode public --with-turn --with-nginx
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --with-sni443 --le-email you@domain.com
 
 # Adjust TURN port range (default 49152-49252/udp)
-bash ./deploy.sh --mode full --with-turn --turn-port-range 55000-55100
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com --turn-port-range 55000-55100
 ```
 
 ## 🌐 Access Methods
@@ -325,8 +322,10 @@ sudo ufw status
 **Solution**:
 
 ```bash
-# Enable TURN server
-bash ./deploy.sh --with-turn
+# Enable TURN server (re-run with an explicit --mode)
+bash ./deploy.sh --mode lan-http --with-turn
+# or (public IP, recommended same-origin via Nginx)
+bash ./deploy.sh --mode public --with-turn --with-nginx
 
 # Check network connectivity
 curl -I http://localhost:3001/api/get_room
@@ -366,7 +365,8 @@ docker system prune -f
 1. **Enable Nginx Caching**:
 
 ```bash
-bash deploy.sh --with-nginx
+# Example (public IP, same-origin via Nginx)
+bash ./deploy.sh --mode public --with-turn --with-nginx
 ```
 
 2. **Configure Resource Limits**:
@@ -408,7 +408,7 @@ networks:
 
 ```bash
 # Auto-enabled (requires HTTPS)
-bash deploy.sh --mode full --with-nginx
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
 ```
 
 ## 🔒 Security Configuration
@@ -512,8 +512,12 @@ logs/
 # Pull latest code
 git pull origin main
 
-# Redeploy
-bash deploy.sh
+# Re-run the same deployment command you used initially (examples)
+bash ./deploy.sh --mode lan-http
+# or (public IP)
+bash ./deploy.sh --mode public --with-turn --with-nginx
+# or (full domain)
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
 ```
 
 ### Data Backup

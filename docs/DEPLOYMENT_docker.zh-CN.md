@@ -14,8 +14,8 @@ bash ./deploy.sh --mode lan-http --with-turn
 # 内网 HTTPS（自签，开发/受管环境，需显式开启 8443）
 bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 
-# 公网IP（无域名），含 TURN
-bash ./deploy.sh --mode public --with-turn
+# 公网IP（无域名），含 TURN（推荐同源经 Nginx）
+bash ./deploy.sh --mode public --with-turn --with-nginx
 
 # 公网域名（HTTPS + Nginx + TURN + SNI 443 分流，自动申请/续期证书）
 bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
@@ -160,17 +160,14 @@ NO_PROXY=localhost,127.0.0.1,backend,frontend,redis,coturn
 ### 常用开关
 
 ```bash
-# 仅启用 Nginx
-bash ./deploy.sh --with-nginx
-
-# 启用 TURN（public/full 建议）
-bash ./deploy.sh --with-turn
-
-# 显式启用 SNI 443（full+domain 默认开启，可用 --no-sni443 关闭）
-bash ./deploy.sh --with-sni443
+# 部署命令请始终显式传递 --mode（示例）
+bash ./deploy.sh --mode lan-http --with-nginx
+bash ./deploy.sh --mode lan-http --with-turn
+bash ./deploy.sh --mode public --with-turn --with-nginx
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --with-sni443 --le-email you@domain.com
 
 # 调整 TURN 端口段（默认 49152-49252/udp）
-bash ./deploy.sh --mode full --with-turn --turn-port-range 55000-55100
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com --turn-port-range 55000-55100
 ```
 
 ## 🌐 访问方式
@@ -323,8 +320,10 @@ sudo ufw status
 **解决方案**:
 
 ```bash
-# 启用TURN服务器
-bash ./deploy.sh --with-turn
+# 启用 TURN（重新执行部署命令并显式指定 --mode）
+bash ./deploy.sh --mode lan-http --with-turn
+# 或（公网IP，推荐同源经 Nginx）
+bash ./deploy.sh --mode public --with-turn --with-nginx
 
 # 检查网络连接
 curl -I http://localhost:3001/api/get_room
@@ -368,7 +367,8 @@ docker system prune -f
 1. **启用 Nginx 缓存**:
 
 ```bash
-bash ./deploy.sh --with-nginx
+# 示例（公网IP，同源经 Nginx）
+bash ./deploy.sh --mode public --with-turn --with-nginx
 ```
 
 2. **配置资源限制**:
@@ -410,7 +410,7 @@ networks:
 
 ```bash
 # 自动启用 (需要 HTTPS)
-bash ./deploy.sh --mode full --with-nginx
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
 ```
 
 ## 🔒 HTTPS 与安全
@@ -514,8 +514,12 @@ logs/
 # 拉取最新代码
 git pull origin main
 
-# 重新部署
-bash ./deploy.sh
+# 重新执行你最初的部署命令（示例）
+bash ./deploy.sh --mode lan-http
+# 或（公网IP）
+bash ./deploy.sh --mode public --with-turn --with-nginx
+# 或（公网域名 full）
+bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn --le-email you@domain.com
 ```
 
 ### 数据备份
