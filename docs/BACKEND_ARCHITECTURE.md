@@ -42,7 +42,6 @@ backend/
 │ │ ├── room.ts
 │ │ └── socket.ts
 │ └── server.ts     # Main application entry point: Express and Socket.IO setup
-├── ecosystem.config.js # PM2 configuration file
 ├── package.json
 └── tsconfig.json
 ```

@@ -42,7 +42,6 @@ backend/
 │ │ ├── room.ts
 │ │ └── socket.ts
 │ └── server.ts # 主应用程序入口点: Express 和 Socket.IO 设置
-├── ecosystem.config.js # PM2 配置文件
 ├── package.json
 └── tsconfig.json
 ```

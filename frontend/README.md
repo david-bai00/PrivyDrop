@@ -41,7 +41,7 @@ Before you start, please ensure you have **installed and started the backend ser
 
 - To understand the complete project architecture and how components collaborate, please see the [**Overall Project Architecture**](../docs/ARCHITECTURE.md).
 - To dive deep into the frontend's code structure, Hooks design, and state management, please read the [**Frontend Architecture Deep Dive**](../docs/FRONTEND_ARCHITECTURE.md).
-- For instructions on deploying in a production environment, please refer to the [**Deployment Guide**](../docs/DEPLOYMENT.md).
+- For production deployment, see the [**Docker Deployment Guide**](../docs/DEPLOYMENT_docker.md).
 
 ## 🤝 Contributing
 

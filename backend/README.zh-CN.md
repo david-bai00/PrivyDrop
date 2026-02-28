@@ -16,7 +16,6 @@
 - **语言**: TypeScript
 - **实时通信**: Socket.IO
 - **数据库**: Redis (使用 ioredis 客户端)
-- **进程管理**: PM2
 
 ## 🚀 入门 (本地开发)
 
@@ -56,4 +55,4 @@
 
 - 要深入理解后端的代码结构、模块设计和 Redis 数据模型，请阅读 [**后端架构详解**](../docs/BACKEND_ARCHITECTURE.zh-CN.md)。
 - 要了解项目前后端的整体协作方式，请参阅 [**项目整体架构**](../docs/ARCHITECTURE.zh-CN.md)。
-- 有关生产环境的部署方法，请参考 [**部署指南**](../docs/DEPLOYMENT.zh-CN.md)。
+- 有关生产环境部署，请参考 [**Docker 部署指南**](../docs/DEPLOYMENT_docker.zh-CN.md)。

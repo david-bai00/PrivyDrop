@@ -16,7 +16,6 @@ This is the backend server for PrivyDrop. It is built with Node.js, Express, and
 - **Language**: TypeScript
 - **Real-time Communication**: Socket.IO
 - **Database**: Redis (using the ioredis client)
-- **Process Management**: PM2
 
 ## 🚀 Getting Started (Local Development)
 
@@ -56,4 +55,4 @@ This service provides a set of API endpoints and Socket.IO events to support the
 
 - To understand the backend's code structure, module design, and Redis data model in depth, please read the [**Backend Architecture Deep Dive**](../docs/BACKEND_ARCHITECTURE.md).
 - To learn about how the frontend and backend collaborate, refer to the [**Overall Project Architecture**](../docs/ARCHITECTURE.md).
-- For instructions on deploying in a production environment, please see the [**Deployment Guide**](../docs/DEPLOYMENT.md).
+- For production deployment, see the [**Docker Deployment Guide**](../docs/DEPLOYMENT_docker.md).
