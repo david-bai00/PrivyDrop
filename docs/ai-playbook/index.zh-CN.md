@@ -29,7 +29,6 @@
   - 后端架构：`docs/BACKEND_ARCHITECTURE.md` / `docs/BACKEND_ARCHITECTURE.zh-CN.md`
 
 - 部署
-  - 部署指南：`docs/DEPLOYMENT.md` / `docs/DEPLOYMENT.zh-CN.md`
   - Docker 部署：`docs/DEPLOYMENT_docker.md` / `docs/DEPLOYMENT_docker.zh-CN.md`
 
 ## 关键模块速览

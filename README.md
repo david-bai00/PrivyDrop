@@ -38,7 +38,7 @@ We believe everyone should have control over their own data. PrivyDrop was creat
 - **Backend**: Node.js, Express.js, TypeScript
 - **Real-time Communication**: WebRTC, Socket.IO
 - **Data Storage**: Redis
-- **Deployment**: PM2, Nginx, Docker
+- **Deployment**: Docker (Docker Compose)
 
 ## 🐳 Docker One-Click Deployment (Recommended)
 
@@ -125,7 +125,7 @@ We provide detailed documentation to help you dive deeper into the project's des
 - [**Overall Project Architecture**](./docs/ARCHITECTURE.md): Understand how all components of the PrivyDrop system work together.
 - [**Frontend Architecture Deep Dive**](./docs/FRONTEND_ARCHITECTURE.md): Explore the frontend's modern, layered architecture, state management with Zustand, and the decoupled service-based approach to WebRTC.
 - [**Backend Architecture Deep Dive**](./docs/BACKEND_ARCHITECTURE.md): Dive into the backend's code structure, signaling flow, and Redis design.
-- [**Deployment Guide**](./docs/DEPLOYMENT.md): Learn how to deploy the complete PrivyDrop application in a production environment.
+- [**Docker Deployment Guide**](./docs/DEPLOYMENT_docker.md): One-click deployment (LAN/Public/Full), HTTPS automation, TURN, and troubleshooting.
 - [AI Playbook (zh-CN)](./docs/ai-playbook/index.zh-CN.md) · [Collaboration Rules (zh-CN)](./docs/ai-playbook/collab-rules.zh-CN.md)
 
 ## 🤝 Contributing

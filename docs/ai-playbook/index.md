@@ -29,7 +29,6 @@ This playbook is a high signal-to-noise entry point for AI and developers, helpi
   - Backend architecture: `docs/BACKEND_ARCHITECTURE.md` / `docs/BACKEND_ARCHITECTURE.zh-CN.md`
 
 - Deployment
-  - Deployment guide: `docs/DEPLOYMENT.md` / `docs/DEPLOYMENT.zh-CN.md`
   - Docker deployment: `docs/DEPLOYMENT_docker.md` / `docs/DEPLOYMENT_docker.zh-CN.md`
 
 ## Key Modules at a Glance
