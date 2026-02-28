@@ -1,8 +1,20 @@
 # PrivyDrop 部署体系统一（Docker-only）清理计划（提案，未实施）
 
 日期：2026-02-28  
-状态：提案 / 等待批准（不执行任何删除动作前需再次确认）  
-讨论结论：**不保留、不兼容、不归档**，所有非 Docker 部署体系相关代码/资源将直接删除。
+状态：已实施（Docker-only 清理已完成）  
+讨论结论：**不保留、不兼容、不归档**，所有非 Docker 部署体系相关代码/资源已直接删除。
+
+## 实施记录（Commit Log）
+
+按提交顺序（均为英文提交信息）：
+
+- `5c8df18` docs: add docker-only cleanup plan
+- `e0c3195` docs: make Docker the only supported deployment path
+- `2b24dbe` docs(playbook): remove bare-metal deployment entries
+- `0dfe627` docs: remove PM2/bare-metal references
+- `3ce1ca5` chore: remove bare-metal deployment guides
+- `de6199b` chore: remove bare-metal ops assets under backend/docker
+- `fd70fa3` chore: remove PM2-based deploy scripts
 
 ## 背景与问题陈述
 
@@ -143,4 +155,3 @@ Non-Goals（明确不做）
 - 继续沿用现有证书流程（certbot + `docker/ssl/*` + 热更新 hook）
 
 因此 Caddy 方案需要解决 **443 SNI 分流（turn.<domain> → coturn:5349，其余 → web:8443）** 的等价实现（原方案在 Nginx stream 中实现）。这将是单独的设计与实施主题。
-

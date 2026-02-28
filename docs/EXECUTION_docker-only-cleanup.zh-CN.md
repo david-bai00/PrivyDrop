@@ -4,6 +4,22 @@
 范围：仅“部署体系统一到 Docker-only”的清理；不引入 Caddy，不改 WebRTC 传输护栏。  
 提交要求：每个子任务一个 **英文** commit message（`git commit -m "..."`）。
 
+## 实际执行结果（已完成）
+
+本次清理已按“分步提交”完成（按提交顺序）：
+
+- `5c8df18` docs: add docker-only cleanup plan
+- `e0c3195` docs: make Docker the only supported deployment path
+- `2b24dbe` docs(playbook): remove bare-metal deployment entries
+- `0dfe627` docs: remove PM2/bare-metal references
+- `3ce1ca5` chore: remove bare-metal deployment guides
+- `de6199b` chore: remove bare-metal ops assets under backend/docker
+- `fd70fa3` chore: remove PM2-based deploy scripts
+
+验证说明：
+- 本轮改动为“文档 + 删除部署资产”，未改动前后端运行逻辑与 WebRTC 传输参数。
+- 未在本地执行 `next build` / `docker compose build`（如需我可在后续单独补充一次验证提交）。
+
 ## 总目标
 
 - 删除裸机部署体系相关代码/文档/脚本（不兼容、不保留、不归档）。
@@ -113,4 +129,3 @@
 ## 回滚策略
 
 - 任何问题：直接 `git revert <commit>` 回滚到清理前状态（删除类变更不做手工回滚）。
-
