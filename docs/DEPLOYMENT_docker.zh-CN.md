@@ -126,10 +126,12 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 
 **特性**:
 
-- ✅ HTTPS 安全访问（Let’s Encrypt 自动签发/续期，无停机）
+- ✅ HTTPS 安全访问（Let’s Encrypt 自动签发/续期）
 - ✅ Nginx 反向代理
 - ✅ 内置 TURN 服务器（默认端口段 49152-49252/udp，可覆盖）
 - ✅ SNI 443 分流（turn.<domain> → coturn:5349，其余 → web:8443）
+- ✅ 启用 `--with-nginx` 时默认前后端同源（`NEXT_PUBLIC_API_URL` 会生成为空字符串，浏览器统一走 `/api` 与 `/socket.io/`）
+- ✅ 生产环境默认同时生成主域名与 `www` 变体的 CORS 来源（例如 `https://example.com,https://www.example.com`）
 - ✅ 完整生产环境配置
 
 > 提示：脚本不再自动判断部署模式，请显式传递 `--mode lan-http|lan-tls|public|full`。若自动检测到的局域网 IP 与预期不符，可使用 `--local-ip 192.168.x.x` 进行覆盖。
@@ -186,7 +188,7 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 ### HTTPS 访问（lan-tls/full）
 
 - lan-tls：开启 `--enable-web-https` 后通过 `https://localhost:8443` 访问（证书在 `docker/ssl/`）。首次访问需导入 `docker/ssl/ca-cert.pem` 到浏览器或系统信任。
-- full：签发 Let’s Encrypt 后通过 `https://<your-domain>` 访问（443）。
+- full：签发 Let’s Encrypt 后通过 `https://<your-domain>` 访问（443）。续期阶段由 deploy-hook 热重载边缘服务；首次 full 部署还会强制重建 `nginx`（启用 TURN 时也会重建 `coturn`），确保新的 HTTPS/SNI 配置立即生效。
 
 ## 🔍 管理命令
 
@@ -446,6 +448,7 @@ bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 3) 跨域（CORS）说明
 - 为方便开发与调试，脚本已默认放开常见来源：`https://<局域网IP>:8443`、`https://localhost:8443`、`http://localhost`、`http://<局域网IP>`、`http://localhost:3002`、`http://<局域网IP>:3002`。
 - 若仍需最小化来源，请在 `.env` 中精准收敛 `CORS_ORIGIN`，并 `docker compose restart backend`。
+- 生产环境里，`CORS_ORIGIN` 是供 Express 与 Socket.IO 共用的逗号分隔来源列表。例如：`CORS_ORIGIN=https://example.com,https://www.example.com`。
 
 4) 健康检查
 - `curl -kfsS https://localhost:8443/api/health` → 200
@@ -457,6 +460,11 @@ bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 ### 公网域名部署（HTTPS + Nginx）快速测试
 
 1) 将域名 A 记录解析至服务器 IP（可选：`turn.<your-domain>` 指向相同 IP）
+
+   推荐的 DNS / CDN 布局：
+   - Web 入口：为 `--domain` 选择一个规范主机名（例如 `example.com`），其他主机名（例如 `www.example.com`）建议在 CDN / DNS 层做跳转到规范主机名。
+   - TURN 入口：如果使用 Cloudflare，建议将 `turn.<your-domain>` 设为 DNS only，避免 TURN 流量经过 HTTP 代理。
+   - 当前脚本默认申请 `--domain` 与 `turn.<your-domain>` 的证书；如果你还想直接提供 `https://www.<your-domain>`，请额外处理该证书，或让它跳转到规范主机名。
 
 2) 运行：
 
@@ -473,7 +481,8 @@ bash ./deploy.sh --mode lan-tls --enable-web-https --with-nginx
 full 模式自动申请并续期证书：
 
 - 首次签发：webroot 模式（无停机），系统证书在 `/etc/letsencrypt/live/<domain>/`，脚本复制到 `docker/ssl/` 并启用 443；
-- 续期：`certbot.timer` 或 `/etc/cron.d/certbot` 每日尝试 `certbot renew`；deploy-hook 自动复制新证书并热重载 Nginx/Coturn；
+- 首次签发后，脚本还会执行 `docker compose up -d --force-recreate nginx`（启用 TURN 时也会重建 `coturn`），确保新生成的 HTTPS / SNI 配置已经挂载并生效；首次切换时可能会有短暂重连。
+- 续期：`certbot.timer` 或 `/etc/cron.d/certbot` 每日尝试 `certbot renew`；deploy-hook 自动复制新证书，优先对 coturn 发送 `HUP`，并热重载 Nginx/Coturn（必要时回退到容器重启）；
 - 证书谱系（-0001/-0002）已自动适配，无需手动处理。
 
 ### 网络安全

@@ -128,10 +128,12 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 
 **Features**:
 
-- ✅ HTTPS secure access (Let’s Encrypt auto-issue/renew, zero downtime)
+- ✅ HTTPS secure access (Let’s Encrypt auto-issue/renew)
 - ✅ Nginx reverse proxy
 - ✅ Built-in TURN server (default port range 49152-49252/udp)
 - ✅ SNI 443 multiplexing (turn.<domain> → coturn:5349; others → web:8443)
+- ✅ Same-origin frontend/API gateway by default when `--with-nginx` is enabled (`NEXT_PUBLIC_API_URL` is generated as an empty string, so the browser uses `/api` and `/socket.io/`)
+- ✅ Production CORS generation covers the canonical domain and its `www` variant by default (for example `https://example.com,https://www.example.com`)
 - ✅ Complete production setup
 
 > Tip: The script no longer auto-detects the deployment mode; always pass `--mode lan-http|lan-tls|public|full`. If the detected LAN IP is not the one you expect, add `--local-ip 192.168.x.x` to override.
@@ -188,7 +190,7 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 ### HTTPS Access (lan-tls/full)
 
 - lan-tls: with `--enable-web-https`, access via `https://localhost:8443` (certs in `docker/ssl/`). Import `docker/ssl/ca-cert.pem` into your browser or trust store on first use.
-- full: after Let’s Encrypt issuance, access via `https://<your-domain>` (443). Certs auto-issue/renew; hot-reload is handled via deploy hook.
+- full: after Let’s Encrypt issuance, access via `https://<your-domain>` (443). Certs auto-issue/renew; the deploy hook hot-reloads edge services on renewal, and the initial full-mode deploy also force-recreates `nginx` (and `coturn` when enabled) to guarantee the new HTTPS/SNI config is active.
 
 ## 🔍 Management Commands
 
@@ -444,6 +446,7 @@ Usage (strongly recommended)
 3) CORS
 - For convenience, common dev origins are allowed by default: `https://<LAN IP>:8443`, `https://localhost:8443`, `http://localhost`, `http://<LAN IP>`, `http://localhost:3002`, `http://<LAN IP>:3002`.
 - To minimize allowed origins, edit `CORS_ORIGIN` in `.env` and then `docker compose restart backend`.
+- In production, `CORS_ORIGIN` is a comma-separated list consumed by both Express and Socket.IO. Example: `CORS_ORIGIN=https://example.com,https://www.example.com`.
 
 4) Health checks
 - `curl -kfsS https://localhost:8443/api/health` → 200
@@ -455,6 +458,11 @@ Usage (strongly recommended)
 ### Public Domain Deployment (HTTPS + Nginx) — Quick Test
 
 1) Point your domain A record to the server IP (optional: also `turn.<your-domain>` to the same IP)
+
+   Recommended DNS / CDN layout:
+   - Web entry: choose one canonical hostname for `--domain` (for example `example.com`) and redirect alternate hostnames such as `www.example.com` at the CDN/DNS layer if desired.
+   - TURN entry: keep `turn.<your-domain>` as DNS-only when using Cloudflare so TURN traffic does not go through the HTTP proxy.
+   - Current certificate issuance covers `--domain` and `turn.<your-domain>` by default. If you need direct HTTPS on an additional hostname such as `www.<your-domain>`, add that certificate handling separately or make it redirect to the canonical host.
 
 2) Run:
 
@@ -471,7 +479,8 @@ Usage (strongly recommended)
 In full mode, certificates are auto-issued and auto-renewed:
 
 - Initial issuance: webroot (no downtime); system certs live under `/etc/letsencrypt/live/<domain>/`; copied to `docker/ssl/` and 443 is enabled.
-- Renewal: `certbot.timer` or `/etc/cron.d/certbot` runs daily; the deploy-hook copies new certs to `docker/ssl/` and hot-reloads Nginx/Coturn.
+- Initial issuance is followed by `docker compose up -d --force-recreate nginx` (and `coturn` when enabled) so the freshly generated HTTPS/SNI config is guaranteed to be mounted and active. Expect a brief reconnect window during this first cutover.
+- Renewal: `certbot.timer` or `/etc/cron.d/certbot` runs daily; the deploy-hook copies new certs to `docker/ssl/`, sends `HUP` to coturn when possible, and hot-reloads Nginx/Coturn (falling back to container restart if needed).
 - Lineage suffixes (-0001/-0002) are handled automatically.
 
 ### Network Security
