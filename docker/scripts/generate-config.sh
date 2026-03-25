@@ -232,8 +232,21 @@ generate_env_file() {
             turn_enabled="true"
             ;;
         full)
-            cors_origin="https://${DOMAIN_NAME:-$LOCAL_IP}"
-            api_url="https://${DOMAIN_NAME:-$LOCAL_IP}"
+            if [[ -n "$DOMAIN_NAME" ]]; then
+                if [[ "$DOMAIN_NAME" == www.* ]]; then
+                    local bare_domain="${DOMAIN_NAME#www.}"
+                    cors_origin="https://${DOMAIN_NAME},https://${bare_domain}"
+                else
+                    cors_origin="https://${DOMAIN_NAME},https://www.${DOMAIN_NAME}"
+                fi
+            else
+                cors_origin="https://${LOCAL_IP}"
+            fi
+            if [[ "$WITH_NGINX" == "true" ]]; then
+                api_url=""
+            else
+                api_url="https://${DOMAIN_NAME:-$LOCAL_IP}"
+            fi
             ssl_mode="letsencrypt"
             turn_enabled="true"
             ;;
