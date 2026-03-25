@@ -741,6 +741,13 @@ main() {
 
     # If full + nginx, automatically issue certs and enable 443
     provision_letsencrypt_cert || true
+    if [[ "$DEPLOYMENT_MODE" == "full" && "$WITH_NGINX" == "true" ]]; then
+        log_info "Refreshing edge containers to apply generated HTTPS/SNI config..."
+        docker compose up -d --force-recreate nginx >/dev/null
+        if [[ "$WITH_TURN" == "true" ]]; then
+            docker compose up -d --force-recreate coturn >/dev/null
+        fi
+    fi
     # Ensure TURN is running (when requested with --with-turn)
     ensure_turn_running || true
     
