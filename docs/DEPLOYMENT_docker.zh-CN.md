@@ -60,6 +60,25 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 - **磁盘**: 5GB 及以上可用空间
 - **网络**: 100Mbps 及以上
 
+### 低内存服务器说明（1GB–2GB 主机建议必看）
+
+- 前端镜像构建会执行 `next build`，在小内存服务器上可能被内核直接 OOM 杀掉。
+- 对于全新 1GB–2GB 服务器，如果首轮生产构建时内存紧张，建议先加至少 **1GB swap**。
+- 典型现象：前端镜像在 `next build` 阶段异常退出，或 `dmesg` 中出现 OOM / killed process 记录。
+
+Ubuntu 推荐一次性 swap 配置：
+
+```bash
+sudo fallocate -l 1G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+free -h
+```
+
+启用 swap 后，再重新执行部署命令。
+
 ### 软件依赖
 
 - Docker 20.10+

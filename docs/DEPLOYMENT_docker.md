@@ -60,6 +60,25 @@ Compared to traditional deployment methods, Docker deployment offers the followi
 - **Disk**: 5GB+ available space
 - **Network**: 100Mbps+
 
+### Low-Memory Server Notes (important for 1GB–2GB hosts)
+
+- The frontend Docker build runs `next build`, which can be killed by the kernel on very small hosts.
+- On fresh 1GB–2GB servers, add at least **1GB swap** before the first production build if memory pressure is high.
+- Typical symptom: the frontend image build exits unexpectedly during `next build` or the host shows OOM messages in `dmesg`.
+
+Recommended one-time swap setup on Ubuntu:
+
+```bash
+sudo fallocate -l 1G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+free -h
+```
+
+After swap is enabled, rerun the deploy command.
+
 ### Software Dependencies
 
 - Docker 20.10+
