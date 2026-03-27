@@ -66,7 +66,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
   saveType,
   largeFileThreshold = 500 * 1024 * 1024, // 500MB default
 }) => {
-  const t = useTranslations("text.FileListDisplay");
+  const t = useTranslations("text.fileList");
 
   // Get the cleaning method of the store
   const { clearSendProgress, clearReceiveProgress } = useFileTransferStore();
@@ -306,14 +306,14 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
           <div className="w-full sm:w-auto">
             <TransferProgress
               message={
-                mode === "sender" ? t("sendingLabel") : t("receivingLabel")
+                mode === "sender" ? t("sending") : t("receiving")
               }
               progress={progress}
             />
           </div>
         ) : showCompletion ? (
           <span className="text-sm text-green-500 whitespace-nowrap">
-            {t("finishedLabel")}
+            {t("finished")}
           </span>
         ) : null}
 
@@ -337,26 +337,26 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
           {/* display download Num*/}
           {mode === "sender" && (
             <span className="text-xs sm:text-sm whitespace-nowrap">
-              {t("downloadCountLabel")}: {downloadCount}
+              {t("downloadCount")}: {downloadCount}
             </span>
           )}
           {mode === "sender" && onDelete && (
-            <Button
-              onClick={() => {
-                onDelete(item);
-              }}
-              variant="destructive"
-              size="sm"
-              disabled={
-                progress
-                  ? progress?.progress > 0 && progress.progress < 1
-                  : false
-              }
-              className="text-xs sm:text-sm px-2 sm:px-3"
-            >
-              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t("deleteLabel")}</span>
-            </Button>
+              <Button
+                onClick={() => {
+                  onDelete(item);
+                }}
+                variant="destructive"
+                size="sm"
+                disabled={
+                  progress
+                    ? progress?.progress > 0 && progress.progress < 1
+                    : false
+                }
+                className="text-xs sm:text-sm px-2 sm:px-3"
+              >
+                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t("delete")}</span>
+              </Button>
           )}
         </div>
       </div>
@@ -368,7 +368,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
     const formatSize = formatFileSize(item.size);
     const tooltipContent = isFolder
       ? `${formatFolderTips(
-          t("folderSummaryTemplate"),
+          t("folderSummary"),
           item.name,
           item.fileCount || 0,
           formatSize
@@ -391,7 +391,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
             <span className="text-xs sm:text-sm text-muted-foreground">
               {isFolder
                 ? `${formatFolderDis(
-                    t("folderInlineTemplate"),
+                    t("folderInline"),
                     item.fileCount || 0,
                     formatSize
                   )}`
@@ -414,13 +414,13 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
             <div className="mb-2">
               <AutoPopupDialog
                 storageKey="Choose-location-popup-shown"
-                title={t("popupDialogTitle")}
-                description={t("popupDialogDescription")}
+                title={t("saveDialog.title")}
+                description={t("saveDialog.description")}
                 condition={() => needPickLocation}
               />
-              {/* Regular reminder to select the save directory */}
+               {/* Regular reminder to select the save directory */}
               <div className="flex items-center">
-                <p className="text-red-500 mb-2">{t("chooseSavePathTip")}</p>
+                <p className="text-red-500 mb-2">{t("saveDialog.tip")}</p>
                 {onLocationPick && (
                   <Button
                     onClick={async () => {
@@ -431,7 +431,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
                     size="sm"
                     className="mr-2 text-red-500"
                   >
-                    {t("chooseSavePathLabel")}
+                    {t("saveDialog.button")}
                   </Button>
                 )}
               </div>

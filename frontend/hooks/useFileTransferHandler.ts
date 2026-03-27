@@ -1,13 +1,13 @@
 import { useCallback, useEffect } from "react";
 import { CustomFile, FileMeta, fileMetadata } from "@/types/webrtc";
-import { Messages } from "@/types/messages";
 import JSZip from "jszip";
 import { downloadAs } from "@/lib/fileUtils";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { postLogToBackend } from "@/app/config/api";
+import type { FileTransferText } from "@/types/clipboardText";
 
 interface UseFileTransferHandlerProps {
-  messages: Messages | null;
+  text: FileTransferText;
   putMessageInMs: (
     message: string,
     isShareEnd?: boolean,
@@ -16,7 +16,7 @@ interface UseFileTransferHandlerProps {
 }
 
 export function useFileTransferHandler({
-  messages,
+  text,
   putMessageInMs,
 }: UseFileTransferHandlerProps) {
   // Get state from store
@@ -47,16 +47,12 @@ export function useFileTransferHandler({
         (pf) =>
           !sendFiles.some((ef) => ef.name === pf.name && ef.size === pf.size)
       );
-      if (newFiles.length < pickedFiles.length && messages) {
-        putMessageInMs(
-          messages.text.ClipboardApp.fileExistMsg ||
-            "Some files were already added.",
-          true
-        );
+      if (newFiles.length < pickedFiles.length) {
+        putMessageInMs(text.fileExist, true);
       }
       addSendFiles(newFiles);
     },
-    [sendFiles, messages, putMessageInMs, addSendFiles]
+    [sendFiles, text.fileExist, putMessageInMs, addSendFiles]
   );
 
   const removeFileToSend = useCallback(
@@ -68,10 +64,6 @@ export function useFileTransferHandler({
 
   const handleDownloadFile = useCallback(
     async (meta: FileMeta) => {
-      if (!messages) {
-        return;
-      }
-
       if (meta.folderName && meta.folderName !== "") {
         const { retrievedFiles: latestRetrievedFiles } =
           useFileTransferStore.getState();
@@ -79,11 +71,7 @@ export function useFileTransferHandler({
           (file) => file.folderName === meta.folderName
         );
         if (filesToZip.length === 0) {
-          putMessageInMs(
-            messages.text.ClipboardApp.noFilesForFolderMsg ||
-              `No files found for folder '${meta.folderName}'.`,
-            false
-          );
+          putMessageInMs(text.noFilesForFolder, false);
           return;
         }
         const zip = new JSZip();
@@ -95,10 +83,7 @@ export function useFileTransferHandler({
           downloadAs(content, `${meta.folderName}.zip`);
         } catch (error) {
           console.error("Error creating zip file:", error);
-          putMessageInMs(
-            messages.text.ClipboardApp.zipError || "Error creating ZIP.",
-            false
-          );
+          putMessageInMs(text.zipError, false);
         }
       } else {
         let retryCount = 0;
@@ -156,20 +141,15 @@ export function useFileTransferHandler({
                 return;
               }
             }
-            // All retries failed
-            putMessageInMs(
-              messages.text.ClipboardApp.fileNotFoundMsg ||
-                `File '${meta.name}' not found for download.`,
-              false
-            );
-          };
+            putMessageInMs(text.fileNotFound, false);
+           };
 
           // Execute retry asynchronously without blocking the main thread
           retryWithDelay().catch(console.error);
         }
       }
     },
-    [messages, putMessageInMs] // 🔧 Remove retrievedFiles dependency as we now get the latest state directly from Store
+    [putMessageInMs, text.fileNotFound, text.noFilesForFolder, text.zipError]
   );
 
   // Reset function specifically for receiver state (for leave room functionality)

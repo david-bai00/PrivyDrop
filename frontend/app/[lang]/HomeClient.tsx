@@ -17,8 +17,8 @@ export default function HomeClient() {
   return (
     <main className="container mx-auto px-4 py-8">
       {/* Hero Section */}
-      <h1 className="text-4xl font-bold mb-2 text-center">{t("h1")}</h1>
-      <p className="text-xl mb-4 text-center">{t("h1P")}</p>
+      <h1 className="text-4xl font-bold mb-2 text-center">{t("hero.title")}</h1>
+      <p className="text-xl mb-4 text-center">{t("hero.subtitle")}</p>
       {/* App Section */}
       <section
         id="clipboard-app"
@@ -28,7 +28,7 @@ export default function HomeClient() {
         <div className="w-full max-w-none">
           {/* sr-only--screen-only: visually hidden */}
           <h2 className={cn("sr-only", "text-3xl font-bold mb-8 text-center")}>
-            {t("h2ScreenOnly")}
+            {t("hero.screenOnlyTitle")}
           </h2>
           <ClipboardApp />
         </div>
@@ -43,22 +43,22 @@ export default function HomeClient() {
       <section className="mb-12" aria-label="Product Demo">
         <LazyLoadWrapper>
           <h2 className="text-3xl font-bold mb-6 text-center">
-            {t("h2Demo")}
+            {t("demo.title")}
           </h2>
           <p className="text-center mb-6 text-muted-foreground">
-            {t("h2DemoDescription")}
+            {t("demo.description")}
           </p>
           <YouTubePlayer videoId={youtube_videoId} />
 
           <div className="mt-4 text-center">
-            <p className="mb-3 text-foreground">{t("watchTip")}</p>
+            <p className="mb-3 text-foreground">{t("demo.watchTip")}</p>
             <a
               className="flex justify-center gap-4 text-blue-500 hover:underline transition-colors"
               href={`https://www.youtube.com/watch?v=${youtube_videoId}`}
               target="_blank"
               rel="noopener noreferrer"
             >
-              {t("youtubeTip")}
+              {t("demo.youtube")}
             </a>
             <a
               className="flex justify-center gap-4 text-blue-500 hover:underline transition-colors"
@@ -66,7 +66,7 @@ export default function HomeClient() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {t("bilibiliTip")}
+              {t("demo.bilibili")}
             </a>
           </div>
         </LazyLoadWrapper>

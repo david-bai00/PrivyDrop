@@ -1,5 +1,6 @@
-// types/messages.ts
+// types/messages.ts - Refactored with semantic naming
 
+// SEO Meta
 export type MetaData = {
   title: string;
   description: string;
@@ -17,82 +18,91 @@ export type Meta = {
   blog: MetaData;
 };
 
-export type Header = {
-  homeLabel: string;
-  blogLabel: string;
-  aboutLabel: string;
-  helpLabel: string;
-  faqLabel: string;
-  featuresLabel: string;
-  termsLabel: string;
-  privacyLabel: string;
+// Navigation (formerly Header)
+export type Navigation = {
+  home: string;
+  blog: string;
+  about: string;
+  help: string;
+  faq: string;
+  features: string;
+  terms: string;
+  privacy: string;
 };
 
+// Footer
 export type Footer = {
-  copyrightNotice: string;
-  termsLabel: string;
-  privacyLabel: string;
-  supportedLanguagesLabel: string;
+  copyright: string;
+  terms: string;
+  privacy: string;
+  supportedLanguages: string;
 };
 
+// Privacy Policy
 export type Privacy = {
-  privacyPolicyLabel: string;
+  policyLabel: string;
   h1: string;
-  h1_P: string;
-  h2_1: string;
-  h2_1_P: string;
-  h2_2: string;
-  h2_2_P: string;
-  h2_3: string;
-  h2_3_P: string;
-  h2_4: string;
-  h2_4_P: string;
-  h2_5: string;
-  h2_5_P: string;
+  h1Paragraph: string;
+  sections: {
+    informationCollection: string;
+    informationCollectionParagraph: string;
+    dataStorage: string;
+    dataStorageParagraph: string;
+    thirdPartyServices: string;
+    thirdPartyServicesParagraph: string;
+    amendments: string;
+    amendmentsParagraph: string;
+    contactUs: string;
+    contactUsParagraph: string;
+  };
 };
 
+// Terms of Use
 export type Terms = {
-  termsOfUseLabel: string;
+  useLabel: string;
   h1: string;
-  h1_P: string;
-  h2_1: string;
-  h2_1_P: string;
-  h2_2: string;
-  h2_2_P: string;
-  h2_3: string;
-  h2_3_P: string;
-  h2_4: string;
-  h2_4_P: string;
-  h2_5: string;
-  h2_5_P: string;
+  h1Paragraph: string;
+  sections: {
+    useOfService: string;
+    useOfServiceParagraph: string;
+    dataPrivacy: string;
+    dataPrivacyParagraph: string;
+    acceptableUse: string;
+    acceptableUseParagraph: string;
+    liability: string;
+    liabilityParagraph: string;
+    changes: string;
+    changesParagraph: string;
+  };
 };
 
+// Help & Support
 export type Help = {
-  helpLabel: string;
+  label: string;
   h1: string;
-  h1_P: string;
-  h2_1: string;
-  h2_1_P1: string;
-  h2_1_P2: string;
-  h2_2: string;
-  h2_2_P: string;
-  h2_3: string;
-  h2_3_P: string;
+  h1Paragraph: string;
+  sections: {
+    contactUs: string;
+    contactUsParagraph1: string;
+    contactUsParagraph2: string;
+    socialMedia: string;
+    socialMediaParagraph: string;
+    additionalResources: string;
+    additionalResourcesParagraph: string;
+  };
 };
 
+// About
 export type About = {
   h1: string;
-  P1: string;
-  P2: string;
-  P3: string;
-  P4: string;
-  P5: string;
+  paragraphs: string[];
 };
 
+// How It Works
 export type HowItWorks = {
-  h2: string;
-  h2Description: string;
-  tryNowLabel: string;
+  title: string;
+  description: string;
+  tryNow: string;
   step1Title: string;
   step1Description: string;
   step2Title: string;
@@ -101,12 +111,36 @@ export type HowItWorks = {
   step3Description: string;
 };
 
+// System Diagram
 export type SystemDiagram = {
-  h2: string;
-  h2Description: string;
+  title: string;
+  description: string;
 };
 
-export type BlogTexts = {
+// Key Features
+export type KeyFeatures = {
+  title: string;
+  items: {
+    directSecure: { title: string; description: string };
+    teamSynergy: { title: string; description: string };
+    noLimits: { title: string; description: string };
+    swift: { title: string; description: string };
+    greenClean: { title: string; description: string };
+    resumable: { title: string; description: string };
+  };
+};
+
+// FAQ
+export type FAQ = {
+  title: string;
+  items: Array<{
+    question: string;
+    answer: string;
+  }>;
+};
+
+// Blog
+export type Blog = {
   listTitle: string;
   listSubtitle: string;
   recentPosts: string;
@@ -116,230 +150,208 @@ export type BlogTexts = {
   postNotFound: string;
   tocTitle: string;
   tagTitlePrefix: string;
-  tagSubtitleTemplate: string; // use {tag} as placeholder
+  tagSubtitleTemplate: string;
   tagEmpty: string;
 };
 
-export type KeyFeatures = {
-  h2: string;
-  h3_1: string;
-  h3_1_P: string;
-  h3_2: string;
-  h3_2_P: string;
-  h3_3: string;
-  h3_3_P: string;
-  h3_4: string;
-  h3_4_P: string;
-  h3_5: string;
-  h3_5_P: string;
-  h3_6: string;
-  h3_6_P: string;
+// Common UI elements
+export type Common = {
+  clipboard: {
+    pasted: string;
+    copied: string;
+    copyError: string;
+    readError: string;
+    loading: string;
+  };
+  buttons: {
+    request: string;
+    download: string;
+    save: string;
+    copy: string;
+    paste: string;
+    joinRoom: string;
+    leaveRoom: string;
+  };
 };
 
-export type FAQ = {
-  faqLabel: string;
-  question_0: string;
-  answer_0: string;
-  question_1: string;
-  answer_1: string;
-  question_2: string;
-  answer_2: string;
-  question_3: string;
-  answer_3: string;
-  question_4: string;
-  answer_4: string;
-  question_5: string;
-  answer_5: string;
-  question_6: string;
-  answer_6: string;
-  question_7: string;
-  answer_7: string;
-  question_8: string;
-  answer_8: string;
-  question_9: string;
-  answer_9: string;
-  question_10: string;
-  answer_10: string;
-  question_11: string;
-  answer_11: string;
-  question_12: string;
-  answer_12: string;
-  question_13: string;
-  answer_13: string;
+// Clipboard Core
+export type Clipboard = {
+  tabs: {
+    send: string;
+    retrieve: string;
+  };
+  titles: {
+    share: string;
+    retrieve: string;
+    retrieveMethod: string;
+  };
+  actions: {
+    sync: string;
+    syncLoading: string;
+    readClipboard: string;
+  };
+  placeholders: {
+    roomId: string;
+  };
+  status: {
+    roomEmpty: string;
+    receiverCanAccept: string;
+    onlyOne: string;
+    peopleCount: string;
+    connected: string;
+    senderDisconnected: string;
+    leftRoom: string;
+  };
+  messages: {
+    fileExist: string;
+    noFilesForFolder: string;
+    zipError: string;
+    fileNotFound: string;
+    confirmLeave: string;
+    leaveSuccess: string;
+    fetchRoomError: string;
+    generateShareLinkError: string;
+    leaveRoomError: string;
+    validateRoomError: string;
+    resetSenderStateError: string;
+    channelOpen: string;
+    waiting: string;
+  };
+  join: {
+    empty: string;
+    duplicate: string;
+    success: string;
+    notFound: string;
+    failure: string;
+    inProgress: string;
+    slow: string;
+    timeout: string;
+  };
+  rtc: {
+    slow: string;
+    negotiating: string;
+    connected: string;
+    reconnecting: string;
+    restored: string;
+  };
+  roomCheck: {
+    empty: string;
+    available: string;
+    notAvailable: string;
+  };
+  saveLocation: {
+    pickMsg: string;
+    unsupported: string;
+    success: string;
+    error: string;
+  };
+  cachedId: {
+    save: string;
+    use: string;
+    saveTip: string;
+    useTip: string;
+    saveSuccess: string;
+  };
+  generateId: {
+    simple: string;
+    random: string;
+  };
 };
 
-export type ClipboardBtn = {
-  pastedLabel: string;
-  copiedLabel: string;
-};
-
-export type FileUploadHandler = {
-  noFileChosenTip: string;
-  fileChosenTemplate: string;
-  chooseFileTip: string;
+// File Upload
+export type FileUpload = {
+  noFileChosen: string;
+  fileChosen: string;
+  chooseTip: string;
   dragTip: string;
-  chosenDiagTitle: string;
-  chosenDiagDescription: string;
-  selectFileLabel: string;
-  selectFolderLabel: string;
+  dialog: {
+    title: string;
+    description: string;
+    selectFile: string;
+    selectFolder: string;
+  };
 };
 
-export type FileTransferButton = {
-  savedToDiskTip: string;
-  currentFileTransferringTip: string;
-  otherFileTransferringTip: string;
-  downloadTip: string;
-  pendingSaveTip: string;
-  savedLabel: string;
-  waitingLabel: string;
-  downloadLabel: string;
-  saveLabel: string;
+// File List
+export type FileList = {
+  sending: string;
+  receiving: string;
+  finished: string;
+  delete: string;
+  downloadCount: string;
+  folderSummary: string;
+  folderInline: string;
+  saveDialog: {
+    title: string;
+    description: string;
+    tip: string;
+    button: string;
+  };
 };
 
-export type FileListDisplay = {
-  sendingLabel: string;
-  receivingLabel: string;
-  finishedLabel: string;
-  deleteLabel: string;
-  downloadCountLabel: string;
-  folderSummaryTemplate: string;
-  folderInlineTemplate: string;
-  popupDialogTitle: string;
-  popupDialogDescription: string;
-  chooseSavePathTip: string;
-  chooseSavePathLabel: string;
+// File Transfer Button
+export type FileTransfer = {
+  savedToDisk: string;
+  currentTransferring: string;
+  otherTransferring: string;
+  download: string;
+  pendingSave: string;
+  saved: string;
+  waiting: string;
 };
 
+// Retrieve Method (Share Card)
 export type RetrieveMethod = {
-  introMessage: string;
+  intro: string;
   roomIdTip: string;
-  copyRoomIdTip: string;
+  copyRoomId: string;
   urlTip: string;
-  copyUrlTip: string;
-  scanQrTip: string;
-  copiedLabel: string;
-  copyQrLabel: string;
-  downloadQrLabel: string;
+  copyUrl: string;
+  scanQr: string;
+  copied: string;
+  copyQr: string;
+  downloadQr: string;
 };
 
-export type RoomCheck = {
-  emptyMessage: string;
-  availableMessage: string;
-  notAvailableMessage: string;
-};
-
-export type JoinRoom = {
-  emptyMessage: string;
-  duplicateMessage: string;
-  successMessage: string;
-  notFoundMessage: string;
-  failureMessage: string;
-};
-
-export type RoomStatus = {
-  senderEmptyMessage: string;
-  receiverEmptyMessage: string;
-  onlyOneMessage: string;
-  peopleCountTemplate: string;
-  connectedLabel: string;
-  senderDisconnectedMessage: string;
-  leftRoomMessage: string;
-  leaveRoomLabel: string;
-};
-
-export type ClipboardAppHtml = {
-  senderTab: string;
-  retrieveTab: string;
-  shareTitleLabel: string;
-  retrieveTitleLabel: string;
-  roomStatusLabel: string;
-  pasteLabel: string;
-  copyLabel: string;
-  inputRoomIdPrompt: string;
-  joinRoomButtonLabel: string;
-  generateSimpleIdTip: string;
-  generateRandomIdTip: string;
-  readClipboardToRoomId: string;
-  enterRoomIdPlaceholder: string;
-  retrieveMethod: string;
-  inputRoomIdTip: string;
-  joinRoomLabel: string;
-  syncSendingLoadingLabel: string;
-  syncSendingLabel: string;
-  readClipboardLabel: string;
-  retrieveRoomIdPlaceholder: string;
-  retrieveMethodTitle: string;
-  // New: cached ID utilities
-  saveIdLabel: string;
-  useCachedIdLabel: string;
-  saveIdTip: string;
-  useCachedIdTip: string;
-};
-
-export type ClipboardApp = {
-  fetchRoomError: string;
-  roomCheck: RoomCheck;
-  channelOpenMessage: string;
-  waitingTip: string;
-  joinRoom: JoinRoom;
-  pickSaveMsg: string;
-  pickSaveUnsupported: string;
-  pickSaveSuccess: string;
-  pickSaveError: string;
-  roomStatus: RoomStatus;
-  html: ClipboardAppHtml;
-  fileExistMsg?: string;
-  noFilesForFolderMsg?: string;
-  zipError?: string;
-  fileNotFoundMsg?: string;
-  confirmLeaveWhileTransferring: string;
-  leaveWhileTransferringSuccess: string;
-  // New: cache messages
-  saveIdSuccessMessage: string;
-  // UI connection feedback
-  joinInProgress: string;
-  joinSlow: string;
-  joinTimeout: string;
-  // Slow P2P negotiation hint
-  rtcSlow: string;
-  rtcNegotiating: string;
-  rtcConnected: string;
-  rtcReconnecting: string;
-  rtcRestored: string;
-};
-
+// Home Page
 export type Home = {
-  h1: string;
-  h1P: string;
-  h2ScreenOnly: string;
-  h2Demo: string;
-  h2DemoDescription: string;
-  watchTip: string;
-  youtubeTip: string;
-  bilibiliTip: string;
+  hero: {
+    title: string;
+    subtitle: string;
+    screenOnlyTitle: string;
+  };
+  demo: {
+    title: string;
+    description: string;
+    watchTip: string;
+    youtube: string;
+    bilibili: string;
+  };
 };
 
+// Text namespace (all UI strings)
 export type Text = {
-  Header: Header;
-  Footer: Footer;
+  navigation: Navigation;
+  footer: Footer;
   privacy: Privacy;
   terms: Terms;
   help: Help;
   about: About;
-  HowItWorks: HowItWorks;
-  SystemDiagram: SystemDiagram;
-  KeyFeatures: KeyFeatures;
-  faqs: FAQ;
-  clipboard_btn: ClipboardBtn;
-  fileUploadHandler: FileUploadHandler;
-  FileTransferButton: FileTransferButton;
-  FileListDisplay: FileListDisplay;
-  RetrieveMethod: RetrieveMethod;
-  ClipboardApp: ClipboardApp;
+  howItWorks: HowItWorks;
+  systemDiagram: SystemDiagram;
+  keyFeatures: KeyFeatures;
+  faq: FAQ;
+  blog: Blog;
+  common: Common;
+  clipboard: Clipboard;
+  fileUpload: FileUpload;
+  fileList: FileList;
+  fileTransfer: FileTransfer;
+  retrieveMethod: RetrieveMethod;
   home: Home;
-  blog: BlogTexts;
 };
 
+// Root Messages type
 export type Messages = {
   meta: Meta;
   text: Text;

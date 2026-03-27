@@ -7,7 +7,7 @@ interface FullScreenDropZoneProps {
 }
 
 const FullScreenDropZone: React.FC<FullScreenDropZoneProps> = ({ isDragging }) => {
-  const t = useTranslations("text.fileUploadHandler");
+  const t = useTranslations("text.fileUpload");
 
   if (!isDragging) return null;
 

@@ -80,7 +80,7 @@ export default function CachedIdActionButton({
   onUseCached,
   disabled = false,
 }: Props) {
-  const t = useTranslations("text.ClipboardApp");
+  const tCachedId = useTranslations("text.clipboard.cachedId");
   const [hasCachedId, setHasCachedId] = useState<boolean>(false);
   const [showSaveOverride, setShowSaveOverride] = useState<boolean>(false);
   const clickCountRef = useRef(0);
@@ -119,7 +119,7 @@ export default function CachedIdActionButton({
           clearTimeout(saveTimerRef.current);
           saveTimerRef.current = null;
         }
-        putMessageInMs(t("saveIdSuccessMessage"), isShareEnd);
+        putMessageInMs(tCachedId("saveSuccess"), isShareEnd);
       }
       return;
     }
@@ -164,7 +164,7 @@ export default function CachedIdActionButton({
     getInputValue,
     setInputValue,
     putMessageInMs,
-    t,
+    tCachedId,
     isShareEnd,
     dblClickWindowMs,
     saveModeDurationMs,
@@ -175,8 +175,8 @@ export default function CachedIdActionButton({
     <Tooltip
       content={
         isSaveMode
-          ? t("html.saveIdTip")
-          : t("html.useCachedIdTip")
+          ? tCachedId("saveTip")
+          : tCachedId("useTip")
       }
     >
       <span className="inline-block">
@@ -190,8 +190,8 @@ export default function CachedIdActionButton({
           }
         >
           {isSaveMode
-            ? t("html.saveIdLabel")
-            : t("html.useCachedIdLabel")}
+            ? tCachedId("save")
+            : tCachedId("use")}
         </Button>
       </span>
     </Tooltip>

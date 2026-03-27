@@ -12,20 +12,20 @@ export default function HelpContent() {
   return (
     <div className="container mx-auto py-12">
       <h1 className="text-4xl font-bold mb-6">{helpT("h1")}</h1>
-      <p className="text-lg mb-4">{helpT("h1_P")}</p>
-      <h2 className="text-2xl font-bold mb-4">{helpT("h2_1")}</h2>
+      <p className="text-lg mb-4">{helpT("h1Paragraph")}</p>
+      <h2 className="text-2xl font-bold mb-4">{helpT("sections.contactUs")}</h2>
       <p className="text-lg mb-4">
-        {helpT("h2_1_P1")}{" "}
+        {helpT("sections.contactUsParagraph1")}{" "}
         <a
           href="mailto:david.vision66@gmail.com"
           className="text-blue-500 hover:underline"
         >
           david.vision66@gmail.com
         </a>
-        {helpT("h2_1_P2")}
+        {helpT("sections.contactUsParagraph2")}
       </p>
-      <h2 className="text-2xl font-bold mb-4">{helpT("h2_2")}</h2>
-      <p className="text-lg mb-4">{helpT("h2_2_P")}</p>
+      <h2 className="text-2xl font-bold mb-4">{helpT("sections.socialMedia")}</h2>
+      <p className="text-lg mb-4">{helpT("sections.socialMediaParagraph")}</p>
       <ul className="list-disc pl-6">
         <li>
           <a
@@ -39,8 +39,8 @@ export default function HelpContent() {
             <li><a href="https://www.linkedin.com/company/PrivyDrop" className="text-blue-500 hover:underline">LinkedIn</a></li> */}
       </ul>
 
-      <h2 className="text-2xl font-bold mb-4">{helpT("h2_3")}</h2>
-      <p className="text-lg mb-4">{helpT("h2_3_P")}</p>
+      <h2 className="text-2xl font-bold mb-4">{helpT("sections.additionalResources")}</h2>
+      <p className="text-lg mb-4">{helpT("sections.additionalResourcesParagraph")}</p>
       <ul className="list-disc pl-6">
         <li>
           <a href={`/${lang}/about`} className="text-blue-500 hover:underline">
@@ -49,7 +49,7 @@ export default function HelpContent() {
         </li>
         <li>
           <a href={`/${lang}/terms`} className="text-blue-500 hover:underline">
-            {termsT("termsOfUseLabel")}
+            {termsT("useLabel")}
           </a>
         </li>
         <li>
@@ -57,7 +57,7 @@ export default function HelpContent() {
             href={`/${lang}/privacy`}
             className="text-blue-500 hover:underline"
           >
-            {privacyT("privacyPolicyLabel")}
+            {privacyT("policyLabel")}
           </a>
         </li>
       </ul>

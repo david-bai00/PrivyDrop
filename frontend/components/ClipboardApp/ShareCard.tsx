@@ -19,7 +19,7 @@ const QRCodeSVG = dynamic(
   }
 );
 const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
-  const t = useTranslations("text.RetrieveMethod");
+  const t = useTranslations("text.retrieveMethod");
   const qrRef = useRef<HTMLDivElement>(null);
   const [isCopied, setIsCopied] = useState<boolean>(false);
 
@@ -109,99 +109,69 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
   return (
     <div className="bg-primary/10 p-2 sm:p-4 rounded-lg border border-primary/20">
       <p className="text-primary mb-3 sm:mb-4 text-sm sm:text-base">
-        {t("introMessage")}
+        {t("intro")}
       </p>
-
-      {/* Mobile-first responsive layout */}
-      <div className="space-y-3 sm:space-y-4">
-        {/* RoomID section */}
-        <div className="bg-card p-2 sm:p-3 rounded-lg border border-border">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">
-              {t("roomIdTip")}
-            </p>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <code className="flex-1 bg-muted px-2 py-1 rounded text-sm font-mono break-all">
-                {RoomID}
-              </code>
-              <WriteClipboardButton
-                title={t("copyRoomIdTip")}
-                textToCopy={RoomID}
-              />
-            </div>
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <span className="text-sm font-medium">{t("roomIdTip")}</span>
+          <div className="flex items-center gap-2 flex-1">
+            <Input value={RoomID} readOnly className="font-mono text-sm" />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigator.clipboard.writeText(RoomID)}
+              title={t("copyRoomId")}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
           </div>
         </div>
-
-        {/* URL section */}
-        <div className="bg-card p-2 sm:p-3 rounded-lg border border-border">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">
-              {t("urlTip")}
-            </p>
-            <div className="bg-muted px-2 py-2 rounded text-xs sm:text-sm break-all font-mono">
-              {shareLink}
-            </div>
-            <div className="flex justify-start">
-              <WriteClipboardButton
-                title={t("copyUrlTip")}
-                textToCopy={shareLink}
-              />
-            </div>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <span className="text-sm font-medium">{t("urlTip")}</span>
+          <div className="flex items-center gap-2 flex-1">
+            <Input value={shareLink} readOnly className="font-mono text-sm" />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigator.clipboard.writeText(shareLink)}
+              title={t("copyUrl")}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
           </div>
         </div>
-
-        {/* QR Code section */}
-        <div className="bg-card p-2 sm:p-3 rounded-lg border border-border">
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-foreground">
-              {t("scanQrTip")}
-            </p>
-
-            {/* QR Code display area - moved up for better mobile UX */}
-            <div className="flex justify-center">
-              <div className="inline-block border-2 p-2 sm:p-4 bg-muted rounded-lg">
-                <div ref={qrRef}>
-                  <QRCodeSVG
-                    value={shareLink}
-                    size={120}
-                    className="sm:w-32 sm:h-32"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* QR Code action buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <Button
-                onClick={copyToClipboard}
-                variant="outline"
-                size="sm"
-                className="w-full"
-              >
-                {isCopied ? (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    {t("copiedLabel")}
-                  </>
-                ) : (
-                  <>
-                    <Copy className="mr-2 h-4 w-4" />
-                    {t("copyQrLabel")}
-                  </>
-                )}
-              </Button>
-              <Button
-                onClick={downloadQRCode}
-                variant="outline"
-                size="sm"
-                className="w-full"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                {t("downloadQrLabel")}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <p className="text-sm text-center text-muted-foreground pt-2">
+          {t("scanQr")}
+        </p>
+      </div>
+      <div className="flex justify-center gap-2 mt-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={copyToClipboard}
+          className="flex items-center gap-2"
+        >
+          {isCopied ? (
+            <>
+              <Check className="h-4 w-4" />
+              {t("copied")}
+            </>
+          ) : (
+            <>
+              <Copy className="h-4 w-4" />
+              {t("copyQr")}
+            </>
+          )}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={downloadQRCode}
+          className="flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          {t("downloadQr")}
+        </Button>
       </div>
     </div>
   );

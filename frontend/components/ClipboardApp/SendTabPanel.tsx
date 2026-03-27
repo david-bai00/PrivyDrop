@@ -59,8 +59,12 @@ export function SendTabPanel({
   handleLeaveSenderRoom,
   putMessageInMs,
 }: SendTabPanelProps) {
-  const tHtml = useTranslations("text.ClipboardApp.html");
-  const tRoomStatus = useTranslations("text.ClipboardApp.roomStatus");
+  const tActions = useTranslations("text.clipboard.actions");
+  const tPlaceholders = useTranslations("text.clipboard.placeholders");
+  const tGenerateId = useTranslations("text.clipboard.generateId");
+  const tTitles = useTranslations("text.clipboard.titles");
+  const tStatus = useTranslations("text.clipboard.status");
+  const tCommon = useTranslations("text.common");
   // Get the status from the store
   const {
     shareContent,
@@ -139,17 +143,17 @@ export function SendTabPanel({
       <div className="mb-3 text-sm text-muted-foreground">
         {shareRoomStatusText ||
           (isSenderInRoom
-            ? tRoomStatus("onlyOneMessage")
-            : tRoomStatus("senderEmptyMessage"))}
+            ? tStatus("onlyOne")
+            : tStatus("roomEmpty"))}
       </div>
       <RichTextEditor value={shareContent} onChange={updateShareContent} />
       <div className="flex flex-col sm:flex-row gap-2 my-3">
         <ReadClipboardButton
-          title={tHtml("pasteLabel")}
+          title={tActions("readClipboard")}
           onRead={updateShareContent}
         />
         <WriteClipboardButton
-          title={tHtml("copyLabel")}
+          title={tCommon("buttons.copy")}
           textToCopy={richTextToPlainText(shareContent)}
         />
       </div>
@@ -167,7 +171,7 @@ export function SendTabPanel({
         {/* Room ID input section */}
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            {tHtml("inputRoomIdTip")}
+            {tTitles("share")}
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <Input
@@ -176,7 +180,7 @@ export function SendTabPanel({
               onChange={handleInputChange}
               onPaste={handlePaste}
               className="flex-1 min-w-0"
-              placeholder={tHtml("retrieveRoomIdPlaceholder")}
+              placeholder={tPlaceholders("roomId")}
             />
             <Button
               variant="outline"
@@ -185,8 +189,8 @@ export function SendTabPanel({
               disabled={isSenderInRoom}
             >
               {isSimpleIdMode
-                ? tHtml("generateRandomIdTip")
-                : tHtml("generateSimpleIdTip")}
+                ? tGenerateId("random")
+                : tGenerateId("simple")}
             </Button>
             {/* Save/Use Cached ID Button in between */}
             <CachedIdActionButton
@@ -205,7 +209,7 @@ export function SendTabPanel({
               onClick={() => joinRoom(true, inputFieldValue.trim())}
               disabled={isSenderInRoom || !inputFieldValue.trim()}
             >
-              {tHtml("joinRoomLabel")}
+              {tCommon("buttons.joinRoom")}
             </Button>
           </div>
         </div>
@@ -215,7 +219,7 @@ export function SendTabPanel({
           <AnimatedButton
             className="flex-1 order-1"
             onClick={generateShareLinkAndBroadcast}
-            loadingText={tHtml("syncSendingLoadingLabel")}
+            loadingText={tActions("syncLoading")}
             disabled={
               !isSenderInRoom ||
               (sendFiles.length === 0 && shareContent.trim() === "") ||
@@ -223,7 +227,7 @@ export function SendTabPanel({
               isAnyFileTransferring
             }
           >
-            {tHtml("syncSendingLabel")}
+            {tActions("sync")}
           </AnimatedButton>
           <Button
             variant={isAnyFileTransferring ? "destructive" : "outline"}
@@ -232,8 +236,8 @@ export function SendTabPanel({
             className="w-full sm:w-auto px-4 order-2"
           >
             {isAnyFileTransferring
-              ? tRoomStatus("leaveRoomLabel") + " ⚠️"
-              : tRoomStatus("leaveRoomLabel")}
+              ? tCommon("buttons.leaveRoom") + " ⚠️"
+              : tCommon("buttons.leaveRoom")}
           </Button>
         </div>
       </div>

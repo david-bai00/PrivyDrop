@@ -30,16 +30,16 @@ export default function FAQSection({
   showTitle = true,
   titleClassName = "",
 }: FAQSectionProps) {
-  const t = useTranslations("text.faqs");
+  const t = useTranslations("text.faq");
 
-  // Generate FAQs using useTranslations with indexed keys
+  // Generate FAQs using useTranslations with dynamic keys
   // We use type assertion since next-intl doesn't support dynamic keys in type system
   const faqs: FAQ[] = [];
   for (let i = 0; i < FAQ_COUNT; i++) {
-    const question = t(`question_${i}` as never);
-    const answer = t(`answer_${i}` as never);
+    const question = t(`items.${i}.question` as never);
+    const answer = t(`items.${i}.answer` as never);
     // Only add if both question and answer exist (not fallback keys)
-    if (question && answer && !question.startsWith("question_")) {
+    if (question && answer && !question.startsWith("items.")) {
       faqs.push({ question, answer });
     }
   }
@@ -53,9 +53,9 @@ export default function FAQSection({
     <div className={containerClasses}>
       {showTitle &&
         (isInToolPage ? (
-          <h2 className={`text-3xl ${titleClasses}`}>{t("faqLabel")}</h2>
+          <h2 className={`text-3xl ${titleClasses}`}>{t("title")}</h2>
         ) : (
-          <h1 className={`text-4xl ${titleClasses}`}>{t("faqLabel")}</h1>
+          <h1 className={`text-4xl ${titleClasses}`}>{t("title")}</h1>
         ))}
       <Accordion type="single" collapsible className="w-full">
         {faqs.map((faq, index) => (

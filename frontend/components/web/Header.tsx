@@ -15,21 +15,21 @@ import ThemeToggle from "@/components/web/ThemeToggle";
  * Features responsive design with mobile menu support
  */
 const Header = () => {
-  const t = useTranslations("text.Header");
+  const t = useTranslations("text.navigation");
   const lang = useLocale();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
   // Configuration for navigation items
   const navItems = [
-    { href: `/${lang}`, label: t("homeLabel") },
-    { href: `/${lang}/features`, label: t("featuresLabel") },
-    { href: `/${lang}/blog`, label: t("blogLabel") },
-    { href: `/${lang}/about`, label: t("aboutLabel") },
-    { href: `/${lang}/help`, label: t("helpLabel") },
-    { href: `/${lang}/faq`, label: t("faqLabel") },
-    { href: `/${lang}/terms`, label: t("termsLabel") },
-    { href: `/${lang}/privacy`, label: t("privacyLabel") },
+    { href: `/${lang}`, label: t("home") },
+    { href: `/${lang}/features`, label: t("features") },
+    { href: `/${lang}/blog`, label: t("blog") },
+    { href: `/${lang}/about`, label: t("about") },
+    { href: `/${lang}/help`, label: t("help") },
+    { href: `/${lang}/faq`, label: t("faq") },
+    { href: `/${lang}/terms`, label: t("terms") },
+    { href: `/${lang}/privacy`, label: t("privacy") },
   ];
 
   // GitHub repository URL

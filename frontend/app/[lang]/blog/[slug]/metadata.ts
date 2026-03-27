@@ -21,8 +21,8 @@ export async function generateMetadata({
     return generateBlogMetadata({ params: { lang } });
   }
 
-  const messages = (await getMessages({ locale: lang })) as Messages;
-  const blogWord = messages.text.Header.blogLabel;
+   const messages = (await getMessages({ locale: lang })) as Messages;
+   const blogWord = messages.text.navigation.blog;
   const blogCap = blogWord.charAt(0).toUpperCase() + blogWord.slice(1);
 
   return {

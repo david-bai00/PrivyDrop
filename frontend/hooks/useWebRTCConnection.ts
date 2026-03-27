@@ -1,7 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { webrtcService } from "@/lib/webrtcService";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
-import type { Messages } from "@/types/messages";
 
 // Retain type definitions for compatibility
 export type PeerProgressDetails = { progress: number; speed: number };
@@ -9,7 +8,6 @@ export type FileProgressPeers = { [peerId: string]: PeerProgressDetails };
 export type ProgressState = { [fileId: string]: FileProgressPeers };
 
 interface UseWebRTCConnectionProps {
-  messages: Messages | null;
   putMessageInMs: (
     message: string,
     isShareEnd?: boolean,
@@ -17,9 +15,7 @@ interface UseWebRTCConnectionProps {
   ) => void;
 }
 
-export function useWebRTCConnection({
-  // Retaining interface compatibility but these are no longer used
-}: UseWebRTCConnectionProps) {
+export function useWebRTCConnection({}: UseWebRTCConnectionProps) {
   // Get state from store
   const {
     sharePeerCount,

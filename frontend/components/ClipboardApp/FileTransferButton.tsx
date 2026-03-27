@@ -26,7 +26,7 @@ const FileTransferButton = ({
   isSavedToDisk,
   isPendingSave = false,
 }: FileTransferButtonProps) => {
-  const t = useTranslations("text.FileTransferButton");
+  const t = useTranslations("text.fileTransfer");
   // Button status judgment - 待保存状态时按钮应该可点击
   const isDisabled =
     isCurrentFileTransferring ||
@@ -35,11 +35,11 @@ const FileTransferButton = ({
 
   // Display different tooltips based on status
   const getTooltipContent = () => {
-    if (isSavedToDisk) return t("savedToDiskTip");
-    if (isCurrentFileTransferring) return t("currentFileTransferringTip");
-    if (isPendingSave) return t("pendingSaveTip");
-    if (isOtherFileTransferring) return t("otherFileTransferringTip");
-    return t("downloadTip");
+    if (isSavedToDisk) return t("savedToDisk");
+    if (isCurrentFileTransferring) return t("currentTransferring");
+    if (isPendingSave) return t("pendingSave");
+    if (isOtherFileTransferring) return t("otherTransferring");
+    return t("download");
   };
 
   // Set different button styles and class names based on status
@@ -93,12 +93,12 @@ const FileTransferButton = ({
                 }`}
               />
               {isSavedToDisk
-                ? t("savedLabel")
+                ? t("saved")
                 : isPendingSave
-                ? t("saveLabel")
+                ? t("pendingSave")
                 : isOtherFileTransferring
-                ? t("waitingLabel")
-                : t("downloadLabel")}
+                ? t("waiting")
+                : t("download")}
             </Button>
           </span>
         </TooltipTrigger>

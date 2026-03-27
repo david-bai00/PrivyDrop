@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
-import type { Messages } from "@/types/messages";
 import { mapPhase, type Phase } from "@/utils/rtcPhase";
 import { useOneShotSlowHint } from "@/utils/useOneShotSlowHint";
+import type { ConnectionFeedbackText } from "@/types/clipboardText";
 
 interface UseConnectionFeedbackProps {
-  messages: Messages | null;
+  text: ConnectionFeedbackText;
   putMessageInMs: (
     message: string,
     isShareEnd?: boolean,
@@ -14,7 +14,7 @@ interface UseConnectionFeedbackProps {
 }
 
 export function useConnectionFeedback({
-  messages,
+  text,
   putMessageInMs,
 }: UseConnectionFeedbackProps) {
   const { shareConnectionState, retrieveConnectionState } =
@@ -38,24 +38,20 @@ export function useConnectionFeedback({
     putMessageInMs,
     displayMs: 6000,
     getMessage: () => {
-      if (!messages) return null;
-      const text = messages.text.ClipboardApp.rtcSlow;
-      if (!text) return null;
+      if (!text.slow) return null;
       const isShareEnd =
         rtcSlowTriggerSideRef.current === "share"
           ? true
           : rtcSlowTriggerSideRef.current === "recv"
           ? false
           : sharePhaseRef.current === "negotiating";
-      return { text, isShareEnd };
+      return { text: text.slow, isShareEnd };
     },
     visibilityGate: true,
   });
 
   // Bridge RTC connection state changes to UI messages
   useEffect(() => {
-    if (!messages) return;
-
     const nowShare: Phase = mapPhase(shareConnectionState as any);
     const nowRecv: Phase = mapPhase(retrieveConnectionState as any);
 
@@ -66,63 +62,63 @@ export function useConnectionFeedback({
     sharePhaseRef.current = nowShare;
     recvPhaseRef.current = nowRecv;
 
-    // Sender side mapping
+     // Sender side mapping
     if (nowShare === "negotiating" && prevShare !== "negotiating") {
-      const msg = messages.text.ClipboardApp.rtcNegotiating;
-      if (msg) putMessageInMs(msg, true, 4000);
+        const msg = text.negotiating;
+       if (msg) putMessageInMs(msg, true, 4000);
       if (!rtcSlowTriggerSideRef.current) rtcSlowTriggerSideRef.current = "share";
       armRtcSlow("rtc-negotiating");
     }
     if (nowShare === "connected") {
-      if (!everShareRef.current) {
-        const msg = messages.text.ClipboardApp.rtcConnected;
-        if (msg) putMessageInMs(msg, true, 4000);
-      }
-      if (wasDiscShareRef.current) {
-        const msg = messages.text.ClipboardApp.rtcRestored;
-        if (msg) putMessageInMs(msg, true, 4000);
-      }
+        if (!everShareRef.current) {
+          const msg = text.connected;
+         if (msg) putMessageInMs(msg, true, 4000);
+        }
+        if (wasDiscShareRef.current) {
+          const msg = text.restored;
+         if (msg) putMessageInMs(msg, true, 4000);
+       }
       everShareRef.current = true;
       wasDiscShareRef.current = false;
       disarmRtcSlow();
     }
     if (nowShare === "disconnected") {
-      const isForeground =
-        typeof document !== "undefined" && document.visibilityState === "visible";
-      if ((everShareRef.current || wasDiscShareRef.current) && isForeground) {
-        const msg = messages.text.ClipboardApp.rtcReconnecting;
-        if (msg) putMessageInMs(msg, true, 4000);
+       const isForeground =
+         typeof document !== "undefined" && document.visibilityState === "visible";
+       if ((everShareRef.current || wasDiscShareRef.current) && isForeground) {
+          const msg = text.reconnecting;
+         if (msg) putMessageInMs(msg, true, 4000);
         wasDiscShareRef.current = true;
       }
       disarmRtcSlow();
     }
 
-    // Receiver side mapping
+     // Receiver side mapping
     if (nowRecv === "negotiating" && prevRecv !== "negotiating") {
-      const msg = messages.text.ClipboardApp.rtcNegotiating;
-      if (msg) putMessageInMs(msg, false, 4000);
+        const msg = text.negotiating;
+       if (msg) putMessageInMs(msg, false, 4000);
       if (!rtcSlowTriggerSideRef.current) rtcSlowTriggerSideRef.current = "recv";
       armRtcSlow("rtc-negotiating");
     }
     if (nowRecv === "connected") {
-      if (!everRecvRef.current) {
-        const msg = messages.text.ClipboardApp.rtcConnected;
-        if (msg) putMessageInMs(msg, false, 4000);
-      }
-      if (wasDiscRecvRef.current) {
-        const msg = messages.text.ClipboardApp.rtcRestored;
-        if (msg) putMessageInMs(msg, false, 4000);
-      }
+        if (!everRecvRef.current) {
+          const msg = text.connected;
+         if (msg) putMessageInMs(msg, false, 4000);
+        }
+        if (wasDiscRecvRef.current) {
+          const msg = text.restored;
+         if (msg) putMessageInMs(msg, false, 4000);
+       }
       everRecvRef.current = true;
       wasDiscRecvRef.current = false;
       disarmRtcSlow();
     }
     if (nowRecv === "disconnected") {
-      const isForeground =
-        typeof document !== "undefined" && document.visibilityState === "visible";
-      if ((everRecvRef.current || wasDiscRecvRef.current) && isForeground) {
-        const msg = messages.text.ClipboardApp.rtcReconnecting;
-        if (msg) putMessageInMs(msg, false, 4000);
+       const isForeground =
+         typeof document !== "undefined" && document.visibilityState === "visible";
+       if ((everRecvRef.current || wasDiscRecvRef.current) && isForeground) {
+          const msg = text.reconnecting;
+         if (msg) putMessageInMs(msg, false, 4000);
         wasDiscRecvRef.current = true;
       }
       disarmRtcSlow();
@@ -137,11 +133,10 @@ export function useConnectionFeedback({
     // Save previous for next comparison
     prevShareRef.current = nowShare;
     prevRecvRef.current = nowRecv;
-  }, [messages, shareConnectionState, retrieveConnectionState, putMessageInMs, armRtcSlow, disarmRtcSlow, resetRtcSlow]);
+  }, [text, shareConnectionState, retrieveConnectionState, putMessageInMs, armRtcSlow, disarmRtcSlow, resetRtcSlow]);
 
   // Visibility change: when returning to foreground, if still disconnected, hint "reconnecting"
   useEffect(() => {
-    if (!messages) return;
     const onVisibilityChange = () => {
       if (typeof document === "undefined") return;
       if (document.visibilityState !== "visible") return;
@@ -149,20 +144,20 @@ export function useConnectionFeedback({
       const nowShare = sharePhaseRef.current;
       const nowRecv = recvPhaseRef.current;
 
-      if (
-        (everShareRef.current || wasDiscShareRef.current) &&
-        nowShare === "disconnected"
-      ) {
-        const msg = messages.text.ClipboardApp.rtcReconnecting;
-        if (msg) putMessageInMs(msg, true, 4000);
+       if (
+         (everShareRef.current || wasDiscShareRef.current) &&
+         nowShare === "disconnected"
+       ) {
+          const msg = text.reconnecting;
+         if (msg) putMessageInMs(msg, true, 4000);
         wasDiscShareRef.current = true;
       }
-      if (
-        (everRecvRef.current || wasDiscRecvRef.current) &&
-        nowRecv === "disconnected"
-      ) {
-        const msg = messages.text.ClipboardApp.rtcReconnecting;
-        if (msg) putMessageInMs(msg, false, 4000);
+       if (
+         (everRecvRef.current || wasDiscRecvRef.current) &&
+         nowRecv === "disconnected"
+       ) {
+          const msg = text.reconnecting;
+         if (msg) putMessageInMs(msg, false, 4000);
         wasDiscRecvRef.current = true;
       }
     };
@@ -174,5 +169,5 @@ export function useConnectionFeedback({
       };
     }
     return;
-  }, [messages, putMessageInMs]);
+  }, [text.reconnecting, putMessageInMs]);
 }

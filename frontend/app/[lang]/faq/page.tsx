@@ -43,18 +43,8 @@ export default async function FAQ({
 }) {
   const locale = lang as Locale;
   const messages = (await getMessages({ locale })) as Messages;
-  const faqsData = messages.text.faqs as Record<string, string>;
-  const questionKeys = Object.keys(faqsData).filter((k) => k.startsWith("question_"));
-  const faqs = questionKeys
-    .map((qKey) => {
-      const idx = qKey.split("_")[1];
-      const aKey = `answer_${idx}`;
-      const q = faqsData[qKey];
-      const a = faqsData[aKey];
-      if (q && a) return { question: q, answer: a };
-      return null;
-    })
-    .filter(Boolean) as { question: string; answer: string }[];
+  const faqItems = (messages.text.faq.items ?? []) as { question: string; answer: string }[];
+  const faqs = faqItems.filter((item) => item.question && item.answer);
 
   const faqLd = buildFaqJsonLd({ inLanguage: locale, faqs });
 

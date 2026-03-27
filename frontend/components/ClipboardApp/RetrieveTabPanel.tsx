@@ -48,9 +48,12 @@ export function RetrieveTabPanel({
   retrieveMessage,
   handleLeaveRoom,
 }: RetrieveTabPanelProps) {
-  const tHtml = useTranslations("text.ClipboardApp.html");
-  const tRoomStatus = useTranslations("text.ClipboardApp.roomStatus");
-  const t = useTranslations("text.ClipboardApp");
+  const tActions = useTranslations("text.clipboard.actions");
+  const tPlaceholders = useTranslations("text.clipboard.placeholders");
+  const tStatus = useTranslations("text.clipboard.status");
+  const tSaveLocation = useTranslations("text.clipboard.saveLocation");
+  const tCommon = useTranslations("text.common");
+  const t = useTranslations("text.clipboard");
   // Get the status from the store
   const {
     retrieveRoomStatusText,
@@ -64,23 +67,23 @@ export function RetrieveTabPanel({
 
   const onLocationPick = useCallback(async (): Promise<boolean> => {
     if (!window.showDirectoryPicker) {
-      putMessageInMs(t("pickSaveUnsupported"), false);
+      putMessageInMs(tSaveLocation("unsupported"), false);
       return false;
     }
-    if (!window.confirm(t("pickSaveMsg"))) return false;
+    if (!window.confirm(tSaveLocation("pickMsg"))) return false;
     try {
       const directoryHandle = await window.showDirectoryPicker();
       await setReceiverDirectoryHandle(directoryHandle);
-      putMessageInMs(t("pickSaveSuccess"), false);
+      putMessageInMs(tSaveLocation("success"), false);
       return true;
     } catch (err: any) {
       if (err.name !== "AbortError") {
         console.error("Failed to set up folder receive:", err);
-        putMessageInMs(t("pickSaveError"), false);
+        putMessageInMs(tSaveLocation("error"), false);
       }
       return false;
     }
-  }, [t, putMessageInMs, setReceiverDirectoryHandle]);
+  }, [tSaveLocation, putMessageInMs, setReceiverDirectoryHandle]);
 
   const handleFileRequestFromPanel = useCallback(
     (meta: FileMeta) => {
@@ -101,15 +104,15 @@ export function RetrieveTabPanel({
       <div className="mb-3 text-sm text-muted-foreground">
         {retrieveRoomStatusText ||
           (isReceiverInRoom
-            ? tRoomStatus("connectedLabel")
-            : tRoomStatus("receiverEmptyMessage"))}
+            ? tStatus("connected")
+            : tStatus("receiverCanAccept"))}
       </div>
       <div className="space-y-3 mb-4">
         {/* Room ID input section */}
         <div className="space-y-2">
           <div className="flex flex-col sm:flex-row gap-2">
             <ReadClipboardButton
-              title={tHtml("readClipboardLabel")}
+              title={tActions("readClipboard")}
               onRead={setRetrieveRoomIdInput}
             />
             {/* Save/Use Cached ID Button placed after Paste button */}
@@ -123,7 +126,7 @@ export function RetrieveTabPanel({
               aria-label="Retrieve Room ID"
               value={retrieveRoomIdInput}
               onChange={(e) => setRetrieveRoomIdInput(e.target.value)}
-              placeholder={tHtml("retrieveRoomIdPlaceholder")}
+              placeholder={tPlaceholders("roomId")}
               className="flex-1 min-w-0"
             />
           </div>
@@ -137,7 +140,7 @@ export function RetrieveTabPanel({
             ref={retrieveJoinRoomBtnRef}
             disabled={isReceiverInRoom || !retrieveRoomIdInput.trim()}
           >
-            {tHtml("joinRoomLabel")}
+            {tCommon("buttons.joinRoom")}
           </Button>
           <Button
             variant={isAnyFileTransferring ? "destructive" : "outline"}
@@ -146,8 +149,8 @@ export function RetrieveTabPanel({
             className="w-full sm:w-auto px-4 order-2"
           >
             {isAnyFileTransferring
-              ? tRoomStatus("leaveRoomLabel") + " ⚠️"
-              : tRoomStatus("leaveRoomLabel")}
+              ? tCommon("buttons.leaveRoom") + " ⚠️"
+              : tCommon("buttons.leaveRoom")}
           </Button>
         </div>
       </div>
@@ -156,9 +159,9 @@ export function RetrieveTabPanel({
           <div className="bg-card text-card-foreground p-3 rounded border text-sm leading-relaxed">
             <div dangerouslySetInnerHTML={{ __html: retrievedContent }} />
           </div>
-          <div className="flex justify-start">
+           <div className="flex justify-start">
             <WriteClipboardButton
-              title={tHtml("copyLabel")}
+              title={tCommon("buttons.copy")}
               textToCopy={richTextToPlainText(retrievedContent)}
             />
           </div>

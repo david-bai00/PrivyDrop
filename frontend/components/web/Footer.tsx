@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { languageDisplayNames } from "@/constants/i18n-config";
 
 export function Footer() {
-  const t = useTranslations("text.Footer");
+  const t = useTranslations("text.footer");
   const lang = useLocale();
 
   return (
@@ -24,7 +24,7 @@ export function Footer() {
               priority
             />
             <p className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} {t("copyrightNotice")}
+              &copy; {new Date().getFullYear()} {t("copyright")}
             </p>
           </div>
 
@@ -37,7 +37,7 @@ export function Footer() {
                   href={`/${lang}/terms`}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {t("termsLabel")}
+                  {t("terms")}
                 </Link>
               </li>
               <li>
@@ -45,14 +45,14 @@ export function Footer() {
                   href={`/${lang}/privacy`}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {t("privacyLabel")}
+                  {t("privacy")}
                 </Link>
               </li>
 
               {/* Entry for supported languages */}
               <li>
                 <span className="text-sm text-muted-foreground font-bold">
-                  {t("supportedLanguagesLabel")}:
+                  {t("supportedLanguages")}:
                 </span>
               </li>
               {Object.entries(languageDisplayNames).map(([code, name]) => (

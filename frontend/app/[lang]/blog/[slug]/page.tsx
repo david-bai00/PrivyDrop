@@ -46,13 +46,13 @@ export default async function BlogPost({
     imageUrl,
     inLanguage: locale,
   });
-  const breadcrumbsLd = buildBreadcrumbJsonLd({
-    items: [
-      { name: messages.text.Header.homeLabel, item: `${siteUrl}/${locale}` },
-      { name: messages.text.Header.blogLabel, item: `${siteUrl}/${locale}/blog` },
-      { name: post.frontmatter.title, item: postUrl },
-    ],
-  });
+   const breadcrumbsLd = buildBreadcrumbJsonLd({
+     items: [
+       { name: messages.text.navigation.home, item: `${siteUrl}/${locale}` },
+       { name: messages.text.navigation.blog, item: `${siteUrl}/${locale}/blog` },
+       { name: post.frontmatter.title, item: postUrl },
+     ],
+   });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">

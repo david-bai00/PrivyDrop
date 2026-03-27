@@ -1,5 +1,6 @@
 import React from "react";
 import { Clipboard, FileText, Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useClipboardActions } from "@/hooks/useClipboardActions";
 
@@ -17,19 +18,20 @@ export const WriteClipboardButton: React.FC<WriteClipboardButtonProps> = ({
   title,
   textToCopy,
 }) => {
+  const tButtons = useTranslations("text.common.buttons");
   const { copyText, isCopied, isLoadingMessages, clipboardMessages, error } =
     useClipboardActions();
 
-  const buttonText = title || clipboardMessages.copyError || "Copy"; // Fallback title
+  const buttonText = title || tButtons("copy");
 
   if (isLoadingMessages && !clipboardMessages.copiedSuccess) {
     // Only show loading if messages truly not ready
     return (
-      <Button variant="outline" disabled>
-        {clipboardMessages.loading || "Loading..."}
-      </Button>
-    );
-  }
+        <Button variant="outline" disabled>
+          {clipboardMessages.loading}
+        </Button>
+      );
+    }
 
   return (
     <Button
@@ -57,6 +59,7 @@ export const ReadClipboardButton: React.FC<ReadClipboardButtonProps> = ({
   title,
   onRead,
 }) => {
+  const tButtons = useTranslations("text.common.buttons");
   const {
     readClipboard,
     isPasted,
@@ -70,16 +73,16 @@ export const ReadClipboardButton: React.FC<ReadClipboardButtonProps> = ({
     onRead(text); // Pass null if read failed or no suitable content
   };
 
-  const buttonText = title || clipboardMessages.readError || "Paste"; // Fallback title
+  const buttonText = title || tButtons("paste");
 
   if (isLoadingMessages && !clipboardMessages.pastedSuccess) {
     // Only show loading if messages truly not ready
     return (
-      <Button variant="outline" disabled>
-        {clipboardMessages.loading || "Loading..."}
-      </Button>
-    );
-  }
+        <Button variant="outline" disabled>
+          {clipboardMessages.loading}
+        </Button>
+      );
+    }
 
   return (
     <Button

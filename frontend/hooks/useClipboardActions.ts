@@ -20,20 +20,20 @@ interface ClipboardActions {
 }
 
 export const useClipboardActions = (): ClipboardActions => {
-  const t = useTranslations("text.clipboard_btn");
+  const tClipboard = useTranslations("text.common.clipboard");
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [isPasted, setIsPasted] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const clipboardMessages = useMemo<ClipboardMessages>(
     () => ({
-      copiedSuccess: t("copiedLabel"),
-      pastedSuccess: t("pastedLabel"),
-      copyError: "Failed to copy.",
-      readError: "Failed to read clipboard.",
-      loading: "Loading...",
+      copiedSuccess: tClipboard("copied"),
+      pastedSuccess: tClipboard("pasted"),
+      copyError: tClipboard("copyError"),
+      readError: tClipboard("readError"),
+      loading: tClipboard("loading"),
     }),
-    [t]
+    [tClipboard]
   );
 
   const copyText = useCallback(
@@ -73,7 +73,7 @@ export const useClipboardActions = (): ClipboardActions => {
         }
       } catch (err) {
         console.error("Fallback copy method failed: ", err);
-        setError(clipboardMessages.copyError || "Failed to copy.");
+         setError(clipboardMessages.copyError || tClipboard("copyError"));
       } finally {
         if (textArea) {
           document.body.removeChild(textArea);
@@ -87,7 +87,7 @@ export const useClipboardActions = (): ClipboardActions => {
     setError(null);
     setIsPasted(false);
     if (!navigator.clipboard) {
-      setError(clipboardMessages.readError || "Clipboard API not available.");
+       setError(clipboardMessages.readError || tClipboard("readError"));
       return "";
     }
     try {
@@ -111,7 +111,7 @@ export const useClipboardActions = (): ClipboardActions => {
       }
       console.warn("No suitable content type found in clipboard.");
       setError(
-        clipboardMessages.readError || "No suitable content type found."
+         clipboardMessages.readError || tClipboard("readError")
       );
       return "";
     } catch (err) {
@@ -123,11 +123,11 @@ export const useClipboardActions = (): ClipboardActions => {
         return formattedText;
       } catch (fallbackErr) {
         console.error("Failed to read clipboard: ", fallbackErr);
-        setError(clipboardMessages.readError || "Failed to read clipboard.");
-        return "";
-      }
-    }
-  }, [clipboardMessages.readError]);
+         setError(clipboardMessages.readError || tClipboard("readError"));
+         return "";
+       }
+     }
+   }, [clipboardMessages.readError, tClipboard]);
 
   return {
     copyText,

@@ -17,14 +17,17 @@ import { traverseFileTree } from "@/lib/fileUtils";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { getCachedId } from "@/lib/roomIdCache";
 import { useConnectionFeedback } from "@/hooks/useConnectionFeedback";
+import type { Messages } from "@/types/messages";
 
 const ClipboardApp = () => {
-  // Keep useMessages for hooks that need the full message object
-  const messages = useMessages();
-  // Use useTranslations for static keys in JSX
-  const tHtml = useTranslations("text.ClipboardApp.html");
+  const messages = useMessages() as Messages;
+  const tTabs = useTranslations("text.clipboard.tabs");
+  const tTitles = useTranslations("text.clipboard.titles");
   const { shareMessage, retrieveMessage, putMessageInMs } =
     useClipboardAppMessages();
+  const roomText = messages.text.clipboard;
+  const fileTransferText = messages.text.clipboard.messages;
+  const connectionText = messages.text.clipboard.rtc;
 
   const dragCounter = useRef(0);
   const retrieveJoinRoomBtnRef = useRef<HTMLButtonElement>(null);
@@ -57,7 +60,7 @@ const ClipboardApp = () => {
     addFilesToSend,
     removeFileToSend,
     handleDownloadFile,
-  } = useFileTransferHandler({ messages, putMessageInMs });
+  } = useFileTransferHandler({ text: fileTransferText, putMessageInMs });
 
   // Simplified WebRTC connection initialization
   const {
@@ -66,7 +69,6 @@ const ClipboardApp = () => {
     setReceiverDirectoryHandle,
     getReceiverSaveType,
   } = useWebRTCConnection({
-    messages,
     putMessageInMs,
   });
 
@@ -78,7 +80,28 @@ const ClipboardApp = () => {
     handleLeaveReceiverRoom,
     handleLeaveSenderRoom,
   } = useRoomManager({
-    messages,
+    text: {
+      join: roomText.join,
+      messages: {
+        waiting: roomText.messages.waiting,
+        confirmLeave: roomText.messages.confirmLeave,
+        leaveSuccess: roomText.messages.leaveSuccess,
+        fetchRoomError: roomText.messages.fetchRoomError,
+        generateShareLinkError: roomText.messages.generateShareLinkError,
+        leaveRoomError: roomText.messages.leaveRoomError,
+        validateRoomError: roomText.messages.validateRoomError,
+        resetSenderStateError: roomText.messages.resetSenderStateError,
+      },
+      roomCheck: roomText.roomCheck,
+      status: {
+        roomEmpty: roomText.status.roomEmpty,
+        receiverCanAccept: roomText.status.receiverCanAccept,
+        onlyOne: roomText.status.onlyOne,
+        peopleCount: roomText.status.peopleCount,
+        connected: roomText.status.connected,
+        leftRoom: roomText.status.leftRoom,
+      },
+    },
     putMessageInMs,
   });
 
@@ -181,7 +204,7 @@ const ClipboardApp = () => {
   ]);
 
   // Connection feedback observer (Hook)
-  useConnectionFeedback({ messages, putMessageInMs });
+  useConnectionFeedback({ text: connectionText, putMessageInMs });
 
   return (
     <div className="w-full mx-auto px-1 sm:px-1 py-3 sm:py-8 md:max-w-4xl md:container">
@@ -195,7 +218,7 @@ const ClipboardApp = () => {
           id="send-tab"
           aria-selected={activeTab === "send"}
         >
-          {tHtml("senderTab")}
+          {tTabs("send")}
         </Button>
         <Button
           variant={activeTab === "retrieve" ? "default" : "outline"}
@@ -205,15 +228,15 @@ const ClipboardApp = () => {
           id="retrieve-tab"
           aria-selected={activeTab === "retrieve"}
         >
-          {tHtml("retrieveTab")}
+          {tTabs("retrieve")}
         </Button>
       </div>
       <Card className="border-4 sm:border-8 shadow-md">
         <CardHeader className="px-3 sm:px-6 py-3 sm:py-6">
           <CardTitle className="text-lg sm:text-xl">
             {activeTab === "send"
-              ? tHtml("shareTitleLabel")
-              : tHtml("retrieveTitleLabel")}
+              ? tTitles("share")
+              : tTitles("retrieve")}
           </CardTitle>
         </CardHeader>
         <CardContent className="px-3 sm:px-6">
@@ -253,7 +276,7 @@ const ClipboardApp = () => {
         <Card className="border-2 sm:border-4 shadow-md mt-2 sm:mt-4">
           <CardHeader className="pb-3 sm:pb-6">
             <CardTitle className="text-base sm:text-lg">
-              {tHtml("retrieveMethodTitle")}
+              {tTitles("retrieveMethod")}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0 px-3 sm:px-6">

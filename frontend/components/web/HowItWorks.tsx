@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
 export default function HowItWorks() {
-  const t = useTranslations("text.HowItWorks");
+  const t = useTranslations("text.howItWorks");
 
   const steps = [
     {
@@ -31,11 +31,11 @@ export default function HowItWorks() {
       {/* Header Section */}
       <div className="text-center mb-16">
         <h2 className="text-3xl md:text-4xl font-bold mb-6">
-          {t("h2")}
+          {t("title")}
         </h2>
-        <p className="text-muted-foreground mb-8">{t("h2Description")}</p>
+        <p className="text-muted-foreground mb-8">{t("description")}</p>
         <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-full px-8 py-6 text-lg">
-          {t("tryNowLabel")}
+          {t("tryNow")}
         </Button>
       </div>
 

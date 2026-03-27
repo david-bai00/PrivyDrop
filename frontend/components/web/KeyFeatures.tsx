@@ -16,7 +16,7 @@ export default function KeyFeatures({
   showTitle = true,
   titleClassName = "",
 }: KeyFeaturesProps) {
-  const t = useTranslations("text.KeyFeatures");
+  const t = useTranslations("text.keyFeatures");
 
   // Set container styles
   const containerClasses = `container mx-auto px-4 py-8 ${className}`;
@@ -28,48 +28,48 @@ export default function KeyFeatures({
       {showTitle &&
         (isInToolPage ? (
           <h2 className={`text-3xl ${titleClasses}`}>
-            {t("h2")}
+            {t("title")}
           </h2>
         ) : (
           <h1 className={`text-4xl ${titleClasses}`}>
-            {t("h2")}
+            {t("title")}
           </h1>
         ))}
       <div className="space-y-6">
         <div>
           <h3 className="text-xl font-semibold mb-2 flex items-center">
             <Image src="/lock.png" alt="Icon" width={80} height={80} />
-            <span className="ml-6">{t("h3_1")}</span>
+            <span className="ml-6">{t("items.directSecure.title")}</span>
           </h3>
-          <p>{t("h3_1_P")}</p>
+          <p>{t("items.directSecure.description")}</p>
         </div>
         <div>
           <h3 className="text-xl font-semibold mb-2 flex items-center">
             <Image src="/teamwork.png" alt="Icon" width={80} height={80} />
-            <span className="ml-6">{t("h3_2")}</span>
+            <span className="ml-6">{t("items.teamSynergy.title")}</span>
           </h3>
-          <p>{t("h3_2_P")}</p>
+          <p>{t("items.teamSynergy.description")}</p>
         </div>
         <div>
           <h3 className="text-xl font-semibold mb-2 flex items-center">
             <Image src="/rocket.png" alt="Icon" width={80} height={80} />
-            <span className="ml-6">{t("h3_3")}</span>
+            <span className="ml-6">{t("items.noLimits.title")}</span>
           </h3>
-          <p>{t("h3_3_P")}</p>
+          <p>{t("items.noLimits.description")}</p>
         </div>
         <div>
           <h3 className="text-xl font-semibold mb-2 flex items-center">
             <Image src="/fresh-air.png" alt="Icon" width={80} height={80} />
-            <span className="ml-6">{t("h3_4")}</span>
+            <span className="ml-6">{t("items.swift.title")}</span>
           </h3>
-          <p>{t("h3_4_P")}</p>
+          <p>{t("items.swift.description")}</p>
         </div>
         <div>
           <h3 className="text-xl font-semibold mb-2 flex items-center">
             <Image src="/planet-earth.png" alt="Icon" width={80} height={80} />
-            <span className="ml-6">{t("h3_5")}</span>
+            <span className="ml-6">{t("items.greenClean.title")}</span>
           </h3>
-          <p>{t("h3_5_P")}</p>
+          <p>{t("items.greenClean.description")}</p>
         </div>
         <div>
           <h3 className="text-xl font-semibold mb-2 flex items-center">
@@ -79,9 +79,9 @@ export default function KeyFeatures({
               width={100}
               height={83}
             />
-            <span className="ml-6">{t("h3_6")}</span>
+            <span className="ml-6">{t("items.resumable.title")}</span>
           </h3>
-          <p>{t("h3_6_P")}</p>
+          <p>{t("items.resumable.description")}</p>
         </div>
       </div>
     </section>
