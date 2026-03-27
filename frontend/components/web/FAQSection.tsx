@@ -1,6 +1,6 @@
 "use client";
 
-import { useMessages } from "@/components/providers/TranslationProvider";
+import { useMessages } from "next-intl";
 import {
   Accordion,
   AccordionContent,
