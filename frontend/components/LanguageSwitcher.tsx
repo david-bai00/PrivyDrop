@@ -7,17 +7,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { usePathname, useRouter } from "next/navigation";
+import { useLocale } from "next-intl";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { i18n, Locale, languageDisplayNames } from "@/constants/i18n-config";
 
 const LanguageSwitcher = () => {
+  const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
 
-  const switchLanguage = (locale: Locale) => {
-    const segments = pathname.split("/");
-    segments[1] = locale;
-    router.push(segments.join("/"));
+  const switchLanguage = (nextLocale: Locale) => {
+    if (nextLocale === locale) return;
+    router.replace(pathname, { locale: nextLocale });
   };
 
   return (

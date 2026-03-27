@@ -1,9 +1,12 @@
 import "./globals.css";
+import { hasLocale, NextIntlClientProvider } from "next-intl";
+import { getMessages, setRequestLocale } from "next-intl/server";
+import { notFound } from "next/navigation";
 import Header from "@/components/web/Header";
 import Footer from "@/components/web/Footer";
 import { TranslationProvider } from "@/components/providers/TranslationProvider";
 import { ThemeProvider } from "@/components/web/theme-provider";
-import { getDictionary } from "@/lib/dictionary";
+import { routing } from "@/i18n/routing";
 import JsonLd from "@/components/seo/JsonLd";
 import {
   absoluteUrl,
@@ -19,7 +22,12 @@ export default async function RootLayout({
   children: React.ReactNode;
   params: { lang: string };
 }>) {
-  const messages = await getDictionary(lang);
+  if (!hasLocale(routing.locales, lang)) {
+    notFound();
+  }
+
+  setRequestLocale(lang);
+  const messages = await getMessages();
   const siteUrl = getSiteUrl();
   const logoUrl = absoluteUrl("/logo.png", siteUrl);
   const orgJson = buildOrganizationJsonLd({
@@ -48,11 +56,13 @@ export default async function RootLayout({
           disableTransitionOnChange
           storageKey="theme-preference"
         >
-          <TranslationProvider messages={messages} lang={lang}>
-            <Header />
-            <div className="flex-1">{children}</div>
-            <Footer />
-          </TranslationProvider>
+          <NextIntlClientProvider locale={lang} messages={messages}>
+            <TranslationProvider>
+              <Header />
+              <div className="flex-1">{children}</div>
+              <Footer />
+            </TranslationProvider>
+          </NextIntlClientProvider>
         </ThemeProvider>
       </body>
     </html>
