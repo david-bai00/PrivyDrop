@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useMessages } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2 } from "lucide-react";
 import { Tooltip } from "@/components/Tooltip";
@@ -66,7 +66,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
   saveType,
   largeFileThreshold = 500 * 1024 * 1024, // 500MB default
 }) => {
-  const messages = useMessages();
+  const t = useTranslations("text.FileListDisplay");
 
   // Get the cleaning method of the store
   const { clearSendProgress, clearReceiveProgress } = useFileTransferStore();
@@ -300,25 +300,20 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
     // Get download count
     const downloadCount = downloadCounts[item.fileId] || 0;
 
-    if (messages === null) {
-      return <div>Loading...</div>;
-    }
     return (
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0 flex-shrink-0">
         {progress && progress.progress < 1 ? ( //Show progress or completed
           <div className="w-full sm:w-auto">
             <TransferProgress
               message={
-                mode === "sender"
-                  ? messages.text.FileListDisplay.sendingLabel
-                  : messages.text.FileListDisplay.receivingLabel
+                mode === "sender" ? t("sendingLabel") : t("receivingLabel")
               }
               progress={progress}
             />
           </div>
         ) : showCompletion ? (
           <span className="text-sm text-green-500 whitespace-nowrap">
-            {messages.text.FileListDisplay.finishedLabel}
+            {t("finishedLabel")}
           </span>
         ) : null}
 
@@ -342,7 +337,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
           {/* display download Num*/}
           {mode === "sender" && (
             <span className="text-xs sm:text-sm whitespace-nowrap">
-              {messages.text.FileListDisplay.downloadCountLabel}: {downloadCount}
+              {t("downloadCountLabel")}: {downloadCount}
             </span>
           )}
           {mode === "sender" && onDelete && (
@@ -360,9 +355,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
               className="text-xs sm:text-sm px-2 sm:px-3"
             >
               <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-              <span className="hidden sm:inline">
-                {messages.text.FileListDisplay.deleteLabel}
-              </span>
+              <span className="hidden sm:inline">{t("deleteLabel")}</span>
             </Button>
           )}
         </div>
@@ -375,7 +368,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
     const formatSize = formatFileSize(item.size);
     const tooltipContent = isFolder
       ? `${formatFolderTips(
-          messages!.text.FileListDisplay.folderSummaryTemplate,
+          t("folderSummaryTemplate"),
           item.name,
           item.fileCount || 0,
           formatSize
@@ -398,7 +391,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
             <span className="text-xs sm:text-sm text-muted-foreground">
               {isFolder
                 ? `${formatFolderDis(
-                    messages!.text.FileListDisplay.folderInlineTemplate,
+                    t("folderInlineTemplate"),
                     item.fileCount || 0,
                     formatSize
                   )}`
@@ -412,9 +405,6 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
       </div>
     );
   };
-  if (messages === null) {
-    return <div>Loading...</div>;
-  }
   return (
     <>
       {(singleFiles.length > 0 || folders.length > 0) && (
@@ -424,17 +414,13 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
             <div className="mb-2">
               <AutoPopupDialog
                 storageKey="Choose-location-popup-shown"
-                title={messages.text.FileListDisplay.popupDialogTitle}
-                description={
-                  messages.text.FileListDisplay.popupDialogDescription
-                }
+                title={t("popupDialogTitle")}
+                description={t("popupDialogDescription")}
                 condition={() => needPickLocation}
               />
               {/* Regular reminder to select the save directory */}
               <div className="flex items-center">
-                <p className="text-red-500 mb-2">
-                  {messages.text.FileListDisplay.chooseSavePathTip}
-                </p>
+                <p className="text-red-500 mb-2">{t("chooseSavePathTip")}</p>
                 {onLocationPick && (
                   <Button
                     onClick={async () => {
@@ -445,7 +431,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
                     size="sm"
                     className="mr-2 text-red-500"
                   >
-                    {messages.text.FileListDisplay.chooseSavePathLabel}
+                    {t("chooseSavePathLabel")}
                   </Button>
                 )}
               </div>

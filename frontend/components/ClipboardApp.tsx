@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useCallback, useEffect, useMemo } from "react";
-import { useMessages } from "next-intl";
+import { useMessages, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import useRichTextToPlainText from "../hooks/useRichTextToPlainText";
 import QRCodeComponent from "./ClipboardApp/ShareCard";
@@ -19,7 +19,10 @@ import { getCachedId } from "@/lib/roomIdCache";
 import { useConnectionFeedback } from "@/hooks/useConnectionFeedback";
 
 const ClipboardApp = () => {
+  // Keep useMessages for hooks that need the full message object
   const messages = useMessages();
+  // Use useTranslations for static keys in JSX
+  const tHtml = useTranslations("text.ClipboardApp.html");
   const { shareMessage, retrieveMessage, putMessageInMs } =
     useClipboardAppMessages();
 
@@ -192,7 +195,7 @@ const ClipboardApp = () => {
           id="send-tab"
           aria-selected={activeTab === "send"}
         >
-          {messages.text.ClipboardApp.html.senderTab}
+          {tHtml("senderTab")}
         </Button>
         <Button
           variant={activeTab === "retrieve" ? "default" : "outline"}
@@ -202,15 +205,15 @@ const ClipboardApp = () => {
           id="retrieve-tab"
           aria-selected={activeTab === "retrieve"}
         >
-          {messages.text.ClipboardApp.html.retrieveTab}
+          {tHtml("retrieveTab")}
         </Button>
       </div>
       <Card className="border-4 sm:border-8 shadow-md">
         <CardHeader className="px-3 sm:px-6 py-3 sm:py-6">
           <CardTitle className="text-lg sm:text-xl">
             {activeTab === "send"
-              ? messages.text.ClipboardApp.html.shareTitleLabel
-              : messages.text.ClipboardApp.html.retrieveTitleLabel}
+              ? tHtml("shareTitleLabel")
+              : tHtml("retrieveTitleLabel")}
           </CardTitle>
         </CardHeader>
         <CardContent className="px-3 sm:px-6">
@@ -250,7 +253,7 @@ const ClipboardApp = () => {
         <Card className="border-2 sm:border-4 shadow-md mt-2 sm:mt-4">
           <CardHeader className="pb-3 sm:pb-6">
             <CardTitle className="text-base sm:text-lg">
-              {messages.text.ClipboardApp.html.retrieveMethodTitle}
+              {tHtml("retrieveMethodTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0 px-3 sm:px-6">

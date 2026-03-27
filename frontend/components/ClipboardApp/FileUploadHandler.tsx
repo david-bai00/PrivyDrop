@@ -5,7 +5,7 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { useMessages } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Upload } from "lucide-react";
 import { FileMeta, CustomFile } from "@/types/webrtc";
@@ -41,19 +41,17 @@ interface FileUploadHandlerProps {
 const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
   onFilePicked,
 }) => {
-  const messages = useMessages();
+  const t = useTranslations("text.fileUploadHandler");
 
   const folderInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // File selector -- message prompt
-  const [fileText, setFileText] = useState<string>(
-    messages.text.fileUploadHandler.noFileChosenTip
-  );
+  const [fileText, setFileText] = useState<string>(t("noFileChosenTip"));
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    setFileText(messages.text.fileUploadHandler.noFileChosenTip);
-  }, [messages.text.fileUploadHandler.noFileChosenTip]);
+    setFileText(t("noFileChosenTip"));
+  }, [t]);
 
   const handleFileChange = useCallback(
     (newFiles: CustomFile[]) => {
@@ -64,16 +62,13 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
       const folderNum = newFiles.filter((file) => file.folderName).length;
 
       const choose_dis = formatFileChosen(
-        messages!.text.fileUploadHandler.fileChosenTemplate,
+        t("fileChosenTemplate"),
         fileNum,
         folderNum
       );
 
       setFileText(choose_dis);
-      setTimeout(
-        () => setFileText(messages!.text.fileUploadHandler.noFileChosenTip),
-        2000
-      );
+      setTimeout(() => setFileText(t("noFileChosenTip")), 2000);
       // Reset the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -82,7 +77,7 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
         folderInputRef.current.value = "";
       }
     },
-    [messages, onFilePicked]
+    [t, onFilePicked]
   );
 
   // Click to upload file processing
@@ -148,7 +143,7 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
         onClick={handleZoneClick}
       >
         <p className="text-sm text-muted-foreground mb-4">
-          {messages.text.fileUploadHandler.chooseFileTip}
+          {t("chooseFileTip")}
         </p>
         <Upload className="h-12 w-12 mx-auto mb-4 text-primary" />
         <p className="text-sm text-muted-foreground">{fileText}</p>
@@ -177,10 +172,10 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">
-              {messages.text.fileUploadHandler.chosenDiagTitle}
+              {t("chosenDiagTitle")}
             </DialogTitle>
             <DialogDescription className="mt-2 text-muted-foreground">
-              {messages.text.fileUploadHandler.chosenDiagDescription}
+              {t("chosenDiagDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center gap-4 mt-6">
@@ -188,13 +183,13 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
               onClick={handleSelectFile}
               className="px-4 py-2 rounded transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              {messages.text.fileUploadHandler.selectFileLabel}
+              {t("selectFileLabel")}
             </button>
             <button
               onClick={handleSelectFolder}
               className="px-4 py-2 rounded transition-colors bg-secondary text-secondary-foreground hover:bg-secondary/80"
             >
-              {messages.text.fileUploadHandler.selectFolderLabel}
+              {t("selectFolderLabel")}
             </button>
           </div>
         </DialogContent>

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useMessages } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,7 +48,9 @@ export function RetrieveTabPanel({
   retrieveMessage,
   handleLeaveRoom,
 }: RetrieveTabPanelProps) {
-  const messages = useMessages();
+  const tHtml = useTranslations("text.ClipboardApp.html");
+  const tRoomStatus = useTranslations("text.ClipboardApp.roomStatus");
+  const t = useTranslations("text.ClipboardApp");
   // Get the status from the store
   const {
     retrieveRoomStatusText,
@@ -61,25 +63,24 @@ export function RetrieveTabPanel({
   } = useFileTransferStore();
 
   const onLocationPick = useCallback(async (): Promise<boolean> => {
-    if (!messages) return false; // Should not happen if panel is rendered
     if (!window.showDirectoryPicker) {
-      putMessageInMs(messages.text.ClipboardApp.pickSaveUnsupported, false);
+      putMessageInMs(t("pickSaveUnsupported"), false);
       return false;
     }
-    if (!window.confirm(messages.text.ClipboardApp.pickSaveMsg)) return false;
+    if (!window.confirm(t("pickSaveMsg"))) return false;
     try {
       const directoryHandle = await window.showDirectoryPicker();
       await setReceiverDirectoryHandle(directoryHandle);
-      putMessageInMs(messages.text.ClipboardApp.pickSaveSuccess, false);
+      putMessageInMs(t("pickSaveSuccess"), false);
       return true;
     } catch (err: any) {
       if (err.name !== "AbortError") {
         console.error("Failed to set up folder receive:", err);
-        putMessageInMs(messages.text.ClipboardApp.pickSaveError, false);
+        putMessageInMs(t("pickSaveError"), false);
       }
       return false;
     }
-  }, [messages, putMessageInMs, setReceiverDirectoryHandle]);
+  }, [t, putMessageInMs, setReceiverDirectoryHandle]);
 
   const handleFileRequestFromPanel = useCallback(
     (meta: FileMeta) => {
@@ -100,15 +101,15 @@ export function RetrieveTabPanel({
       <div className="mb-3 text-sm text-muted-foreground">
         {retrieveRoomStatusText ||
           (isReceiverInRoom
-            ? messages.text.ClipboardApp.roomStatus.connectedLabel
-            : messages.text.ClipboardApp.roomStatus.receiverEmptyMessage)}
+            ? tRoomStatus("connectedLabel")
+            : tRoomStatus("receiverEmptyMessage"))}
       </div>
       <div className="space-y-3 mb-4">
         {/* Room ID input section */}
         <div className="space-y-2">
           <div className="flex flex-col sm:flex-row gap-2">
             <ReadClipboardButton
-              title={messages.text.ClipboardApp.html.readClipboardLabel}
+              title={tHtml("readClipboardLabel")}
               onRead={setRetrieveRoomIdInput}
             />
             {/* Save/Use Cached ID Button placed after Paste button */}
@@ -122,9 +123,7 @@ export function RetrieveTabPanel({
               aria-label="Retrieve Room ID"
               value={retrieveRoomIdInput}
               onChange={(e) => setRetrieveRoomIdInput(e.target.value)}
-              placeholder={
-                messages.text.ClipboardApp.html.retrieveRoomIdPlaceholder
-              }
+              placeholder={tHtml("retrieveRoomIdPlaceholder")}
               className="flex-1 min-w-0"
             />
           </div>
@@ -138,7 +137,7 @@ export function RetrieveTabPanel({
             ref={retrieveJoinRoomBtnRef}
             disabled={isReceiverInRoom || !retrieveRoomIdInput.trim()}
           >
-            {messages.text.ClipboardApp.html.joinRoomLabel}
+            {tHtml("joinRoomLabel")}
           </Button>
           <Button
             variant={isAnyFileTransferring ? "destructive" : "outline"}
@@ -147,8 +146,8 @@ export function RetrieveTabPanel({
             className="w-full sm:w-auto px-4 order-2"
           >
             {isAnyFileTransferring
-              ? messages.text.ClipboardApp.roomStatus.leaveRoomLabel + " ⚠️"
-              : messages.text.ClipboardApp.roomStatus.leaveRoomLabel}
+              ? tRoomStatus("leaveRoomLabel") + " ⚠️"
+              : tRoomStatus("leaveRoomLabel")}
           </Button>
         </div>
       </div>
@@ -159,7 +158,7 @@ export function RetrieveTabPanel({
           </div>
           <div className="flex justify-start">
             <WriteClipboardButton
-              title={messages.text.ClipboardApp.html.copyLabel}
+              title={tHtml("copyLabel")}
               textToCopy={richTextToPlainText(retrievedContent)}
             />
           </div>
