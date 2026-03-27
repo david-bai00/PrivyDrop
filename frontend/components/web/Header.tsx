@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useI18n } from "@/components/providers/TranslationProvider";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -15,20 +15,21 @@ import ThemeToggle from "@/components/web/ThemeToggle";
  * Features responsive design with mobile menu support
  */
 const Header = () => {
-  const { messages, lang } = useI18n();
+  const t = useTranslations("text.Header");
+  const lang = useLocale();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
   // Configuration for navigation items
   const navItems = [
-    { href: `/${lang}`, label: messages.text.Header.homeLabel },
-    { href: `/${lang}/features`, label: messages.text.Header.featuresLabel },
-    { href: `/${lang}/blog`, label: messages.text.Header.blogLabel },
-    { href: `/${lang}/about`, label: messages.text.Header.aboutLabel },
-    { href: `/${lang}/help`, label: messages.text.Header.helpLabel },
-    { href: `/${lang}/faq`, label: messages.text.Header.faqLabel },
-    { href: `/${lang}/terms`, label: messages.text.Header.termsLabel },
-    { href: `/${lang}/privacy`, label: messages.text.Header.privacyLabel },
+    { href: `/${lang}`, label: t("homeLabel") },
+    { href: `/${lang}/features`, label: t("featuresLabel") },
+    { href: `/${lang}/blog`, label: t("blogLabel") },
+    { href: `/${lang}/about`, label: t("aboutLabel") },
+    { href: `/${lang}/help`, label: t("helpLabel") },
+    { href: `/${lang}/faq`, label: t("faqLabel") },
+    { href: `/${lang}/terms`, label: t("termsLabel") },
+    { href: `/${lang}/privacy`, label: t("privacyLabel") },
   ];
 
   // GitHub repository URL

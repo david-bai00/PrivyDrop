@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useI18n } from "@/components/providers/TranslationProvider";
+import { useLocale, useTranslations } from "next-intl";
 import { languageDisplayNames } from "@/constants/i18n-config";
 
 export function Footer() {
-  const { messages, lang } = useI18n();
+  const t = useTranslations("text.Footer");
+  const lang = useLocale();
 
   return (
     <footer className="bg-background border-t mt-auto">
@@ -23,8 +24,7 @@ export function Footer() {
               priority
             />
             <p className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()}{" "}
-              {messages.text.Footer.copyrightNotice}
+              &copy; {new Date().getFullYear()} {t("copyrightNotice")}
             </p>
           </div>
 
@@ -37,7 +37,7 @@ export function Footer() {
                   href={`/${lang}/terms`}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {messages.text.Footer.termsLabel}
+                  {t("termsLabel")}
                 </Link>
               </li>
               <li>
@@ -45,14 +45,14 @@ export function Footer() {
                   href={`/${lang}/privacy`}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {messages.text.Footer.privacyLabel}
+                  {t("privacyLabel")}
                 </Link>
               </li>
 
               {/* Entry for supported languages */}
               <li>
                 <span className="text-sm text-muted-foreground font-bold">
-                  {messages.text.Footer.supportedLanguagesLabel}:
+                  {t("supportedLanguagesLabel")}:
                 </span>
               </li>
               {Object.entries(languageDisplayNames).map(([code, name]) => (
