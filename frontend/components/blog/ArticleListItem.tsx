@@ -59,7 +59,7 @@ export function ArticleListItem({ post, lang, messages }: ArticleListItemProps) 
             href={`/${lang}/blog/${post.slug}`}
             className="text-primary hover:text-primary/80 font-medium inline-flex items-center text-lg"
           >
-            {messages.text.blog.read_more}
+            {messages.text.blog.readMore}
             <svg
               className="w-5 h-5 ml-2"
               viewBox="0 0 24 24"

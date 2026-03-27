@@ -39,14 +39,11 @@ export const useClipboardActions = (): ClipboardActions => {
       .then((dict) => {
         setMessages(dict);
         setClipboardMessages({
-          copiedSuccess: dict.text.clipboard_btn.Copied_dis,
-          pastedSuccess: dict.text.clipboard_btn.Pasted_dis,
-          copyError:
-            dict.text.clipboard_btn.Copy_failed_dis || "Failed to copy.", // Fallback
-          readError:
-            dict.text.clipboard_btn.Paste_failed_dis ||
-            "Failed to read clipboard.", // Fallback
-          loading: dict.text.Loading_dis || "Loading...", // Fallback
+          copiedSuccess: dict.text.clipboard_btn.copiedLabel,
+          pastedSuccess: dict.text.clipboard_btn.pastedLabel,
+          copyError: "Failed to copy.",
+          readError: "Failed to read clipboard.",
+          loading: "Loading...",
         });
         setIsLoadingMessages(false);
       })

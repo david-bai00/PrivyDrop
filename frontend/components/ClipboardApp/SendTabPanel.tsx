@@ -139,17 +139,17 @@ export function SendTabPanel({
       <div className="mb-3 text-sm text-muted-foreground">
         {shareRoomStatusText ||
           (isSenderInRoom
-            ? messages.text.ClipboardApp.roomStatus.onlyOneMsg
-            : messages.text.ClipboardApp.roomStatus.senderEmptyMsg)}
+            ? messages.text.ClipboardApp.roomStatus.onlyOneMessage
+            : messages.text.ClipboardApp.roomStatus.senderEmptyMessage)}
       </div>
       <RichTextEditor value={shareContent} onChange={updateShareContent} />
       <div className="flex flex-col sm:flex-row gap-2 my-3">
         <ReadClipboardButton
-          title={messages.text.ClipboardApp.html.Paste_dis}
+          title={messages.text.ClipboardApp.html.pasteLabel}
           onRead={updateShareContent}
         />
         <WriteClipboardButton
-          title={messages.text.ClipboardApp.html.Copy_dis}
+          title={messages.text.ClipboardApp.html.copyLabel}
           textToCopy={richTextToPlainText(shareContent)}
         />
       </div>
@@ -167,7 +167,7 @@ export function SendTabPanel({
         {/* Room ID input section */}
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            {messages.text.ClipboardApp.html.inputRoomId_tips}
+            {messages.text.ClipboardApp.html.inputRoomIdTip}
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <Input
@@ -177,7 +177,7 @@ export function SendTabPanel({
               onPaste={handlePaste}
               className="flex-1 min-w-0"
               placeholder={
-                messages.text.ClipboardApp.html.retrieveRoomId_placeholder
+                messages.text.ClipboardApp.html.retrieveRoomIdPlaceholder
               }
             />
             <Button
@@ -187,8 +187,8 @@ export function SendTabPanel({
               disabled={isSenderInRoom}
             >
               {isSimpleIdMode
-                ? messages.text.ClipboardApp.html.generateRandomId_tips
-                : messages.text.ClipboardApp.html.generateSimpleId_tips}
+                ? messages.text.ClipboardApp.html.generateRandomIdTip
+                : messages.text.ClipboardApp.html.generateSimpleIdTip}
             </Button>
             {/* Save/Use Cached ID Button in between */}
             <CachedIdActionButton
@@ -208,7 +208,7 @@ export function SendTabPanel({
               onClick={() => joinRoom(true, inputFieldValue.trim())}
               disabled={isSenderInRoom || !inputFieldValue.trim()}
             >
-              {messages.text.ClipboardApp.html.joinRoom_dis}
+              {messages.text.ClipboardApp.html.joinRoomLabel}
             </Button>
           </div>
         </div>
@@ -219,7 +219,7 @@ export function SendTabPanel({
             className="flex-1 order-1"
             onClick={generateShareLinkAndBroadcast}
             loadingText={
-              messages.text.ClipboardApp.html.SyncSending_loadingText
+              messages.text.ClipboardApp.html.syncSendingLoadingLabel
             }
             disabled={
               !isSenderInRoom ||
@@ -228,7 +228,7 @@ export function SendTabPanel({
               isAnyFileTransferring
             }
           >
-            {messages.text.ClipboardApp.html.SyncSending_dis}
+            {messages.text.ClipboardApp.html.syncSendingLabel}
           </AnimatedButton>
           <Button
             variant={isAnyFileTransferring ? "destructive" : "outline"}
@@ -237,8 +237,8 @@ export function SendTabPanel({
             className="w-full sm:w-auto px-4 order-2"
           >
             {isAnyFileTransferring
-              ? messages.text.ClipboardApp.roomStatus.leaveRoomBtn + " ⚠️"
-              : messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
+              ? messages.text.ClipboardApp.roomStatus.leaveRoomLabel + " ⚠️"
+              : messages.text.ClipboardApp.roomStatus.leaveRoomLabel}
           </Button>
         </div>
       </div>

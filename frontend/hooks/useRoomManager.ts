@@ -57,7 +57,7 @@ export function useRoomManager({
     displayMs: 6000,
     getMessage: () => {
       if (!messages) return null;
-      const text = messages.text.ClipboardApp.join_slow;
+      const text = messages.text.ClipboardApp.joinSlow;
       if (!text) return null;
       return { text, isShareEnd: joinSideRef.current };
     },
@@ -75,7 +75,7 @@ export function useRoomManager({
 
       try {
         // Immediate feedback on click
-        const joinInProgressMsg = messages.text.ClipboardApp.join_inProgress;
+        const joinInProgressMsg = messages.text.ClipboardApp.joinInProgress;
         putMessageInMs(joinInProgressMsg, isSenderSide, 6000);
 
         // 3s slow-network hint
@@ -91,7 +91,7 @@ export function useRoomManager({
             const success = await createRoom(roomId);
             if (!success) {
               putMessageInMs(
-                messages.text.ClipboardApp.joinRoom.DuplicateMsg,
+                messages.text.ClipboardApp.joinRoom.duplicateMessage,
                 isSenderSide
               );
               disarmJoinSlow();
@@ -100,7 +100,7 @@ export function useRoomManager({
             setShareRoomId(roomId);
           } catch (error) {
             putMessageInMs(
-              messages.text.ClipboardApp.joinRoom.failMsg +
+              messages.text.ClipboardApp.joinRoom.failureMessage +
                 ` (Create room error)`,
               isSenderSide
             );
@@ -133,7 +133,7 @@ export function useRoomManager({
 
         disarmJoinSlow();
         putMessageInMs(
-          messages.text.ClipboardApp.joinRoom.successMsg,
+          messages.text.ClipboardApp.joinRoom.successMessage,
           isSenderSide,
           6000
         );
@@ -148,14 +148,14 @@ export function useRoomManager({
         }
       } catch (error) {
         console.error("[RoomManager] Failed to join room:", error);
-        let errorMsg = messages.text.ClipboardApp.joinRoom.failMsg;
+        let errorMsg = messages.text.ClipboardApp.joinRoom.failureMessage;
         if (error instanceof Error) {
           errorMsg =
             error.message === "Room does not exist"
-              ? messages.text.ClipboardApp.joinRoom.notExist
+              ? messages.text.ClipboardApp.joinRoom.notFoundMessage
               : error.message === "Join room timeout"
-              ? messages.text.ClipboardApp.join_timeout
-              : `${messages.text.ClipboardApp.joinRoom.failMsg} ${error.message}`;
+              ? messages.text.ClipboardApp.joinTimeout
+              : `${messages.text.ClipboardApp.joinRoom.failureMessage} ${error.message}`;
         }
         // Clear joining slow-hint on failure
         disarmJoinSlow();
@@ -182,7 +182,7 @@ export function useRoomManager({
 
     try {
       if (sharePeerCount === 0) {
-        putMessageInMs(messages.text.ClipboardApp.waitting_tips, true);
+        putMessageInMs(messages.text.ClipboardApp.waitingTip, true);
       } else {
         // Directly call the service's broadcast method
         await webrtcService.broadcastDataToAllPeers();
@@ -220,7 +220,7 @@ export function useRoomManager({
 
       const message = isAnyFileTransferring
         ? messages.text.ClipboardApp.leaveWhileTransferringSuccess
-        : messages.text.ClipboardApp.roomStatus.leftRoomMsg;
+        : messages.text.ClipboardApp.roomStatus.leftRoomMessage;
       putMessageInMs(message, false);
 
       // Reset receiver state (clears all as per requirement)
@@ -276,7 +276,7 @@ export function useRoomManager({
 
       const message = isAnyFileTransferring
         ? messages.text.ClipboardApp.leaveWhileTransferringSuccess
-        : messages.text.ClipboardApp.roomStatus.leftRoomMsg;
+        : messages.text.ClipboardApp.roomStatus.leftRoomMessage;
       putMessageInMs(message, true);
 
       // Reset sender state and get new room ID (keeps files as per requirement)
@@ -297,12 +297,12 @@ export function useRoomManager({
         if (isValid) {
           setShareRoomId(input);
           putMessageInMs(
-            messages.text.ClipboardApp.roomCheck.available_msg,
+            messages.text.ClipboardApp.roomCheck.availableMessage,
             true
           );
         } else {
           putMessageInMs(
-            messages.text.ClipboardApp.roomCheck.notAvailable_msg,
+            messages.text.ClipboardApp.roomCheck.notAvailableMessage,
             true
           );
         }
@@ -330,7 +330,7 @@ export function useRoomManager({
         } catch (err) {
           console.error("[RoomManager] Failed to fetch initial room:", err);
           const errorMsg =
-            messages.text?.ClipboardApp?.fetchRoom_err ||
+            messages.text?.ClipboardApp?.fetchRoomError ||
             "Failed to fetch room ID";
           putMessageInMs(errorMsg, true);
         }
@@ -362,18 +362,18 @@ export function useRoomManager({
     if (!isInRoom) {
       statusText =
         activeTab === "retrieve"
-          ? messages.text.ClipboardApp.roomStatus.receiverEmptyMsg
-          : messages.text.ClipboardApp.roomStatus.senderEmptyMsg;
+          ? messages.text.ClipboardApp.roomStatus.receiverEmptyMessage
+          : messages.text.ClipboardApp.roomStatus.senderEmptyMessage;
     } else if (currentPeerCount === 0) {
-      statusText = messages.text.ClipboardApp.roomStatus.onlyOneMsg;
+      statusText = messages.text.ClipboardApp.roomStatus.onlyOneMessage;
     } else {
       statusText =
         activeTab === "send"
           ? format_peopleMsg(
-              messages.text.ClipboardApp.roomStatus.peopleMsg_template,
+              messages.text.ClipboardApp.roomStatus.peopleCountTemplate,
               currentPeerCount + 1
             )
-          : messages.text.ClipboardApp.roomStatus.connected_dis;
+          : messages.text.ClipboardApp.roomStatus.connectedLabel;
     }
 
     if (activeTab === "send") setShareRoomStatusText(statusText);

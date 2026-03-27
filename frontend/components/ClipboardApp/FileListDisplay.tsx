@@ -319,15 +319,15 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
             <TransferProgress
               message={
                 mode === "sender"
-                  ? messages.text.FileListDisplay.sending_dis
-                  : messages.text.FileListDisplay.receiving_dis
+                  ? messages.text.FileListDisplay.sendingLabel
+                  : messages.text.FileListDisplay.receivingLabel
               }
               progress={progress}
             />
           </div>
         ) : showCompletion ? (
           <span className="text-sm text-green-500 whitespace-nowrap">
-            {messages.text.FileListDisplay.finish_dis}
+            {messages.text.FileListDisplay.finishedLabel}
           </span>
         ) : null}
 
@@ -351,7 +351,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
           {/* display download Num*/}
           {mode === "sender" && (
             <span className="text-xs sm:text-sm whitespace-nowrap">
-              {messages.text.FileListDisplay.downloadNum_dis}: {downloadCount}
+              {messages.text.FileListDisplay.downloadCountLabel}: {downloadCount}
             </span>
           )}
           {mode === "sender" && onDelete && (
@@ -370,7 +370,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
             >
               <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
               <span className="hidden sm:inline">
-                {messages.text.FileListDisplay.delete_dis}
+                {messages.text.FileListDisplay.deleteLabel}
               </span>
             </Button>
           )}
@@ -384,7 +384,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
     const formatSize = formatFileSize(item.size);
     const tooltipContent = isFolder
       ? `${formatFolderTips(
-          messages!.text.FileListDisplay.folder_tips_template,
+          messages!.text.FileListDisplay.folderSummaryTemplate,
           item.name,
           item.fileCount || 0,
           formatSize
@@ -407,7 +407,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
             <span className="text-xs sm:text-sm text-muted-foreground">
               {isFolder
                 ? `${formatFolderDis(
-                    messages!.text.FileListDisplay.folder_dis_template,
+                    messages!.text.FileListDisplay.folderInlineTemplate,
                     item.fileCount || 0,
                     formatSize
                   )}`
@@ -433,16 +433,16 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
             <div className="mb-2">
               <AutoPopupDialog
                 storageKey="Choose-location-popup-shown"
-                title={messages.text.FileListDisplay.PopupDialog_title}
+                title={messages.text.FileListDisplay.popupDialogTitle}
                 description={
-                  messages.text.FileListDisplay.PopupDialog_description
+                  messages.text.FileListDisplay.popupDialogDescription
                 }
                 condition={() => needPickLocation}
               />
               {/* Regular reminder to select the save directory */}
               <div className="flex items-center">
                 <p className="text-red-500 mb-2">
-                  {messages.text.FileListDisplay.chooseSavePath_tips}
+                  {messages.text.FileListDisplay.chooseSavePathTip}
                 </p>
                 {onLocationPick && (
                   <Button
@@ -454,7 +454,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
                     size="sm"
                     className="mr-2 text-red-500"
                   >
-                    {messages.text.FileListDisplay.chooseSavePath_dis}
+                    {messages.text.FileListDisplay.chooseSavePathLabel}
                   </Button>
                 )}
               </div>

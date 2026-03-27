@@ -19,7 +19,7 @@ export async function generateMetadata({
   }
 
   const messages = await getDictionary(params.lang);
-  const blogWord = messages.text.Header.Blog_dis;
+  const blogWord = messages.text.Header.blogLabel;
   const blogCap = blogWord.charAt(0).toUpperCase() + blogWord.slice(1);
 
   return {

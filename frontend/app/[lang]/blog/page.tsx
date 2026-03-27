@@ -21,8 +21,8 @@ export default async function BlogPage({
         {/* Main Content */}
         <main className="lg:col-span-8">
           <div className="mb-12">
-            <h1 className="text-4xl font-bold mb-4">{messages.text.blog.list_title}</h1>
-            <p className="text-muted-foreground text-lg">{messages.text.blog.list_subtitle}</p>
+            <h1 className="text-4xl font-bold mb-4">{messages.text.blog.listTitle}</h1>
+            <p className="text-muted-foreground text-lg">{messages.text.blog.listSubtitle}</p>
           </div>
 
           {/* Articles List */}
@@ -38,7 +38,7 @@ export default async function BlogPage({
           <div className="sticky top-8">
             {/* Recent Posts */}
             <div className="bg-card rounded-xl shadow-lg p-8 mb-8">
-              <h2 className="text-xl font-bold mb-6">{messages.text.blog.recent_posts}</h2>
+              <h2 className="text-xl font-bold mb-6">{messages.text.blog.recentPosts}</h2>
               <div className="space-y-4">
                 {posts.slice(0, 5).map((post) => (
                   <Link

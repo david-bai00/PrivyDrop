@@ -56,36 +56,36 @@ export const es: Messages = {
   },
   text: {
     Header: {
-      Home_dis: "Inicio",
-      Blog_dis: "Blog",
-      About_dis: "Acerca de",
-      Help_dis: "Ayuda",
-      FAQ_dis: "FAQ",
-      Terms_dis: "Términos",
-      Privacy_dis: "Privacidad",
-      Features_dis: "Características",
+      homeLabel: "Inicio",
+      blogLabel: "Blog",
+      aboutLabel: "Acerca de",
+      helpLabel: "Ayuda",
+      faqLabel: "FAQ",
+      termsLabel: "Términos",
+      privacyLabel: "Privacidad",
+      featuresLabel: "Características",
     },
     Footer: {
-      CopyrightNotice: "PrivyDrop. Todos los derechos reservados.",
-      Terms_dis: "Términos de Uso",
-      Privacy_dis: "Política de Privacidad",
-      SupportedLanguages: "Idiomas soportados",
+      copyrightNotice: "PrivyDrop. Todos los derechos reservados.",
+      termsLabel: "Términos de Uso",
+      privacyLabel: "Política de Privacidad",
+      supportedLanguagesLabel: "Idiomas soportados",
     },
     blog: {
-      list_title: "Blog",
-      list_subtitle: "Últimos artículos y actualizaciones",
-      recent_posts: "Entradas recientes",
+      listTitle: "Blog",
+      listSubtitle: "Últimos artículos y actualizaciones",
+      recentPosts: "Entradas recientes",
       tags: "Etiquetas",
-      read_more: "Leer más",
+      readMore: "Leer más",
       by: "por",
-      post_not_found: "Artículo no encontrado",
-      toc_title: "Tabla de contenidos",
-      tag_title_prefix: "Etiqueta",
-      tag_subtitle_template: "Artículos etiquetados con {tag}",
-      tag_empty: "No se encontraron artículos para esta etiqueta.",
+      postNotFound: "Artículo no encontrado",
+      tocTitle: "Tabla de contenidos",
+      tagTitlePrefix: "Etiqueta",
+      tagSubtitleTemplate: "Artículos etiquetados con {tag}",
+      tagEmpty: "No se encontraron artículos para esta etiqueta.",
     },
     privacy: {
-      PrivacyPolicy_dis: "Política de Privacidad",
+      privacyPolicyLabel: "Política de Privacidad",
       h1: "Política de Privacidad de PrivyDrop",
       h1_P: "En PrivyDrop, estamos comprometidos con proteger su privacidad y salvaguardar su información personal. Esta política de privacidad describe cómo recopilamos, usamos y protegemos los datos que proporciona al usar nuestro servicio.",
       h2_1: "Recopilación de Información",
@@ -105,7 +105,7 @@ export const es: Messages = {
         "Si tiene alguna pregunta o inquietud sobre nuestras prácticas de privacidad, no dude en contactarnos en",
     },
     terms: {
-      TermsOfUse_dis: "Términos de Uso",
+      termsOfUseLabel: "Términos de Uso",
       h1: "Términos de Uso de PrivyDrop",
       h1_P: "Al usar el servicio PrivyDrop, acepta estar sujeto a estos términos de uso. Si no está de acuerdo con estos términos, por favor no use el servicio.",
       h2_1: "Uso del Servicio",
@@ -125,7 +125,7 @@ export const es: Messages = {
         "Nos reservamos el derecho de actualizar estos términos de uso en cualquier momento. Cualquier cambio será efectivo inmediatamente al publicar los términos actualizados en nuestro sitio web. Es su responsabilidad revisar los términos de uso periódicamente para cualquier cambio.",
     },
     help: {
-      Help_dis: "Ayuda",
+      helpLabel: "Ayuda",
       h1: "Ayuda y Soporte de PrivyDrop",
       h1_P: "Estamos aquí para ayudarte a aprovechar al máximo PrivyDrop. Si tienes alguna pregunta o necesitas asistencia, no dudes en contactarnos.",
       h2_1: "Contáctanos",
@@ -147,21 +147,21 @@ export const es: Messages = {
     },
     HowItWorks: {
       h2: "Cómo funciona",
-      h2_P: "Comparte archivos y mensajes instantáneamente en tres simples pasos",
-      btn_try: "Pruébalo ahora →",
-      step1_title: "Escribe o Elige Archivos",
-      step1_description:
+      h2Description: "Comparte archivos y mensajes instantáneamente en tres simples pasos",
+      tryNowLabel: "Pruébalo ahora →",
+      step1Title: "Escribe o Elige Archivos",
+      step1Description:
         "Escribe tu mensaje o arrastra y suelta archivos/carpetas en el área de selección",
-      step2_title: "Únete a la Sala",
-      step2_description:
+      step2Title: "Únete a la Sala",
+      step2Description:
         "Haz clic en el botón 'Unirse a Sala' para crear una sesión de compartición",
-      step3_title: "Recibe",
-      step3_description:
+      step3Title: "Recibe",
+      step3Description:
         "Ingresa el ID de Sala en la página de recepción y haz clic en 'Unirse a Sala' para obtener el contenido compartido",
     },
     SystemDiagram: {
       h2: "Diagrama del sistema",
-      h2_P: "PrivyDrop: Tus datos, tu control. Simple, rápido y privado.",
+      h2Description: "PrivyDrop: Tus datos, tu control. Simple, rápido y privado.",
     },
     KeyFeatures: {
       h2: "Características Principales",
@@ -185,7 +185,7 @@ export const es: Messages = {
         "Establece un directorio de guardado para habilitar automáticamente las transferencias reanudables. No más preocupaciones por interrupciones de red; tu intercambio de archivos continuará justo donde lo dejaste.",
     },
     faqs: {
-      FAQ_dis: "Preguntas Frecuentes",
+      faqLabel: "Preguntas Frecuentes",
       question_0:
         "¿Los datos realmente se almacenan localmente y no se transfieren a otros servidores?",
       answer_0:
@@ -232,106 +232,106 @@ export const es: Messages = {
         "La validez inicial de un ID de Sala es de 24 horas. Si un destinatario se une a la sala, la validez se extiende automáticamente por 24 horas desde ese momento.",
     },
     clipboard_btn: {
-      Pasted_dis: "Pegado",
-      Copied_dis: "Copiado",
+      pastedLabel: "Pegado",
+      copiedLabel: "Copiado",
     },
     fileUploadHandler: {
-      NoFileChosen_tips: "Ningún archivo seleccionado",
-      fileChosen_tips_template:
+      noFileChosenTip: "Ningún archivo seleccionado",
+      fileChosenTemplate:
         "{fileNum} archivo(s) y {folderNum} carpeta(s) seleccionados",
-      chooseFileTips:
+      chooseFileTip:
         "Arrastra y suelta archivos/carpetas en cualquier lugar de esta página, o haz clic aquí para seleccionar.",
-      dragTips: "Arrastra a cualquier parte de esta página.",
+      dragTip: "Arrastra a cualquier parte de esta página.",
       chosenDiagTitle: "Elegir Tipo de Carga",
       chosenDiagDescription:
         "Selecciona si deseas cargar archivos o una carpeta",
-      SelectFile_dis: "Seleccionar Archivos",
-      SelectFolder_dis: "Seleccionar Carpeta",
+      selectFileLabel: "Seleccionar Archivos",
+      selectFolderLabel: "Seleccionar Carpeta",
     },
     FileTransferButton: {
-      SavedToDisk_tips: "Archivo ya guardado en disco",
-      CurrentFileTransferring_tips: "El archivo se está transfiriendo",
-      OtherFileTransferring_tips:
+      savedToDiskTip: "Archivo ya guardado en disco",
+      currentFileTransferringTip: "El archivo se está transfiriendo",
+      otherFileTransferringTip:
         "Por favor espera a que se complete la transferencia actual",
-      download_tips: "Haz clic para descargar el archivo",
-      PendingSave_tips: "Haz clic para guardar el archivo localmente", // 新增
-      Saved_dis: "Guardado",
-      Waiting_dis: "Esperando",
-      Download_dis: "Descargar",
-      Save_dis: "Guardar", // 新增
+      downloadTip: "Haz clic para descargar el archivo",
+      pendingSaveTip: "Haz clic para guardar el archivo localmente", // 新增
+      savedLabel: "Guardado",
+      waitingLabel: "Esperando",
+      downloadLabel: "Descargar",
+      saveLabel: "Guardar", // 新增
     },
     FileListDisplay: {
-      sending_dis: "Enviando",
-      receiving_dis: "Recibiendo",
-      finish_dis: "terminado",
-      delete_dis: "Eliminar",
-      downloadNum_dis: "Número de descargas",
-      folder_tips_template:
+      sendingLabel: "Enviando",
+      receivingLabel: "Recibiendo",
+      finishedLabel: "terminado",
+      deleteLabel: "Eliminar",
+      downloadCountLabel: "Número de descargas",
+      folderSummaryTemplate:
         "nombre de carpeta:{name} ({num} archivos y {size}) en total",
-      folder_dis_template: " ({num} archivos, {size})",
-      PopupDialog_title: "Recomendado: Elige un Directorio de Guardado",
-      PopupDialog_description:
+      folderInlineTemplate: " ({num} archivos, {size})",
+      popupDialogTitle: "Recomendado: Elige un Directorio de Guardado",
+      popupDialogDescription:
         "Recomendamos seleccionar un directorio de guardado para guardar archivos directamente en tu disco. Esto facilita la transferencia de archivos grandes y la sincronización de carpetas de manera eficiente.",
-      chooseSavePath_tips:
+      chooseSavePathTip:
         "Guarda archivos grandes o carpetas directamente en un directorio seleccionado. 👉",
-      chooseSavePath_dis: "Elegir ubicación de guardado",
+      chooseSavePathLabel: "Elegir ubicación de guardado",
     },
     RetrieveMethod: {
-      P: "¡Felicitaciones 🎉 El contenido compartido está esperando ser recuperado:",
-      RoomId_tips: "ID de Sala para recuperar: ",
-      copyRoomId_tips: "Copiar ID de Sala",
-      url_tips: "Recuperar usando URL: ",
-      copyUrl_tips: "Copiar URL de compartición",
-      scanQR_tips: "Escanea el código QR para recibir 👇",
-      Copied_dis: "Copiado",
-      Copy_QR_dis: "Copiar código QR",
-      download_QR_dis: "Descargar código QR",
+      introMessage: "¡Felicitaciones 🎉 El contenido compartido está esperando ser recuperado:",
+      roomIdTip: "ID de Sala para recuperar: ",
+      copyRoomIdTip: "Copiar ID de Sala",
+      urlTip: "Recuperar usando URL: ",
+      copyUrlTip: "Copiar URL de compartición",
+      scanQrTip: "Escanea el código QR para recibir 👇",
+      copiedLabel: "Copiado",
+      copyQrLabel: "Copiar código QR",
+      downloadQrLabel: "Descargar código QR",
     },
     ClipboardApp: {
-      fetchRoom_err: "Error al obtener una sala. Por favor intenta de nuevo.",
+      fetchRoomError: "Error al obtener una sala. Por favor intenta de nuevo.",
       roomCheck: {
-        empty_msg: "El ID de Sala no debe estar vacío",
-        available_msg: "La sala está disponible",
-        notAvailable_msg: "La sala no está disponible, por favor intenta otra",
+        emptyMessage: "El ID de Sala no debe estar vacío",
+        availableMessage: "La sala está disponible",
+        notAvailableMessage: "La sala no está disponible, por favor intenta otra",
       },
-      channelOpen_msg: "'canal de datos abierto, listo para recibir datos...'",
-      waitting_tips:
+      channelOpenMessage: "'canal de datos abierto, listo para recibir datos...'",
+      waitingTip:
         "Esperando que el receptor se conecte. Por favor mantén esta página abierta hasta que se complete la transferencia. En escritorio, puedes minimizar el navegador o cambiar pestañas. En móvil, por favor mantén el navegador en primer plano.",
       joinRoom: {
-        EmptyMsg: "Advertencia, el ID de sala está vacío",
-        DuplicateMsg: "Este ID de sala ya está en uso. Por favor, elige otro ID.",
-        successMsg:
+        emptyMessage: "Advertencia, el ID de sala está vacío",
+        duplicateMessage: "Este ID de sala ya está en uso. Por favor, elige otro ID.",
+        successMessage:
           "¡Ingreso exitoso al cuarto! No cierres esta página hasta que se complete la transferencia. (En escritorio, puedes minimizar el navegador o cambiar de pestaña; en móvil, no lleves el navegador al fondo.)",
-        notExist:
+        notFoundMessage:
           "La sala a la que intentas unirte no existe. Solo el remitente puede crear una sala.",
-        failMsg: "Error al unirse a la sala:",
+        failureMessage: "Error al unirse a la sala:",
       },
       // Connection feedback (weak/VPN network scenarios)
-      join_inProgress:
+      joinInProgress:
         "Uniéndose a la sala… (en redes lentas puede tardar 5–30 s)",
-      join_slow:
+      joinSlow:
         "Va algo lento—revisa tu red/VPN o inténtalo de nuevo en breve",
-      join_timeout:
+      joinTimeout:
         "La unión ha caducado (posibles restricciones de red). Vuelve a intentarlo",
-      rtc_slow:
+      rtcSlow:
         "La red puede estar restringida — prueba desactivar la VPN o inténtalo de nuevo en breve",
-      rtc_negotiating: "Dentro de la sala—estableciendo conexión P2P directa…",
-      rtc_connected: "Conectado",
-      rtc_reconnecting: "Reconectando…",
-      rtc_restored: "Conexión restaurada",
+      rtcNegotiating: "Dentro de la sala—estableciendo conexión P2P directa…",
+      rtcConnected: "Conectado",
+      rtcReconnecting: "Reconectando…",
+      rtcRestored: "Conexión restaurada",
       pickSaveMsg: "¿Guardar Directamente en Disco?",
       pickSaveUnsupported: "Selector de directorio no compatible.",
       pickSaveSuccess: "Ubicación de guardado establecida.",
       pickSaveError: "No se pudo establecer la ubicación de guardado.",
       roomStatus: {
-        senderEmptyMsg: "La sala está vacía",
-        receiverEmptyMsg: "Puedes aceptar una invitación para unirte a la sala",
-        onlyOneMsg: "Eres el único aquí",
-        peopleMsg_template: "{peerCount} Personas en la sala",
-        connected_dis: "Conectado",
-        senderDisconnectedMsg: "Remitente desconectado",
-        leftRoomMsg: "Has salido de la sala.",
-        leaveRoomBtn: "Salir de la Sala",
+        senderEmptyMessage: "La sala está vacía",
+        receiverEmptyMessage: "Puedes aceptar una invitación para unirte a la sala",
+        onlyOneMessage: "Eres el único aquí",
+        peopleCountTemplate: "{peerCount} Personas en la sala",
+        connectedLabel: "Conectado",
+        senderDisconnectedMessage: "Remitente desconectado",
+        leftRoomMessage: "Has salido de la sala.",
+        leaveRoomLabel: "Salir de la Sala",
       },
       fileExistMsg: "Algunos archivos ya han sido añadidos.",
       noFilesForFolderMsg:
@@ -345,45 +345,45 @@ export const es: Messages = {
       html: {
         senderTab: "Enviar",
         retrieveTab: "Recuperar",
-        shareTitle_dis: "Compartir Contenido",
-        retrieveTitle_dis: "Recuperar Contenido",
-        RoomStatus_dis: "Estado:",
-        Paste_dis: "Pegar",
-        Copy_dis: "Copiar",
-        inputRoomIdprompt: "Tu ID de Sala (Editable):",
-        joinRoomBtn: "Unirse a sala",
-        generateSimpleId_tips: "ID Simple",
-        generateRandomId_tips: "ID Aleatorio",
+        shareTitleLabel: "Compartir Contenido",
+        retrieveTitleLabel: "Recuperar Contenido",
+        roomStatusLabel: "Estado:",
+        pasteLabel: "Pegar",
+        copyLabel: "Copiar",
+        inputRoomIdPrompt: "Tu ID de Sala (Editable):",
+        joinRoomButtonLabel: "Unirse a sala",
+        generateSimpleIdTip: "ID Simple",
+        generateRandomIdTip: "ID Aleatorio",
         readClipboardToRoomId: "Pegar ID de Sala",
-        enterRoomID_placeholder: "ingresa ID de Sala",
+        enterRoomIdPlaceholder: "ingresa ID de Sala",
         retrieveMethod: "Método de recuperación",
-        inputRoomId_tips: "Tu ID de Sala (Editable):",
-        joinRoom_dis: "Unirse a sala",
-        SyncSending_loadingText: "Sincronizado",
-        SyncSending_dis: "Sincronizar",
-        readClipboard_dis: "Pegar ID de Sala",
-        retrieveRoomId_placeholder: "Ingresa ID de Sala",
-        RetrieveMethodTitle: "Método de recuperación",
+        inputRoomIdTip: "Tu ID de Sala (Editable):",
+        joinRoomLabel: "Unirse a sala",
+        syncSendingLoadingLabel: "Sincronizado",
+        syncSendingLabel: "Sincronizar",
+        readClipboardLabel: "Pegar ID de Sala",
+        retrieveRoomIdPlaceholder: "Ingresa ID de Sala",
+        retrieveMethodTitle: "Método de recuperación",
         // New: cached ID utils
-        saveId_dis: "Guardar ID",
-        useCachedId_dis: "Usar ID en caché",
-        saveId_tips: "Guarda el ID actual para reutilizarlo rápidamente",
-        useCachedId_tips: "Usar ID guardado rápido; doble clic para cambiar modo guardar",
+        saveIdLabel: "Guardar ID",
+        useCachedIdLabel: "Usar ID en caché",
+        saveIdTip: "Guarda el ID actual para reutilizarlo rápidamente",
+        useCachedIdTip: "Usar ID guardado rápido; doble clic para cambiar modo guardar",
       },
       // New: cache messages
-      saveId_success: "Guardado en caché",
+      saveIdSuccessMessage: "Guardado en caché",
     },
     home: {
       h1: "Herramienta Gratuita de Portapapeles y Transferencia de Archivos en Línea Segura",
       h1P: "Las transferencias P2P se reanudan desde donde se interrumpieron. Experimente un intercambio de archivos y texto verdaderamente fiable, privado e imparable: sin registro, sin límites de tamaño o velocidad de archivo, y completamente gratis.",
-      h2_screenOnly:
+      h2ScreenOnly:
         "Prueba la Herramienta Segura de Portapapeles y Transferencia de Archivos Ahora",
-      h2_demo: "Ve la Compartición Segura de Archivos en Acción",
-      h2P_demo:
+      h2Demo: "Ve la Compartición Segura de Archivos en Acción",
+      h2DemoDescription:
         "Mira cómo nuestra compartición de archivos local y cifrada de extremo a extremo protege tu privacidad",
-      watch_tips: "También puedes ver el video en estas plataformas:",
-      youtube_tips: "Ver PrivyDrop en YouTube",
-      bilibili_tips: "Ver PrivyDrop en Bilibili",
+      watchTip: "También puedes ver el video en estas plataformas:",
+      youtubeTip: "Ver PrivyDrop en YouTube",
+      bilibiliTip: "Ver PrivyDrop en Bilibili",
     },
   },
 };

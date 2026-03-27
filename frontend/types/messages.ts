@@ -18,25 +18,25 @@ export type Meta = {
 };
 
 export type Header = {
-  Home_dis: string;
-  Blog_dis: string;
-  About_dis: string;
-  Help_dis: string;
-  FAQ_dis: string;
-  Features_dis: string;
-  Terms_dis: string;
-  Privacy_dis: string;
+  homeLabel: string;
+  blogLabel: string;
+  aboutLabel: string;
+  helpLabel: string;
+  faqLabel: string;
+  featuresLabel: string;
+  termsLabel: string;
+  privacyLabel: string;
 };
 
 export type Footer = {
-  CopyrightNotice: string;
-  Terms_dis: string;
-  Privacy_dis: string;
-  SupportedLanguages: string;
+  copyrightNotice: string;
+  termsLabel: string;
+  privacyLabel: string;
+  supportedLanguagesLabel: string;
 };
 
 export type Privacy = {
-  PrivacyPolicy_dis: string;
+  privacyPolicyLabel: string;
   h1: string;
   h1_P: string;
   h2_1: string;
@@ -52,7 +52,7 @@ export type Privacy = {
 };
 
 export type Terms = {
-  TermsOfUse_dis: string;
+  termsOfUseLabel: string;
   h1: string;
   h1_P: string;
   h2_1: string;
@@ -68,7 +68,7 @@ export type Terms = {
 };
 
 export type Help = {
-  Help_dis: string;
+  helpLabel: string;
   h1: string;
   h1_P: string;
   h2_1: string;
@@ -91,33 +91,33 @@ export type About = {
 
 export type HowItWorks = {
   h2: string;
-  h2_P: string;
-  btn_try: string;
-  step1_title: string;
-  step1_description: string;
-  step2_title: string;
-  step2_description: string;
-  step3_title: string;
-  step3_description: string;
+  h2Description: string;
+  tryNowLabel: string;
+  step1Title: string;
+  step1Description: string;
+  step2Title: string;
+  step2Description: string;
+  step3Title: string;
+  step3Description: string;
 };
 
 export type SystemDiagram = {
   h2: string;
-  h2_P: string;
+  h2Description: string;
 };
 
 export type BlogTexts = {
-  list_title: string;
-  list_subtitle: string;
-  recent_posts: string;
+  listTitle: string;
+  listSubtitle: string;
+  recentPosts: string;
   tags: string;
-  read_more: string;
+  readMore: string;
   by: string;
-  post_not_found: string;
-  toc_title: string;
-  tag_title_prefix: string;
-  tag_subtitle_template: string; // use {tag} as placeholder
-  tag_empty: string;
+  postNotFound: string;
+  tocTitle: string;
+  tagTitlePrefix: string;
+  tagSubtitleTemplate: string; // use {tag} as placeholder
+  tagEmpty: string;
 };
 
 export type KeyFeatures = {
@@ -137,7 +137,7 @@ export type KeyFeatures = {
 };
 
 export type FAQ = {
-  FAQ_dis: string;
+  faqLabel: string;
   question_0: string;
   answer_0: string;
   question_1: string;
@@ -169,118 +169,118 @@ export type FAQ = {
 };
 
 export type ClipboardBtn = {
-  Pasted_dis: string;
-  Copied_dis: string;
+  pastedLabel: string;
+  copiedLabel: string;
 };
 
 export type FileUploadHandler = {
-  NoFileChosen_tips: string;
-  fileChosen_tips_template: string;
-  chooseFileTips: string;
-  dragTips: string;
+  noFileChosenTip: string;
+  fileChosenTemplate: string;
+  chooseFileTip: string;
+  dragTip: string;
   chosenDiagTitle: string;
   chosenDiagDescription: string;
-  SelectFile_dis: string;
-  SelectFolder_dis: string;
+  selectFileLabel: string;
+  selectFolderLabel: string;
 };
 
 export type FileTransferButton = {
-  SavedToDisk_tips: string;
-  CurrentFileTransferring_tips: string;
-  OtherFileTransferring_tips: string;
-  download_tips: string;
-  PendingSave_tips: string;
-  Saved_dis: string;
-  Waiting_dis: string;
-  Download_dis: string;
-  Save_dis: string;
+  savedToDiskTip: string;
+  currentFileTransferringTip: string;
+  otherFileTransferringTip: string;
+  downloadTip: string;
+  pendingSaveTip: string;
+  savedLabel: string;
+  waitingLabel: string;
+  downloadLabel: string;
+  saveLabel: string;
 };
 
 export type FileListDisplay = {
-  sending_dis: string;
-  receiving_dis: string;
-  finish_dis: string;
-  delete_dis: string;
-  downloadNum_dis: string;
-  folder_tips_template: string;
-  folder_dis_template: string;
-  PopupDialog_title: string;
-  PopupDialog_description: string;
-  chooseSavePath_tips: string;
-  chooseSavePath_dis: string;
+  sendingLabel: string;
+  receivingLabel: string;
+  finishedLabel: string;
+  deleteLabel: string;
+  downloadCountLabel: string;
+  folderSummaryTemplate: string;
+  folderInlineTemplate: string;
+  popupDialogTitle: string;
+  popupDialogDescription: string;
+  chooseSavePathTip: string;
+  chooseSavePathLabel: string;
 };
 
 export type RetrieveMethod = {
-  P: string;
-  RoomId_tips: string;
-  copyRoomId_tips: string;
-  url_tips: string;
-  copyUrl_tips: string;
-  scanQR_tips: string;
-  Copied_dis: string;
-  Copy_QR_dis: string;
-  download_QR_dis: string;
+  introMessage: string;
+  roomIdTip: string;
+  copyRoomIdTip: string;
+  urlTip: string;
+  copyUrlTip: string;
+  scanQrTip: string;
+  copiedLabel: string;
+  copyQrLabel: string;
+  downloadQrLabel: string;
 };
 
 export type RoomCheck = {
-  empty_msg: string;
-  available_msg: string;
-  notAvailable_msg: string;
+  emptyMessage: string;
+  availableMessage: string;
+  notAvailableMessage: string;
 };
 
 export type JoinRoom = {
-  EmptyMsg: string;
-  DuplicateMsg: string;
-  successMsg: string;
-  notExist: string;
-  failMsg: string;
+  emptyMessage: string;
+  duplicateMessage: string;
+  successMessage: string;
+  notFoundMessage: string;
+  failureMessage: string;
 };
 
 export type RoomStatus = {
-  senderEmptyMsg: string;
-  receiverEmptyMsg: string;
-  onlyOneMsg: string;
-  peopleMsg_template: string;
-  connected_dis: string;
-  senderDisconnectedMsg: string;
-  leftRoomMsg: string;
-  leaveRoomBtn: string;
+  senderEmptyMessage: string;
+  receiverEmptyMessage: string;
+  onlyOneMessage: string;
+  peopleCountTemplate: string;
+  connectedLabel: string;
+  senderDisconnectedMessage: string;
+  leftRoomMessage: string;
+  leaveRoomLabel: string;
 };
 
 export type ClipboardAppHtml = {
   senderTab: string;
   retrieveTab: string;
-  shareTitle_dis: string;
-  retrieveTitle_dis: string;
-  RoomStatus_dis: string;
-  Paste_dis: string;
-  Copy_dis: string;
-  inputRoomIdprompt: string;
-  joinRoomBtn: string;
-  generateSimpleId_tips: string;
-  generateRandomId_tips: string;
+  shareTitleLabel: string;
+  retrieveTitleLabel: string;
+  roomStatusLabel: string;
+  pasteLabel: string;
+  copyLabel: string;
+  inputRoomIdPrompt: string;
+  joinRoomButtonLabel: string;
+  generateSimpleIdTip: string;
+  generateRandomIdTip: string;
   readClipboardToRoomId: string;
-  enterRoomID_placeholder: string;
+  enterRoomIdPlaceholder: string;
   retrieveMethod: string;
-  inputRoomId_tips: string;
-  joinRoom_dis: string;
-  SyncSending_loadingText: string;
-  SyncSending_dis: string;
-  readClipboard_dis: string;
-  retrieveRoomId_placeholder: string;
-  RetrieveMethodTitle: string;
+  inputRoomIdTip: string;
+  joinRoomLabel: string;
+  syncSendingLoadingLabel: string;
+  syncSendingLabel: string;
+  readClipboardLabel: string;
+  retrieveRoomIdPlaceholder: string;
+  retrieveMethodTitle: string;
   // New: cached ID utilities
-  saveId_dis: string;
-  useCachedId_dis: string;
-  saveId_tips: string;
-  useCachedId_tips: string;
+  saveIdLabel: string;
+  useCachedIdLabel: string;
+  saveIdTip: string;
+  useCachedIdTip: string;
 };
 
 export type ClipboardApp = {
-  fetchRoom_err: string;
+  fetchRoomError: string;
   roomCheck: RoomCheck;
-  channelOpen_msg: string;
-  waitting_tips: string;
+  channelOpenMessage: string;
+  waitingTip: string;
   joinRoom: JoinRoom;
   pickSaveMsg: string;
   pickSaveUnsupported: string;
@@ -295,28 +295,28 @@ export type ClipboardApp = {
   confirmLeaveWhileTransferring: string;
   leaveWhileTransferringSuccess: string;
   // New: cache messages
-  saveId_success: string;
+  saveIdSuccessMessage: string;
   // UI connection feedback
-  join_inProgress: string;
-  join_slow: string;
-  join_timeout: string;
+  joinInProgress: string;
+  joinSlow: string;
+  joinTimeout: string;
   // Slow P2P negotiation hint
-  rtc_slow: string;
-  rtc_negotiating: string;
-  rtc_connected: string;
-  rtc_reconnecting: string;
-  rtc_restored: string;
+  rtcSlow: string;
+  rtcNegotiating: string;
+  rtcConnected: string;
+  rtcReconnecting: string;
+  rtcRestored: string;
 };
 
 export type Home = {
   h1: string;
   h1P: string;
-  h2_screenOnly: string;
-  h2_demo: string;
-  h2P_demo: string;
-  watch_tips: string;
-  youtube_tips: string;
-  bilibili_tips: string;
+  h2ScreenOnly: string;
+  h2Demo: string;
+  h2DemoDescription: string;
+  watchTip: string;
+  youtubeTip: string;
+  bilibiliTip: string;
 };
 
 export type Text = {

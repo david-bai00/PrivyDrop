@@ -44,14 +44,14 @@ const FileTransferButton = ({
   // Display different tooltips based on status
   const getTooltipContent = () => {
     if (isSavedToDisk)
-      return messages!.text.FileTransferButton.SavedToDisk_tips;
+      return messages!.text.FileTransferButton.savedToDiskTip;
     if (isCurrentFileTransferring)
-      return messages!.text.FileTransferButton.CurrentFileTransferring_tips;
+      return messages!.text.FileTransferButton.currentFileTransferringTip;
     if (isPendingSave)
-      return messages!.text.FileTransferButton.PendingSave_tips;
+      return messages!.text.FileTransferButton.pendingSaveTip;
     if (isOtherFileTransferring)
-      return messages!.text.FileTransferButton.OtherFileTransferring_tips;
-    return messages!.text.FileTransferButton.download_tips;
+      return messages!.text.FileTransferButton.otherFileTransferringTip;
+    return messages!.text.FileTransferButton.downloadTip;
   };
 
   // Set different button styles and class names based on status
@@ -108,12 +108,12 @@ const FileTransferButton = ({
                 }`}
               />
               {isSavedToDisk
-                ? messages.text.FileTransferButton.Saved_dis
+                ? messages.text.FileTransferButton.savedLabel
                 : isPendingSave
-                ? messages.text.FileTransferButton.Save_dis
+                ? messages.text.FileTransferButton.saveLabel
                 : isOtherFileTransferring
-                ? messages.text.FileTransferButton.Waiting_dis
-                : messages.text.FileTransferButton.Download_dis}
+                ? messages.text.FileTransferButton.waitingLabel
+                : messages.text.FileTransferButton.downloadLabel}
             </Button>
           </span>
         </TooltipTrigger>

@@ -120,7 +120,7 @@ export default function CachedIdActionButton({
           clearTimeout(saveTimerRef.current);
           saveTimerRef.current = null;
         }
-        putMessageInMs(messages.text.ClipboardApp.saveId_success, isShareEnd);
+        putMessageInMs(messages.text.ClipboardApp.saveIdSuccessMessage, isShareEnd);
       }
       return;
     }
@@ -165,7 +165,7 @@ export default function CachedIdActionButton({
     getInputValue,
     setInputValue,
     putMessageInMs,
-    messages.text.ClipboardApp.saveId_success,
+    messages.text.ClipboardApp.saveIdSuccessMessage,
     isShareEnd,
     dblClickWindowMs,
     saveModeDurationMs,
@@ -176,8 +176,8 @@ export default function CachedIdActionButton({
     <Tooltip
       content={
         isSaveMode
-          ? messages.text.ClipboardApp.html.saveId_tips
-          : messages.text.ClipboardApp.html.useCachedId_tips
+          ? messages.text.ClipboardApp.html.saveIdTip
+          : messages.text.ClipboardApp.html.useCachedIdTip
       }
     >
       <span className="inline-block">
@@ -191,8 +191,8 @@ export default function CachedIdActionButton({
           }
         >
           {isSaveMode
-            ? messages.text.ClipboardApp.html.saveId_dis
-            : messages.text.ClipboardApp.html.useCachedId_dis}
+            ? messages.text.ClipboardApp.html.saveIdLabel
+            : messages.text.ClipboardApp.html.useCachedIdLabel}
         </Button>
       </span>
     </Tooltip>

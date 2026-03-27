@@ -26,7 +26,7 @@ export default async function BlogPost({
   const messages = await getDictionary(params.lang);
 
   if (!post) {
-    return <div>{messages.text.blog.post_not_found}</div>;
+    return <div>{messages.text.blog.postNotFound}</div>;
   }
 
   const siteUrl = getSiteUrl();
@@ -45,8 +45,8 @@ export default async function BlogPost({
   });
   const breadcrumbsLd = buildBreadcrumbJsonLd({
     items: [
-      { name: messages.text.Header.Home_dis, item: `${siteUrl}/${params.lang}` },
-      { name: messages.text.Header.Blog_dis, item: `${siteUrl}/${params.lang}/blog` },
+      { name: messages.text.Header.homeLabel, item: `${siteUrl}/${params.lang}` },
+      { name: messages.text.Header.blogLabel, item: `${siteUrl}/${params.lang}/blog` },
       { name: post.frontmatter.title, item: postUrl },
     ],
   });
@@ -92,7 +92,7 @@ export default async function BlogPost({
             />
           </div>
         </article>
-        <TableOfContents content={post.content} title={messages.text.blog.toc_title} />
+        <TableOfContents content={post.content} title={messages.text.blog.tocTitle} />
       </div>
     </div>
   );

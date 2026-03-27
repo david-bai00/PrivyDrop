@@ -15,8 +15,8 @@ export async function generateMetadata({
 
   // Note: metadata text kept concise and localized
   return {
-    title: `${messages.text.blog.tag_title_prefix}: ${decodedTag} - PrivyDrop`,
-    description: messages.text.blog.tag_subtitle_template.replace("{tag}", decodedTag),
+    title: `${messages.text.blog.tagTitlePrefix}: ${decodedTag} - PrivyDrop`,
+    description: messages.text.blog.tagSubtitleTemplate.replace("{tag}", decodedTag),
     keywords: `${decodedTag}, blog, privydrop`,
     metadataBase: new URL("https://www.privydrop.app"),
     alternates: {
@@ -50,9 +50,9 @@ export default async function TagPage({
         {/* Main Content */}
         <main className="lg:col-span-8">
           <div className="mb-12">
-            <h1 className="text-4xl font-bold mb-4">{messages.text.blog.tag_title_prefix}: {decodedTag}</h1>
+            <h1 className="text-4xl font-bold mb-4">{messages.text.blog.tagTitlePrefix}: {decodedTag}</h1>
             <p className="text-muted-foreground text-lg">
-              {messages.text.blog.tag_subtitle_template.replace("{tag}", decodedTag)}
+              {messages.text.blog.tagSubtitleTemplate.replace("{tag}", decodedTag)}
             </p>
           </div>
 
@@ -63,7 +63,7 @@ export default async function TagPage({
                 <ArticleListItem key={post.slug} post={post} lang={lang} messages={messages} />
               ))
             ) : (
-              <p>{messages.text.blog.tag_empty}</p>
+              <p>{messages.text.blog.tagEmpty}</p>
             )}
           </div>
         </main>

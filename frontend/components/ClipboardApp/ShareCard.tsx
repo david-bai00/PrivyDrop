@@ -122,7 +122,7 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
   return (
     <div className="bg-primary/10 p-2 sm:p-4 rounded-lg border border-primary/20">
       <p className="text-primary mb-3 sm:mb-4 text-sm sm:text-base">
-        {messages.text.RetrieveMethod.P}
+        {messages.text.RetrieveMethod.introMessage}
       </p>
 
       {/* Mobile-first responsive layout */}
@@ -131,14 +131,14 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
         <div className="bg-card p-2 sm:p-3 rounded-lg border border-border">
           <div className="space-y-2">
             <p className="text-sm font-medium text-foreground">
-              {messages.text.RetrieveMethod.RoomId_tips}
+              {messages.text.RetrieveMethod.roomIdTip}
             </p>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <code className="flex-1 bg-muted px-2 py-1 rounded text-sm font-mono break-all">
                 {RoomID}
               </code>
               <WriteClipboardButton
-                title={messages.text.RetrieveMethod.copyRoomId_tips}
+                title={messages.text.RetrieveMethod.copyRoomIdTip}
                 textToCopy={RoomID}
               />
             </div>
@@ -149,14 +149,14 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
         <div className="bg-card p-2 sm:p-3 rounded-lg border border-border">
           <div className="space-y-2">
             <p className="text-sm font-medium text-foreground">
-              {messages.text.RetrieveMethod.url_tips}
+              {messages.text.RetrieveMethod.urlTip}
             </p>
             <div className="bg-muted px-2 py-2 rounded text-xs sm:text-sm break-all font-mono">
               {shareLink}
             </div>
             <div className="flex justify-start">
               <WriteClipboardButton
-                title={messages.text.RetrieveMethod.copyUrl_tips}
+                title={messages.text.RetrieveMethod.copyUrlTip}
                 textToCopy={shareLink}
               />
             </div>
@@ -167,7 +167,7 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
         <div className="bg-card p-2 sm:p-3 rounded-lg border border-border">
           <div className="space-y-3">
             <p className="text-sm font-medium text-foreground">
-              {messages.text.RetrieveMethod.scanQR_tips}
+              {messages.text.RetrieveMethod.scanQrTip}
             </p>
 
             {/* QR Code display area - moved up for better mobile UX */}
@@ -194,12 +194,12 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
                 {isCopied ? (
                   <>
                     <Check className="w-4 h-4 mr-2" />
-                    {messages.text.RetrieveMethod.Copied_dis}
+                    {messages.text.RetrieveMethod.copiedLabel}
                   </>
                 ) : (
                   <>
                     <Copy className="mr-2 h-4 w-4" />
-                    {messages.text.RetrieveMethod.Copy_QR_dis}
+                    {messages.text.RetrieveMethod.copyQrLabel}
                   </>
                 )}
               </Button>
@@ -210,7 +210,7 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
                 className="w-full"
               >
                 <Download className="mr-2 h-4 w-4" />
-                {messages.text.RetrieveMethod.download_QR_dis}
+                {messages.text.RetrieveMethod.downloadQrLabel}
               </Button>
             </div>
           </div>

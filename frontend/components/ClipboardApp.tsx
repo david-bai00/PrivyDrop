@@ -218,8 +218,8 @@ const ClipboardApp = () => {
         <CardHeader className="px-3 sm:px-6 py-3 sm:py-6">
           <CardTitle className="text-lg sm:text-xl">
             {activeTab === "send"
-              ? messages.text.ClipboardApp.html.shareTitle_dis
-              : messages.text.ClipboardApp.html.retrieveTitle_dis}
+              ? messages.text.ClipboardApp.html.shareTitleLabel
+              : messages.text.ClipboardApp.html.retrieveTitleLabel}
           </CardTitle>
         </CardHeader>
         <CardContent className="px-3 sm:px-6">
@@ -261,7 +261,7 @@ const ClipboardApp = () => {
         <Card className="border-2 sm:border-4 shadow-md mt-2 sm:mt-4">
           <CardHeader className="pb-3 sm:pb-6">
             <CardTitle className="text-base sm:text-lg">
-              {messages.text.ClipboardApp.html.RetrieveMethodTitle}
+              {messages.text.ClipboardApp.html.retrieveMethodTitle}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0 px-3 sm:px-6">

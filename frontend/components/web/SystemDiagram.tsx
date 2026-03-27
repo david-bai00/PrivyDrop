@@ -20,7 +20,7 @@ export default function SystemDiagram({ messages }: PageContentProps) {
           className="mx-auto mb-6"
         />
         <p className="mt-8 text-center max-w-2xl mx-auto">
-          {messages.text.SystemDiagram.h2_P}
+          {messages.text.SystemDiagram.h2Description}
         </p>
       </div>
     </section>

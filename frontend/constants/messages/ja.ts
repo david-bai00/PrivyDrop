@@ -56,36 +56,36 @@ export const ja: Messages = {
   },
   text: {
     Header: {
-      Home_dis: "ホーム",
-      Blog_dis: "ブログ",
-      About_dis: "について",
-      Help_dis: "ヘルプ",
-      FAQ_dis: "FAQ",
-      Features_dis: "機能",
-      Terms_dis: "利用規約",
-      Privacy_dis: "プライバシー",
+      homeLabel: "ホーム",
+      blogLabel: "ブログ",
+      aboutLabel: "について",
+      helpLabel: "ヘルプ",
+      faqLabel: "FAQ",
+      featuresLabel: "機能",
+      termsLabel: "利用規約",
+      privacyLabel: "プライバシー",
     },
     Footer: {
-      CopyrightNotice: "PrivyDrop. All rights reserved.",
-      Terms_dis: "利用規約",
-      Privacy_dis: "プライバシーポリシー",
-      SupportedLanguages: "対応言語",
+      copyrightNotice: "PrivyDrop. All rights reserved.",
+      termsLabel: "利用規約",
+      privacyLabel: "プライバシーポリシー",
+      supportedLanguagesLabel: "対応言語",
     },
     blog: {
-      list_title: "ブログ",
-      list_subtitle: "最新の記事と更新",
-      recent_posts: "最新の投稿",
+      listTitle: "ブログ",
+      listSubtitle: "最新の記事と更新",
+      recentPosts: "最新の投稿",
       tags: "タグ",
-      read_more: "続きを読む",
+      readMore: "続きを読む",
       by: "著者",
-      post_not_found: "記事が見つかりません",
-      toc_title: "目次",
-      tag_title_prefix: "タグ",
-      tag_subtitle_template: "「{tag}」のタグが付いた記事",
-      tag_empty: "このタグの記事は見つかりません。",
+      postNotFound: "記事が見つかりません",
+      tocTitle: "目次",
+      tagTitlePrefix: "タグ",
+      tagSubtitleTemplate: "「{tag}」のタグが付いた記事",
+      tagEmpty: "このタグの記事は見つかりません。",
     },
     privacy: {
-      PrivacyPolicy_dis: "プライバシーポリシー",
+      privacyPolicyLabel: "プライバシーポリシー",
       h1: "PrivyDropプライバシーポリシー",
       h1_P: "PrivyDropでは、あなたのプライバシーを保護し、個人情報を守ることに尽力しています。このプライバシーポリシーでは、私たちがサービスを利用する際に提供されるデータをどのように収集、使用、保護するかを説明します。",
       h2_1: "情報収集",
@@ -105,7 +105,7 @@ export const ja: Messages = {
         "私たちのプライバシー慣行について質問や懸念がある場合は、お気軽にお問い合わせください。",
     },
     terms: {
-      TermsOfUse_dis: "利用規約",
+      termsOfUseLabel: "利用規約",
       h1: "PrivyDrop利用規約",
       h1_P: "PrivyDropサービスを利用することにより、あなたはこれらの利用規約に拘束されることに同意します。これらの規約に同意しない場合は、サービスを利用しないでください。",
       h2_1: "サービスの使用",
@@ -124,7 +124,7 @@ export const ja: Messages = {
         "私たちは、これらの利用規約を随時更新する権利を留保します。変更は、更新された規約をウェブサイトに掲載した時点で即座に有効になります。定期的に利用規約を確認し、変更を確認するのはあなたの責任です。",
     },
     help: {
-      Help_dis: "ヘルプ",
+      helpLabel: "ヘルプ",
       h1: "PrivyDropヘルプとサポート",
       h1_P: "PrivyDropを最大限に活用するためのお手伝いをします。質問やサポートが必要な場合は、お気軽にお問い合わせください。",
       h2_1: "お問い合わせ",
@@ -145,21 +145,21 @@ export const ja: Messages = {
     },
     HowItWorks: {
       h2: "使い方",
-      h2_P: "3つの簡単なステップでファイルやメッセージを即座に共有",
-      btn_try: "今すぐ試す →",
-      step1_title: "入力またはファイルを選択",
-      step1_description:
+      h2Description: "3つの簡単なステップでファイルやメッセージを即座に共有",
+      tryNowLabel: "今すぐ試す →",
+      step1Title: "入力またはファイルを選択",
+      step1Description:
         "メッセージを入力するか、ファイル/フォルダを選択エリアにドラッグ＆ドロップ",
-      step2_title: "ルームに参加",
-      step2_description:
+      step2Title: "ルームに参加",
+      step2Description:
         "「ルームに参加」ボタンをクリックして共有セッションを作成",
-      step3_title: "受信",
-      step3_description:
+      step3Title: "受信",
+      step3Description:
         "受信ページでルームIDを入力し、「ルームに参加」をクリックして共有コンテンツを取得",
     },
     SystemDiagram: {
       h2: "システム図",
-      h2_P: "PrivyDrop: あなたのデータ、あなたの管理。シンプルで高速、プライベート。",
+      h2Description: "PrivyDrop: あなたのデータ、あなたの管理。シンプルで高速、プライベート。",
     },
     KeyFeatures: {
       h2: "主な特徴",
@@ -183,7 +183,7 @@ export const ja: Messages = {
         "保存ディレクトリを設定すると、再開可能な転送が自動的に有効になります。ネットワークの中断を心配する必要はもうありません。ファイル共有は中断したところから再開されます。",
     },
     faqs: {
-      FAQ_dis: "よくある質問",
+      faqLabel: "よくある質問",
       question_0:
         "データは本当にローカルに保存され、他のサーバーに転送されませんか？",
       answer_0:
@@ -229,105 +229,105 @@ export const ja: Messages = {
         "ルームIDの初期有効期間は24時間です。受信者がルームに参加すると、その時点から24時間自動的に延長されます。",
     },
     clipboard_btn: {
-      Pasted_dis: "貼り付け済み",
-      Copied_dis: "コピー済み",
+      pastedLabel: "貼り付け済み",
+      copiedLabel: "コピー済み",
     },
     fileUploadHandler: {
-      NoFileChosen_tips: "ファイルが選択されていません",
-      fileChosen_tips_template:
+      noFileChosenTip: "ファイルが選択されていません",
+      fileChosenTemplate:
         "{fileNum} ファイルと {folderNum} フォルダが選択されました",
-      chooseFileTips:
+      chooseFileTip:
         "このページ上のどこかにファイル/フォルダをドラッグ＆ドロップするか、ここをクリックして選択してください。",
-      dragTips: "このページ上のどこかにドラッグしてください。",
+      dragTip: "このページ上のどこかにドラッグしてください。",
       chosenDiagTitle: "アップロードタイプを選択",
       chosenDiagDescription:
         "ファイルまたはフォルダをアップロードするか選択してください",
-      SelectFile_dis: "ファイルを選択",
-      SelectFolder_dis: "フォルダを選択",
+      selectFileLabel: "ファイルを選択",
+      selectFolderLabel: "フォルダを選択",
     },
     FileTransferButton: {
-      SavedToDisk_tips: "ファイルは既にディスクに保存されています",
-      CurrentFileTransferring_tips: "ファイルが転送中です",
-      OtherFileTransferring_tips: "現在の転送が完了するまでお待ちください",
-      download_tips: "クリックしてファイルをダウンロード",
-      PendingSave_tips: "クリックしてファイルをローカルに保存", // 新增
-      Saved_dis: "保存済み",
-      Waiting_dis: "待機中",
-      Download_dis: "ダウンロード",
-      Save_dis: "保存", // 新增
+      savedToDiskTip: "ファイルは既にディスクに保存されています",
+      currentFileTransferringTip: "ファイルが転送中です",
+      otherFileTransferringTip: "現在の転送が完了するまでお待ちください",
+      downloadTip: "クリックしてファイルをダウンロード",
+      pendingSaveTip: "クリックしてファイルをローカルに保存", // 新增
+      savedLabel: "保存済み",
+      waitingLabel: "待機中",
+      downloadLabel: "ダウンロード",
+      saveLabel: "保存", // 新增
     },
     FileListDisplay: {
-      sending_dis: "送信中",
-      receiving_dis: "受信中",
-      finish_dis: "完了",
-      delete_dis: "削除",
-      downloadNum_dis: "ダウンロード回数",
-      folder_tips_template: "フォルダ名:{name} ({num} ファイルと {size})",
-      folder_dis_template: " ({num} ファイル, {size})",
-      PopupDialog_title: "推奨: 保存ディレクトリを選択",
-      PopupDialog_description:
+      sendingLabel: "送信中",
+      receivingLabel: "受信中",
+      finishedLabel: "完了",
+      deleteLabel: "削除",
+      downloadCountLabel: "ダウンロード回数",
+      folderSummaryTemplate: "フォルダ名:{name} ({num} ファイルと {size})",
+      folderInlineTemplate: " ({num} ファイル, {size})",
+      popupDialogTitle: "推奨: 保存ディレクトリを選択",
+      popupDialogDescription:
         "大きなファイルを転送し、フォルダを効率的に同期するために、保存ディレクトリを選択することをお勧めします。",
-      chooseSavePath_tips:
+      chooseSavePathTip:
         "大きなファイルやフォルダを選択したディレクトリに直接保存します。👉",
-      chooseSavePath_dis: "保存場所を選択",
+      chooseSavePathLabel: "保存場所を選択",
     },
     RetrieveMethod: {
-      P: "おめでとう 🎉 共有コンテンツが取得待ちです：",
-      RoomId_tips: "ルームIDを取得：",
-      copyRoomId_tips: "ルームIDをコピー",
-      url_tips: "URLを使用して取得：",
-      copyUrl_tips: "共有URLをコピー",
-      scanQR_tips: "QRコードをスキャンして受信 👇",
-      Copied_dis: "コピー済み",
-      Copy_QR_dis: "QRコードをコピー",
-      download_QR_dis: "QRコードをダウンロード",
+      introMessage: "おめでとう 🎉 共有コンテンツが取得待ちです：",
+      roomIdTip: "ルームIDを取得：",
+      copyRoomIdTip: "ルームIDをコピー",
+      urlTip: "URLを使用して取得：",
+      copyUrlTip: "共有URLをコピー",
+      scanQrTip: "QRコードをスキャンして受信 👇",
+      copiedLabel: "コピー済み",
+      copyQrLabel: "QRコードをコピー",
+      downloadQrLabel: "QRコードをダウンロード",
     },
     ClipboardApp: {
-      fetchRoom_err: "ルームの取得に失敗しました。もう一度お試しください。",
+      fetchRoomError: "ルームの取得に失敗しました。もう一度お試しください。",
       roomCheck: {
-        empty_msg: "ルームIDは空にできません",
-        available_msg: "ルームは利用可能です",
-        notAvailable_msg: "ルームは利用できません。別のルームをお試しください",
+        emptyMessage: "ルームIDは空にできません",
+        availableMessage: "ルームは利用可能です",
+        notAvailableMessage: "ルームは利用できません。別のルームをお試しください",
       },
-      channelOpen_msg:
+      channelOpenMessage:
         "データチャネルが開かれ、データを受信する準備ができました...",
-      waitting_tips:
+      waitingTip:
         "受信者が接続するのを待っています。転送が完了するまでこのページを開いたままにしてください。デスクトップでは、ブラウザを最小化したり、タブを切り替えたりできます。モバイルでは、ブラウザをフォアグラウンドに保ってください。",
       joinRoom: {
-        EmptyMsg: "警告、ルームIDが空です",
-        DuplicateMsg: "このルームIDは既に使用されています。別のIDをご利用ください。",
-        successMsg:
+        emptyMessage: "警告、ルームIDが空です",
+        duplicateMessage: "このルームIDは既に使用されています。別のIDをご利用ください。",
+        successMessage:
           "ルームに成功して参加しました！転送が完了するまでこのページを閉じないでください。（PCではブラウザを最小化したりタブを切り替えたりできます。モバイルではブラウザをバックグラウンドにしないでください。）",
-        notExist:
+        notFoundMessage:
           "参加しようとしているルームは存在しません。送信者のみがルームを作成できます。",
-        failMsg: "ルームへの参加に失敗しました：",
+        failureMessage: "ルームへの参加に失敗しました：",
       },
       // Connection feedback (weak/VPN network scenarios)
-      join_inProgress:
+      joinInProgress:
         "ルームに参加中…（回線が遅い環境では 5〜30 秒かかることがあります）",
-      join_slow:
+      joinSlow:
         "少し時間がかかっています—ネットワーク/VPN をご確認のうえ、しばらくしてからお試しください",
-      join_timeout:
+      joinTimeout:
         "参加がタイムアウトしました（ネットワーク制限の可能性）。再試行してください",
-      rtc_slow:
+      rtcSlow:
         "ネットワークが制限されている可能性があります — VPN をオフにするか、しばらくしてから再試行してください",
-      rtc_negotiating: "入室済み—P2P 接続を確立しています…",
-      rtc_connected: "接続しました",
-      rtc_reconnecting: "再接続中…",
-      rtc_restored: "接続が回復しました",
+      rtcNegotiating: "入室済み—P2P 接続を確立しています…",
+      rtcConnected: "接続しました",
+      rtcReconnecting: "再接続中…",
+      rtcRestored: "接続が回復しました",
       pickSaveMsg: "ディスクに直接保存しますか？",
       pickSaveUnsupported: "ディレクトリピッカーはサポートされていません。",
       pickSaveSuccess: "保存場所が設定されました。",
       pickSaveError: "保存場所を設定できませんでした。",
       roomStatus: {
-        senderEmptyMsg: "ルームは空です",
-        receiverEmptyMsg: "招待を受けてルームに参加できます",
-        onlyOneMsg: "あなただけがここにいます",
-        peopleMsg_template: "{peerCount} 人がルームにいます",
-        connected_dis: "接続済み",
-        senderDisconnectedMsg: "送信者が切断されました",
-        leftRoomMsg: "ルームを離れました。",
-        leaveRoomBtn: "ルームを離れる",
+        senderEmptyMessage: "ルームは空です",
+        receiverEmptyMessage: "招待を受けてルームに参加できます",
+        onlyOneMessage: "あなただけがここにいます",
+        peopleCountTemplate: "{peerCount} 人がルームにいます",
+        connectedLabel: "接続済み",
+        senderDisconnectedMessage: "送信者が切断されました",
+        leftRoomMessage: "ルームを離れました。",
+        leaveRoomLabel: "ルームを離れる",
       },
       fileExistMsg: "一部のファイルは既に追加されています。",
       noFilesForFolderMsg: "フォルダ '{folderName}' にファイルが見つかりません。",
@@ -338,44 +338,44 @@ export const ja: Messages = {
       html: {
         senderTab: "送信",
         retrieveTab: "取得",
-        shareTitle_dis: "共有コンテンツ",
-        retrieveTitle_dis: "取得コンテンツ",
-        RoomStatus_dis: "ステータス：",
-        Paste_dis: "貼り付け",
-        Copy_dis: "コピー",
-        inputRoomIdprompt: "ルームID（編集可能）：",
-        joinRoomBtn: "ルームに参加",
-        generateSimpleId_tips: "シンプルID",
-        generateRandomId_tips: "ランダムID",
+        shareTitleLabel: "共有コンテンツ",
+        retrieveTitleLabel: "取得コンテンツ",
+        roomStatusLabel: "ステータス：",
+        pasteLabel: "貼り付け",
+        copyLabel: "コピー",
+        inputRoomIdPrompt: "ルームID（編集可能）：",
+        joinRoomButtonLabel: "ルームに参加",
+        generateSimpleIdTip: "シンプルID",
+        generateRandomIdTip: "ランダムID",
         readClipboardToRoomId: "ルームIDを貼り付け",
-        enterRoomID_placeholder: "ルームIDを入力",
+        enterRoomIdPlaceholder: "ルームIDを入力",
         retrieveMethod: "取得方法",
-        inputRoomId_tips: "ルームID（編集可能）：",
-        joinRoom_dis: "ルームに参加",
-        SyncSending_loadingText: "同期完了",
-        SyncSending_dis: "同期（どうき）",
-        readClipboard_dis: "ルームIDを貼り付け",
-        retrieveRoomId_placeholder: "ルームIDを入力",
-        RetrieveMethodTitle: "取得方法",
+        inputRoomIdTip: "ルームID（編集可能）：",
+        joinRoomLabel: "ルームに参加",
+        syncSendingLoadingLabel: "同期完了",
+        syncSendingLabel: "同期（どうき）",
+        readClipboardLabel: "ルームIDを貼り付け",
+        retrieveRoomIdPlaceholder: "ルームIDを入力",
+        retrieveMethodTitle: "取得方法",
         // New: cached ID utils
-        saveId_dis: "ID を保存",
-        useCachedId_dis: "保存済みIDを使用",
-        saveId_tips: "現在のIDを保存して次回すぐに使えるようにします",
-        useCachedId_tips: "保存済みIDを即使用；ダブルクリックで保存モード切替",
+        saveIdLabel: "ID を保存",
+        useCachedIdLabel: "保存済みIDを使用",
+        saveIdTip: "現在のIDを保存して次回すぐに使えるようにします",
+        useCachedIdTip: "保存済みIDを即使用；ダブルクリックで保存モード切替",
       },
       // New: cache messages
-      saveId_success: "キャッシュに保存しました",
+      saveIdSuccessMessage: "キャッシュに保存しました",
     },
     home: {
       h1: "無料で安全なオンラインクリップボード＆ファイル転送ツール",
       h1P: "P2P転送が中断した場所から再開します。真に信頼でき、プライベートで、止められないファイルとテキストの共有を体験してください—登録不要、ファイルサイズや速度の制限なし、完全無料です。",
-      h2_screenOnly: "今すぐ安全なクリップボード＆ファイル転送ツールを試す",
-      h2_demo: "安全なファイル共有のデモを見る",
-      h2P_demo:
+      h2ScreenOnly: "今すぐ安全なクリップボード＆ファイル転送ツールを試す",
+      h2Demo: "安全なファイル共有のデモを見る",
+      h2DemoDescription:
         "ローカルファースト、エンドツーエンド暗号化されたファイル共有がどのようにプライバシーを保護するかを見てください",
-      watch_tips: "これらのプラットフォームでもビデオを視聴できます：",
-      youtube_tips: "YouTubeでPrivyDropを見る",
-      bilibili_tips: "BilibiliでPrivyDropを見る",
+      watchTip: "これらのプラットフォームでもビデオを視聴できます：",
+      youtubeTip: "YouTubeでPrivyDropを見る",
+      bilibiliTip: "BilibiliでPrivyDropを見る",
     },
   },
 };

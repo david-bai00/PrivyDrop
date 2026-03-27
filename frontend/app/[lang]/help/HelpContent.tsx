@@ -46,7 +46,7 @@ export default function HelpContent({ messages, lang }: HelpContentProps) {
         </li>
         <li>
           <a href={`/${lang}/terms`} className="text-blue-500 hover:underline">
-            {messages.text.terms.TermsOfUse_dis}
+            {messages.text.terms.termsOfUseLabel}
           </a>
         </li>
         <li>
@@ -54,7 +54,7 @@ export default function HelpContent({ messages, lang }: HelpContentProps) {
             href={`/${lang}/privacy`}
             className="text-blue-500 hover:underline"
           >
-            {messages.text.privacy.PrivacyPolicy_dis}
+            {messages.text.privacy.privacyPolicyLabel}
           </a>
         </li>
       </ul>

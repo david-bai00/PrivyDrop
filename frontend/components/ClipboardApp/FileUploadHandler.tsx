@@ -52,7 +52,7 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   // File selector -- message prompt
   const [fileText, setFileText] = useState<string>(
-    en.text.fileUploadHandler.NoFileChosen_tips
+    en.text.fileUploadHandler.noFileChosenTip
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -62,7 +62,7 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
       getDictionary(locale)
         .then((dict) => {
           setMessages(dict);
-          setFileText(dict.text.fileUploadHandler.NoFileChosen_tips);
+          setFileText(dict.text.fileUploadHandler.noFileChosenTip);
         })
         .catch((error) => console.error("Failed to load messages:", error));
     }
@@ -77,14 +77,14 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
       const folderNum = newFiles.filter((file) => file.folderName).length;
 
       const choose_dis = formatFileChosen(
-        messages!.text.fileUploadHandler.fileChosen_tips_template,
+        messages!.text.fileUploadHandler.fileChosenTemplate,
         fileNum,
         folderNum
       );
 
       setFileText(choose_dis);
       setTimeout(
-        () => setFileText(messages!.text.fileUploadHandler.NoFileChosen_tips),
+        () => setFileText(messages!.text.fileUploadHandler.noFileChosenTip),
         2000
       );
       // Reset the file input
@@ -164,7 +164,7 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
         onClick={handleZoneClick}
       >
         <p className="text-sm text-muted-foreground mb-4">
-          {messages.text.fileUploadHandler.chooseFileTips}
+          {messages.text.fileUploadHandler.chooseFileTip}
         </p>
         <Upload className="h-12 w-12 mx-auto mb-4 text-primary" />
         <p className="text-sm text-muted-foreground">{fileText}</p>
@@ -204,13 +204,13 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
               onClick={handleSelectFile}
               className="px-4 py-2 rounded transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              {messages.text.fileUploadHandler.SelectFile_dis}
+              {messages.text.fileUploadHandler.selectFileLabel}
             </button>
             <button
               onClick={handleSelectFolder}
               className="px-4 py-2 rounded transition-colors bg-secondary text-secondary-foreground hover:bg-secondary/80"
             >
-              {messages.text.fileUploadHandler.SelectFolder_dis}
+              {messages.text.fileUploadHandler.selectFolderLabel}
             </button>
           </div>
         </DialogContent>

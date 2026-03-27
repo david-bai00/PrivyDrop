@@ -56,37 +56,37 @@ export const ko: Messages = {
   },
   text: {
     Header: {
-      Home_dis: "홈",
-      Blog_dis: "블로그",
-      About_dis: "소개",
-      Help_dis: "도움말",
-      FAQ_dis: "FAQ",
-      Terms_dis: "이용 약관",
-      Privacy_dis: "개인정보 보호",
-      Features_dis: "기능",
+      homeLabel: "홈",
+      blogLabel: "블로그",
+      aboutLabel: "소개",
+      helpLabel: "도움말",
+      faqLabel: "FAQ",
+      termsLabel: "이용 약관",
+      privacyLabel: "개인정보 보호",
+      featuresLabel: "기능",
     },
     Footer: {
-      CopyrightNotice: "PrivyDrop. 모든 권리 보유.",
-      Terms_dis: "이용 약관",
-      Privacy_dis: "개인정보 보호정책",
-      SupportedLanguages: "지원 언어",
+      copyrightNotice: "PrivyDrop. 모든 권리 보유.",
+      termsLabel: "이용 약관",
+      privacyLabel: "개인정보 보호정책",
+      supportedLanguagesLabel: "지원 언어",
     },
     blog: {
-      list_title: "블로그",
-      list_subtitle: "최신 글과 업데이트",
-      recent_posts: "최근 글",
+      listTitle: "블로그",
+      listSubtitle: "최신 글과 업데이트",
+      recentPosts: "최근 글",
       tags: "태그",
-      read_more: "더 보기",
+      readMore: "더 보기",
       by: "작성자",
-      post_not_found: "게시글을 찾을 수 없습니다",
-      toc_title: "목차",
-      tag_title_prefix: "태그",
-      tag_subtitle_template: "{tag} 태그가 달린 글",
-      tag_empty: "해당 태그의 글이 없습니다.",
+      postNotFound: "게시글을 찾을 수 없습니다",
+      tocTitle: "목차",
+      tagTitlePrefix: "태그",
+      tagSubtitleTemplate: "{tag} 태그가 달린 글",
+      tagEmpty: "해당 태그의 글이 없습니다.",
     },
 
     privacy: {
-      PrivacyPolicy_dis: "개인정보 보호정책",
+      privacyPolicyLabel: "개인정보 보호정책",
       h1: "PrivyDrop 개인정보 보호정책",
       h1_P: "PrivyDrop는 귀하의 개인 정보를 보호하고 안전하게 지키기 위해 최선을 다하고 있습니다. 이 개인정보 보호정책은 귀하가 우리 서비스를 사용하는 동안 제공하는 데이터를 어떻게 수집, 사용 및 보호하는지 설명합니다.",
       h2_1: "정보 수집",
@@ -106,7 +106,7 @@ export const ko: Messages = {
         "개인정보 보호 관행에 대해 궁금한 점이 있으면 언제든지 다음 주소로 문의하십시오:",
     },
     terms: {
-      TermsOfUse_dis: "이용 약관",
+      termsOfUseLabel: "이용 약관",
       h1: "PrivyDrop 이용 약관",
       h1_P: "PrivyDrop 서비스를 사용함으로써 귀하는 본 이용 약관에 동의하게 됩니다. 이 약관에 동의하지 않으면 서비스를 사용하지 마십시오.",
       h2_1: "서비스 사용",
@@ -125,7 +125,7 @@ export const ko: Messages = {
         "우리는 언제든지 본 이용 약관을 업데이트할 권리를 보유합니다. 모든 변경 사항은 업데이트된 약관을 웹사이트에 게시함으로써 즉시 효력이 발생합니다. 귀하는 정기적으로 이용 약관을 검토하여 변경 사항을 확인할 책임이 있습니다.",
     },
     help: {
-      Help_dis: "도움말",
+      helpLabel: "도움말",
       h1: "PrivyDrop 도움말 및 지원",
       h1_P: "PrivyDrop를 최대한 활용할 수 있도록 도와드리겠습니다. 질문이 있거나 도움이 필요하면 언제든지 문의하십시오.",
       h2_1: "문의하기",
@@ -146,20 +146,20 @@ export const ko: Messages = {
     },
     HowItWorks: {
       h2: "작동 방식",
-      h2_P: "세 가지 간단한 단계로 파일과 메시지를 즉시 공유하세요",
-      btn_try: "지금 사용해 보기 →",
-      step1_title: "텍스트 입력 또는 파일 선택",
-      step1_description:
+      h2Description: "세 가지 간단한 단계로 파일과 메시지를 즉시 공유하세요",
+      tryNowLabel: "지금 사용해 보기 →",
+      step1Title: "텍스트 입력 또는 파일 선택",
+      step1Description:
         "메시지를 입력하거나 파일/폴더를 선택 영역으로 드래그 앤 드롭하세요",
-      step2_title: "방 참가",
-      step2_description: "'방 참가' 버튼을 클릭하여 공유 세션을 생성하세요",
-      step3_title: "받기",
-      step3_description:
+      step2Title: "방 참가",
+      step2Description: "'방 참가' 버튼을 클릭하여 공유 세션을 생성하세요",
+      step3Title: "받기",
+      step3Description:
         "받기 페이지에서 방 ID를 입력하고 '방 참가'를 클릭하여 공유된 콘텐츠를 받으세요",
     },
     SystemDiagram: {
       h2: "시스템 다이어그램",
-      h2_P: "PrivyDrop: 귀하의 데이터, 귀하의 통제. 간단하고 빠르며 개인적입니다.",
+      h2Description: "PrivyDrop: 귀하의 데이터, 귀하의 통제. 간단하고 빠르며 개인적입니다.",
     },
     KeyFeatures: {
       h2: "주요 기능",
@@ -183,7 +183,7 @@ export const ko: Messages = {
         "저장 디렉토리를 설정하여 이어받기 가능한 전송을 자동으로 활성화하세요. 더 이상 네트워크 중단을 걱정할 필요가 없습니다. 파일 공유는 중단된 지점에서 바로 다시 시작됩니다.",
     },
     faqs: {
-      FAQ_dis: "자주 묻는 질문",
+      faqLabel: "자주 묻는 질문",
       question_0:
         "데이터가 정말로 로컬에 저장되고 다른 서버로 전송되지 않나요?",
       answer_0:
@@ -228,104 +228,104 @@ export const ko: Messages = {
         "방 ID의 초기 유효 기간은 24시간입니다. 수신자가 방에 참여하면 해당 시점부터 24시간 동안 유효 기간이 자동으로 연장됩니다.",
     },
     clipboard_btn: {
-      Pasted_dis: "붙여넣기 완료",
-      Copied_dis: "복사 완료",
+      pastedLabel: "붙여넣기 완료",
+      copiedLabel: "복사 완료",
     },
     fileUploadHandler: {
-      NoFileChosen_tips: "선택된 파일 없음",
-      fileChosen_tips_template:
+      noFileChosenTip: "선택된 파일 없음",
+      fileChosenTemplate:
         "{fileNum}개의 파일 및 {folderNum}개의 폴더 선택됨",
-      chooseFileTips:
+      chooseFileTip:
         "파일/폴더를 이 페이지의 아무 곳이나 드래그 앤 드롭하거나, 여기서 선택하세요.",
-      dragTips: "이 페이지의 아무 곳이나 드래그하세요.",
+      dragTip: "이 페이지의 아무 곳이나 드래그하세요.",
       chosenDiagTitle: "업로드 유형 선택",
       chosenDiagDescription: "파일 또는 폴더 업로드를 선택하세요",
-      SelectFile_dis: "파일 선택",
-      SelectFolder_dis: "폴더 선택",
+      selectFileLabel: "파일 선택",
+      selectFolderLabel: "폴더 선택",
     },
     FileTransferButton: {
-      SavedToDisk_tips: "파일이 이미 디스크에 저장됨",
-      CurrentFileTransferring_tips: "파일 전송 중",
-      OtherFileTransferring_tips: "현재 전송이 완료될 때까지 기다려주세요",
-      download_tips: "파일을 다운로드하려면 클릭하세요",
-      PendingSave_tips: "로컬에 파일을 저장하려면 클릭하세요", // 新增
-      Saved_dis: "저장됨",
-      Waiting_dis: "대기 중",
-      Download_dis: "다운로드",
-      Save_dis: "저장", // 新增
+      savedToDiskTip: "파일이 이미 디스크에 저장됨",
+      currentFileTransferringTip: "파일 전송 중",
+      otherFileTransferringTip: "현재 전송이 완료될 때까지 기다려주세요",
+      downloadTip: "파일을 다운로드하려면 클릭하세요",
+      pendingSaveTip: "로컬에 파일을 저장하려면 클릭하세요", // 新增
+      savedLabel: "저장됨",
+      waitingLabel: "대기 중",
+      downloadLabel: "다운로드",
+      saveLabel: "저장", // 新增
     },
     FileListDisplay: {
-      sending_dis: "전송 중",
-      receiving_dis: "수신 중",
-      finish_dis: "완료됨",
-      delete_dis: "삭제",
-      downloadNum_dis: "다운로드 횟수",
-      folder_tips_template: "폴더 이름: {name} ({num}개의 파일 및 {size})",
-      folder_dis_template: " ({num}개의 파일, {size})",
-      PopupDialog_title: "권장: 저장 디렉토리 선택",
-      PopupDialog_description:
+      sendingLabel: "전송 중",
+      receivingLabel: "수신 중",
+      finishedLabel: "완료됨",
+      deleteLabel: "삭제",
+      downloadCountLabel: "다운로드 횟수",
+      folderSummaryTemplate: "폴더 이름: {name} ({num}개의 파일 및 {size})",
+      folderInlineTemplate: " ({num}개의 파일, {size})",
+      popupDialogTitle: "권장: 저장 디렉토리 선택",
+      popupDialogDescription:
         "대용량 파일이나 폴더를 직접 디스크에 저장하는 것을 권장합니다. 이를 통해 대용량 파일 전송 및 폴더 동기화가 더 효율적으로 이루어집니다.",
-      chooseSavePath_tips:
+      chooseSavePathTip:
         "큰 파일이나 폴더를 선택한 디렉터리에 직접 저장합니다. 👉",
-      chooseSavePath_dis: "저장 위치 선택",
+      chooseSavePathLabel: "저장 위치 선택",
     },
     RetrieveMethod: {
-      P: "축하합니다 🎉 공유된 콘텐츠가 검색을 기다리고 있습니다:",
-      RoomId_tips: "방 ID 검색: ",
-      copyRoomId_tips: "방 ID 복사",
-      url_tips: "URL로 검색: ",
-      copyUrl_tips: "공유 URL 복사",
-      scanQR_tips: "QR 코드를 스캔하여 받기 👇",
-      Copied_dis: "복사됨",
-      Copy_QR_dis: "QR 코드 복사",
-      download_QR_dis: "QR 코드 다운로드",
+      introMessage: "축하합니다 🎉 공유된 콘텐츠가 검색을 기다리고 있습니다:",
+      roomIdTip: "방 ID 검색: ",
+      copyRoomIdTip: "방 ID 복사",
+      urlTip: "URL로 검색: ",
+      copyUrlTip: "공유 URL 복사",
+      scanQrTip: "QR 코드를 스캔하여 받기 👇",
+      copiedLabel: "복사됨",
+      copyQrLabel: "QR 코드 복사",
+      downloadQrLabel: "QR 코드 다운로드",
     },
     ClipboardApp: {
-      fetchRoom_err: "방을 가져오지 못했습니다. 다시 시도해주세요.",
+      fetchRoomError: "방을 가져오지 못했습니다. 다시 시도해주세요.",
       roomCheck: {
         //handleShareRoomCheck
-        empty_msg: "방 ID는 비어 있을 수 없습니다",
-        available_msg: "방을 사용할 수 있습니다",
-        notAvailable_msg: "방을 사용할 수 없습니다. 다른 방을 시도해주세요",
+        emptyMessage: "방 ID는 비어 있을 수 없습니다",
+        availableMessage: "방을 사용할 수 있습니다",
+        notAvailableMessage: "방을 사용할 수 없습니다. 다른 방을 시도해주세요",
       },
-      channelOpen_msg: "'데이터 채널이 열렸습니다. 데이터 수신 준비 중...'",
-      waitting_tips:
+      channelOpenMessage: "'데이터 채널이 열렸습니다. 데이터 수신 준비 중...'",
+      waitingTip:
         "수신자가 연결될 때까지 기다리는 중입니다. 전송이 완료될 때까지 이 페이지를 열어 두세요. 데스크톱에서는 브라우저를 최소화하거나 탭을 전환할 수 있습니다. 모바일에서는 브라우저를 포그라운드에 유지하세요.",
       joinRoom: {
-        EmptyMsg: "경고, 방 ID가 비어 있습니다",
-        DuplicateMsg: "이 방 ID는 이미 사용 중입니다. 다른 ID를 선택해주세요.",
-        successMsg:
+        emptyMessage: "경고, 방 ID가 비어 있습니다",
+        duplicateMessage: "이 방 ID는 이미 사용 중입니다. 다른 ID를 선택해주세요.",
+        successMessage:
           "방에 성공적으로 입장했습니다! 전송이 완료되기 전까지 현재 페이지를 닫지 마세요. (데스크톱에서는 브라우저를 최소화하거나 탭을 전환할 수 있으며, 모바일에서는 브라우저를 백그라운드로 이동하지 마세요.)",
-        notExist:
+        notFoundMessage:
           "참여하려는 방이 존재하지 않습니다. 보내는 사람만 방을 만들 수 있습니다.",
-        failMsg: "방 참여 실패:",
+        failureMessage: "방 참여 실패:",
       },
       // Connection feedback (weak/VPN network scenarios)
-      join_inProgress:
+      joinInProgress:
         "방에 참여 중… (느린 네트워크에서는 5–30초가 걸릴 수 있어요)",
-      join_slow:
+      joinSlow:
         "조금 느려 보여요 — 네트워크/VPN을 확인하거나 잠시 후 다시 시도해 주세요",
-      join_timeout:
+      joinTimeout:
         "참여 시간이 초과되었습니다(네트워크가 제한될 수 있음). 다시 시도해 주세요",
-      rtc_slow:
+      rtcSlow:
         "네트워크가 제한되어 있을 수 있어요 — VPN을 끄거나 잠시 후 다시 시도해 주세요",
-      rtc_negotiating: "입장 완료 — P2P 직접 연결을 설정하는 중…",
-      rtc_connected: "연결되었습니다",
-      rtc_reconnecting: "재연결 중…",
-      rtc_restored: "연결이 복구되었습니다",
+      rtcNegotiating: "입장 완료 — P2P 직접 연결을 설정하는 중…",
+      rtcConnected: "연결되었습니다",
+      rtcReconnecting: "재연결 중…",
+      rtcRestored: "연결이 복구되었습니다",
       pickSaveMsg: "직접 디스크에 저장하시겠습니까?",
       pickSaveUnsupported: "디렉토리 선택기가 지원되지 않습니다.",
       pickSaveSuccess: "저장 위치가 설정되었습니다.",
       pickSaveError: "저장 위치를 설정할 수 없습니다.",
       roomStatus: {
-        senderEmptyMsg: "방이 비어 있습니다",
-        receiverEmptyMsg: "초대를 수락하여 방에 참여할 수 있습니다",
-        onlyOneMsg: "현재 방에 혼자 있습니다",
-        peopleMsg_template: "방에 {peerCount}명이 있습니다",
-        connected_dis: "연결됨",
-        senderDisconnectedMsg: "발신자가 연결 해제됨",
-        leftRoomMsg: "방을 나갔습니다.",
-        leaveRoomBtn: "방 나가기",
+        senderEmptyMessage: "방이 비어 있습니다",
+        receiverEmptyMessage: "초대를 수락하여 방에 참여할 수 있습니다",
+        onlyOneMessage: "현재 방에 혼자 있습니다",
+        peopleCountTemplate: "방에 {peerCount}명이 있습니다",
+        connectedLabel: "연결됨",
+        senderDisconnectedMessage: "발신자가 연결 해제됨",
+        leftRoomMessage: "방을 나갔습니다.",
+        leaveRoomLabel: "방 나가기",
       },
       fileExistMsg: "일부 파일이 이미 추가되었습니다.",
       noFilesForFolderMsg: "폴더 '{folderName}'에서 파일을 찾을 수 없습니다.",
@@ -336,46 +336,46 @@ export const ko: Messages = {
       html: {
         senderTab: "보내기",
         retrieveTab: "검색",
-        shareTitle_dis: "콘텐츠 공유",
-        retrieveTitle_dis: "콘텐츠 검색",
-        RoomStatus_dis: "상태:",
-        Paste_dis: "붙여넣기",
-        Copy_dis: "복사",
-        inputRoomIdprompt: "방 ID (편집 가능):",
-        joinRoomBtn: "방 참여",
-        generateSimpleId_tips: "간단 ID",
-        generateRandomId_tips: "랜덤 ID",
+        shareTitleLabel: "콘텐츠 공유",
+        retrieveTitleLabel: "콘텐츠 검색",
+        roomStatusLabel: "상태:",
+        pasteLabel: "붙여넣기",
+        copyLabel: "복사",
+        inputRoomIdPrompt: "방 ID (편집 가능):",
+        joinRoomButtonLabel: "방 참여",
+        generateSimpleIdTip: "간단 ID",
+        generateRandomIdTip: "랜덤 ID",
         readClipboardToRoomId: "방 ID 붙여넣기",
-        enterRoomID_placeholder: "방 ID 입력",
+        enterRoomIdPlaceholder: "방 ID 입력",
         retrieveMethod: "검색 방법",
-        inputRoomId_tips: "방 ID (편집 가능):",
-        joinRoom_dis: "방 참여",
-        SyncSending_loadingText: "동기화 완료",
-        SyncSending_dis: "동기화（동기화）",
-        readClipboard_dis: "방 ID 붙여넣기",
-        retrieveRoomId_placeholder: "방 ID 입력",
-        RetrieveMethodTitle: "검색 방법",
+        inputRoomIdTip: "방 ID (편집 가능):",
+        joinRoomLabel: "방 참여",
+        syncSendingLoadingLabel: "동기화 완료",
+        syncSendingLabel: "동기화（동기화）",
+        readClipboardLabel: "방 ID 붙여넣기",
+        retrieveRoomIdPlaceholder: "방 ID 입력",
+        retrieveMethodTitle: "검색 방법",
         // New: cached ID utils
-        saveId_dis: "ID 저장",
-        useCachedId_dis: "저장된 ID 사용",
-        saveId_tips:
+        saveIdLabel: "ID 저장",
+        useCachedIdLabel: "저장된 ID 사용",
+        saveIdTip:
           "현재 ID를 저장하여 다음에 빠르게 사용할 수 있어요",
-        useCachedId_tips: "저장된 ID 빠르게 사용；더블클릭으로 저장 모드 전환",
+        useCachedIdTip: "저장된 ID 빠르게 사용；더블클릭으로 저장 모드 전환",
       },
       // New: cache messages
-      saveId_success: "캐시에 저장되었습니다",
+      saveIdSuccessMessage: "캐시에 저장되었습니다",
     },
     home: {
       h1: "무료 보안 온라인 클립보드 및 파일 전송 도구",
       h1P: "P2P 전송이 중단된 지점에서 다시 시작됩니다. 진정으로 신뢰할 수 있고, 비공개이며, 멈출 수 없는 파일 및 텍스트 공유를 경험하세요 — 등록 필요 없음, 파일 크기나 속도 제한 없음, 완전 무료입니다.",
-      h2_screenOnly: "지금 보안 클립보드 및 파일 전송 도구를 사용해보세요",
+      h2ScreenOnly: "지금 보안 클립보드 및 파일 전송 도구를 사용해보세요",
 
-      h2_demo: "보안 파일 공유 작동 방식 보기",
-      h2P_demo:
+      h2Demo: "보안 파일 공유 작동 방식 보기",
+      h2DemoDescription:
         "로컬 우선, 엔드투엔드 암호화 파일 공유가 어떻게 개인 정보를 보호하는지 확인하세요",
-      watch_tips: "다음 플랫폼에서도 동영상을 시청할 수 있습니다:",
-      youtube_tips: "YouTube에서 PrivyDrop 보기",
-      bilibili_tips: "Bilibili에서 PrivyDrop 보기",
+      watchTip: "다음 플랫폼에서도 동영상을 시청할 수 있습니다:",
+      youtubeTip: "YouTube에서 PrivyDrop 보기",
+      bilibiliTip: "Bilibili에서 PrivyDrop 보기",
     },
   },
 };

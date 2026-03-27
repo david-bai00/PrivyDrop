@@ -25,7 +25,7 @@ export function Footer({ messages, lang }: FooterProps) {
             />
             <p className="text-sm text-muted-foreground">
               &copy; {new Date().getFullYear()}{" "}
-              {messages.text.Footer.CopyrightNotice}
+              {messages.text.Footer.copyrightNotice}
             </p>
           </div>
 
@@ -38,7 +38,7 @@ export function Footer({ messages, lang }: FooterProps) {
                   href={`/${lang}/terms`}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {messages.text.Footer.Terms_dis}
+                  {messages.text.Footer.termsLabel}
                 </Link>
               </li>
               <li>
@@ -46,14 +46,14 @@ export function Footer({ messages, lang }: FooterProps) {
                   href={`/${lang}/privacy`}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {messages.text.Footer.Privacy_dis}
+                  {messages.text.Footer.privacyLabel}
                 </Link>
               </li>
 
               {/* Entry for supported languages */}
               <li>
                 <span className="text-sm text-muted-foreground font-bold">
-                  {messages.text.Footer.SupportedLanguages}:
+                  {messages.text.Footer.supportedLanguagesLabel}:
                 </span>
               </li>
               {Object.entries(languageDisplayNames).map(([code, name]) => (

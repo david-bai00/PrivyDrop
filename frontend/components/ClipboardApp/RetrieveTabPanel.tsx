@@ -101,15 +101,15 @@ export function RetrieveTabPanel({
       <div className="mb-3 text-sm text-muted-foreground">
         {retrieveRoomStatusText ||
           (isReceiverInRoom
-            ? messages.text.ClipboardApp.roomStatus.connected_dis
-            : messages.text.ClipboardApp.roomStatus.receiverEmptyMsg)}
+            ? messages.text.ClipboardApp.roomStatus.connectedLabel
+            : messages.text.ClipboardApp.roomStatus.receiverEmptyMessage)}
       </div>
       <div className="space-y-3 mb-4">
         {/* Room ID input section */}
         <div className="space-y-2">
           <div className="flex flex-col sm:flex-row gap-2">
             <ReadClipboardButton
-              title={messages.text.ClipboardApp.html.readClipboard_dis}
+              title={messages.text.ClipboardApp.html.readClipboardLabel}
               onRead={setRetrieveRoomIdInput}
             />
             {/* Save/Use Cached ID Button placed after Paste button */}
@@ -125,7 +125,7 @@ export function RetrieveTabPanel({
               value={retrieveRoomIdInput}
               onChange={(e) => setRetrieveRoomIdInput(e.target.value)}
               placeholder={
-                messages.text.ClipboardApp.html.retrieveRoomId_placeholder
+                messages.text.ClipboardApp.html.retrieveRoomIdPlaceholder
               }
               className="flex-1 min-w-0"
             />
@@ -140,7 +140,7 @@ export function RetrieveTabPanel({
             ref={retrieveJoinRoomBtnRef}
             disabled={isReceiverInRoom || !retrieveRoomIdInput.trim()}
           >
-            {messages.text.ClipboardApp.html.joinRoom_dis}
+            {messages.text.ClipboardApp.html.joinRoomLabel}
           </Button>
           <Button
             variant={isAnyFileTransferring ? "destructive" : "outline"}
@@ -149,8 +149,8 @@ export function RetrieveTabPanel({
             className="w-full sm:w-auto px-4 order-2"
           >
             {isAnyFileTransferring
-              ? messages.text.ClipboardApp.roomStatus.leaveRoomBtn + " ⚠️"
-              : messages.text.ClipboardApp.roomStatus.leaveRoomBtn}
+              ? messages.text.ClipboardApp.roomStatus.leaveRoomLabel + " ⚠️"
+              : messages.text.ClipboardApp.roomStatus.leaveRoomLabel}
           </Button>
         </div>
       </div>
@@ -161,7 +161,7 @@ export function RetrieveTabPanel({
           </div>
           <div className="flex justify-start">
             <WriteClipboardButton
-              title={messages.text.ClipboardApp.html.Copy_dis}
+              title={messages.text.ClipboardApp.html.copyLabel}
               textToCopy={richTextToPlainText(retrievedContent)}
             />
           </div>

@@ -22,17 +22,17 @@ export default function AboutContent({ messages, lang }: AboutContentProps) {
             href={`/${lang}/privacy`}
             className="text-blue-500 hover:underline"
           >
-            {messages.text.privacy.PrivacyPolicy_dis}
+            {messages.text.privacy.privacyPolicyLabel}
           </a>
         </li>
         <li>
           <a href={`/${lang}/terms`} className="text-blue-500 hover:underline">
-            {messages.text.terms.TermsOfUse_dis}
+            {messages.text.terms.termsOfUseLabel}
           </a>
         </li>
         <li>
           <a href={`/${lang}/help`} className="text-blue-500 hover:underline">
-            {messages.text.help.Help_dis}
+            {messages.text.help.helpLabel}
           </a>
         </li>
       </ul>

@@ -69,11 +69,11 @@ export default function FAQSection({
       {showTitle &&
         (isInToolPage ? (
           <h2 className={`text-3xl ${titleClasses}`}>
-            {messages.text.faqs.FAQ_dis}
+            {messages.text.faqs.faqLabel}
           </h2>
         ) : (
           <h1 className={`text-4xl ${titleClasses}`}>
-            {messages.text.faqs.FAQ_dis}
+            {messages.text.faqs.faqLabel}
           </h1>
         ))}
       <Accordion type="single" collapsible className="w-full">

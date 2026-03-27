@@ -56,37 +56,37 @@ export const de: Messages = {
   },
   text: {
     Header: {
-      Home_dis: "Startseite",
-      Blog_dis: "Blog",
-      About_dis: "Über uns",
-      Help_dis: "Hilfe",
-      FAQ_dis: "FAQ",
-      Features_dis: "Kernfunktionen",
-      Terms_dis: "Nutzungsbedingungen",
-      Privacy_dis: "Datenschutz",
+      homeLabel: "Startseite",
+      blogLabel: "Blog",
+      aboutLabel: "Über uns",
+      helpLabel: "Hilfe",
+      faqLabel: "FAQ",
+      featuresLabel: "Kernfunktionen",
+      termsLabel: "Nutzungsbedingungen",
+      privacyLabel: "Datenschutz",
     },
     Footer: {
-      CopyrightNotice: "PrivyDrop. Alle Rechte vorbehalten.",
-      Terms_dis: "Nutzungsbedingungen",
-      Privacy_dis: "Datenschutzrichtlinie",
-      SupportedLanguages: "Unterstützte Sprachen",
+      copyrightNotice: "PrivyDrop. Alle Rechte vorbehalten.",
+      termsLabel: "Nutzungsbedingungen",
+      privacyLabel: "Datenschutzrichtlinie",
+      supportedLanguagesLabel: "Unterstützte Sprachen",
     },
     blog: {
-      list_title: "Blog",
-      list_subtitle: "Neueste Artikel und Updates",
-      recent_posts: "Neueste Beiträge",
+      listTitle: "Blog",
+      listSubtitle: "Neueste Artikel und Updates",
+      recentPosts: "Neueste Beiträge",
       tags: "Schlagwörter",
-      read_more: "Weiterlesen",
+      readMore: "Weiterlesen",
       by: "von",
-      post_not_found: "Beitrag nicht gefunden",
-      toc_title: "Inhaltsverzeichnis",
-      tag_title_prefix: "Schlagwort",
-      tag_subtitle_template: "Artikel mit dem Schlagwort {tag}",
-      tag_empty: "Keine Artikel für dieses Schlagwort gefunden.",
+      postNotFound: "Beitrag nicht gefunden",
+      tocTitle: "Inhaltsverzeichnis",
+      tagTitlePrefix: "Schlagwort",
+      tagSubtitleTemplate: "Artikel mit dem Schlagwort {tag}",
+      tagEmpty: "Keine Artikel für dieses Schlagwort gefunden.",
     },
 
     privacy: {
-      PrivacyPolicy_dis: "Datenschutzrichtlinie",
+      privacyPolicyLabel: "Datenschutzrichtlinie",
       h1: "PrivyDrop Datenschutzrichtlinie",
       h1_P: "Bei PrivyDrop sind wir bestrebt, Ihre Privatsphäre zu schützen und Ihre persönlichen Daten zu sichern. Diese Datenschutzrichtlinie beschreibt, wie wir die Daten, die Sie bei der Nutzung unseres Dienstes bereitstellen, sammeln, verwenden und schützen.",
       h2_1: "Informationssammlung",
@@ -106,7 +106,7 @@ export const de: Messages = {
         "Wenn Sie Fragen oder Bedenken zu unseren Datenschutzpraktiken haben, kontaktieren Sie uns bitte unter",
     },
     terms: {
-      TermsOfUse_dis: "Nutzungsbedingungen",
+      termsOfUseLabel: "Nutzungsbedingungen",
       h1: "PrivyDrop Nutzungsbedingungen",
       h1_P: "Durch die Nutzung des PrivyDrop-Dienstes erklären Sie sich mit diesen Nutzungsbedingungen einverstanden. Wenn Sie diesen Bedingungen nicht zustimmen, nutzen Sie den Dienst bitte nicht.",
       h2_1: "Nutzung des Dienstes",
@@ -126,7 +126,7 @@ export const de: Messages = {
         "Wir behalten uns das Recht vor, diese Nutzungsbedingungen jederzeit zu aktualisieren. Alle Änderungen werden wirksam, sobald die aktualisierten Bedingungen auf unserer Website veröffentlicht werden. Es liegt in Ihrer Verantwortung, die Nutzungsbedingungen regelmäßig auf Änderungen zu überprüfen.",
     },
     help: {
-      Help_dis: "Hilfe",
+      helpLabel: "Hilfe",
       h1: "PrivyDrop Hilfe und Support",
       h1_P: "Wir sind hier, um Ihnen zu helfen, das Beste aus PrivyDrop herauszuholen. Wenn Sie Fragen haben oder Unterstützung benötigen, zögern Sie bitte nicht, uns zu kontaktieren.",
       h2_1: "Kontaktieren Sie uns",
@@ -148,21 +148,21 @@ export const de: Messages = {
     },
     HowItWorks: {
       h2: "Wie es funktioniert",
-      h2_P: "Teilen Sie Dateien und Nachrichten sofort in drei einfachen Schritten",
-      btn_try: "Jetzt ausprobieren →",
-      step1_title: "Text eingeben oder Dateien auswählen",
-      step1_description:
+      h2Description: "Teilen Sie Dateien und Nachrichten sofort in drei einfachen Schritten",
+      tryNowLabel: "Jetzt ausprobieren →",
+      step1Title: "Text eingeben oder Dateien auswählen",
+      step1Description:
         "Geben Sie Ihre Nachricht ein oder ziehen Sie Dateien/Ordner in den Auswahlbereich",
-      step2_title: "Raum beitreten",
-      step2_description:
+      step2Title: "Raum beitreten",
+      step2Description:
         "Klicken Sie auf die Schaltfläche 'Raum beitreten', um eine Freigabesitzung zu erstellen",
-      step3_title: "Empfangen",
-      step3_description:
+      step3Title: "Empfangen",
+      step3Description:
         "Geben Sie die Raum-ID auf der Empfangsseite ein und klicken Sie auf 'Raum beitreten', um die freigegebenen Inhalte zu erhalten",
     },
     SystemDiagram: {
       h2: "Systemdiagramm",
-      h2_P: "PrivyDrop: Ihre Daten, Ihre Kontrolle. Einfach, schnell und privat.",
+      h2Description: "PrivyDrop: Ihre Daten, Ihre Kontrolle. Einfach, schnell und privat.",
     },
     KeyFeatures: {
       h2: "Hauptmerkmale",
@@ -186,7 +186,7 @@ export const de: Messages = {
         "Legen Sie ein Speicherverzeichnis fest, um fortsetzbare Übertragungen automatisch zu aktivieren. Machen Sie sich keine Sorgen mehr über Netzwerkunterbrechungen; Ihr Dateiaustausch wird genau dort fortgesetzt, wo er unterbrochen wurde.",
     },
     faqs: {
-      FAQ_dis: "Häufig gestellte Fragen",
+      faqLabel: "Häufig gestellte Fragen",
       question_0:
         "Werden die Daten wirklich lokal gespeichert und nicht auf andere Server übertragen?",
       answer_0:
@@ -234,111 +234,111 @@ export const de: Messages = {
         "Die anfängliche Gültigkeit einer Raum-ID beträgt 24 Stunden. Wenn ein Empfänger dem Raum beitritt, wird die Gültigkeit automatisch um 24 Stunden ab diesem Zeitpunkt verlängert.",
     },
     clipboard_btn: {
-      Pasted_dis: "Eingefügt",
-      Copied_dis: "Kopiert",
+      pastedLabel: "Eingefügt",
+      copiedLabel: "Kopiert",
     },
     fileUploadHandler: {
-      NoFileChosen_tips: "Keine Datei ausgewählt",
-      fileChosen_tips_template:
+      noFileChosenTip: "Keine Datei ausgewählt",
+      fileChosenTemplate:
         "{fileNum} Datei(en) und {folderNum} Ordner ausgewählt",
-      chooseFileTips:
+      chooseFileTip:
         "Ziehen Sie Dateien/Ordner an eine beliebige Stelle auf dieser Seite, oder klicken Sie hier, um auszuwählen.",
-      dragTips: "Ziehen Sie hierhin auf die Seite.",
+      dragTip: "Ziehen Sie hierhin auf die Seite.",
       chosenDiagTitle: "Upload-Typ auswählen",
       chosenDiagDescription:
         "Wählen Sie aus, ob Sie Dateien oder einen Ordner hochladen möchten",
-      SelectFile_dis: "Dateien auswählen",
-      SelectFolder_dis: "Ordner auswählen",
+      selectFileLabel: "Dateien auswählen",
+      selectFolderLabel: "Ordner auswählen",
     },
     FileTransferButton: {
-      SavedToDisk_tips: "Datei bereits auf Festplatte gespeichert",
-      CurrentFileTransferring_tips: "Datei wird übertragen",
-      OtherFileTransferring_tips:
+      savedToDiskTip: "Datei bereits auf Festplatte gespeichert",
+      currentFileTransferringTip: "Datei wird übertragen",
+      otherFileTransferringTip:
         "Bitte warten Sie, bis die aktuelle Übertragung abgeschlossen ist",
-      download_tips: "Klicken Sie, um die Datei herunterzuladen",
-      PendingSave_tips: "Klicken Sie, um die Datei lokal zu speichern", // 新增
-      Saved_dis: "Gespeichert",
-      Waiting_dis: "Warten",
-      Download_dis: "Herunterladen",
-      Save_dis: "Speichern", // 新增
+      downloadTip: "Klicken Sie, um die Datei herunterzuladen",
+      pendingSaveTip: "Klicken Sie, um die Datei lokal zu speichern", // 新增
+      savedLabel: "Gespeichert",
+      waitingLabel: "Warten",
+      downloadLabel: "Herunterladen",
+      saveLabel: "Speichern", // 新增
     },
     FileListDisplay: {
-      sending_dis: "Senden",
-      receiving_dis: "Empfangen",
-      finish_dis: "abgeschlossen",
-      delete_dis: "Löschen",
-      downloadNum_dis: "Anzahl der Downloads",
-      folder_tips_template:
+      sendingLabel: "Senden",
+      receivingLabel: "Empfangen",
+      finishedLabel: "abgeschlossen",
+      deleteLabel: "Löschen",
+      downloadCountLabel: "Anzahl der Downloads",
+      folderSummaryTemplate:
         "Ordnername: {name} ({num} Dateien und {size}) insgesamt",
-      folder_dis_template: " ({num} Dateien, {size})",
-      PopupDialog_title: "Empfohlen: Speicherverzeichnis auswählen",
-      PopupDialog_description:
+      folderInlineTemplate: " ({num} Dateien, {size})",
+      popupDialogTitle: "Empfohlen: Speicherverzeichnis auswählen",
+      popupDialogDescription:
         "Wir empfehlen, ein Speicherverzeichnis auszuwählen, um Dateien direkt auf Ihre Festplatte zu speichern. Dies erleichtert die Übertragung großer Dateien und die effiziente Synchronisierung von Ordnern.",
-      chooseSavePath_tips:
+      chooseSavePathTip:
         "Speichern Sie große Dateien oder Ordner direkt in einem ausgewählten Verzeichnis. 👉",
-      chooseSavePath_dis: "Speicherort auswählen",
+      chooseSavePathLabel: "Speicherort auswählen",
     },
     RetrieveMethod: {
-      P: "Glückwunsch 🎉 Freigegebene Inhalte warten darauf, abgerufen zu werden:",
-      RoomId_tips: "Raum-ID abrufen: ",
-      copyRoomId_tips: "Raum-ID kopieren",
-      url_tips: "Abrufen über URL: ",
-      copyUrl_tips: "Freigabe-URL kopieren",
-      scanQR_tips: "Scannen Sie den QR-Code, um zu empfangen 👇",
-      Copied_dis: "Kopiert",
-      Copy_QR_dis: "QR-Code kopieren",
-      download_QR_dis: "QR-Code herunterladen",
+      introMessage: "Glückwunsch 🎉 Freigegebene Inhalte warten darauf, abgerufen zu werden:",
+      roomIdTip: "Raum-ID abrufen: ",
+      copyRoomIdTip: "Raum-ID kopieren",
+      urlTip: "Abrufen über URL: ",
+      copyUrlTip: "Freigabe-URL kopieren",
+      scanQrTip: "Scannen Sie den QR-Code, um zu empfangen 👇",
+      copiedLabel: "Kopiert",
+      copyQrLabel: "QR-Code kopieren",
+      downloadQrLabel: "QR-Code herunterladen",
     },
     ClipboardApp: {
-      fetchRoom_err:
+      fetchRoomError:
         "Fehler beim Abrufen eines Raums. Bitte versuchen Sie es erneut.",
       roomCheck: {
         //handleShareRoomCheck
-        empty_msg: "Raum-ID darf nicht leer sein",
-        available_msg: "Raum ist verfügbar",
-        notAvailable_msg:
+        emptyMessage: "Raum-ID darf nicht leer sein",
+        availableMessage: "Raum ist verfügbar",
+        notAvailableMessage:
           "Raum ist nicht verfügbar, bitte versuchen Sie einen anderen",
       },
-      channelOpen_msg:
+      channelOpenMessage:
         "'Datenkanal ist geöffnet, bereit zum Empfangen von Daten...'",
-      waitting_tips:
+      waitingTip:
         "Warten auf den Empfänger, der sich verbindet. Bitte lassen Sie diese Seite geöffnet, bis die Übertragung abgeschlossen ist. Auf dem Desktop können Sie den Browser minimieren oder zwischen Tabs wechseln. Auf mobilen Geräten sollte der Browser im Vordergrund bleiben.",
       joinRoom: {
-        EmptyMsg: "Warnung, die Raum-ID ist leer",
-        DuplicateMsg: "Diese Raum-ID ist bereits vergeben. Bitte wählen Sie eine andere ID.",
-        successMsg:
+        emptyMessage: "Warnung, die Raum-ID ist leer",
+        duplicateMessage: "Diese Raum-ID ist bereits vergeben. Bitte wählen Sie eine andere ID.",
+        successMessage:
           "Raum erfolgreich betreten! Schließen Sie diese Seite nicht, bis die Übertragung abgeschlossen ist. (Am Desktop können Sie den Browser minimieren oder Tabs wechseln; auf mobilen Geräten bringen Sie den Browser nicht in den Hintergrund.)",
-        notExist:
+        notFoundMessage:
           "Der Raum, dem Sie beitreten möchten, existiert nicht. Nur der Sender kann einen Raum erstellen.",
-        failMsg: "Fehler beim Beitreten zum Raum:",
+        failureMessage: "Fehler beim Beitreten zum Raum:",
       },
       // Connection feedback (weak/VPN network scenarios)
-      join_inProgress:
+      joinInProgress:
         "Beitritt zum Raum… (in langsamen Netzen 5–30 Sekunden)",
-      join_slow:
+      joinSlow:
         "Wirkt etwas langsam – Netzwerk/VPN prüfen oder später erneut versuchen",
-      join_timeout:
+      joinTimeout:
         "Beitritt zeitüberschritten (mögliche Netzbeschränkung). Bitte erneut versuchen",
-      rtc_slow:
+      rtcSlow:
         "Netzwerk möglicherweise eingeschränkt — VPN deaktivieren oder später erneut versuchen",
-      rtc_negotiating: "Im Raum – direkte P2P‑Verbindung wird aufgebaut…",
-      rtc_connected: "Verbunden",
-      rtc_reconnecting: "Wiederverbinden…",
-      rtc_restored: "Verbindung wiederhergestellt",
+      rtcNegotiating: "Im Raum – direkte P2P‑Verbindung wird aufgebaut…",
+      rtcConnected: "Verbunden",
+      rtcReconnecting: "Wiederverbinden…",
+      rtcRestored: "Verbindung wiederhergestellt",
       pickSaveMsg: "Direkt auf Festplatte speichern?",
       pickSaveUnsupported: "Verzeichnisauswahl nicht unterstützt.",
       pickSaveSuccess: "Speicherort festgelegt.",
       pickSaveError: "Speicherort konnte nicht festgelegt werden.",
       roomStatus: {
-        senderEmptyMsg: "Raum ist leer",
-        receiverEmptyMsg:
+        senderEmptyMessage: "Raum ist leer",
+        receiverEmptyMessage:
           "Sie können eine Einladung annehmen, um dem Raum beizutreten",
-        onlyOneMsg: "Sie sind der Einzige hier",
-        peopleMsg_template: "{peerCount} Personen im Raum",
-        connected_dis: "Verbunden",
-        senderDisconnectedMsg: "Sender getrennt",
-        leftRoomMsg: "Sie haben den Raum verlassen.",
-        leaveRoomBtn: "Raum Verlassen",
+        onlyOneMessage: "Sie sind der Einzige hier",
+        peopleCountTemplate: "{peerCount} Personen im Raum",
+        connectedLabel: "Verbunden",
+        senderDisconnectedMessage: "Sender getrennt",
+        leftRoomMessage: "Sie haben den Raum verlassen.",
+        leaveRoomLabel: "Raum Verlassen",
       },
       fileExistMsg: "Einige Dateien wurden bereits hinzugefügt.",
       noFilesForFolderMsg: "Keine Dateien im Ordner '{folderName}' gefunden.",
@@ -350,46 +350,46 @@ export const de: Messages = {
       html: {
         senderTab: "Senden",
         retrieveTab: "Abrufen",
-        shareTitle_dis: "Inhalte teilen",
-        retrieveTitle_dis: "Inhalte abrufen",
-        RoomStatus_dis: "Status:",
-        Paste_dis: "Einfügen",
-        Copy_dis: "Kopieren",
-        inputRoomIdprompt: "Ihre Raum-ID (bearbeitbar):",
-        joinRoomBtn: "Raum beitreten",
-        generateSimpleId_tips: "Einfache ID",
-        generateRandomId_tips: "Zufällige ID",
+        shareTitleLabel: "Inhalte teilen",
+        retrieveTitleLabel: "Inhalte abrufen",
+        roomStatusLabel: "Status:",
+        pasteLabel: "Einfügen",
+        copyLabel: "Kopieren",
+        inputRoomIdPrompt: "Ihre Raum-ID (bearbeitbar):",
+        joinRoomButtonLabel: "Raum beitreten",
+        generateSimpleIdTip: "Einfache ID",
+        generateRandomIdTip: "Zufällige ID",
         readClipboardToRoomId: "Raum-ID einfügen",
-        enterRoomID_placeholder: "Raum-ID eingeben",
+        enterRoomIdPlaceholder: "Raum-ID eingeben",
         retrieveMethod: "Abrufmethode",
-        inputRoomId_tips: "Ihre Raum-ID (bearbeitbar):",
-        joinRoom_dis: "Raum beitreten",
-        SyncSending_loadingText: "Synchronisiert",
-        SyncSending_dis: "Synchronisieren",
-        readClipboard_dis: "Raum-ID einfügen",
-        retrieveRoomId_placeholder: "Raum-ID eingeben",
-        RetrieveMethodTitle: "Abrufmethode",
+        inputRoomIdTip: "Ihre Raum-ID (bearbeitbar):",
+        joinRoomLabel: "Raum beitreten",
+        syncSendingLoadingLabel: "Synchronisiert",
+        syncSendingLabel: "Synchronisieren",
+        readClipboardLabel: "Raum-ID einfügen",
+        retrieveRoomIdPlaceholder: "Raum-ID eingeben",
+        retrieveMethodTitle: "Abrufmethode",
         // New: cached ID utils
-        saveId_dis: "ID speichern",
-        useCachedId_dis: "Gespeicherte ID verwenden",
-        saveId_tips: "Aktuelle ID für spätere schnelle Nutzung speichern",
-        useCachedId_tips: "Gespeicherte ID schnell nutzen; Doppelklick zum Speichermodus wechseln",
+        saveIdLabel: "ID speichern",
+        useCachedIdLabel: "Gespeicherte ID verwenden",
+        saveIdTip: "Aktuelle ID für spätere schnelle Nutzung speichern",
+        useCachedIdTip: "Gespeicherte ID schnell nutzen; Doppelklick zum Speichermodus wechseln",
       },
       // New: cache messages
-      saveId_success: "Erfolgreich im Cache gespeichert",
+      saveIdSuccessMessage: "Erfolgreich im Cache gespeichert",
     },
     home: {
       h1: "Kostenloses sicheres Online-Clipboard & Dateiübertragungstool",
       h1P: "P2P-Übertragungen werden dort fortgesetzt, wo sie unterbrochen wurden. Erleben Sie einen wirklich zuverlässigen, privaten und unaufhaltsamen Datei- und Textaustausch – keine Registrierung, keine Beschränkungen bei Dateigröße oder Geschwindigkeit, völlig kostenlos.",
-      h2_screenOnly:
+      h2ScreenOnly:
         "Jetzt sicheres Clipboard & Dateiübertragungstool ausprobieren",
 
-      h2_demo: "Sichere Dateifreigabe in Aktion sehen",
-      h2P_demo:
+      h2Demo: "Sichere Dateifreigabe in Aktion sehen",
+      h2DemoDescription:
         "Sehen Sie, wie unsere lokale, Ende-zu-Ende-verschlüsselte Dateifreigabe Ihre Privatsphäre schützt",
-      watch_tips: "Sie können das Video auch auf diesen Plattformen ansehen:",
-      youtube_tips: "PrivyDrop auf YouTube ansehen",
-      bilibili_tips: "PrivyDrop auf Bilibili ansehen",
+      watchTip: "Sie können das Video auch auf diesen Plattformen ansehen:",
+      youtubeTip: "PrivyDrop auf YouTube ansehen",
+      bilibiliTip: "PrivyDrop auf Bilibili ansehen",
     },
   },
 };

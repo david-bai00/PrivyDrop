@@ -33,7 +33,7 @@ export default function HomeClient({ messages, lang }: PageContentProps) {
         <div className="w-full max-w-none">
           {/* sr-only--screen-only: visually hidden */}
           <h2 className={cn("sr-only", "text-3xl font-bold mb-8 text-center")}>
-            {messages.text.home.h2_screenOnly}
+            {messages.text.home.h2ScreenOnly}
           </h2>
           <ClipboardApp />
         </div>
@@ -48,16 +48,16 @@ export default function HomeClient({ messages, lang }: PageContentProps) {
       <section className="mb-12" aria-label="Product Demo">
         <LazyLoadWrapper>
           <h2 className="text-3xl font-bold mb-6 text-center">
-            {messages.text.home.h2_demo}
+            {messages.text.home.h2Demo}
           </h2>
           <p className="text-center mb-6 text-muted-foreground">
-            {messages.text.home.h2P_demo}
+            {messages.text.home.h2DemoDescription}
           </p>
           <YouTubePlayer videoId={youtube_videoId} />
 
           <div className="mt-4 text-center">
             <p className="mb-3 text-foreground">
-              {messages.text.home.watch_tips}
+              {messages.text.home.watchTip}
             </p>
             <a
               className="flex justify-center gap-4 text-blue-500 hover:underline transition-colors"
@@ -65,7 +65,7 @@ export default function HomeClient({ messages, lang }: PageContentProps) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {messages.text.home.youtube_tips}
+              {messages.text.home.youtubeTip}
             </a>
             <a
               className="flex justify-center gap-4 text-blue-500 hover:underline transition-colors"
@@ -73,7 +73,7 @@ export default function HomeClient({ messages, lang }: PageContentProps) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {messages.text.home.bilibili_tips}
+              {messages.text.home.bilibiliTip}
             </a>
           </div>
         </LazyLoadWrapper>

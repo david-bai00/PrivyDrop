@@ -28,14 +28,14 @@ const Header = ({ messages, lang }: HeaderProps) => {
 
   // Configuration for navigation items
   const navItems = [
-    { href: `/${lang}`, label: messages.text.Header.Home_dis },
-    { href: `/${lang}/features`, label: messages.text.Header.Features_dis },
-    { href: `/${lang}/blog`, label: messages.text.Header.Blog_dis },
-    { href: `/${lang}/about`, label: messages.text.Header.About_dis },
-    { href: `/${lang}/help`, label: messages.text.Header.Help_dis },
-    { href: `/${lang}/faq`, label: messages.text.Header.FAQ_dis },
-    { href: `/${lang}/terms`, label: messages.text.Header.Terms_dis },
-    { href: `/${lang}/privacy`, label: messages.text.Header.Privacy_dis },
+    { href: `/${lang}`, label: messages.text.Header.homeLabel },
+    { href: `/${lang}/features`, label: messages.text.Header.featuresLabel },
+    { href: `/${lang}/blog`, label: messages.text.Header.blogLabel },
+    { href: `/${lang}/about`, label: messages.text.Header.aboutLabel },
+    { href: `/${lang}/help`, label: messages.text.Header.helpLabel },
+    { href: `/${lang}/faq`, label: messages.text.Header.faqLabel },
+    { href: `/${lang}/terms`, label: messages.text.Header.termsLabel },
+    { href: `/${lang}/privacy`, label: messages.text.Header.privacyLabel },
   ];
 
   // GitHub repository URL

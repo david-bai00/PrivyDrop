@@ -39,7 +39,7 @@ export function useConnectionFeedback({
     displayMs: 6000,
     getMessage: () => {
       if (!messages) return null;
-      const text = messages.text.ClipboardApp.rtc_slow;
+      const text = messages.text.ClipboardApp.rtcSlow;
       if (!text) return null;
       const isShareEnd =
         rtcSlowTriggerSideRef.current === "share"
@@ -68,18 +68,18 @@ export function useConnectionFeedback({
 
     // Sender side mapping
     if (nowShare === "negotiating" && prevShare !== "negotiating") {
-      const msg = messages.text.ClipboardApp.rtc_negotiating;
+      const msg = messages.text.ClipboardApp.rtcNegotiating;
       if (msg) putMessageInMs(msg, true, 4000);
       if (!rtcSlowTriggerSideRef.current) rtcSlowTriggerSideRef.current = "share";
       armRtcSlow("rtc-negotiating");
     }
     if (nowShare === "connected") {
       if (!everShareRef.current) {
-        const msg = messages.text.ClipboardApp.rtc_connected;
+        const msg = messages.text.ClipboardApp.rtcConnected;
         if (msg) putMessageInMs(msg, true, 4000);
       }
       if (wasDiscShareRef.current) {
-        const msg = messages.text.ClipboardApp.rtc_restored;
+        const msg = messages.text.ClipboardApp.rtcRestored;
         if (msg) putMessageInMs(msg, true, 4000);
       }
       everShareRef.current = true;
@@ -90,7 +90,7 @@ export function useConnectionFeedback({
       const isForeground =
         typeof document !== "undefined" && document.visibilityState === "visible";
       if ((everShareRef.current || wasDiscShareRef.current) && isForeground) {
-        const msg = messages.text.ClipboardApp.rtc_reconnecting;
+        const msg = messages.text.ClipboardApp.rtcReconnecting;
         if (msg) putMessageInMs(msg, true, 4000);
         wasDiscShareRef.current = true;
       }
@@ -99,18 +99,18 @@ export function useConnectionFeedback({
 
     // Receiver side mapping
     if (nowRecv === "negotiating" && prevRecv !== "negotiating") {
-      const msg = messages.text.ClipboardApp.rtc_negotiating;
+      const msg = messages.text.ClipboardApp.rtcNegotiating;
       if (msg) putMessageInMs(msg, false, 4000);
       if (!rtcSlowTriggerSideRef.current) rtcSlowTriggerSideRef.current = "recv";
       armRtcSlow("rtc-negotiating");
     }
     if (nowRecv === "connected") {
       if (!everRecvRef.current) {
-        const msg = messages.text.ClipboardApp.rtc_connected;
+        const msg = messages.text.ClipboardApp.rtcConnected;
         if (msg) putMessageInMs(msg, false, 4000);
       }
       if (wasDiscRecvRef.current) {
-        const msg = messages.text.ClipboardApp.rtc_restored;
+        const msg = messages.text.ClipboardApp.rtcRestored;
         if (msg) putMessageInMs(msg, false, 4000);
       }
       everRecvRef.current = true;
@@ -121,7 +121,7 @@ export function useConnectionFeedback({
       const isForeground =
         typeof document !== "undefined" && document.visibilityState === "visible";
       if ((everRecvRef.current || wasDiscRecvRef.current) && isForeground) {
-        const msg = messages.text.ClipboardApp.rtc_reconnecting;
+        const msg = messages.text.ClipboardApp.rtcReconnecting;
         if (msg) putMessageInMs(msg, false, 4000);
         wasDiscRecvRef.current = true;
       }
@@ -153,7 +153,7 @@ export function useConnectionFeedback({
         (everShareRef.current || wasDiscShareRef.current) &&
         nowShare === "disconnected"
       ) {
-        const msg = messages.text.ClipboardApp.rtc_reconnecting;
+        const msg = messages.text.ClipboardApp.rtcReconnecting;
         if (msg) putMessageInMs(msg, true, 4000);
         wasDiscShareRef.current = true;
       }
@@ -161,7 +161,7 @@ export function useConnectionFeedback({
         (everRecvRef.current || wasDiscRecvRef.current) &&
         nowRecv === "disconnected"
       ) {
-        const msg = messages.text.ClipboardApp.rtc_reconnecting;
+        const msg = messages.text.ClipboardApp.rtcReconnecting;
         if (msg) putMessageInMs(msg, false, 4000);
         wasDiscRecvRef.current = true;
       }
