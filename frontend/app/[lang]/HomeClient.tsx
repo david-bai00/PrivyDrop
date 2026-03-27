@@ -1,6 +1,6 @@
 "use client";
 import ClipboardApp from "@/components/ClipboardApp";
-import { useI18n } from "@/components/providers/TranslationProvider";
+import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import SystemDiagram from "@/components/web/SystemDiagram";
 import FAQSection from "@/components/web/FAQSection";
@@ -10,16 +10,15 @@ import KeyFeatures from "@/components/web/KeyFeatures";
 import LazyLoadWrapper from "@/components/common/LazyLoadWrapper";
 
 export default function HomeClient() {
-  const { messages, lang } = useI18n();
+  const t = useTranslations("text.home");
+  const lang = useLocale();
   const youtube_videoId = lang === "zh" ? "I0RLCpcbUXs" : "ypt-po_R2Ds";
   const bilibili_videoId = lang === "zh" ? "BV1knrjYZEfn" : "BV1yErjYFEV7";
   return (
     <main className="container mx-auto px-4 py-8">
       {/* Hero Section */}
-      <h1 className="text-4xl font-bold mb-2 text-center">
-        {messages.text.home.h1}
-      </h1>
-      <p className="text-xl mb-4 text-center">{messages.text.home.h1P}</p>
+      <h1 className="text-4xl font-bold mb-2 text-center">{t("h1")}</h1>
+      <p className="text-xl mb-4 text-center">{t("h1P")}</p>
       {/* App Section */}
       <section
         id="clipboard-app"
@@ -29,7 +28,7 @@ export default function HomeClient() {
         <div className="w-full max-w-none">
           {/* sr-only--screen-only: visually hidden */}
           <h2 className={cn("sr-only", "text-3xl font-bold mb-8 text-center")}>
-            {messages.text.home.h2ScreenOnly}
+            {t("h2ScreenOnly")}
           </h2>
           <ClipboardApp />
         </div>
@@ -44,24 +43,22 @@ export default function HomeClient() {
       <section className="mb-12" aria-label="Product Demo">
         <LazyLoadWrapper>
           <h2 className="text-3xl font-bold mb-6 text-center">
-            {messages.text.home.h2Demo}
+            {t("h2Demo")}
           </h2>
           <p className="text-center mb-6 text-muted-foreground">
-            {messages.text.home.h2DemoDescription}
+            {t("h2DemoDescription")}
           </p>
           <YouTubePlayer videoId={youtube_videoId} />
 
           <div className="mt-4 text-center">
-            <p className="mb-3 text-foreground">
-              {messages.text.home.watchTip}
-            </p>
+            <p className="mb-3 text-foreground">{t("watchTip")}</p>
             <a
               className="flex justify-center gap-4 text-blue-500 hover:underline transition-colors"
               href={`https://www.youtube.com/watch?v=${youtube_videoId}`}
               target="_blank"
               rel="noopener noreferrer"
             >
-              {messages.text.home.youtubeTip}
+              {t("youtubeTip")}
             </a>
             <a
               className="flex justify-center gap-4 text-blue-500 hover:underline transition-colors"
@@ -69,7 +66,7 @@ export default function HomeClient() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {messages.text.home.bilibiliTip}
+              {t("bilibiliTip")}
             </a>
           </div>
         </LazyLoadWrapper>

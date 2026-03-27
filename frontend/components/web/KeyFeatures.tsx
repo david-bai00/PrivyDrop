@@ -1,6 +1,6 @@
 "use client";
 
-import { useMessages } from "@/components/providers/TranslationProvider";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 
 interface KeyFeaturesProps {
@@ -16,7 +16,7 @@ export default function KeyFeatures({
   showTitle = true,
   titleClassName = "",
 }: KeyFeaturesProps) {
-  const messages = useMessages();
+  const t = useTranslations("text.KeyFeatures");
 
   // Set container styles
   const containerClasses = `container mx-auto px-4 py-8 ${className}`;
@@ -28,48 +28,48 @@ export default function KeyFeatures({
       {showTitle &&
         (isInToolPage ? (
           <h2 className={`text-3xl ${titleClasses}`}>
-            {messages.text.KeyFeatures.h2}
+            {t("h2")}
           </h2>
         ) : (
           <h1 className={`text-4xl ${titleClasses}`}>
-            {messages.text.KeyFeatures.h2}
+            {t("h2")}
           </h1>
         ))}
       <div className="space-y-6">
         <div>
           <h3 className="text-xl font-semibold mb-2 flex items-center">
             <Image src="/lock.png" alt="Icon" width={80} height={80} />
-            <span className="ml-6">{messages.text.KeyFeatures.h3_1}</span>
+            <span className="ml-6">{t("h3_1")}</span>
           </h3>
-          <p>{messages.text.KeyFeatures.h3_1_P}</p>
+          <p>{t("h3_1_P")}</p>
         </div>
         <div>
           <h3 className="text-xl font-semibold mb-2 flex items-center">
             <Image src="/teamwork.png" alt="Icon" width={80} height={80} />
-            <span className="ml-6">{messages.text.KeyFeatures.h3_2}</span>
+            <span className="ml-6">{t("h3_2")}</span>
           </h3>
-          <p>{messages.text.KeyFeatures.h3_2_P}</p>
+          <p>{t("h3_2_P")}</p>
         </div>
         <div>
           <h3 className="text-xl font-semibold mb-2 flex items-center">
             <Image src="/rocket.png" alt="Icon" width={80} height={80} />
-            <span className="ml-6">{messages.text.KeyFeatures.h3_3}</span>
+            <span className="ml-6">{t("h3_3")}</span>
           </h3>
-          <p>{messages.text.KeyFeatures.h3_3_P}</p>
+          <p>{t("h3_3_P")}</p>
         </div>
         <div>
           <h3 className="text-xl font-semibold mb-2 flex items-center">
             <Image src="/fresh-air.png" alt="Icon" width={80} height={80} />
-            <span className="ml-6">{messages.text.KeyFeatures.h3_4}</span>
+            <span className="ml-6">{t("h3_4")}</span>
           </h3>
-          <p>{messages.text.KeyFeatures.h3_4_P}</p>
+          <p>{t("h3_4_P")}</p>
         </div>
         <div>
           <h3 className="text-xl font-semibold mb-2 flex items-center">
             <Image src="/planet-earth.png" alt="Icon" width={80} height={80} />
-            <span className="ml-6">{messages.text.KeyFeatures.h3_5}</span>
+            <span className="ml-6">{t("h3_5")}</span>
           </h3>
-          <p>{messages.text.KeyFeatures.h3_5_P}</p>
+          <p>{t("h3_5_P")}</p>
         </div>
         <div>
           <h3 className="text-xl font-semibold mb-2 flex items-center">
@@ -79,9 +79,9 @@ export default function KeyFeatures({
               width={100}
               height={83}
             />
-            <span className="ml-6">{messages.text.KeyFeatures.h3_6}</span>
+            <span className="ml-6">{t("h3_6")}</span>
           </h3>
-          <p>{messages.text.KeyFeatures.h3_6_P}</p>
+          <p>{t("h3_6_P")}</p>
         </div>
       </div>
     </section>

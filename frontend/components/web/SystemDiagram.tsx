@@ -1,17 +1,15 @@
 "use client";
 
-import { useMessages } from "@/components/providers/TranslationProvider";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 
 export default function SystemDiagram() {
-  const messages = useMessages();
+  const t = useTranslations("text.SystemDiagram");
 
   return (
     <section className="py-16 bg-background">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold mb-12 text-center">
-          {messages.text.SystemDiagram.h2}
-        </h2>
+        <h2 className="text-3xl font-bold mb-12 text-center">{t("h2")}</h2>
         <Image
           src="/SystemDiagram.webp"
           alt="PrivyDrop system diagram: Peer-to-peer file and clipboard sharing"
@@ -20,7 +18,7 @@ export default function SystemDiagram() {
           className="mx-auto mb-6"
         />
         <p className="mt-8 text-center max-w-2xl mx-auto">
-          {messages.text.SystemDiagram.h2Description}
+          {t("h2Description")}
         </p>
       </div>
     </section>

@@ -1,28 +1,28 @@
 "use client";
 
 import React from "react";
-import { useMessages } from "@/components/providers/TranslationProvider";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
 export default function HowItWorks() {
-  const messages = useMessages();
+  const t = useTranslations("text.HowItWorks");
 
   const steps = [
     {
       number: 1,
-      title: messages.text.HowItWorks.step1Title,
-      description: messages.text.HowItWorks.step1Description,
+      title: t("step1Title"),
+      description: t("step1Description"),
     },
     {
       number: 2,
-      title: messages.text.HowItWorks.step2Title,
-      description: messages.text.HowItWorks.step2Description,
+      title: t("step2Title"),
+      description: t("step2Description"),
     },
     {
       number: 3,
-      title: messages.text.HowItWorks.step3Title,
-      description: messages.text.HowItWorks.step3Description,
+      title: t("step3Title"),
+      description: t("step3Description"),
     },
   ];
 
@@ -31,13 +31,11 @@ export default function HowItWorks() {
       {/* Header Section */}
       <div className="text-center mb-16">
         <h2 className="text-3xl md:text-4xl font-bold mb-6">
-          {messages.text.HowItWorks.h2}
+          {t("h2")}
         </h2>
-        <p className="text-muted-foreground mb-8">
-          {messages.text.HowItWorks.h2Description}
-        </p>
+        <p className="text-muted-foreground mb-8">{t("h2Description")}</p>
         <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-full px-8 py-6 text-lg">
-          {messages.text.HowItWorks.tryNowLabel}
+          {t("tryNowLabel")}
         </Button>
       </div>
 
