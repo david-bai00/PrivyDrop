@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useMessages } from "@/components/providers/TranslationProvider";
+import React from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import {
@@ -26,7 +26,7 @@ const FileTransferButton = ({
   isSavedToDisk,
   isPendingSave = false,
 }: FileTransferButtonProps) => {
-  const messages = useMessages();
+  const t = useTranslations("text.FileTransferButton");
   // Button status judgment - 待保存状态时按钮应该可点击
   const isDisabled =
     isCurrentFileTransferring ||
@@ -35,15 +35,11 @@ const FileTransferButton = ({
 
   // Display different tooltips based on status
   const getTooltipContent = () => {
-    if (isSavedToDisk)
-      return messages!.text.FileTransferButton.savedToDiskTip;
-    if (isCurrentFileTransferring)
-      return messages!.text.FileTransferButton.currentFileTransferringTip;
-    if (isPendingSave)
-      return messages!.text.FileTransferButton.pendingSaveTip;
-    if (isOtherFileTransferring)
-      return messages!.text.FileTransferButton.otherFileTransferringTip;
-    return messages!.text.FileTransferButton.downloadTip;
+    if (isSavedToDisk) return t("savedToDiskTip");
+    if (isCurrentFileTransferring) return t("currentFileTransferringTip");
+    if (isPendingSave) return t("pendingSaveTip");
+    if (isOtherFileTransferring) return t("otherFileTransferringTip");
+    return t("downloadTip");
   };
 
   // Set different button styles and class names based on status
@@ -97,12 +93,12 @@ const FileTransferButton = ({
                 }`}
               />
               {isSavedToDisk
-                ? messages.text.FileTransferButton.savedLabel
+                ? t("savedLabel")
                 : isPendingSave
-                ? messages.text.FileTransferButton.saveLabel
+                ? t("saveLabel")
                 : isOtherFileTransferring
-                ? messages.text.FileTransferButton.waitingLabel
-                : messages.text.FileTransferButton.downloadLabel}
+                ? t("waitingLabel")
+                : t("downloadLabel")}
             </Button>
           </span>
         </TooltipTrigger>

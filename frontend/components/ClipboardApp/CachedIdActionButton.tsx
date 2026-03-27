@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useMessages } from "@/components/providers/TranslationProvider";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import Tooltip from "@/components/Tooltip";
 import { getCachedId, setCachedId } from "@/lib/roomIdCache";
@@ -80,7 +80,7 @@ export default function CachedIdActionButton({
   onUseCached,
   disabled = false,
 }: Props) {
-  const messages = useMessages();
+  const t = useTranslations("text.ClipboardApp");
   const [hasCachedId, setHasCachedId] = useState<boolean>(false);
   const [showSaveOverride, setShowSaveOverride] = useState<boolean>(false);
   const clickCountRef = useRef(0);
@@ -119,7 +119,7 @@ export default function CachedIdActionButton({
           clearTimeout(saveTimerRef.current);
           saveTimerRef.current = null;
         }
-        putMessageInMs(messages.text.ClipboardApp.saveIdSuccessMessage, isShareEnd);
+        putMessageInMs(t("saveIdSuccessMessage"), isShareEnd);
       }
       return;
     }
@@ -164,7 +164,7 @@ export default function CachedIdActionButton({
     getInputValue,
     setInputValue,
     putMessageInMs,
-    messages.text.ClipboardApp.saveIdSuccessMessage,
+    t,
     isShareEnd,
     dblClickWindowMs,
     saveModeDurationMs,
@@ -175,8 +175,8 @@ export default function CachedIdActionButton({
     <Tooltip
       content={
         isSaveMode
-          ? messages.text.ClipboardApp.html.saveIdTip
-          : messages.text.ClipboardApp.html.useCachedIdTip
+          ? t("html.saveIdTip")
+          : t("html.useCachedIdTip")
       }
     >
       <span className="inline-block">
@@ -190,8 +190,8 @@ export default function CachedIdActionButton({
           }
         >
           {isSaveMode
-            ? messages.text.ClipboardApp.html.saveIdLabel
-            : messages.text.ClipboardApp.html.useCachedIdLabel}
+            ? t("html.saveIdLabel")
+            : t("html.useCachedIdLabel")}
         </Button>
       </span>
     </Tooltip>
