@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { useMessages } from "@/components/providers/TranslationProvider";
+import { useTranslations } from "next-intl";
 
 interface ClipboardMessages {
   copiedSuccess?: string;
@@ -20,20 +20,20 @@ interface ClipboardActions {
 }
 
 export const useClipboardActions = (): ClipboardActions => {
-  const messages = useMessages();
+  const t = useTranslations("text.clipboard_btn");
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [isPasted, setIsPasted] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const clipboardMessages = useMemo<ClipboardMessages>(
     () => ({
-      copiedSuccess: messages.text.clipboard_btn.copiedLabel,
-      pastedSuccess: messages.text.clipboard_btn.pastedLabel,
+      copiedSuccess: t("copiedLabel"),
+      pastedSuccess: t("pastedLabel"),
       copyError: "Failed to copy.",
       readError: "Failed to read clipboard.",
       loading: "Loading...",
     }),
-    [messages]
+    [t]
   );
 
   const copyText = useCallback(
