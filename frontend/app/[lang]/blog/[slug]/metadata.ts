@@ -1,24 +1,27 @@
 // app/[lang]/blog/[slug]/metadata.ts
 import { Metadata } from "next";
+import { getMessages } from "next-intl/server";
 import { getPostBySlug } from "@/lib/blog";
 import { generateMetadata as generateBlogMetadata } from "../metadata";
-import { getDictionary } from "@/lib/dictionary";
 import { supportedLocales } from "@/constants/i18n-config";
+import type { Messages } from "@/types/messages";
+import type { Locale } from "@/constants/i18n-config";
 
 export async function generateMetadata({
   params,
 }: {
   params: { slug: string; lang: string };
 }): Promise<Metadata> {
-  const post = await getPostBySlug(params.slug, params.lang);
+  const lang = params.lang as Locale;
+  const post = await getPostBySlug(params.slug, lang);
 
   if (!post) {
     //blog not found
     // Call the generateMetadata function of the blog homepage and pass in the parameters
-    return generateBlogMetadata({ params: { lang: params.lang } });
+    return generateBlogMetadata({ params: { lang } });
   }
 
-  const messages = await getDictionary(params.lang);
+  const messages = (await getMessages({ locale: lang })) as Messages;
   const blogWord = messages.text.Header.blogLabel;
   const blogCap = blogWord.charAt(0).toUpperCase() + blogWord.slice(1);
 
@@ -30,7 +33,7 @@ export async function generateMetadata({
     )}, secure file sharing, p2p transfer, privacy`,
     metadataBase: new URL("https://www.privydrop.app"),
     alternates: {
-      canonical: `/${params.lang}/blog/${params.slug}`,
+      canonical: `/${lang}/blog/${params.slug}`,
       languages: Object.fromEntries(
         supportedLocales.map((l) => [l, `/${l}/blog/${params.slug}`])
       ),
@@ -38,9 +41,9 @@ export async function generateMetadata({
     openGraph: {
       title: post.frontmatter.title,
       description: post.frontmatter.description,
-      url: `https://www.privydrop.app/${params.lang}/blog/${params.slug}`,
+      url: `https://www.privydrop.app/${lang}/blog/${params.slug}`,
       siteName: "PrivyDrop",
-      locale: params.lang,
+      locale: lang,
       type: "article",
       publishedTime: post.frontmatter.date,
       modifiedTime: post.frontmatter.date,

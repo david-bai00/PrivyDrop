@@ -1,7 +1,8 @@
 import HomeClient from "./HomeClient";
-import { getDictionary } from "@/lib/dictionary";
 import { Metadata } from "next";
-import { supportedLocales } from "@/constants/i18n-config";
+import { getMessages } from "next-intl/server";
+import { supportedLocales, type Locale } from "@/constants/i18n-config";
+import type { Messages } from "@/types/messages";
 import JsonLd from "@/components/seo/JsonLd";
 import { buildWebAppJsonLd, getSiteUrl, absoluteUrl } from "@/lib/seo/jsonld";
 
@@ -10,7 +11,8 @@ export async function generateMetadata({
 }: {
   params: { lang: string };
 }): Promise<Metadata> {
-  const messages = await getDictionary(params.lang);
+  const lang = params.lang as Locale;
+  const messages = (await getMessages({ locale: lang })) as Messages;
 
   return {
     title: messages.meta.home.title,
@@ -18,7 +20,7 @@ export async function generateMetadata({
     keywords: messages.meta.home.keywords,
     metadataBase: new URL("https://www.privydrop.app"),
     alternates: {
-      canonical: `/${params.lang}`,
+      canonical: `/${lang}`,
       languages: Object.fromEntries(
         supportedLocales.map((lang) => [lang, `/${lang}`])
       ),
@@ -27,9 +29,9 @@ export async function generateMetadata({
     openGraph: {
       title: messages.meta.home.title,
       description: messages.meta.home.description,
-      url: `https://www.privydrop.app/${params.lang}`,
+      url: `https://www.privydrop.app/${lang}`,
       siteName: "PrivyDrop",
-      locale: params.lang,
+      locale: lang,
       type: "website",
     },
   };
@@ -40,7 +42,8 @@ export default async function Home({
 }: {
   params: { lang: string };
 }) {
-  const messages = await getDictionary(lang);
+  const locale = lang as Locale;
+  const messages = (await getMessages({ locale })) as Messages;
   const siteUrl = getSiteUrl();
   const webAppLd = buildWebAppJsonLd({
     siteUrl,
@@ -52,7 +55,7 @@ export default async function Home({
       "Open-source web-based AirDrop alternative",
     ],
     description: messages.meta.home.description,
-    inLanguage: lang,
+    inLanguage: locale,
     imageUrl: absoluteUrl("/logo.png", siteUrl),
     applicationCategory: "UtilityApplication",
     operatingSystem: "Web Browser",

@@ -1,17 +1,19 @@
 import { Metadata } from "next";
+import { getMessages } from "next-intl/server";
 import { getPostsByTag } from "@/lib/blog";
 import { ArticleListItem } from "@/components/blog/ArticleListItem";
-import { supportedLocales } from "@/constants/i18n-config";
+import { supportedLocales, type Locale } from "@/constants/i18n-config";
 import { unslugifyTag } from "@/utils/tagUtils";
-import { getDictionary } from "@/lib/dictionary";
+import type { Messages } from "@/types/messages";
 
 export async function generateMetadata({
   params: { tag, lang },
 }: {
   params: { tag: string; lang: string };
 }): Promise<Metadata> {
+  const locale = lang as Locale;
   const decodedTag = unslugifyTag(tag);
-  const messages = await getDictionary(lang);
+  const messages = (await getMessages({ locale })) as Messages;
 
   // Note: metadata text kept concise and localized
   return {
@@ -20,7 +22,7 @@ export async function generateMetadata({
     keywords: `${decodedTag}, blog, privydrop`,
     metadataBase: new URL("https://www.privydrop.app"),
     alternates: {
-      canonical: `/${lang}/blog/tag/${encodeURIComponent(tag)}`,
+      canonical: `/${locale}/blog/tag/${encodeURIComponent(tag)}`,
       languages: Object.fromEntries(
         supportedLocales.map((l) => [l, `/${l}/blog/tag/${encodeURIComponent(tag)}`])
       ),
@@ -28,9 +30,9 @@ export async function generateMetadata({
     openGraph: {
       title: `${decodedTag} - PrivyDrop`,
       description: `Articles tagged: ${decodedTag}`,
-      url: `https://www.privydrop.app/${lang}/blog/tag/${encodeURIComponent(tag)}`,
+      url: `https://www.privydrop.app/${locale}/blog/tag/${encodeURIComponent(tag)}`,
       siteName: "PrivyDrop",
-      locale: lang,
+      locale,
       type: "website",
     },
   };
@@ -40,9 +42,10 @@ export default async function TagPage({
 }: {
   params: { tag: string; lang: string };
 }) {
+  const locale = lang as Locale;
   const decodedTag = unslugifyTag(tag);
-  const posts = await getPostsByTag(decodedTag, lang);
-  const messages = await getDictionary(lang);
+  const posts = await getPostsByTag(decodedTag, locale);
+  const messages = (await getMessages({ locale })) as Messages;
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -64,8 +67,8 @@ export default async function TagPage({
                 ))
               ) : (
                 <p>{messages.text.blog.tagEmpty}</p>
-            )}
-          </div>
+              )}
+            </div>
         </main>
       </div>
     </div>

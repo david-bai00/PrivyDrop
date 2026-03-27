@@ -1,9 +1,11 @@
 import { getAllPosts } from "@/lib/blog";
 import { ArticleListItem } from "@/components/blog/ArticleListItem";
 import Link from "next/link";
+import { getMessages } from "next-intl/server";
 import { slugifyTag } from "@/utils/tagUtils";
 import { generateMetadata } from "./metadata";
-import { getDictionary } from "@/lib/dictionary";
+import type { Messages } from "@/types/messages";
+import type { Locale } from "@/constants/i18n-config";
 
 export { generateMetadata };
 
@@ -12,8 +14,9 @@ export default async function BlogPage({
 }: {
   params: { lang: string };
 }) {
-  const posts = await getAllPosts(lang);
-  const messages = await getDictionary(lang);
+  const locale = lang as Locale;
+  const posts = await getAllPosts(locale);
+  const messages = (await getMessages({ locale })) as Messages;
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12">

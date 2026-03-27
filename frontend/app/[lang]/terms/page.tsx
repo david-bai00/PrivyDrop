@@ -1,14 +1,16 @@
-import { getDictionary } from "@/lib/dictionary";
 import TermsContent from "./TermsContent";
 import { Metadata } from "next";
-import { supportedLocales } from "@/constants/i18n-config";
+import { getMessages } from "next-intl/server";
+import { supportedLocales, type Locale } from "@/constants/i18n-config";
+import type { Messages } from "@/types/messages";
 
 export async function generateMetadata({
   params,
 }: {
   params: { lang: string };
 }): Promise<Metadata> {
-  const messages = await getDictionary(params.lang);
+  const lang = params.lang as Locale;
+  const messages = (await getMessages({ locale: lang })) as Messages;
 
   return {
     title: messages.meta.terms.title,
@@ -23,9 +25,9 @@ export async function generateMetadata({
     openGraph: {
       title: messages.meta.terms.title,
       description: messages.meta.terms.description,
-      url: `https://www.privydrop.app/${params.lang}/terms`,
+      url: `https://www.privydrop.app/${lang}/terms`,
       siteName: "PrivyDrop",
-      locale: params.lang,
+      locale: lang,
       type: "website",
     },
   };

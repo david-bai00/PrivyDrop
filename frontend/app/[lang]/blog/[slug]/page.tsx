@@ -1,5 +1,6 @@
 //Article detail page
 import { MDXRemote } from "next-mdx-remote/rsc";
+import { getMessages } from "next-intl/server";
 import { getPostBySlug } from "@/lib/blog";
 import * as React from "react";
 import { mdxOptions } from "@/lib/mdx-config";
@@ -13,7 +14,8 @@ import {
   buildBreadcrumbJsonLd,
   getSiteUrl,
 } from "@/lib/seo/jsonld";
-import { getDictionary } from "@/lib/dictionary";
+import type { Messages } from "@/types/messages";
+import type { Locale } from "@/constants/i18n-config";
 
 export { generateMetadata };
 
@@ -22,8 +24,9 @@ export default async function BlogPost({
 }: {
   params: { slug: string; lang: string };
 }) {
-  const post = await getPostBySlug(params.slug, params.lang);
-  const messages = await getDictionary(params.lang);
+  const locale = params.lang as Locale;
+  const post = await getPostBySlug(params.slug, locale);
+  const messages = (await getMessages({ locale })) as Messages;
 
   if (!post) {
     return <div>{messages.text.blog.postNotFound}</div>;
@@ -41,12 +44,12 @@ export default async function BlogPost({
     dateModified: post.frontmatter.date,
     authorName: post.frontmatter.author,
     imageUrl,
-    inLanguage: params.lang,
+    inLanguage: locale,
   });
   const breadcrumbsLd = buildBreadcrumbJsonLd({
     items: [
-      { name: messages.text.Header.homeLabel, item: `${siteUrl}/${params.lang}` },
-      { name: messages.text.Header.blogLabel, item: `${siteUrl}/${params.lang}/blog` },
+      { name: messages.text.Header.homeLabel, item: `${siteUrl}/${locale}` },
+      { name: messages.text.Header.blogLabel, item: `${siteUrl}/${locale}/blog` },
       { name: post.frontmatter.title, item: postUrl },
     ],
   });
@@ -64,7 +67,7 @@ export default async function BlogPost({
             </h1>
             <div className="flex flex-wrap items-center text-muted-foreground gap-2 sm:gap-4">
               <time className="text-sm">
-                {new Date(post.frontmatter.date).toLocaleDateString(params.lang, {
+                {new Date(post.frontmatter.date).toLocaleDateString(locale, {
                   year: "numeric",
                   month: "long",
                   day: "numeric",

@@ -1,7 +1,8 @@
 import FAQSection from "@/components/web/FAQSection";
 import type { Metadata } from "next";
-import { getDictionary } from "@/lib/dictionary";
-import { supportedLocales } from "@/constants/i18n-config";
+import { getMessages } from "next-intl/server";
+import type { Messages } from "@/types/messages";
+import { supportedLocales, type Locale } from "@/constants/i18n-config";
 import JsonLd from "@/components/seo/JsonLd";
 import { buildFaqJsonLd } from "@/lib/seo/jsonld";
 
@@ -10,7 +11,8 @@ export async function generateMetadata({
 }: {
   params: { lang: string };
 }): Promise<Metadata> {
-  const messages = await getDictionary(params.lang);
+  const lang = params.lang as Locale;
+  const messages = (await getMessages({ locale: lang })) as Messages;
 
   return {
     title: messages.meta.faq.title,
@@ -26,9 +28,9 @@ export async function generateMetadata({
     openGraph: {
       title: messages.meta.faq.title,
       description: messages.meta.faq.description,
-      url: `https://www.privydrop.app/${params.lang}/faq`,
+      url: `https://www.privydrop.app/${lang}/faq`,
       siteName: "PrivyDrop",
-      locale: params.lang,
+      locale: lang,
       type: "website",
     },
   };
@@ -39,8 +41,9 @@ export default async function FAQ({
 }: {
   params: { lang: string };
 }) {
-  const messages = await getDictionary(lang);
-  const faqsData = (messages as any).text.faqs as Record<string, string>;
+  const locale = lang as Locale;
+  const messages = (await getMessages({ locale })) as Messages;
+  const faqsData = messages.text.faqs as Record<string, string>;
   const questionKeys = Object.keys(faqsData).filter((k) => k.startsWith("question_"));
   const faqs = questionKeys
     .map((qKey) => {
@@ -53,7 +56,7 @@ export default async function FAQ({
     })
     .filter(Boolean) as { question: string; answer: string }[];
 
-  const faqLd = buildFaqJsonLd({ inLanguage: lang, faqs });
+  const faqLd = buildFaqJsonLd({ inLanguage: locale, faqs });
 
   return (
     <>
