@@ -1,8 +1,5 @@
-import { useState, useEffect } from "react";
-import { getDictionary } from "@/lib/dictionary";
-import { useLocale } from "@/hooks/useLocale";
+import { useEffect } from "react";
 import { trackReferrer } from "@/lib/tracking";
-import type { Messages } from "@/types/messages";
 
 interface UsePageSetupProps {
   setRetrieveRoomId: (roomId: string) => void;
@@ -15,27 +12,6 @@ export function usePageSetup({
   setActiveTab,
   retrieveJoinRoomBtnRef,
 }: UsePageSetupProps) {
-  const locale = useLocale();
-  const [messages, setMessages] = useState<Messages | null>(null);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
-
-  // Load internationalization messages
-  useEffect(() => {
-    setIsLoadingMessages(true);
-    getDictionary(locale)
-      .then((dict) => {
-        setMessages(dict);
-      })
-      .catch((error) => {
-        console.error("Failed to load messages:", error);
-        // Optionally set some default/fallback messages or an error state
-        setMessages(null); // Or some error indicator
-      })
-      .finally(() => {
-        setIsLoadingMessages(false);
-      });
-  }, [locale]);
-
   // Track referrer and handle URL 'roomId' parameter
   useEffect(() => {
     // Guard in SSR
@@ -56,5 +32,4 @@ export function usePageSetup({
     }
   }, [setRetrieveRoomId, setActiveTab, retrieveJoinRoomBtnRef]); // Dependencies are stable setters and a ref
 
-  return { messages, isLoadingMessages };
 }

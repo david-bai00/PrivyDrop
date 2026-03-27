@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { useMessages } from "@/components/providers/TranslationProvider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,13 +8,11 @@ import {
 } from "@/components/common/clipboard_btn";
 import CachedIdActionButton from "@/components/ClipboardApp/CachedIdActionButton";
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
-import type { Messages } from "@/types/messages";
 import type { FileMeta } from "@/types/webrtc";
 
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 
 interface RetrieveTabPanelProps {
-  messages: Messages;
   putMessageInMs: (
     message: string,
     isShareEnd?: boolean,
@@ -36,7 +35,6 @@ interface RetrieveTabPanelProps {
 }
 
 export function RetrieveTabPanel({
-  messages,
   putMessageInMs,
   setRetrieveRoomIdInput,
   joinRoom,
@@ -50,6 +48,7 @@ export function RetrieveTabPanel({
   retrieveMessage,
   handleLeaveRoom,
 }: RetrieveTabPanelProps) {
+  const messages = useMessages();
   // Get the status from the store
   const {
     retrieveRoomStatusText,
@@ -114,7 +113,6 @@ export function RetrieveTabPanel({
             />
             {/* Save/Use Cached ID Button placed after Paste button */}
             <CachedIdActionButton
-              messages={messages}
               getInputValue={() => retrieveRoomIdInput}
               setInputValue={setRetrieveRoomIdInput}
               putMessageInMs={putMessageInMs}

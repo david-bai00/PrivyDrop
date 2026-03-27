@@ -32,11 +32,6 @@ export async function generateMetadata({
   };
 }
 
-export default async function Features({
-  params: { lang },
-}: {
-  params: { lang: string };
-}) {
-  const messages = await getDictionary(lang);
-  return <KeyFeatures messages={messages} />;
-} 
+export default function Features() {
+  return <KeyFeatures />;
+}

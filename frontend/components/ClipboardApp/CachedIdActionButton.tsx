@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useMessages } from "@/components/providers/TranslationProvider";
 import { Button } from "@/components/ui/button";
 import Tooltip from "@/components/Tooltip";
-import type { Messages } from "@/types/messages";
 import { getCachedId, setCachedId } from "@/lib/roomIdCache";
 
 /**
@@ -42,7 +42,6 @@ import { getCachedId, setCachedId } from "@/lib/roomIdCache";
  */
 
 type Props = {
-  messages: Messages;
   getInputValue: () => string;
   setInputValue: (val: string) => void;
   putMessageInMs: (
@@ -69,7 +68,6 @@ type Props = {
 };
 
 export default function CachedIdActionButton({
-  messages,
   getInputValue,
   setInputValue,
   putMessageInMs,
@@ -82,6 +80,7 @@ export default function CachedIdActionButton({
   onUseCached,
   disabled = false,
 }: Props) {
+  const messages = useMessages();
   const [hasCachedId, setHasCachedId] = useState<boolean>(false);
   const [showSaveOverride, setShowSaveOverride] = useState<boolean>(false);
   const clickCountRef = useRef(0);

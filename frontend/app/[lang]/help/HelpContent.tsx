@@ -1,11 +1,10 @@
-import type { Messages } from "@/types/messages";
+"use client";
 
-interface HelpContentProps {
-  messages: Messages;
-  lang: string;
-}
+import { useI18n } from "@/components/providers/TranslationProvider";
 
-export default function HelpContent({ messages, lang }: HelpContentProps) {
+export default function HelpContent() {
+  const { messages, lang } = useI18n();
+
   return (
     <div className="container mx-auto py-12">
       <h1 className="text-4xl font-bold mb-6">{messages.text.help.h1}</h1>

@@ -1,21 +1,23 @@
+"use client";
+
+import { useMessages } from "@/components/providers/TranslationProvider";
 import Image from "next/image";
-import type { Messages } from "@/types/messages";
 
 interface KeyFeaturesProps {
   isInToolPage?: boolean; // Whether it is in the tool page (e.g. homepage)
   className?: string; // Custom style class
   showTitle?: boolean; // Whether to display the title
   titleClassName?: string; // Title style class
-  messages: Messages;
 }
 
-export default function KeyFeatures({ 
+export default function KeyFeatures({
   isInToolPage = false,
   className = "",
   showTitle = true,
   titleClassName = "",
-  messages 
 }: KeyFeaturesProps) {
+  const messages = useMessages();
+
   // Set container styles
   const containerClasses = `container mx-auto px-4 py-8 ${className}`;
   const defaultTitleClasses = "font-semibold mb-6";

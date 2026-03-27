@@ -28,7 +28,7 @@ export default async function BlogPage({
           {/* Articles List */}
           <div className="space-y-12">
             {posts.map((post) => (
-              <ArticleListItem key={post.slug} post={post} lang={lang} messages={messages} />
+              <ArticleListItem key={post.slug} post={post} />
             ))}
           </div>
         </main>

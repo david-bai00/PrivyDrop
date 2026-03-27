@@ -1,11 +1,10 @@
-import type { Messages } from "@/types/messages";
+"use client";
 
-interface AboutContentProps {
-  messages: Messages;
-  lang: string;
-}
+import { useI18n } from "@/components/providers/TranslationProvider";
 
-export default function AboutContent({ messages, lang }: AboutContentProps) {
+export default function AboutContent() {
+  const { messages, lang } = useI18n();
+
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold text-center mb-6">

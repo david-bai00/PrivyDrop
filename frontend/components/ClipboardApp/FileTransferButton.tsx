@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useMessages } from "@/components/providers/TranslationProvider";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import {
@@ -7,9 +8,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { getDictionary } from "@/lib/dictionary";
-import { useLocale } from "@/hooks/useLocale";
-import type { Messages } from "@/types/messages";
 
 interface FileTransferButtonProps {
   onRequest: () => void;
@@ -28,19 +26,13 @@ const FileTransferButton = ({
   isSavedToDisk,
   isPendingSave = false,
 }: FileTransferButtonProps) => {
-  const locale = useLocale();
-  const [messages, setMessages] = useState<Messages | null>(null);
+  const messages = useMessages();
   // Button status judgment - 待保存状态时按钮应该可点击
   const isDisabled =
     isCurrentFileTransferring ||
     isSavedToDisk ||
     (isOtherFileTransferring && !isPendingSave);
 
-  useEffect(() => {
-    getDictionary(locale)
-      .then((dict) => setMessages(dict))
-      .catch((error) => console.error("Failed to load messages:", error));
-  }, [locale]);
   // Display different tooltips based on status
   const getTooltipContent = () => {
     if (isSavedToDisk)
@@ -87,9 +79,6 @@ const FileTransferButton = ({
   };
 
   const buttonStyles = getButtonStyles();
-  if (messages === null) {
-    return <div>Loading...</div>;
-  }
   return (
     <TooltipProvider delayDuration={100}>
       <Tooltip>

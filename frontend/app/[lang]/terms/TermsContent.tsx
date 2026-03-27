@@ -1,10 +1,10 @@
-import type { Messages } from "@/types/messages";
+"use client";
 
-interface PageContentProps {
-  messages: Messages;
-}
+import { useMessages } from "@/components/providers/TranslationProvider";
 
-export default function TermsContent({ messages }: PageContentProps) {
+export default function TermsContent() {
+  const messages = useMessages();
+
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold text-center mb-6">

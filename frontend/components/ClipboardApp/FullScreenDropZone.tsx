@@ -1,16 +1,14 @@
 import React from "react";
+import { useMessages } from "@/components/providers/TranslationProvider";
 import { Upload } from "lucide-react";
-import type { Messages } from "@/types/messages";
 
 interface FullScreenDropZoneProps {
   isDragging: boolean;
-  messages: Messages;
 }
 
-const FullScreenDropZone: React.FC<FullScreenDropZoneProps> = ({
-  isDragging,
-  messages,
-}) => {
+const FullScreenDropZone: React.FC<FullScreenDropZoneProps> = ({ isDragging }) => {
+  const messages = useMessages();
+
   if (!isDragging) return null;
 
   return (

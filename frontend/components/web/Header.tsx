@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useI18n } from "@/components/providers/TranslationProvider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -7,22 +8,14 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Menu, X, Github } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { Messages } from "@/types/messages";
 import ThemeToggle from "@/components/web/ThemeToggle";
-
-/**
- * Props interface for the Header component
- */
-interface HeaderProps {
-  messages: Messages;
-  lang: string;
-}
 
 /**
  * Header component providing navigation, language switching, and GitHub link
  * Features responsive design with mobile menu support
  */
-const Header = ({ messages, lang }: HeaderProps) => {
+const Header = () => {
+  const { messages, lang } = useI18n();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 

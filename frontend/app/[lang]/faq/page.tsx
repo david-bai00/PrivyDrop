@@ -58,7 +58,7 @@ export default async function FAQ({
   return (
     <>
       <JsonLd id="faq-ld" data={faqLd} />
-      <FAQSection messages={messages} />
+      <FAQSection />
     </>
   );
 }

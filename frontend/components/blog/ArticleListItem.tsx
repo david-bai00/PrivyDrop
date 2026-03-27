@@ -1,15 +1,17 @@
+"use client";
+
+import { useI18n } from "@/components/providers/TranslationProvider";
 import Link from "next/link";
 import Image from "next/image";
 import { type BlogPost } from "@/lib/blog";
-import { Messages } from "@/types/messages";
 
 interface ArticleListItemProps {
   post: BlogPost;
-  lang: string;
-  messages: Messages;
 }
 
-export function ArticleListItem({ post, lang, messages }: ArticleListItemProps) {
+export function ArticleListItem({ post }: ArticleListItemProps) {
+  const { messages, lang } = useI18n();
+
   return (
     <article className="bg-card rounded-xl shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
       <div className="relative h-80 w-full">

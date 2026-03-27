@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useMessages } from "@/components/providers/TranslationProvider";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2 } from "lucide-react";
 import { Tooltip } from "@/components/Tooltip";
@@ -7,9 +8,6 @@ import { formatFileSize, generateFileId } from "@/lib/fileUtils";
 import { AutoPopupDialog } from "@/components/common/AutoPopupDialog";
 import { FileMeta, CustomFile, Progress } from "@/types/webrtc";
 import FileTransferButton from "./FileTransferButton";
-import { getDictionary } from "@/lib/dictionary";
-import { useLocale } from "@/hooks/useLocale";
-import type { Messages } from "@/types/messages";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { supportsAutoDownload } from "@/lib/browserUtils";
 import { postLogToBackend } from "@/app/config/api";
@@ -68,8 +66,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
   saveType,
   largeFileThreshold = 500 * 1024 * 1024, // 500MB default
 }) => {
-  const locale = useLocale();
-  const [messages, setMessages] = useState<Messages | null>(null);
+  const messages = useMessages();
 
   // Get the cleaning method of the store
   const { clearSendProgress, clearReceiveProgress } = useFileTransferStore();
@@ -110,12 +107,6 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
       });
     }
   };
-
-  useEffect(() => {
-    getDictionary(locale)
-      .then((dict) => setMessages(dict))
-      .catch((error) => console.error("Failed to load messages:", error));
-  }, [locale]);
 
   useEffect(() => {
     // Separate single files and folders

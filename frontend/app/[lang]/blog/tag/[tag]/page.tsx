@@ -57,13 +57,13 @@ export default async function TagPage({
           </div>
 
           {/* Articles List */}
-          <div className="space-y-12">
-            {posts.length > 0 ? (
-              posts.map((post) => (
-                <ArticleListItem key={post.slug} post={post} lang={lang} messages={messages} />
-              ))
-            ) : (
-              <p>{messages.text.blog.tagEmpty}</p>
+            <div className="space-y-12">
+              {posts.length > 0 ? (
+                posts.map((post) => (
+                  <ArticleListItem key={post.slug} post={post} />
+                ))
+              ) : (
+                <p>{messages.text.blog.tagEmpty}</p>
             )}
           </div>
         </main>

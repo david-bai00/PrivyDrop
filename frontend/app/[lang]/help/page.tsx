@@ -30,11 +30,6 @@ export async function generateMetadata({
     },
   };
 }
-export default async function Help({
-  params: { lang },
-}: {
-  params: { lang: string };
-}) {
-  const messages = await getDictionary(lang);
-  return <HelpContent messages={messages} lang={lang} />;
+export default function Help() {
+  return <HelpContent />;
 }

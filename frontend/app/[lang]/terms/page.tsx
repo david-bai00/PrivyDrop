@@ -30,11 +30,6 @@ export async function generateMetadata({
     },
   };
 }
-export default async function TermsOfUse({
-  params: { lang },
-}: {
-  params: { lang: string };
-}) {
-  const messages = await getDictionary(lang);
-  return <TermsContent messages={messages} />;
+export default function TermsOfUse() {
+  return <TermsContent />;
 }

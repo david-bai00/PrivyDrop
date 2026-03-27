@@ -1,20 +1,16 @@
 "use client";
 import ClipboardApp from "@/components/ClipboardApp";
+import { useI18n } from "@/components/providers/TranslationProvider";
 import { cn } from "@/lib/utils";
 import SystemDiagram from "@/components/web/SystemDiagram";
 import FAQSection from "@/components/web/FAQSection";
 import HowItWorks from "@/components/web/HowItWorks";
 import YouTubePlayer from "@/components/common/YouTubePlayer";
 import KeyFeatures from "@/components/web/KeyFeatures";
-import type { Messages } from "@/types/messages";
 import LazyLoadWrapper from "@/components/common/LazyLoadWrapper";
 
-interface PageContentProps {
-  messages: Messages;
-  lang: string;
-}
-
-export default function HomeClient({ messages, lang }: PageContentProps) {
+export default function HomeClient() {
+  const { messages, lang } = useI18n();
   const youtube_videoId = lang === "zh" ? "I0RLCpcbUXs" : "ypt-po_R2Ds";
   const bilibili_videoId = lang === "zh" ? "BV1knrjYZEfn" : "BV1yErjYFEV7";
   return (
@@ -41,7 +37,7 @@ export default function HomeClient({ messages, lang }: PageContentProps) {
       {/* How It Works Section */}
       <section aria-label="How It Works">
         <LazyLoadWrapper>
-          <HowItWorks messages={messages} />
+          <HowItWorks />
         </LazyLoadWrapper>
       </section>
       {/* Demo Video Section */}
@@ -81,27 +77,19 @@ export default function HomeClient({ messages, lang }: PageContentProps) {
       {/* System Architecture Section */}
       <section aria-label="System Architecture">
         <LazyLoadWrapper>
-          <SystemDiagram messages={messages} />
+          <SystemDiagram />
         </LazyLoadWrapper>
       </section>
       {/* Key Features */}
       <section aria-label="Key Features">
         <LazyLoadWrapper>
-          <KeyFeatures
-            messages={messages}
-            isInToolPage
-            titleClassName="text-2xl md:text-3xl"
-          />
+          <KeyFeatures isInToolPage titleClassName="text-2xl md:text-3xl" />
         </LazyLoadWrapper>
       </section>
       {/* FAQ Section */}
       <section aria-label="Frequently Asked Questions">
         <LazyLoadWrapper>
-          <FAQSection
-            messages={messages}
-            isInToolPage
-            titleClassName="text-2xl md:text-3xl"
-          />
+          <FAQSection isInToolPage titleClassName="text-2xl md:text-3xl" />
         </LazyLoadWrapper>
       </section>
     </main>

@@ -1,14 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
-import { Messages } from "@/types/messages";
+import { useI18n } from "@/components/providers/TranslationProvider";
 import { languageDisplayNames } from "@/constants/i18n-config";
 
-interface FooterProps {
-  messages: Messages;
-  lang: string;
-}
+export function Footer() {
+  const { messages, lang } = useI18n();
 
-export function Footer({ messages, lang }: FooterProps) {
   return (
     <footer className="bg-background border-t mt-auto">
       <div className="container mx-auto px-4 py-6">

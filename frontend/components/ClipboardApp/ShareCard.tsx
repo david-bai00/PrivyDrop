@@ -1,13 +1,10 @@
 import React, { useRef, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { useMessages } from "@/components/providers/TranslationProvider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Copy, Download, Check } from "lucide-react";
 import { WriteClipboardButton } from "../common/clipboard_btn";
-
-import { getDictionary } from "@/lib/dictionary";
-import { useLocale } from "@/hooks/useLocale";
-import type { Messages } from "@/types/messages";
 interface ShareCardProps {
   RoomID: string;
   shareLink: string;
@@ -22,8 +19,7 @@ const QRCodeSVG = dynamic(
   }
 );
 const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
-  const locale = useLocale();
-  const [messages, setMessages] = useState<Messages | null>(null);
+  const messages = useMessages();
   const qrRef = useRef<HTMLDivElement>(null);
   const [isCopied, setIsCopied] = useState<boolean>(false);
 
@@ -86,12 +82,6 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
       downloadQRCode(); // Fallback to download on any error
     }
   };
-  useEffect(() => {
-    getDictionary(locale)
-      .then((dict) => setMessages(dict))
-      .catch((error) => console.error("Failed to load messages:", error));
-  }, [locale]);
-
   const downloadQRCode = () => {
     if (!qrRef.current) return;
 
@@ -116,9 +106,6 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
     };
     img.src = "data:image/svg+xml;base64," + btoa(svgData);
   };
-  if (messages === null) {
-    return <div>Loading...</div>;
-  }
   return (
     <div className="bg-primary/10 p-2 sm:p-4 rounded-lg border border-primary/20">
       <p className="text-primary mb-3 sm:mb-4 text-sm sm:text-base">

@@ -1,5 +1,6 @@
 "use client";
 import React, { useRef, useCallback, useEffect, useMemo } from "react";
+import { useMessages } from "@/components/providers/TranslationProvider";
 import { Button } from "@/components/ui/button";
 import useRichTextToPlainText from "../hooks/useRichTextToPlainText";
 import QRCodeComponent from "./ClipboardApp/ShareCard";
@@ -18,13 +19,14 @@ import { getCachedId } from "@/lib/roomIdCache";
 import { useConnectionFeedback } from "@/hooks/useConnectionFeedback";
 
 const ClipboardApp = () => {
+  const messages = useMessages();
   const { shareMessage, retrieveMessage, putMessageInMs } =
     useClipboardAppMessages();
 
   const dragCounter = useRef(0);
   const retrieveJoinRoomBtnRef = useRef<HTMLButtonElement>(null);
 
-  const { messages, isLoadingMessages } = usePageSetup({
+  usePageSetup({
     setRetrieveRoomId: useFileTransferStore.getState().setRetrieveRoomIdInput,
     setActiveTab: useFileTransferStore.getState().setActiveTab,
     retrieveJoinRoomBtnRef,
@@ -178,20 +180,9 @@ const ClipboardApp = () => {
   // Connection feedback observer (Hook)
   useConnectionFeedback({ messages, putMessageInMs });
 
-  if (isLoadingMessages || !messages) {
-    return (
-      <div className="container mx-auto px-4 py-8 w-full md:max-w-4xl">
-        <div className="min-h-[1000px] w-full bg-gray-200/50 dark:bg-gray-800/50 rounded-lg animate-pulse">
-          {" "}
-          Loading Editor...{" "}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full mx-auto px-1 sm:px-1 py-3 sm:py-8 md:max-w-4xl md:container">
-      <FullScreenDropZone isDragging={isDragging} messages={messages} />
+      <FullScreenDropZone isDragging={isDragging} />
       <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-4">
         <Button
           variant={activeTab === "send" ? "default" : "outline"}
@@ -225,7 +216,6 @@ const ClipboardApp = () => {
         <CardContent className="px-3 sm:px-6">
           {activeTab === "send" ? (
             <SendTabPanel
-              messages={messages}
               updateShareContent={updateShareContent}
               addFilesToSend={addFilesToSend}
               removeFileToSend={removeFileToSend}
@@ -240,7 +230,6 @@ const ClipboardApp = () => {
             />
           ) : (
             <RetrieveTabPanel
-              messages={messages}
               putMessageInMs={putMessageInMs}
               setRetrieveRoomIdInput={setRetrieveRoomIdInput}
               joinRoom={joinRoom}
@@ -257,7 +246,7 @@ const ClipboardApp = () => {
           )}
         </CardContent>
       </Card>
-      {activeTab === "send" && shareLink && messages && (
+      {activeTab === "send" && shareLink && (
         <Card className="border-2 sm:border-4 shadow-md mt-2 sm:mt-4">
           <CardHeader className="pb-3 sm:pb-6">
             <CardTitle className="text-base sm:text-lg">

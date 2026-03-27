@@ -1,28 +1,28 @@
+"use client";
+
 import React from "react";
+import { useMessages } from "@/components/providers/TranslationProvider";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import type { Messages } from "@/types/messages";
 
-interface PageContentProps {
-  messages: Messages;
-}
+export default function HowItWorks() {
+  const messages = useMessages();
 
-export default function HowItWorks({ messages }: PageContentProps) {
   const steps = [
     {
       number: 1,
-      title: messages!.text.HowItWorks.step1Title,
-      description: messages!.text.HowItWorks.step1Description,
+      title: messages.text.HowItWorks.step1Title,
+      description: messages.text.HowItWorks.step1Description,
     },
     {
       number: 2,
-      title: messages!.text.HowItWorks.step2Title,
-      description: messages!.text.HowItWorks.step2Description,
+      title: messages.text.HowItWorks.step2Title,
+      description: messages.text.HowItWorks.step2Description,
     },
     {
       number: 3,
-      title: messages!.text.HowItWorks.step3Title,
-      description: messages!.text.HowItWorks.step3Description,
+      title: messages.text.HowItWorks.step3Title,
+      description: messages.text.HowItWorks.step3Description,
     },
   ];
 
@@ -33,7 +33,9 @@ export default function HowItWorks({ messages }: PageContentProps) {
         <h2 className="text-3xl md:text-4xl font-bold mb-6">
           {messages.text.HowItWorks.h2}
         </h2>
-        <p className="text-muted-foreground mb-8">{messages.text.HowItWorks.h2Description}</p>
+        <p className="text-muted-foreground mb-8">
+          {messages.text.HowItWorks.h2Description}
+        </p>
         <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-full px-8 py-6 text-lg">
           {messages.text.HowItWorks.tryNowLabel}
         </Button>

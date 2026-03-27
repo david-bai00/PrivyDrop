@@ -31,12 +31,6 @@ export async function generateMetadata({
   };
 }
 
-export default async function About({
-  params: { lang },
-}: {
-  params: { lang: string };
-}) {
-  const messages = await getDictionary(lang);
-
-  return <AboutContent messages={messages} lang={lang} />;
+export default function About() {
+  return <AboutContent />;
 }

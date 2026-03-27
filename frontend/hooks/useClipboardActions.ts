@@ -1,7 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
-import { useLocale } from "@/hooks/useLocale";
-import { getDictionary } from "@/lib/dictionary";
-import type { Messages } from "@/types/messages";
+import { useState, useCallback, useMemo } from "react";
+import { useMessages } from "@/components/providers/TranslationProvider";
 
 interface ClipboardMessages {
   copiedSuccess?: string;
@@ -22,43 +20,21 @@ interface ClipboardActions {
 }
 
 export const useClipboardActions = (): ClipboardActions => {
-  const locale = useLocale();
-  const [messages, setMessages] = useState<Messages | null>(null);
-  const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(true);
+  const messages = useMessages();
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [isPasted, setIsPasted] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [clipboardMessages, setClipboardMessages] = useState<ClipboardMessages>(
-    {}
+  const clipboardMessages = useMemo<ClipboardMessages>(
+    () => ({
+      copiedSuccess: messages.text.clipboard_btn.copiedLabel,
+      pastedSuccess: messages.text.clipboard_btn.pastedLabel,
+      copyError: "Failed to copy.",
+      readError: "Failed to read clipboard.",
+      loading: "Loading...",
+    }),
+    [messages]
   );
-
-  useEffect(() => {
-    setIsLoadingMessages(true);
-    getDictionary(locale)
-      .then((dict) => {
-        setMessages(dict);
-        setClipboardMessages({
-          copiedSuccess: dict.text.clipboard_btn.copiedLabel,
-          pastedSuccess: dict.text.clipboard_btn.pastedLabel,
-          copyError: "Failed to copy.",
-          readError: "Failed to read clipboard.",
-          loading: "Loading...",
-        });
-        setIsLoadingMessages(false);
-      })
-      .catch((err) => {
-        console.error("Failed to load messages for useClipboardActions:", err);
-        setError("Failed to load messages");
-        setClipboardMessages({
-          // Provide fallbacks even on error
-          copyError: "Failed to copy.",
-          readError: "Failed to read clipboard.",
-          loading: "Loading...",
-        });
-        setIsLoadingMessages(false);
-      });
-  }, [locale]);
 
   const copyText = useCallback(
     async (textToCopy: string) => {
@@ -158,7 +134,7 @@ export const useClipboardActions = (): ClipboardActions => {
     readClipboard,
     isCopied,
     isPasted,
-    isLoadingMessages,
+    isLoadingMessages: false,
     error,
     clipboardMessages,
   };

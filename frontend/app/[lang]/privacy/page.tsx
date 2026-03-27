@@ -30,11 +30,6 @@ export async function generateMetadata({
     },
   };
 }
-export default async function Privacy({
-  params: { lang },
-}: {
-  params: { lang: string };
-}) {
-  const messages = await getDictionary(lang);
-  return <PrivacyContent messages={messages} />;
+export default function Privacy() {
+  return <PrivacyContent />;
 }

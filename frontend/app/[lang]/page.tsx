@@ -61,7 +61,7 @@ export default async function Home({
   return (
     <>
       <JsonLd id="home-ld" data={webAppLd} />
-      <HomeClient messages={messages} lang={lang} />
+      <HomeClient />
     </>
   );
 }

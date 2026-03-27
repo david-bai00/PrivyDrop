@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useMessages } from "@/components/providers/TranslationProvider";
 import dynamic from "next/dynamic";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,6 @@ import {
 import { FileUploadHandler } from "@/components/ClipboardApp/FileUploadHandler";
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import AnimatedButton from "@/components/ui/AnimatedButton";
-import type { Messages } from "@/types/messages";
 import type { CustomFile, FileMeta } from "@/types/webrtc";
 
 import { useFileTransferStore } from "@/stores/fileTransferStore";
@@ -29,7 +29,6 @@ const RichTextEditor = dynamic(
 );
 
 interface SendTabPanelProps {
-  messages: Messages;
   updateShareContent: (content: string) => void;
   addFilesToSend: (files: CustomFile[]) => void;
   removeFileToSend: (meta: FileMeta) => void;
@@ -48,7 +47,6 @@ interface SendTabPanelProps {
 }
 
 export function SendTabPanel({
-  messages,
   updateShareContent,
   addFilesToSend,
   removeFileToSend,
@@ -61,6 +59,7 @@ export function SendTabPanel({
   handleLeaveSenderRoom,
   putMessageInMs,
 }: SendTabPanelProps) {
+  const messages = useMessages();
   // Get the status from the store
   const {
     shareContent,
@@ -192,7 +191,6 @@ export function SendTabPanel({
             </Button>
             {/* Save/Use Cached ID Button in between */}
             <CachedIdActionButton
-              messages={messages}
               getInputValue={() => inputFieldValue}
               setInputValue={setInputFieldValue}
               putMessageInMs={putMessageInMs}

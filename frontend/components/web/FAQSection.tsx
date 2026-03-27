@@ -1,10 +1,12 @@
+"use client";
+
+import { useMessages } from "@/components/providers/TranslationProvider";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import type { Messages } from "@/types/messages";
 
 interface FAQMessage {
   [key: string]: string;
@@ -47,7 +49,6 @@ interface FAQSectionProps {
   showTitle?: boolean; // Whether to display the title
   titleClassName?: string; // Title style class
   lang?: string;
-  messages: Messages;
 }
 // Control the level and style of the title through props, so it can be used on other pages as well as on a standalone page
 export default function FAQSection({
@@ -55,8 +56,8 @@ export default function FAQSection({
   className = "",
   showTitle = true,
   titleClassName = "",
-  messages,
 }: FAQSectionProps) {
+  const messages = useMessages();
   const faqs = generateFAQs(messages);
 
   // Set default styles for different scenarios

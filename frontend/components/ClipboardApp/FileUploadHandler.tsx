@@ -5,6 +5,7 @@ import React, {
   useRef,
   useCallback,
 } from "react";
+import { useMessages } from "@/components/providers/TranslationProvider";
 import { Input } from "@/components/ui/input";
 import { Upload } from "lucide-react";
 import { FileMeta, CustomFile } from "@/types/webrtc";
@@ -23,11 +24,6 @@ declare module "@/components/ui/input" {
   }
 }
 
-import { getDictionary } from "@/lib/dictionary";
-import { useLocale } from "@/hooks/useLocale";
-import type { Messages } from "@/types/messages";
-import { en } from "@/constants/messages/en"; // Import English dictionary as default
-
 function formatFileChosen(
   template: string,
   fileNum: number,
@@ -45,28 +41,19 @@ interface FileUploadHandlerProps {
 const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
   onFilePicked,
 }) => {
-  const locale = useLocale();
-  const [messages, setMessages] = useState<Messages>(en); // Use English dictionary as initial value
+  const messages = useMessages();
 
   const folderInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // File selector -- message prompt
   const [fileText, setFileText] = useState<string>(
-    en.text.fileUploadHandler.noFileChosenTip
+    messages.text.fileUploadHandler.noFileChosenTip
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    if (locale !== "en") {
-      // Only load other language packs if not English
-      getDictionary(locale)
-        .then((dict) => {
-          setMessages(dict);
-          setFileText(dict.text.fileUploadHandler.noFileChosenTip);
-        })
-        .catch((error) => console.error("Failed to load messages:", error));
-    }
-  }, [locale]);
+    setFileText(messages.text.fileUploadHandler.noFileChosenTip);
+  }, [messages.text.fileUploadHandler.noFileChosenTip]);
 
   const handleFileChange = useCallback(
     (newFiles: CustomFile[]) => {
@@ -154,9 +141,6 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
   const handleSelectFolder = () => {
     folderInputRef.current?.click();
   };
-  if (messages === null) {
-    return <div>Loading...</div>;
-  }
   return (
     <>
       <div

@@ -1,6 +1,7 @@
 import "./globals.css";
 import Header from "@/components/web/Header";
 import Footer from "@/components/web/Footer";
+import { TranslationProvider } from "@/components/providers/TranslationProvider";
 import { ThemeProvider } from "@/components/web/theme-provider";
 import { getDictionary } from "@/lib/dictionary";
 import JsonLd from "@/components/seo/JsonLd";
@@ -47,9 +48,11 @@ export default async function RootLayout({
           disableTransitionOnChange
           storageKey="theme-preference"
         >
-          <Header messages={messages} lang={lang} />
-          <div className="flex-1">{children}</div>
-          <Footer messages={messages} lang={lang} />
+          <TranslationProvider messages={messages} lang={lang}>
+            <Header />
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </TranslationProvider>
         </ThemeProvider>
       </body>
     </html>
