@@ -4,7 +4,6 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import Header from "@/components/web/Header";
 import Footer from "@/components/web/Footer";
-import { TranslationProvider } from "@/components/providers/TranslationProvider";
 import { ThemeProvider } from "@/components/web/theme-provider";
 import { routing } from "@/i18n/routing";
 import JsonLd from "@/components/seo/JsonLd";
@@ -57,11 +56,9 @@ export default async function RootLayout({
           storageKey="theme-preference"
         >
           <NextIntlClientProvider locale={lang} messages={messages}>
-            <TranslationProvider>
-              <Header />
-              <div className="flex-1">{children}</div>
-              <Footer />
-            </TranslationProvider>
+            <Header />
+            <div className="flex-1">{children}</div>
+            <Footer />
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>
