@@ -225,6 +225,9 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
     fileProgresses,
     showFinished,
     activeTransfers,
+    mode,
+    clearSendProgress,
+    clearReceiveProgress,
     folders,
     singleFiles,
   ]);
@@ -286,7 +289,15 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
       // Update the last status
       prevShowFinishedRef.current[item.fileId] = currentShowFinished;
     });
-  }, [showFinished, singleFiles, folders, saveType, onDownload]);
+  }, [
+    showFinished,
+    singleFiles,
+    folders,
+    saveType,
+    onDownload,
+    activeTransfers,
+    fileProgresses,
+  ]);
 
   //Actions corresponding to each file - progress, download, delete
   const renderItemActions = (item: FileMeta) => {

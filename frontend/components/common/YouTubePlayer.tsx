@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Play } from "lucide-react";
+import Image from "next/image";
 
 interface YouTubePlayerProps {
   videoId: string;
@@ -21,9 +22,11 @@ const YouTubePlayer: React.FC<YouTubePlayerProps> = ({
       <div className="relative pb-[56.25%]">
         {!isPlaying ? (
           <div className="absolute top-0 left-0 w-full h-full">
-            <img
+            <Image
               src={localThumbnail}
               alt="Video preview"
+              fill
+              sizes="(max-width: 1024px) 100vw, 1024px"
               className="w-full h-full object-cover"
             />
             <button

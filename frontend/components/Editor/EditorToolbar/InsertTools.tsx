@@ -1,4 +1,4 @@
-import { Link2, Image, Code } from "lucide-react";
+import { Link2, Image as ImageIcon, Code } from "lucide-react";
 
 interface InsertToolsProps {
   insertLink: () => void;
@@ -25,7 +25,7 @@ export function InsertTools({
         onClick={insertImage}
         title="Upload image"
       >
-        <Image className="w-3.5 h-3.5" />
+        <ImageIcon className="w-3.5 h-3.5" />
       </button>
       <button
         className="p-1.5 hover:bg-accent rounded"

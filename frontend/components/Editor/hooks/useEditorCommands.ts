@@ -76,7 +76,7 @@ export const useEditorCommands = (
       // Update HTML
       handleChange();
     },
-    [findStyleParent, getSelection, removeStyle]
+    [editorRef, findStyleParent, getSelection, handleChange]
   );
 
   // Align text
@@ -129,7 +129,7 @@ export const useEditorCommands = (
       // Update HTML
       handleChange();
     },
-    [getSelection]
+    [editorRef, getSelection, handleChange]
   );
 
   // Set font style
@@ -218,7 +218,7 @@ export const useEditorCommands = (
 
       handleChange();
     },
-    [getSelection, findStyleParent, cleanupSpan]
+    [cleanupSpan, findStyleParent, getSelection, handleChange]
   );
 
   // Insert link
@@ -258,7 +258,7 @@ export const useEditorCommands = (
         handleChange();
       }
     }
-  }, [getSelection]);
+  }, [getSelection, handleChange]);
 
   // Insert image
   const insertImage = useCallback(() => {
@@ -290,7 +290,7 @@ export const useEditorCommands = (
       }
     };
     input.click();
-  }, [getSelection]);
+  }, [getSelection, handleChange]);
 
   // Insert code block
   const insertCodeBlock = useCallback(() => {
@@ -318,7 +318,7 @@ export const useEditorCommands = (
     range.deleteContents();
     range.insertNode(pre);
     handleChange();
-  }, [getSelection]);
+  }, [getSelection, handleChange]);
 
   return {
     formatText,
