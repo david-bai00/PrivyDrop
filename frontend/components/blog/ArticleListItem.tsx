@@ -1,6 +1,6 @@
 "use client";
 
-import { useI18n } from "@/components/providers/TranslationProvider";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import Image from "next/image";
 import { type BlogPost } from "@/lib/blog";
@@ -10,7 +10,8 @@ interface ArticleListItemProps {
 }
 
 export function ArticleListItem({ post }: ArticleListItemProps) {
-  const { messages, lang } = useI18n();
+  const t = useTranslations("text.blog");
+  const lang = useLocale();
 
   return (
     <article className="bg-card rounded-xl shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
@@ -61,7 +62,7 @@ export function ArticleListItem({ post }: ArticleListItemProps) {
             href={`/${lang}/blog/${post.slug}`}
             className="text-primary hover:text-primary/80 font-medium inline-flex items-center text-lg"
           >
-            {messages.text.blog.readMore}
+            {t("readMore")}
             <svg
               className="w-5 h-5 ml-2"
               viewBox="0 0 24 24"
@@ -79,7 +80,7 @@ export function ArticleListItem({ post }: ArticleListItemProps) {
 
           <div className="flex items-center gap-3">
             <span className="text-sm">
-              {messages.text.blog.by} <span className="font-bold">{post.frontmatter.author}</span>
+              {t("by")} <span className="font-bold">{post.frontmatter.author}</span>
             </span>
           </div>
         </div>
