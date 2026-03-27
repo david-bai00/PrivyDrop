@@ -5,7 +5,7 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { useMessages } from "@/components/providers/TranslationProvider";
+import { useMessages } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Upload } from "lucide-react";
 import { FileMeta, CustomFile } from "@/types/webrtc";

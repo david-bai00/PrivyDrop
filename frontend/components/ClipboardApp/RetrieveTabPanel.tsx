@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useMessages } from "@/components/providers/TranslationProvider";
+import { useMessages } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useMessages } from "@/components/providers/TranslationProvider";
+import { useMessages } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Download, Trash2 } from "lucide-react";
 import { Tooltip } from "@/components/Tooltip";

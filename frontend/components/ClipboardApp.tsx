@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useCallback, useEffect, useMemo } from "react";
-import { useMessages } from "@/components/providers/TranslationProvider";
+import { useMessages } from "next-intl";
 import { Button } from "@/components/ui/button";
 import useRichTextToPlainText from "../hooks/useRichTextToPlainText";
 import QRCodeComponent from "./ClipboardApp/ShareCard";
