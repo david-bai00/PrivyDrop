@@ -143,6 +143,17 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
         <p className="text-sm text-center text-muted-foreground pt-2">
           {t("scanQr")}
         </p>
+        <div className="flex justify-center">
+          <div className="inline-block border-2 p-2 sm:p-4 bg-muted rounded-lg">
+            <div ref={qrRef}>
+              <QRCodeSVG
+                value={shareLink}
+                size={120}
+                className="sm:w-32 sm:h-32"
+              />
+            </div>
+          </div>
+        </div>
       </div>
       <div className="flex justify-center gap-2 mt-4">
         <Button

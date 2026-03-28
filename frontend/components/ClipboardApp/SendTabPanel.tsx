@@ -149,7 +149,7 @@ export function SendTabPanel({
       <RichTextEditor value={shareContent} onChange={updateShareContent} />
       <div className="flex flex-col sm:flex-row gap-2 my-3">
         <ReadClipboardButton
-          title={tActions("readClipboard")}
+          title={tCommon("buttons.paste")}
           onRead={updateShareContent}
         />
         <WriteClipboardButton
