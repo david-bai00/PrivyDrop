@@ -22,6 +22,20 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
   const t = useTranslations("text.retrieveMethod");
   const qrRef = useRef<HTMLDivElement>(null);
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [isRoomIdCopied, setIsRoomIdCopied] = useState<boolean>(false);
+  const [isUrlCopied, setIsUrlCopied] = useState<boolean>(false);
+
+  const copyRoomId = async () => {
+    await navigator.clipboard.writeText(RoomID);
+    setIsRoomIdCopied(true);
+    setTimeout(() => setIsRoomIdCopied(false), 2000);
+  };
+
+  const copyUrl = async () => {
+    await navigator.clipboard.writeText(shareLink);
+    setIsUrlCopied(true);
+    setTimeout(() => setIsUrlCopied(false), 2000);
+  };
 
   const copyToClipboard = async () => {
     if (!qrRef.current) return;
@@ -119,10 +133,14 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigator.clipboard.writeText(RoomID)}
+              onClick={copyRoomId}
               title={t("copyRoomId")}
             >
-              <Copy className="h-4 w-4" />
+              {isRoomIdCopied ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>
@@ -133,10 +151,14 @@ const ShareCard: React.FC<ShareCardProps> = ({ RoomID, shareLink }) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigator.clipboard.writeText(shareLink)}
+              onClick={copyUrl}
               title={t("copyUrl")}
             >
-              <Copy className="h-4 w-4" />
+              {isUrlCopied ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>
