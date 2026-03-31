@@ -18,7 +18,9 @@ import { FileAssembler } from "./FileAssembler";
 import { ProgressReporter, ProgressCallback } from "./ProgressReporter";
 import { ReceptionConfig } from "./ReceptionConfig";
 import { ChunkRangeCalculator } from "@/lib/utils/ChunkRangeCalculator";
-import { postLogToBackend } from "@/app/config/api";
+import { createLogger, logWithLegacyLevel } from "@/lib/logger";
+
+const logger = createLogger("FileReceiveOrchestrator");
 
 /**
  * 🚀 File receive orchestrator
@@ -160,9 +162,14 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
         ReceptionConfig.FILE_CONFIG.CHUNK_SIZE
       );
 
-      postLogToBackend(
-        `[RECV-SUMMARY] File: ${fileInfo.name}, expected: ${expectedChunksCount}, calculated: ${chunkRange.totalChunks}, startChunk: ${chunkRange.startChunk}, endChunk: ${chunkRange.endChunk}, absoluteTotal: ${chunkRange.absoluteTotalChunks}`
-      );
+      logger.debug("Receive summary", {
+        fileName: fileInfo.name,
+        expectedChunksCount,
+        calculatedChunks: chunkRange.totalChunks,
+        startChunk: chunkRange.startChunk,
+        endChunk: chunkRange.endChunk,
+        absoluteTotalChunks: chunkRange.absoluteTotalChunks,
+      });
     }
 
     const receptionPromise = this.stateManager.startFileReception(
@@ -251,9 +258,11 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     const completedFileIds = folderProgress.fileIds.filter(() => true); // Assume all succeeded
 
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-      postLogToBackend(
-        `[DEBUG] 📁 All files in folder completed - ${folderName}, files: ${completedFileIds.length}/${folderProgress.fileIds.length}`
-      );
+      logger.debug("Folder request completed", {
+        folderName,
+        completedFiles: completedFileIds.length,
+        totalFiles: folderProgress.fileIds.length,
+      });
     }
 
     const sendResult = await this.messageProcessor.sendFolderReceiveComplete(
@@ -279,8 +288,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     message: string,
     context?: Record<string, any>
   ): void {
-    const prefix = `[FileReceiveOrchestrator]`;
-    console[level](prefix, message, context || "");
+    logWithLegacyLevel("FileReceiveOrchestrator", level, message, context);
   }
 
   // ===== Internal Methods =====
@@ -316,9 +324,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     const activeReception = this.stateManager.getActiveFileReception();
     if (!activeReception) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG] ERROR: Received file chunk but no active file reception!`
-        );
+        logger.error("Received file chunk without active reception");
       }
       this.fireError("Received a file chunk without an active file reception.");
       return;
@@ -328,9 +334,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     const arrayBuffer = await this.chunkProcessor.convertToArrayBuffer(data);
     if (!arrayBuffer) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG] ERROR: Failed to convert binary data to ArrayBuffer`
-        );
+        logger.error("Failed to convert binary data to ArrayBuffer");
       }
       this.fireError("Received unsupported binary data format", {
         dataType: Object.prototype.toString.call(data),
@@ -356,9 +360,9 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     const { chunkMeta, chunkData } = parsed;
     const reception = this.stateManager.getActiveFileReception();
     if (!reception) {
-      console.log(
-        `[FileReceiveOrchestrator] Ignoring chunk ${chunkMeta.chunkIndex} - file reception already closed`
-      );
+      logger.info("Ignoring chunk because reception is already closed", {
+        chunkIndex: chunkMeta.chunkIndex,
+      });
       return;
     }
 
@@ -398,9 +402,11 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       )
     ) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG-CHUNKS] ❌ Invalid relative chunk index - absolute:${result.absoluteChunkIndex}, relative:${result.relativeChunkIndex}, arraySize:${reception.chunks.length}`
-        );
+        logger.error("Invalid relative chunk index", {
+          absoluteChunkIndex: result.absoluteChunkIndex,
+          relativeChunkIndex: result.relativeChunkIndex,
+          arraySize: reception.chunks.length,
+        });
       }
       return;
     }
@@ -468,9 +474,10 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       reception.isFinalized = true;
 
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG-COMPLETE] ✅ Starting finalization - isDataComplete:${stats.isDataComplete}`
-        );
+        logger.debug("Starting auto finalization", {
+          isDataComplete: stats.isDataComplete,
+          fileId: reception.meta.fileId,
+        });
       }
 
       try {
@@ -478,7 +485,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
         this.stateManager.completeFileReception();
       } catch (error) {
         if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-          postLogToBackend(`[DEBUG] ❌ Auto-finalize ERROR: ${error}`);
+          logger.error("Auto-finalize failed", { error });
         }
         this.stateManager.failFileReception(error);
       }
@@ -506,18 +513,19 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     const reception = this.stateManager.getActiveFileReception();
     if (!reception?.writeStream || !reception.fileHandle) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG-FINALIZE] ❌ Cannot finalize - missing writeStream:${!!reception?.writeStream} or fileHandle:${!!reception?.fileHandle}`
-        );
+        logger.error("Cannot finalize large file", {
+          hasWriteStream: !!reception?.writeStream,
+          hasFileHandle: !!reception?.fileHandle,
+        });
       }
       return;
     }
 
     try {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG-FINALIZE] 🚀 Starting finalization for ${reception.meta.name}`
-        );
+        logger.debug("Starting large file finalization", {
+          fileName: reception.meta.name,
+        });
       }
 
       // Finalize using StreamingFileWriter
@@ -530,9 +538,9 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       }
 
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG-FINALIZE] ✅ LARGE_FILE finalized successfully - ${reception.meta.name}`
-        );
+        logger.debug("Large file finalized successfully", {
+          fileName: reception.meta.name,
+        });
       }
 
       // 🆕 Send completion confirmation for large files
@@ -557,15 +565,15 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       }
 
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG-FINALIZE] 📤 LARGE_FILE completion confirmation sent - ${reception.meta.fileId}, size: ${stats.currentTotalSize}, chunks: ${stats.sequencedCount}`
-        );
+        logger.debug("Large file completion confirmation sent", {
+          fileId: reception.meta.fileId,
+          size: stats.currentTotalSize,
+          chunks: stats.sequencedCount,
+        });
       }
     } catch (error) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG-FINALIZE] ❌ Error during finalization: ${error}`
-        );
+        logger.error("Error during large file finalization", { error });
       }
       this.fireError("Error finalizing large file", { error });
     }

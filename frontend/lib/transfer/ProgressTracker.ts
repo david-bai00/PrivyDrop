@@ -1,7 +1,8 @@
 import { SpeedCalculator } from "@/lib/speedCalculator";
 import { StateManager } from "./StateManager";
-import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NODE_ENV;
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("ProgressTracker");
 /**
  * 🚀 Progress callback type definition
  */
@@ -80,7 +81,7 @@ export class ProgressTracker {
   ): Promise<void> {
     const folderMeta = this.stateManager.getFolderMeta(folderName);
     if (!folderMeta) {
-      postLogToBackend(`[DEBUG] ⚠️ Folder metadata not found: ${folderName}`);
+      logger.warn("Folder metadata not found", { folderName, peerId });
       return;
     }
 
@@ -97,13 +98,15 @@ export class ProgressTracker {
     // Trigger folder progress callback
     this.triggerProgressCallback(peerId, folderName, progress, speed);
 
-    postLogToBackend(
-      `[DEBUG] 📁 Folder progress - ${folderName}: ${(progress * 100).toFixed(
-        2
-      )}%, speed: ${speed.toFixed(2)} KB/s, bytes: ${totalSentBytes}/${
-        folderMeta.totalSize
-      }`
-    );
+    logger.debug("Folder progress updated", {
+      folderName,
+      progressPercent: Number((progress * 100).toFixed(2)),
+      speedKbps: Number(speed.toFixed(2)),
+      totalSentBytes,
+      totalSize: folderMeta.totalSize,
+      fileProgress,
+      peerId,
+    });
   }
 
   /**
@@ -127,9 +130,7 @@ export class ProgressTracker {
       try {
         peerState.progressCallback(fileId, progress, speed);
       } catch (error) {
-        postLogToBackend(
-          `[DEBUG] ❌ Progress callback error - fileId: ${fileId}, error: ${error}`
-        );
+        logger.error("Progress callback error", { fileId, error, peerId });
       }
     }
   }
@@ -146,8 +147,7 @@ export class ProgressTracker {
    */
   completeFileProgress(fileId: string, peerId: string): void {
     this.triggerProgressCallback(peerId, fileId, 1.0, 0);
-
-    postLogToBackend(`[DEBUG] ✅ File progress completed: ${fileId}`);
+    logger.debug("File progress completed", { fileId, peerId });
   }
 
   /**
@@ -155,8 +155,7 @@ export class ProgressTracker {
    */
   completeFolderProgress(folderName: string, peerId: string): void {
     this.triggerProgressCallback(peerId, folderName, 1.0, 0);
-
-    postLogToBackend(`[DEBUG] ✅ Folder progress completed: ${folderName}`);
+    logger.debug("Folder progress completed", { folderName, peerId });
   }
 
   /**
@@ -225,7 +224,6 @@ export class ProgressTracker {
    */
   cleanup(): void {
     // SpeedCalculator internally automatically cleans up expired data
-    if (developmentEnv === "development")
-      postLogToBackend("[DEBUG] 🧹 ProgressTracker cleaned up");
+    logger.debug("ProgressTracker cleaned up");
   }
 }

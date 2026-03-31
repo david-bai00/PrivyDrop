@@ -1,6 +1,8 @@
 import { EmbeddedChunkMeta } from "@/types/webrtc";
 import { ReceptionConfig } from "./ReceptionConfig";
-import { postLogToBackend } from "@/app/config/api";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("ChunkProcessor");
 
 /**
  * 🚀 Chunk processing result interface
@@ -31,15 +33,16 @@ export class ChunkProcessor {
         const arrayBuffer = await data.arrayBuffer();
         if (data.size !== arrayBuffer.byteLength) {
           if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-            postLogToBackend(
-              `[DEBUG] ⚠️ Blob size mismatch: ${data.size}→${arrayBuffer.byteLength}`
-            );
+            logger.warn("Blob size mismatch", {
+              blobSize: data.size,
+              arrayBufferSize: arrayBuffer.byteLength,
+            });
           }
         }
         return arrayBuffer;
       } catch (error) {
         if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-          postLogToBackend(`[DEBUG] ❌ Blob conversion failed: ${error}`);
+          logger.error("Blob conversion failed", { error, originalType });
         }
         return null;
       }
@@ -54,17 +57,13 @@ export class ChunkProcessor {
         return newArrayBuffer;
       } catch (error) {
         if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-          postLogToBackend(`[DEBUG] ❌ TypedArray conversion failed: ${error}`);
+          logger.error("TypedArray conversion failed", { error, originalType });
         }
         return null;
       }
     } else {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG] ❌ Unknown data type: ${Object.prototype.toString.call(
-            data
-          )}`
-        );
+        logger.error("Unknown binary data type", { originalType });
       }
       return null;
     }
@@ -82,9 +81,9 @@ export class ChunkProcessor {
       // 1. Check minimum packet length
       if (arrayBuffer.byteLength < ReceptionConfig.VALIDATION_CONFIG.MIN_PACKET_SIZE) {
         if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-          postLogToBackend(
-            `[DEBUG] ❌ Invalid embedded packet - too small: ${arrayBuffer.byteLength}`
-          );
+          logger.error("Invalid embedded packet size", {
+            byteLength: arrayBuffer.byteLength,
+          });
         }
         return null;
       }
@@ -97,9 +96,10 @@ export class ChunkProcessor {
       const expectedTotalLength = 4 + metaLength;
       if (arrayBuffer.byteLength < expectedTotalLength) {
         if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-          postLogToBackend(
-            `[DEBUG] ❌ Incomplete embedded packet - expected: ${expectedTotalLength}, got: ${arrayBuffer.byteLength}`
-          );
+          logger.error("Incomplete embedded packet", {
+            expectedTotalLength,
+            actualLength: arrayBuffer.byteLength,
+          });
         }
         return null;
       }
@@ -116,18 +116,17 @@ export class ChunkProcessor {
       // 6. Verify chunk data size
       if (chunkData.byteLength !== chunkMeta.chunkSize) {
         if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-          postLogToBackend(
-            `[DEBUG] ⚠️ Chunk size mismatch - meta: ${chunkMeta.chunkSize}, actual: ${chunkData.byteLength}`
-          );
+          logger.warn("Chunk size mismatch", {
+            expectedChunkSize: chunkMeta.chunkSize,
+            actualChunkSize: chunkData.byteLength,
+          });
         }
       }
 
       return { chunkMeta, chunkData };
     } catch (error) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG] ❌ Failed to parse embedded packet: ${error}`
-        );
+        logger.error("Failed to parse embedded packet", { error });
       }
       return null;
     }
@@ -148,9 +147,11 @@ export class ChunkProcessor {
 
     // 🎯 Simplify debugging: Only record index mapping when boundary chunk
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING && (absoluteChunkIndex <= 2 || relativeChunkIndex <= 2)) {
-      postLogToBackend(
-        `[INDEX-MAP] abs:${absoluteChunkIndex}, start:${startChunkIndex}, rel:${relativeChunkIndex}`
-      );
+      logger.debug("Chunk index map", {
+        absoluteChunkIndex,
+        startChunkIndex,
+        relativeChunkIndex,
+      });
     }
 
     return {
@@ -197,9 +198,12 @@ export class ChunkProcessor {
     // 🎯 Simplify logging: Only record critical information when the number does not match
     if (chunkMeta.totalChunks !== expectedChunksCount && calculatedExpected !== expectedChunksCount) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[CHUNK-COUNT-MISMATCH] fileTotal:${chunkMeta.totalChunks}, expected:${expectedChunksCount}, calculated:${calculatedExpected}`
-        );
+        logger.warn("Chunk count mismatch", {
+          fileTotalChunks: chunkMeta.totalChunks,
+          expectedChunksCount,
+          calculatedExpected,
+          expectedFileId,
+        });
       }
     }
 
@@ -240,11 +244,13 @@ export class ChunkProcessor {
     const hasIndexMismatch = writerExpectedIndex !== undefined && absoluteChunkIndex !== writerExpectedIndex;
 
     if (isFirstFew || isLastFew || hasIndexMismatch) {
-      postLogToBackend(
-        `[CHUNK-DETAIL] #${absoluteChunkIndex} rel:${relativeChunkIndex}${
-          hasIndexMismatch ? ` MISMATCH(writer expects:${writerExpectedIndex})` : ''
-        } size:${chunkMeta.chunkSize}`
-      );
+      logger.debug("Chunk detail", {
+        absoluteChunkIndex,
+        relativeChunkIndex,
+        writerExpectedIndex,
+        hasIndexMismatch,
+        chunkSize: chunkMeta.chunkSize,
+      });
     }
   }
 
@@ -320,10 +326,14 @@ export class ChunkProcessor {
           missingChunks.push(absoluteIndex);
         }
       }
-      
-      postLogToBackend(
-        `[FINAL-CHECK] File: ${fileName}, received: ${sequencedCount}/${expectedChunksCount}, sizeDiff: ${expectedSize - currentTotalSize}, missing: [${missingChunks.join(',')}]`
-      );
+
+      logger.debug("Final completion check", {
+        fileName,
+        sequencedCount,
+        expectedChunksCount,
+        sizeDifference: expectedSize - currentTotalSize,
+        missingChunks,
+      });
     }
   }
 }

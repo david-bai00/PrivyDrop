@@ -1,8 +1,9 @@
 import { EmbeddedChunkMeta } from "@/types/webrtc";
 import { StateManager } from "./StateManager";
 import WebRTC_Initiator from "../webrtc_Initiator";
-import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NODE_ENV;
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("NetworkTransmitter");
 /**
  * 🚀 Network transmitter - Simplified version
  * Uses WebRTC native bufferedAmountLowThreshold for backpressure control
@@ -48,11 +49,11 @@ export class NetworkTransmitter {
 
       return true;
     } catch (error) {
-      if (developmentEnv === "development") {
-        postLogToBackend(
-          `[DEBUG] ❌ CHUNK #${metadata.chunkIndex} send failed: ${error}`
-        );
-      }
+      logger.error("Embedded chunk send failed", {
+        chunkIndex: metadata.chunkIndex,
+        totalChunks: metadata.totalChunks,
+        error,
+      });
       return false;
     }
   }
@@ -101,14 +102,17 @@ export class NetworkTransmitter {
     await this.simpleBufferControl(dataChannel, peerId);
 
     // Send directly, no fragmentation
-      const sendResult = await this.webrtcConnection.sendData(data, peerId);
+    const sendResult = await this.webrtcConnection.sendData(data, peerId);
 
-      if (!sendResult.ok) {
-        const errorMessage = `sendData failed: ${sendResult.reason || sendResult.finalState}`;
-
-        if (developmentEnv === "development") {
-          postLogToBackend(`[DEBUG] ❌ ${errorMessage}`);
-        }
+    if (!sendResult.ok) {
+      const errorMessage = `sendData failed: ${
+        sendResult.reason || sendResult.finalState
+      }`;
+      logger.error("sendSingleData failed", {
+        peerId,
+        errorMessage,
+        sendResult,
+      });
       throw new Error(errorMessage);
     }
   }
@@ -182,9 +186,7 @@ export class NetworkTransmitter {
       }
     } catch (error) {
       const errorMessage = `sendWithBackpressure failed: ${error}`;
-      if (developmentEnv === "development") {
-        postLogToBackend(`[DEBUG] ❌ ${errorMessage}`);
-      }
+      logger.error("sendWithBackpressure failed", { peerId, errorMessage });
       throw new Error(errorMessage);
     }
   }
@@ -239,8 +241,6 @@ export class NetworkTransmitter {
    * 🧹 Clean up resources
    */
   public cleanup(): void {
-    if (developmentEnv === "development") {
-      postLogToBackend("[DEBUG] 🧹 NetworkTransmitter cleaned up");
-    }
+    logger.debug("NetworkTransmitter cleaned up");
   }
 }

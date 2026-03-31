@@ -1,7 +1,7 @@
 import { ReceptionConfig } from "./ReceptionConfig";
-import { postLogToBackend } from "@/app/config/api";
+import { createLogger } from "@/lib/logger";
 
-const developmentEnv = process.env.NODE_ENV;
+const logger = createLogger("StreamingFileWriter");
 
 /**
  * 🚀 Strict Sequential Buffering Writer - Optimizes large file disk I/O performance
@@ -28,11 +28,11 @@ export class SequencedDiskWriter {
       ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING &&
       (chunkIndex <= 5 || chunkIndex === this.nextWriteIndex)
     ) {
-      postLogToBackend(
-        `[DEBUG-RESUME] 🎯 WriteChunk called - received:${chunkIndex}, expected:${
-          this.nextWriteIndex
-        }, match:${chunkIndex === this.nextWriteIndex}`
-      );
+      logger.debug("WriteChunk called", {
+        chunkIndex,
+        expectedIndex: this.nextWriteIndex,
+        matchesExpected: chunkIndex === this.nextWriteIndex,
+      });
     }
 
     // 1. If it is the expected next chunk, write immediately
@@ -55,9 +55,10 @@ export class SequencedDiskWriter {
 
     // 3. If the chunk is expired, log a warning but ignore (already written)
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-      postLogToBackend(
-        `[DEBUG] ⚠️ DUPLICATE chunk #${chunkIndex} ignored (already written #${this.nextWriteIndex})`
-      );
+      logger.warn("Duplicate chunk ignored", {
+        chunkIndex,
+        nextWriteIndex: this.nextWriteIndex,
+      });
     }
   }
 
@@ -73,9 +74,11 @@ export class SequencedDiskWriter {
       this.totalWritten += firstChunk.byteLength;
 
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG] ✓ DISK_WRITE chunk #${this.nextWriteIndex} - ${firstChunk.byteLength} bytes, total: ${this.totalWritten}`
-        );
+        logger.debug("Disk write completed", {
+          chunkIndex: this.nextWriteIndex,
+          byteLength: firstChunk.byteLength,
+          totalWritten: this.totalWritten,
+        });
       }
 
       this.nextWriteIndex++;
@@ -98,9 +101,7 @@ export class SequencedDiskWriter {
         errorMessage.includes("closing writable stream") ||
         errorMessage.includes("stream is closed")
       ) {
-        console.log(
-          `[SequencedDiskWriter] Stream closed during write - ignoring remaining chunks`
-        );
+        logger.info("Stream closed during write; ignoring remaining chunks");
         return;
       }
       // Re-throw other types of errors
@@ -108,9 +109,11 @@ export class SequencedDiskWriter {
     }
 
     if (flushCount > 0 && ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-      postLogToBackend(
-        `[DEBUG] 🔥 SEQUENTIAL_FLUSH ${flushCount} chunks, now at #${this.nextWriteIndex}, queue: ${this.writeQueue.size}`
-      );
+      logger.debug("Sequential flush completed", {
+        flushCount,
+        nextWriteIndex: this.nextWriteIndex,
+        queueSize: this.writeQueue.size,
+      });
     }
   }
 
@@ -148,9 +151,7 @@ export class SequencedDiskWriter {
         errorMessage.includes("closing writable stream") ||
         errorMessage.includes("stream is closed")
       ) {
-        console.log(
-          `[SequencedDiskWriter] Stream closed during write - ignoring remaining chunks`
-        );
+        logger.info("Stream closed during forced flush; ignoring remaining chunks");
         return;
       }
       // Re-throw other types of errors
@@ -185,9 +186,10 @@ export class SequencedDiskWriter {
       
       if (remainingIndexes.length > 0) {
         if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-          postLogToBackend(
-            `[DEBUG-FINALIZE] 💾 Flushing ${remainingIndexes.length} remaining chunks: [${remainingIndexes.join(',')}]`
-          );
+          logger.debug("Flushing remaining chunks", {
+            remainingCount: remainingIndexes.length,
+            remainingIndexes,
+          });
         }
         
         for (const chunkIndex of remainingIndexes) {
@@ -200,9 +202,11 @@ export class SequencedDiskWriter {
           // 确保chunk是有效的ArrayBuffer
           if (!(chunk instanceof ArrayBuffer) || chunk.byteLength === 0) {
             if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-              postLogToBackend(
-                `[DEBUG-FINALIZE] ⚠️ Skipping invalid chunk #${chunkIndex}: ${Object.prototype.toString.call(chunk)}, size: ${chunk.byteLength}`
-              );
+              logger.warn("Skipping invalid chunk during final flush", {
+                chunkIndex,
+                chunkType: Object.prototype.toString.call(chunk),
+                chunkSize: chunk.byteLength,
+              });
             }
             continue;
           }
@@ -214,9 +218,10 @@ export class SequencedDiskWriter {
           });
           
           if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-            postLogToBackend(
-              `[DEBUG-FINALIZE] ✅ FINAL_FLUSH chunk #${chunkIndex} (${chunk.byteLength} bytes)`
-            );
+            logger.debug("Final flush chunk written", {
+              chunkIndex,
+              chunkSize: chunk.byteLength,
+            });
           }
         }
       }
@@ -225,9 +230,7 @@ export class SequencedDiskWriter {
       const errorMessage = error instanceof Error ? error.message : String(error);
       
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG-FINALIZE] ❌ Error during final flush: ${errorMessage}`
-        );
+        logger.error("Error during final flush", { errorMessage });
       }
       
       if (
@@ -235,11 +238,9 @@ export class SequencedDiskWriter {
         errorMessage.includes("stream is closed") ||
         errorMessage.includes("The stream is not in a state that permits this operation")
       ) {
-        console.log(
-          `[SequencedDiskWriter] Stream closed during final flush - completing gracefully`
-        );
+        logger.info("Stream closed during final flush; completing gracefully");
       } else {
-        console.warn(`[SequencedDiskWriter] Unexpected error during final flush:`, errorMessage);
+        logger.warn("Unexpected error during final flush", { errorMessage });
         throw error;
       }
     } finally {
@@ -302,12 +303,11 @@ export class StreamingFileWriter {
       const sequencedWriter = new SequencedDiskWriter(writeStream, startChunkIndex);
 
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG] 📢 SEQUENCED_WRITER created - startIndex: ${startChunkIndex}, offset: ${offset}`
-        );
-        postLogToBackend(
-          `[DEBUG-RESUME] 🎯 SequencedWriter expects - startIndex:${startChunkIndex}, offset:${offset}, calculatedFrom:${offset}/65536`
-        );
+        logger.debug("Sequenced writer created", {
+          startChunkIndex,
+          offset,
+          chunkSize: ReceptionConfig.FILE_CONFIG.CHUNK_SIZE,
+        });
       }
 
       return { fileHandle, writeStream, sequencedWriter };
@@ -371,44 +371,38 @@ export class StreamingFileWriter {
   ): Promise<void> {
     try {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG-FINALIZE] 🚀 Starting finalization for ${fileName}`
-        );
+        logger.debug("Starting file finalization", { fileName });
       }
 
       // First close the strict sequential writing manager (flush all buffers)
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(`[DEBUG-FINALIZE] Closing SequencedWriter...`);
+        logger.debug("Closing sequenced writer", { fileName });
       }
       await sequencedWriter.close();
       const status = sequencedWriter.getBufferStatus();
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG-FINALIZE] 💾 SEQUENCED_WRITER closed - totalWritten: ${status.totalWritten}, finalQueue: ${status.queueSize}`
-        );
+        logger.debug("Sequenced writer closed", {
+          fileName,
+          totalWritten: status.totalWritten,
+          finalQueueSize: status.queueSize,
+        });
       }
 
       // Then close the file stream
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG-FINALIZE] About to close writeStream for ${fileName}`
-        );
+        logger.debug("Closing write stream", { fileName });
       }
       await writeStream.close();
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(`[DEBUG-FINALIZE] ✅ WriteStream closed successfully`);
+        logger.debug("Write stream closed successfully", { fileName });
       }
 
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG-FINALIZE] ✅ LARGE_FILE finalized successfully - ${fileName}`
-        );
+        logger.debug("Large file finalized successfully", { fileName });
       }
     } catch (error) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG-FINALIZE] ❌ Error during finalization: ${error}`
-        );
+        logger.error("Error during file finalization", { fileName, error });
       }
       throw new Error(`Error finalizing large file: ${error}`);
     }

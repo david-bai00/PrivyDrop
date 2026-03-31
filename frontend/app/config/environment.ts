@@ -12,6 +12,12 @@ export const config = {
   TURN_CREDENTIAL: process.env.NEXT_PUBLIC_TURN_PASSWORD,
 };
 
+export const getLoggingConfig = () => ({
+  enableBackendLogs: process.env.NODE_ENV !== "production",
+  enableDebugConsoleLogs: process.env.NODE_ENV !== "production",
+  enableInfoConsoleLogs: process.env.NODE_ENV !== "production",
+});
+
 export const getIceServers = () => {
   const iceServers: RTCIceServer[] = [];
 

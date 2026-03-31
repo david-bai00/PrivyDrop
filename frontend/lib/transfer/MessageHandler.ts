@@ -5,8 +5,9 @@ import {
   FolderReceiveComplete
 } from "@/types/webrtc";
 import { StateManager } from "./StateManager";
-import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NODE_ENV;
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("MessageHandler");
 /**
  * 🚀 Message handling interface - Communicate with main orchestrator
  */
@@ -120,11 +121,11 @@ export class MessageHandler {
     message: FolderReceiveComplete,
     peerId: string
   ): void {
-    if (developmentEnv === "development") {
-      postLogToBackend(
-        `[DEBUG] 📥 Folder complete - folderName: ${message.folderName}, files: ${message.completedFileIds.length}`
-      );
-    }
+    logger.debug("Folder receive completion confirmed", {
+      folderName: message.folderName,
+      completedFiles: message.completedFileIds.length,
+      peerId,
+    });
 
     // Get peer state to trigger progress callback
     const peerState = this.stateManager.getPeerState(peerId);
@@ -132,9 +133,10 @@ export class MessageHandler {
     // Trigger folder 100% progress
     const folderMeta = this.stateManager.getFolderMeta(message.folderName);
     if (folderMeta) {
-      postLogToBackend(
-        `[DEBUG] 🎯 Setting folder progress to 100% - ${message.folderName}`
-      );
+      logger.debug("Setting folder progress to 100%", {
+        folderName: message.folderName,
+        peerId,
+      });
       peerState.progressCallback?.(message.folderName, 1, 0);
     } else {
       this.delegate.log(
@@ -172,7 +174,6 @@ export class MessageHandler {
    * 🧹 Clean up resources
    */
   public cleanup(): void {
-    if (developmentEnv === "development")
-      postLogToBackend("[DEBUG] 🧹 MessageHandler cleaned up");
+    logger.debug("MessageHandler cleaned up");
   }
 }

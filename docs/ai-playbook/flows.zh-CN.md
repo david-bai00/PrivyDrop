@@ -72,7 +72,7 @@
 - **兼容性处理**：ChunkProcessor 支持 Blob/Uint8Array/ArrayBuffer 多种格式，解决 Firefox 兼容性问题
 - **进度节流**：ProgressReporter 使用不同频率更新（文件 100ms，文件夹 200ms），避免 UI 过载
 - **断点续传**：通过 getPartialFileSize() 检查本地部分文件，fileRequest.offset 参数指定续传位置
-- **调试支持**：ReceptionConfig 提供详细的分片日志和进度日志，便于问题排查
+- **调试支持**：ReceptionConfig 提供详细的分片日志和进度日志，便于问题排查；热路径日志统一经 `frontend/lib/logger.ts` 输出，开发/测试环境允许 console + backend，生产环境禁止后端日志上报
 
 ## 2）文件传输（文件夹）
 
@@ -177,7 +177,7 @@ Socket.IO 事件处理流程：
 - 统一行为矩阵：sender/receiver/store 的关闭与重置语义必须保持一致；新增动作时必须同步更新 sender/receiver/store 策略文件与对应回归清单。
 - 数据流原则：单向数据流（Store → Hooks → Components）；Hooks 做适配，组件只消费不修改。
 - **实用调试策略**：
-  - 为连接状态变化与 Store 更新添加结构化日志；遇到时序/竞态可用 `setTimeout(..., 0)` 调整更新顺序
+  - 为连接状态变化与 Store 更新添加结构化日志；热路径统一走 `frontend/lib/logger.ts`，避免直接散落 `console.*` / `postLogToBackend()`
   - DataChannel 发送重试机制：`sendToPeer()` 以 async 方式返回最终 `SendResult`；优雅断开的 peer 跳过重试，调用方不应再基于同步布尔值判断发送成败
   - WebRTC 数据类型兼容性：支持 `ArrayBuffer`/`Blob`/`Uint8Array`/`TypedArray` 多种格式，解决 Firefox 兼容性问题
   - 连接状态监控：`connectionState` 变化时触发相应的处理逻辑（connected/disconnected/failed/closed）

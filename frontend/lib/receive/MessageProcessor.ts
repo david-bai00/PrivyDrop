@@ -11,10 +11,10 @@ import {
 } from "@/types/webrtc";
 import { ReceptionStateManager } from "./ReceptionStateManager";
 import { ReceptionConfig } from "./ReceptionConfig";
-import { postLogToBackend } from "@/app/config/api";
 import WebRTC_Recipient from "../webrtc_Recipient";
+import { createLogger } from "@/lib/logger";
 
-const developmentEnv = process.env.NODE_ENV;
+const logger = createLogger("MessageProcessor");
 
 /**
  * 🚀 Message processor delegate interface
@@ -137,9 +137,7 @@ export class MessageProcessor {
     const peerId = this.stateManager.getCurrentPeerId();
     if (!peerId) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG] ERROR: Cannot send fileRequest - no peerId available!`
-        );
+        logger.error("Cannot send fileRequest without peerId");
       }
       return this.buildMissingPeerResult("missing_current_peer");
     }
@@ -236,9 +234,13 @@ export class MessageProcessor {
     );
 
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-      postLogToBackend(
-        `[DEBUG] 📤 Sent folderReceiveComplete - folderName: ${folderName}, completedFiles: ${completedFileIds.length}, allStoreUpdated: ${allStoreUpdated}, success: ${result.ok}`
-      );
+      logger.debug("Sent folder receive complete", {
+        folderName,
+        completedFiles: completedFileIds.length,
+        allStoreUpdated,
+        success: result.ok,
+        peerId,
+      });
     }
 
     if (result.ok) {
@@ -319,7 +321,7 @@ export class MessageProcessor {
    */
   cleanup(): void {
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-      postLogToBackend("[DEBUG] 🧹 MessageProcessor cleaned up");
+      logger.debug("MessageProcessor cleaned up");
     }
   }
 }

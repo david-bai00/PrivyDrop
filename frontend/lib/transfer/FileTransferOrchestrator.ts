@@ -13,8 +13,9 @@ import { ProgressTracker, ProgressCallback } from "./ProgressTracker";
 import { StreamingFileReader } from "./StreamingFileReader";
 import { TransferConfig } from "./TransferConfig";
 import WebRTC_Initiator from "../webrtc_Initiator";
-import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NODE_ENV;
+import { createLogger, logWithLegacyLevel } from "@/lib/logger";
+
+const logger = createLogger("FileTransferOrchestrator");
 /**
  * 🚀 File transfer orchestrator
  * Integrates all components to provide unified file transfer services
@@ -156,8 +157,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     message: string,
     context?: Record<string, any>
   ): void {
-    const prefix = `[FileTransferOrchestrator]`;
-    console[level](prefix, message, context || "");
+    logWithLegacyLevel("FileTransferOrchestrator", level, message, context);
   }
 
   // ===== Internal Orchestration Methods =====
@@ -218,15 +218,12 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     // 1. Initialize streaming file reader
     const streamReader = new StreamingFileReader(file, initialReadOffset);
 
-    if (developmentEnv === "development") {
-      postLogToBackend(
-        `[DEBUG] 🚀 Starting transfer - file: ${file.name}, size: ${(
-          file.size /
-          1024 /
-          1024
-        ).toFixed(1)}MB`
-      );
-    }
+    logger.debug("Starting transfer", {
+      fileName: file.name,
+      sizeMb: Number((file.size / 1024 / 1024).toFixed(1)),
+      peerId,
+      initialOffset: initialReadOffset,
+    });
 
     try {
       let totalBytesSent = 0;
@@ -308,36 +305,42 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
         }
       }
 
-      if (developmentEnv === "development") {
+      {
         const totalTime = performance.now() - transferStartTime;
         const avgSpeedMBps = totalBytesSent / 1024 / 1024 / (totalTime / 1000);
 
-        // 🔧 Fix: Use correct initial offset instead of current readOffset for log statistics
-        const initialOffset = initialReadOffset || 0; // Initial offset at the start of transmission
+        // Use the initial offset captured at transfer start for log statistics.
+        const initialOffset = initialReadOffset || 0;
         const expectedTotalChunks = Math.ceil(file.size / 65536);
         const startChunkIndex = Math.floor(initialOffset / 65536);
         const expectedChunksSent = expectedTotalChunks - startChunkIndex;
 
-        postLogToBackend(
-          `[DEBUG-CHUNKS] ✅ Transfer complete - file: ${file.name}, time: ${(
-            totalTime / 1000
-          ).toFixed(1)}s, speed: ${avgSpeedMBps.toFixed(1)}MB/s`
-        );
-        postLogToBackend(
-          `[DEBUG-CHUNKS] Chunks sent: ${networkChunkIndex}, expected: ${expectedChunksSent}, startChunk: ${startChunkIndex}, totalFileChunks: ${expectedTotalChunks}, initialOffset: ${initialOffset}`
-        );
+        logger.debug("Transfer complete", {
+          fileName: file.name,
+          durationSeconds: Number((totalTime / 1000).toFixed(1)),
+          speedMbps: Number(avgSpeedMBps.toFixed(1)),
+          chunksSent: networkChunkIndex,
+          expectedChunksSent,
+          startChunkIndex,
+          expectedTotalChunks,
+          initialOffset,
+          totalReadTime,
+          totalSendTime,
+          totalProgressTime,
+          lastProgressTime,
+        });
 
         if (networkChunkIndex !== expectedChunksSent) {
-          postLogToBackend(
-            `[DEBUG-CHUNKS] ⚠️ CHUNK MISMATCH: sent ${networkChunkIndex} but expected ${expectedChunksSent}`
-          );
+          logger.warn("Transfer chunk count mismatch", {
+            fileName: file.name,
+            chunksSent: networkChunkIndex,
+            expectedChunksSent,
+          });
         }
       }
     } catch (error: any) {
       const errorMessage = `Streaming send error: ${error.message}`;
-      if (developmentEnv === "development") {
-        postLogToBackend(`[DEBUG] ❌ Transfer error: ${errorMessage}`);
-      }
+      logger.error("Transfer error", { errorMessage, fileId, peerId });
       this.fireError(errorMessage, {
         fileId,
         peerId,
@@ -449,11 +452,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   public handlePeerReconnection(peerId: string): void {
     // Clear all transfer states for this peer
     this.stateManager.clearPeerState(peerId);
-    if (developmentEnv === "development")
-      this.log(
-        "log",
-        `Successfully reset transfer state for reconnected peer ${peerId}`
-      );
+    this.log("log", `Successfully reset transfer state for reconnected peer ${peerId}`);
   }
 
   /**
@@ -464,7 +463,6 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     this.networkTransmitter.cleanup();
     this.progressTracker.cleanup();
     this.messageHandler.cleanup();
-    if (developmentEnv === "development")
-      this.log("log", "FileTransferOrchestrator cleaned up");
+    this.log("log", "FileTransferOrchestrator cleaned up");
   }
 }

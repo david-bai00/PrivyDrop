@@ -1,7 +1,8 @@
 // Initiator flow: Join room; receive 'ready' event (this event is triggered by the socket server after a new recipient enters) -> createPeerConnection + createDataChannel -> createAndSendOffer
 import BaseWebRTC, { WebRTCConfig } from "./webrtc_base";
-import { postLogToBackend } from "@/app/config/api";
-const developmentEnv = process.env.NODE_ENV; // Development environment
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("WebRTCInitiator");
 
 export default class WebRTC_Initiator extends BaseWebRTC {
   constructor(config: WebRTCConfig) {
@@ -16,10 +17,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
     });
     // Add listener for recipient's response
     this.socket.on("recipient-ready", ({ peerId }) => {
-      if (developmentEnv === "development")
-        postLogToBackend(
-          `[Initiator] Received recipient-ready from: ${peerId}`
-        );
+      logger.debug("Received recipient-ready", { peerId });
       this.handleReady({ peerId });
     });
     // Add answer handler listener
@@ -32,8 +30,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
   private async handleReady({ peerId }: { peerId: string }): Promise<void> {
     // Recipient peerId
     // this.log('log',`Received ready signal from peer ${peerId}`);
-    if (developmentEnv === "development")
-      postLogToBackend(`Received ready signal from peer ${peerId}`);
+    logger.debug("Received ready signal", { peerId });
     await this.createPeerConnection(peerId);
     await this.createDataChannel(peerId);
     await this.createAndSendOffer(peerId);
@@ -48,8 +45,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
     from: string;
   }): Promise<void> {
     // this.log('log',`Handling answer from peer ${from}`);
-    if (developmentEnv === "development")
-      postLogToBackend(`Handling answer from peer ${from}`);
+    logger.debug("Handling answer", { from, peerId });
     const peerConnection = this.peerConnections.get(from);
     if (!peerConnection) {
       this.fireError(`No peer connection found for peer ${from}`, { from });
@@ -84,9 +80,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
       this.setupDataChannel(dataChannel, peerId);
       this.dataChannels.set(peerId, dataChannel);
     } catch (error) {
-      postLogToBackend(
-        `Error creating DataChannel - peer: ${peerId}, error: ${error}`
-      );
+      logger.error("Error creating data channel", { peerId, error });
       this.fireError(`Error creating data channel for peer ${peerId}`, {
         error,
         peerId,
@@ -96,8 +90,7 @@ export default class WebRTC_Initiator extends BaseWebRTC {
   // If it is the initiator, create and send an offer to the signaling server to negotiate a connection with the recipient.
   private async createAndSendOffer(peerId: string): Promise<void> {
     // this.log('log', `Creating and sending offer to ${peerId}`);
-    if (developmentEnv === "development")
-      postLogToBackend(`createAndSendOffer for peerId: ${peerId}`);
+    logger.debug("Creating and sending offer", { peerId });
     const peerConnection = this.peerConnections.get(peerId);
     if (!peerConnection) {
       this.fireError(`No peer connection found for peer ${peerId}`, { peerId });
