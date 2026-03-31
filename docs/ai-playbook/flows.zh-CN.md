@@ -218,6 +218,7 @@ Store (fileTransferStore)
 - 暴露 webrtcService 方法（broadcastDataToAllPeers、requestFile、requestFolder）
 - 广播时显式从 Store 读取 `shareContent/sendFiles` 传给 service，避免 service 反向依赖 Zustand
 - 提供连接重置方法（resetSenderConnection、resetReceiverConnection）
+- 不再暴露 `sender/receiver` 内部实例，减少 hooks/组件对底层连接对象的耦合
 
 **useFileTransferHandler**（文件与内容管理）：
 
@@ -233,10 +234,11 @@ Store (fileTransferStore)
 - 状态文本：动态更新房间状态文本
 - 链接生成：自动生成分享链接
 - 分享广播：显式把当前 Store 中的文本/文件传给 `webrtcService.broadcastDataToAllPeers()`
+- 离房前的 roomId/peerId 读取改为走 `webrtcService.getSessionInfo()`，不再直接访问 `sender/receiver` 实例字段
 
 **WebRTCStoreCoordinator**（薄应用编排层）：
 
-- 订阅 `webrtcService` 的 observer 事件，统一写 `fileTransferStore`
+- 订阅 `webrtcService` 的显式 `WebRTCServiceEvent` 事件表，统一写 `fileTransferStore`
 - 负责连接状态、peer 数、发送/接收进度、接收内容和接收文件列表的 store 同步
 - 在 sender DataChannel 打开后，从 Store 读取当前内容并触发自动广播
 - 在 peer 断开时，按方向清理对应 peer 的进度记录并重新计算 `isAnyFileTransferring`

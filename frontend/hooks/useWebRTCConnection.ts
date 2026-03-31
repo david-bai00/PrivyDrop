@@ -68,9 +68,5 @@ export function useWebRTCConnection({}: UseWebRTCConnectionProps) {
     // Reset connection methods
     resetSenderConnection: () => webrtcService.leaveRoom(true),
     resetReceiverConnection: () => webrtcService.leaveRoom(false),
-
-    // For compatibility, retain these properties (but they are no longer needed)
-    sender: webrtcService.sender,
-    receiver: webrtcService.receiver,
   };
 }

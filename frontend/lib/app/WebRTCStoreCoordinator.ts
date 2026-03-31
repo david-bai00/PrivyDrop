@@ -1,7 +1,7 @@
 import { generateFileId } from "@/lib/fileUtils";
 import {
   TransferDirection,
-  TransferProgressUpdate,
+  WebRTCServiceEvent,
   WebRTCServiceObserver,
   webrtcService,
 } from "@/lib/webrtcService";
@@ -23,64 +23,75 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
     this.attached = true;
   }
 
-  public onSenderConnectionStateChange(
-    state: Parameters<
-      NonNullable<WebRTCServiceObserver["onSenderConnectionStateChange"]>
-    >[0]
-  ): void {
-    useFileTransferStore.getState().setShareConnectionState(state);
+  public onEvent(event: WebRTCServiceEvent): void {
+    switch (event.type) {
+      case "connection_state_changed":
+        if (event.role === "sender") {
+          useFileTransferStore.getState().setShareConnectionState(event.state);
+        } else {
+          useFileTransferStore.getState().setRetrieveConnectionState(event.state);
+        }
+        return;
+      case "peer_count_changed":
+        if (event.role === "sender") {
+          useFileTransferStore.getState().setSharePeerCount(event.count);
+        } else {
+          useFileTransferStore.getState().setRetrievePeerCount(event.count);
+        }
+        return;
+      case "room_status_changed":
+        if (event.role === "sender") {
+          useFileTransferStore.getState().setIsSenderInRoom(event.inRoom);
+        } else {
+          useFileTransferStore.getState().setIsReceiverInRoom(event.inRoom);
+        }
+        return;
+      case "sender_disconnected_changed":
+        useFileTransferStore
+          .getState()
+          .setSenderDisconnected(event.disconnected);
+        return;
+      case "transfer_progress":
+        this.handleTransferProgress(event);
+        return;
+      case "retrieved_content":
+        useFileTransferStore.getState().setRetrievedContent(event.content);
+        return;
+      case "retrieved_file_meta":
+        this.handleRetrievedFileMeta(event.meta);
+        return;
+      case "retrieved_file":
+        this.handleRetrievedFile(event.file);
+        return;
+      case "transfer_progress_cleared":
+        this.handleTransferProgressCleared(event.direction, event.peerId);
+        return;
+      case "sender_data_channel_opened":
+        this.handleSenderDataChannelOpened();
+        return;
+      default:
+        return;
+    }
   }
 
-  public onReceiverConnectionStateChange(
-    state: Parameters<
-      NonNullable<WebRTCServiceObserver["onReceiverConnectionStateChange"]>
-    >[0]
-  ): void {
-    useFileTransferStore.getState().setRetrieveConnectionState(state);
-  }
-
-  public onSharePeerCountChange(count: number): void {
-    useFileTransferStore.getState().setSharePeerCount(count);
-  }
-
-  public onRetrievePeerCountChange(count: number): void {
-    useFileTransferStore.getState().setRetrievePeerCount(count);
-  }
-
-  public onSenderInRoomChange(inRoom: boolean): void {
-    useFileTransferStore.getState().setIsSenderInRoom(inRoom);
-  }
-
-  public onReceiverInRoomChange(inRoom: boolean): void {
-    useFileTransferStore.getState().setIsReceiverInRoom(inRoom);
-  }
-
-  public onSenderDisconnectedChange(disconnected: boolean): void {
-    useFileTransferStore.getState().setSenderDisconnected(disconnected);
-  }
-
-  public onTransferProgress(update: TransferProgressUpdate): void {
+  private handleTransferProgress(event: Extract<WebRTCServiceEvent, { type: "transfer_progress" }>): void {
     const store = useFileTransferStore.getState();
 
-    if (update.direction === "send") {
-      store.updateSendProgress(update.fileId, update.peerId, {
-        progress: update.progress,
-        speed: update.speed,
+    if (event.direction === "send") {
+      store.updateSendProgress(event.fileId, event.peerId, {
+        progress: event.progress,
+        speed: event.speed,
       });
       return;
     }
 
-    store.updateReceiveProgress(update.fileId, update.peerId, {
-      progress: update.progress,
-      speed: update.speed,
+    store.updateReceiveProgress(event.fileId, event.peerId, {
+      progress: event.progress,
+      speed: event.speed,
     });
   }
 
-  public onRetrievedContent(content: string): void {
-    useFileTransferStore.getState().setRetrievedContent(content);
-  }
-
-  public onRetrievedFileMeta(meta: fileMetadata): void {
+  private handleRetrievedFileMeta(meta: fileMetadata): void {
     const { type, ...metaWithoutType } = meta;
     const store = useFileTransferStore.getState();
     const filteredMetas = store.retrievedFileMetas.filter(
@@ -90,7 +101,7 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
     store.setRetrievedFileMetas([...filteredMetas, metaWithoutType]);
   }
 
-  public onRetrievedFile(file: CustomFile): void {
+  private handleRetrievedFile(file: CustomFile): void {
     const store = useFileTransferStore.getState();
     const existingFile = store.retrievedFiles.find(
       (existingFile) => generateFileId(existingFile) === generateFileId(file)
@@ -101,7 +112,7 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
     }
   }
 
-  public onTransferProgressCleared(
+  private handleTransferProgressCleared(
     direction: TransferDirection,
     peerId?: string
   ): void {
@@ -131,7 +142,7 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
     this.syncTransferActivityFlag();
   }
 
-  public onSenderDataChannelOpen(): void {
+  private handleSenderDataChannelOpened(): void {
     const { shareContent, sendFiles } = useFileTransferStore.getState();
 
     void webrtcService

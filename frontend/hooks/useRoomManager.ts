@@ -204,10 +204,12 @@ export function useRoomManager({
 
     try {
       // Call backend API to leave room
-      if (webrtcService.receiver.roomId && webrtcService.receiver.peerId) {
+      const receiverSession = webrtcService.getSessionInfo("receiver");
+
+      if (receiverSession.roomId && receiverSession.peerId) {
         await leaveRoom(
-          webrtcService.receiver.roomId,
-          webrtcService.receiver.peerId
+          receiverSession.roomId,
+          receiverSession.peerId
         );
       }
 
@@ -254,10 +256,12 @@ export function useRoomManager({
 
     try {
       // Call backend API to leave room
-      if (webrtcService.sender.roomId && webrtcService.sender.peerId) {
+      const senderSession = webrtcService.getSessionInfo("sender");
+
+      if (senderSession.roomId && senderSession.peerId) {
         await leaveRoom(
-          webrtcService.sender.roomId,
-          webrtcService.sender.peerId
+          senderSession.roomId,
+          senderSession.peerId
         );
       }
 

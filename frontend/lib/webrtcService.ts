@@ -16,39 +16,67 @@ export type WebRTCStoreConnectionState =
   | "disconnected"
   | "failed";
 
+export type WebRTCServiceRole = "sender" | "receiver";
 export type TransferDirection = "send" | "receive";
 
-export interface TransferProgressUpdate {
-  direction: TransferDirection;
-  fileId: string;
-  peerId: string;
-  progress: number;
-  speed: number;
+export interface WebRTCSessionInfo {
+  roomId: string | null;
+  peerId: string | null;
+  inRoom: boolean;
 }
 
+export type WebRTCServiceEvent =
+  | {
+      type: "connection_state_changed";
+      role: WebRTCServiceRole;
+      state: WebRTCStoreConnectionState;
+      peerId: string;
+    }
+  | {
+      type: "peer_count_changed";
+      role: WebRTCServiceRole;
+      count: number;
+    }
+  | {
+      type: "room_status_changed";
+      role: WebRTCServiceRole;
+      inRoom: boolean;
+    }
+  | {
+      type: "sender_disconnected_changed";
+      disconnected: boolean;
+    }
+  | {
+      type: "transfer_progress";
+      direction: TransferDirection;
+      fileId: string;
+      peerId: string;
+      progress: number;
+      speed: number;
+    }
+  | {
+      type: "retrieved_content";
+      content: string;
+    }
+  | {
+      type: "retrieved_file_meta";
+      meta: fileMetadata;
+    }
+  | {
+      type: "retrieved_file";
+      file: CustomFile;
+    }
+  | {
+      type: "transfer_progress_cleared";
+      direction: TransferDirection;
+      peerId?: string;
+    }
+  | {
+      type: "sender_data_channel_opened";
+    };
+
 export interface WebRTCServiceObserver {
-  onSenderConnectionStateChange?: (
-    state: WebRTCStoreConnectionState,
-    peerId: string
-  ) => void;
-  onReceiverConnectionStateChange?: (
-    state: WebRTCStoreConnectionState,
-    peerId: string
-  ) => void;
-  onSharePeerCountChange?: (count: number) => void;
-  onRetrievePeerCountChange?: (count: number) => void;
-  onSenderInRoomChange?: (inRoom: boolean) => void;
-  onReceiverInRoomChange?: (inRoom: boolean) => void;
-  onSenderDisconnectedChange?: (disconnected: boolean) => void;
-  onTransferProgress?: (update: TransferProgressUpdate) => void;
-  onRetrievedContent?: (content: string) => void;
-  onRetrievedFileMeta?: (meta: fileMetadata) => void;
-  onRetrievedFile?: (file: CustomFile) => void;
-  onTransferProgressCleared?: (
-    direction: TransferDirection,
-    peerId?: string
-  ) => void;
-  onSenderDataChannelOpen?: () => void;
+  onEvent: (event: WebRTCServiceEvent) => void;
 }
 
 class WebRTCService {
@@ -89,6 +117,20 @@ class WebRTCService {
     this.observer = observer;
   }
 
+  public getSessionInfo(role: WebRTCServiceRole): WebRTCSessionInfo {
+    const connection = role === "sender" ? this.sender : this.receiver;
+
+    return {
+      roomId: connection.roomId,
+      peerId: connection.peerId ?? null,
+      inRoom: connection.isInRoom,
+    };
+  }
+
+  private emitEvent(event: WebRTCServiceEvent): void {
+    this.observer?.onEvent(event);
+  }
+
   private initializeEventHandlers(): void {
     this.sender.onConnectionStateChange = (state, peerId) => {
       const normalizedState = this.normalizeConnectionState(state);
@@ -96,16 +138,26 @@ class WebRTCService {
         `[WebRTC Service] Sender connection state: ${normalizedState} for peer ${peerId}`
       );
 
-      this.observer?.onSenderConnectionStateChange?.(normalizedState, peerId);
+      this.emitEvent({
+        type: "connection_state_changed",
+        role: "sender",
+        state: normalizedState,
+        peerId,
+      });
 
       if (normalizedState === "connected") {
-        this.observer?.onSharePeerCountChange?.(this.sender.peerConnections.size);
+        this.emitEvent({
+          type: "peer_count_changed",
+          role: "sender",
+          count: this.sender.peerConnections.size,
+        });
         console.log(
           `[WebRTC Service] Sender connected, peer count: ${this.sender.peerConnections.size}`
         );
 
         this.fileSender.setProgressCallback((fileId, progress, speed) => {
-          this.observer?.onTransferProgress?.({
+          this.emitEvent({
+            type: "transfer_progress",
             direction: "send",
             fileId,
             peerId,
@@ -126,7 +178,7 @@ class WebRTCService {
     };
 
     this.sender.onDataChannelOpen = () => {
-      this.observer?.onSenderDataChannelOpen?.();
+      this.emitEvent({ type: "sender_data_channel_opened" });
     };
 
     this.sender.onPeerDisconnected = (peerId) => {
@@ -145,18 +197,26 @@ class WebRTCService {
         `[WebRTC Service] Receiver connection state: ${normalizedState} for peer ${peerId}`
       );
 
-      this.observer?.onReceiverConnectionStateChange?.(normalizedState, peerId);
+      this.emitEvent({
+        type: "connection_state_changed",
+        role: "receiver",
+        state: normalizedState,
+        peerId,
+      });
 
       if (normalizedState === "connected") {
-        this.observer?.onRetrievePeerCountChange?.(
-          this.receiver.peerConnections.size
-        );
+        this.emitEvent({
+          type: "peer_count_changed",
+          role: "receiver",
+          count: this.receiver.peerConnections.size,
+        });
         console.log(
           `[WebRTC Service] Receiver connected, peer count: ${this.receiver.peerConnections.size}`
         );
 
         this.fileReceiver.setProgressCallback((fileId, progress, speed) => {
-          this.observer?.onTransferProgress?.({
+          this.emitEvent({
+            type: "transfer_progress",
             direction: "receive",
             fileId,
             peerId,
@@ -178,8 +238,15 @@ class WebRTCService {
 
     this.receiver.onConnectionEstablished = (peerId) => {
       this.fileSender.handlePeerReconnection(peerId);
-      this.observer?.onSenderDisconnectedChange?.(false);
-      this.observer?.onReceiverInRoomChange?.(true);
+      this.emitEvent({
+        type: "sender_disconnected_changed",
+        disconnected: false,
+      });
+      this.emitEvent({
+        type: "room_status_changed",
+        role: "receiver",
+        inRoom: true,
+      });
     };
 
     this.receiver.onPeerDisconnected = (peerId) => {
@@ -188,15 +255,15 @@ class WebRTCService {
     };
 
     this.fileReceiver.onStringReceived = (data) => {
-      this.observer?.onRetrievedContent?.(data);
+      this.emitEvent({ type: "retrieved_content", content: data });
     };
 
     this.fileReceiver.onFileMetaReceived = (meta) => {
-      this.observer?.onRetrievedFileMeta?.(meta);
+      this.emitEvent({ type: "retrieved_file_meta", meta });
     };
 
     this.fileReceiver.onFileReceived = async (file) => {
-      this.observer?.onRetrievedFile?.(file);
+      this.emitEvent({ type: "retrieved_file", file });
     };
   }
 
@@ -212,24 +279,40 @@ class WebRTCService {
     const peer = isSender ? this.sender : this.receiver;
     await peer.joinRoom(roomId, isSender, isSender && !!forceInitiatorOnline);
 
-    if (isSender) {
-      this.observer?.onSenderInRoomChange?.(true);
-    } else {
-      this.observer?.onReceiverInRoomChange?.(true);
-    }
+    this.emitEvent({
+      type: "room_status_changed",
+      role: isSender ? "sender" : "receiver",
+      inRoom: true,
+    });
   }
 
   public async leaveRoom(isSender: boolean): Promise<void> {
     if (isSender) {
       this.fileSender.cleanup();
       await this.sender.leaveRoomAndCleanup();
-      this.observer?.onSenderInRoomChange?.(false);
-      this.observer?.onSharePeerCountChange?.(0);
+      this.emitEvent({
+        type: "room_status_changed",
+        role: "sender",
+        inRoom: false,
+      });
+      this.emitEvent({
+        type: "peer_count_changed",
+        role: "sender",
+        count: 0,
+      });
     } else {
       await this.fileReceiver.forceReset();
       await this.receiver.leaveRoomAndCleanup();
-      this.observer?.onReceiverInRoomChange?.(false);
-      this.observer?.onRetrievePeerCountChange?.(0);
+      this.emitEvent({
+        type: "room_status_changed",
+        role: "receiver",
+        inRoom: false,
+      });
+      this.emitEvent({
+        type: "peer_count_changed",
+        role: "receiver",
+        count: 0,
+      });
     }
   }
 
@@ -344,23 +427,34 @@ class WebRTCService {
 
   private updateConnectionState(isSender: boolean): void {
     if (isSender) {
-      this.observer?.onSharePeerCountChange?.(this.sender.peerConnections.size);
+      this.emitEvent({
+        type: "peer_count_changed",
+        role: "sender",
+        count: this.sender.peerConnections.size,
+      });
       console.log(
         `[WebRTC Service] Sender peer count: ${this.sender.peerConnections.size}`
       );
       return;
     }
 
-    this.observer?.onRetrievePeerCountChange?.(this.receiver.peerConnections.size);
-    this.observer?.onSenderDisconnectedChange?.(true);
+    this.emitEvent({
+      type: "peer_count_changed",
+      role: "receiver",
+      count: this.receiver.peerConnections.size,
+    });
+    this.emitEvent({
+      type: "sender_disconnected_changed",
+      disconnected: true,
+    });
     console.log(
       `[WebRTC Service] Receiver peer count set to ${this.receiver.peerConnections.size}`
     );
   }
 
   private clearAllTransferProgress(): void {
-    this.observer?.onTransferProgressCleared?.("send");
-    this.observer?.onTransferProgressCleared?.("receive");
+    this.emitEvent({ type: "transfer_progress_cleared", direction: "send" });
+    this.emitEvent({ type: "transfer_progress_cleared", direction: "receive" });
     console.log("[WebRTC Service] Cleared all transfer progress");
   }
 
@@ -368,7 +462,7 @@ class WebRTCService {
     peerId: string,
     direction: TransferDirection
   ): void {
-    this.observer?.onTransferProgressCleared?.(direction, peerId);
+    this.emitEvent({ type: "transfer_progress_cleared", direction, peerId });
   }
 
   public async cleanup(): Promise<void> {
