@@ -1,6 +1,9 @@
 import { useEffect, useMemo } from "react";
+import { ensureWebRTCStoreCoordinator } from "@/lib/app/WebRTCStoreCoordinator";
 import { webrtcService } from "@/lib/webrtcService";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
+
+ensureWebRTCStoreCoordinator();
 
 // Retain type definitions for compatibility
 export type PeerProgressDetails = { progress: number; speed: number };
@@ -52,8 +55,10 @@ export function useWebRTCConnection({}: UseWebRTCConnectionProps) {
     receiveProgress,
 
     // Methods exposed directly from service
-    broadcastDataToAllPeers:
-      webrtcService.broadcastDataToAllPeers.bind(webrtcService),
+    broadcastDataToAllPeers: () => {
+      const { shareContent, sendFiles } = useFileTransferStore.getState();
+      return webrtcService.broadcastDataToAllPeers(shareContent, sendFiles);
+    },
     requestFile: webrtcService.requestFile.bind(webrtcService),
     requestFolder: webrtcService.requestFolder.bind(webrtcService),
     setReceiverDirectoryHandle:

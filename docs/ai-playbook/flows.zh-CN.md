@@ -193,7 +193,11 @@ SendTabPanel/RetrieveTabPanel (功能面板)
     ↓
 业务中枢 Hooks (状态管理与业务逻辑)
     ↓
-Core Services (webrtcService) + Store (fileTransferStore)
+Core Services (webrtcService)
+    ↓
+Thin App Coordinator (WebRTCStoreCoordinator)
+    ↓
+Store (fileTransferStore)
 ```
 
 ### ClipboardApp 顶层协调器模式
@@ -210,7 +214,9 @@ Core Services (webrtcService) + Store (fileTransferStore)
 **useWebRTCConnection**（状态桥梁）：
 
 - 计算全局传输状态（isAnyFileTransferring）
+- 初始化 `WebRTCStoreCoordinator`，确保底层连接/传输事件能统一写入 Store
 - 暴露 webrtcService 方法（broadcastDataToAllPeers、requestFile、requestFolder）
+- 广播时显式从 Store 读取 `shareContent/sendFiles` 传给 service，避免 service 反向依赖 Zustand
 - 提供连接重置方法（resetSenderConnection、resetReceiverConnection）
 
 **useFileTransferHandler**（文件与内容管理）：
@@ -226,6 +232,14 @@ Core Services (webrtcService) + Store (fileTransferStore)
 - 离开保护：传输中确认提示（isAnyFileTransferring 检查）
 - 状态文本：动态更新房间状态文本
 - 链接生成：自动生成分享链接
+- 分享广播：显式把当前 Store 中的文本/文件传给 `webrtcService.broadcastDataToAllPeers()`
+
+**WebRTCStoreCoordinator**（薄应用编排层）：
+
+- 订阅 `webrtcService` 的 observer 事件，统一写 `fileTransferStore`
+- 负责连接状态、peer 数、发送/接收进度、接收内容和接收文件列表的 store 同步
+- 在 sender DataChannel 打开后，从 Store 读取当前内容并触发自动广播
+- 在 peer 断开时，按方向清理对应 peer 的进度记录并重新计算 `isAnyFileTransferring`
 
 **usePageSetup**（页面初始化）：
 
@@ -367,7 +381,7 @@ Core Services (webrtcService) + Store (fileTransferStore)
 ### 数据流模式
 
 - **单向数据流**：Store → Hooks → Components
-- **状态管理集中化**：所有状态通过 `useFileTransferStore` 统一管理
+- **状态管理集中化**：所有状态通过 `useFileTransferStore` 统一管理；底层 `webrtcService` 不再直接 import Store，由 `WebRTCStoreCoordinator` 承接状态写入
 - **错误处理标准化**：统一的消息提示机制（putMessageInMs）
 - **国际化集成**：useLocale + getDictionary 提供多语言支持
 

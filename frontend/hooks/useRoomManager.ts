@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef } from "react";
+import { ensureWebRTCStoreCoordinator } from "@/lib/app/WebRTCStoreCoordinator";
 import { webrtcService } from "@/lib/webrtcService";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { fetchRoom, createRoom, checkRoom, leaveRoom } from "@/app/config/api";
 import { debounce } from "lodash";
 import { useOneShotSlowHint } from "@/utils/useOneShotSlowHint";
 import type { RoomManagerText } from "@/types/clipboardText";
+
+ensureWebRTCStoreCoordinator();
 
 function format_peopleMsg(template: string, peerCount: number) {
   return template.replace("{peerCount}", peerCount.toString());
@@ -32,6 +35,8 @@ export function useRoomManager({
     shareRoomStatusText,
     retrieveRoomStatusText,
     activeTab,
+    shareContent,
+    sendFiles,
     sharePeerCount,
     retrievePeerCount,
     senderDisconnected,
@@ -179,7 +184,7 @@ export function useRoomManager({
         putMessageInMs(text.messages.waiting, true);
       } else {
         // Directly call the service's broadcast method
-        await webrtcService.broadcastDataToAllPeers();
+        await webrtcService.broadcastDataToAllPeers(shareContent, sendFiles);
       }
 
       // Update share link
@@ -189,7 +194,7 @@ export function useRoomManager({
       console.error("[RoomManager] Failed to generate share link:", error);
       putMessageInMs(text.messages.generateShareLinkError, true);
     }
-  }, [text.messages.generateShareLinkError, text.messages.waiting, putMessageInMs, shareRoomId, sharePeerCount, setShareLink]);
+  }, [text.messages.generateShareLinkError, text.messages.waiting, putMessageInMs, shareRoomId, sharePeerCount, setShareLink, shareContent, sendFiles]);
 
   const handleLeaveReceiverRoom = useCallback(async () => {
     if (isAnyFileTransferring) {
