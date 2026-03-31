@@ -165,10 +165,10 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     }
 
     // Send file request
-    const success = this.messageProcessor.sendFileRequest(fileId, offset);
-    if (!success) {
+    const sendResult = await this.messageProcessor.sendFileRequest(fileId, offset);
+    if (!sendResult.ok) {
       this.stateManager.failFileReception(
-        new Error("Failed to send file request")
+        new Error(`Failed to send file request: ${sendResult.reason || sendResult.finalState}`)
       );
       return;
     }
@@ -243,11 +243,18 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       );
     }
 
-    this.messageProcessor.sendFolderReceiveComplete(
+    const sendResult = await this.messageProcessor.sendFolderReceiveComplete(
       folderName,
       completedFileIds,
       true
     );
+
+    if (!sendResult.ok) {
+      this.fireError("Failed to send folder completion confirmation", {
+        folderName,
+        sendResult,
+      });
+    }
   }
 
   // ===== MessageProcessorDelegate Implementation =====
@@ -515,12 +522,19 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
         reception.meta.size - reception.initialOffset
       );
 
-      this.messageProcessor.sendFileReceiveComplete(
+      const sendResult = await this.messageProcessor.sendFileReceiveComplete(
         reception.meta.fileId,
         stats.currentTotalSize,
         stats.sequencedCount,
         true
       );
+
+      if (!sendResult.ok) {
+        this.fireError("Failed to send large file completion confirmation", {
+          fileId: reception.meta.fileId,
+          sendResult,
+        });
+      }
 
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
         postLogToBackend(
@@ -553,12 +567,19 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     );
 
     // Send completion confirmation
-    this.messageProcessor.sendFileReceiveComplete(
+    const sendResult = await this.messageProcessor.sendFileReceiveComplete(
       reception.meta.fileId,
       result.totalChunkSize,
       result.validChunks,
       result.storeUpdated
     );
+
+    if (!sendResult.ok) {
+      this.fireError("Failed to send file completion confirmation", {
+        fileId: reception.meta.fileId,
+        sendResult,
+      });
+    }
   }
 
   /**

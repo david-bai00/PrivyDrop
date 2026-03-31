@@ -101,14 +101,14 @@ export class NetworkTransmitter {
     await this.simpleBufferControl(dataChannel, peerId);
 
     // Send directly, no fragmentation
-    const sendResult = this.webrtcConnection.sendData(data, peerId);
+      const sendResult = await this.webrtcConnection.sendData(data, peerId);
 
-    if (!sendResult) {
-      const errorMessage = `sendData failed`;
+      if (!sendResult.ok) {
+        const errorMessage = `sendData failed: ${sendResult.reason || sendResult.finalState}`;
 
-      if (developmentEnv === "development") {
-        postLogToBackend(`[DEBUG] ❌ ${errorMessage}`);
-      }
+        if (developmentEnv === "development") {
+          postLogToBackend(`[DEBUG] ❌ ${errorMessage}`);
+        }
       throw new Error(errorMessage);
     }
   }

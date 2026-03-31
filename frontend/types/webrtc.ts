@@ -57,6 +57,19 @@ export interface FolderReceiveComplete {
   allStoreUpdated: boolean; // Confirm all files have been added to Store
 }
 
+export interface SendResult {
+  ok: boolean;
+  peerId: string;
+  attempts: number;
+  finalState: RTCDataChannelState | "missing" | "gracefully_disconnected";
+  reason?: string;
+}
+
+export interface BroadcastResult {
+  ok: boolean;
+  results: SendResult[];
+}
+
 // 🚀 New: Chunk metadata structure embedded in data packets
 export interface EmbeddedChunkMeta {
   chunkIndex: number; // Data chunk index, starting from 0  

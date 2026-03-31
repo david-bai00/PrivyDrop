@@ -196,7 +196,7 @@ class WebRTCService {
             await this.fileSender.sendString(shareContent, peerId);
           }
           if (sendFiles.length > 0) {
-            this.fileSender.sendFileMeta(sendFiles, peerId);
+            await this.fileSender.sendFileMeta(sendFiles, peerId);
           }
         })
       );

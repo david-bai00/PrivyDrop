@@ -43,7 +43,10 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   /**
    * 🎯 Send file metadata
    */
-  public sendFileMeta(files: CustomFile[], peerId?: string): void {
+  public async sendFileMeta(
+    files: CustomFile[],
+    peerId?: string
+  ): Promise<void> {
     // Record file sizes belonging to folders for progress calculation
     files.forEach((file) => {
       if (file.folderName) {
@@ -57,23 +60,27 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       ? [peerId]
       : Array.from(this.webrtcConnection.peerConnections.keys());
 
-    peers.forEach((pId) => {
-      files.forEach((file) => {
+    for (const pId of peers) {
+      for (const file of files) {
         const fileId = generateFileId(file);
         this.stateManager.addPendingFile(fileId, file);
 
         const fileMeta = this.getFileMeta(file);
         const metaDataString = JSON.stringify(fileMeta);
 
-        const sendResult = this.webrtcConnection.sendData(metaDataString, pId);
-        if (!sendResult) {
+        const sendResult = await this.webrtcConnection.sendData(
+          metaDataString,
+          pId
+        );
+        if (!sendResult.ok) {
           this.fireError("Failed to send file metadata", {
             fileMeta,
             peerId: pId,
+            sendResult,
           });
         }
-      });
-    });
+      }
+    }
   }
 
   /**

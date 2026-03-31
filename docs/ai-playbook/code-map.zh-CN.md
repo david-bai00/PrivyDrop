@@ -68,13 +68,13 @@
 - `frontend/lib/` — 核心库与工具。
 
   - WebRTC 基础与角色
-    - `frontend/lib/webrtc_base.ts` — WebRTC 基础类，提供 Socket.IO 信令、RTCPeerConnection 管理、ICE 候选者队列、双重断开检测重连机制、唤醒锁管理、数据通道发送重试（5 次递增间隔）、优雅断开跟踪（gracefullyDisconnectedPeers Set）和多格式数据类型兼容性支持（ArrayBuffer/Blob/Uint8Array/TypedArray）。加入房间（joinRoom）采用 15 秒超时，并在 join 未返回时启用“等效成功信号”提前判定成功：Initiator 收到 `ready/recipient-ready`，Recipient 收到 `offer`；触发后立即设置 inRoom 并清理监听/定时器，降低弱网下误报。
+    - `frontend/lib/webrtc_base.ts` — WebRTC 基础类，提供 Socket.IO 信令、RTCPeerConnection/DataChannel 的 `Map` 管理、ICE 候选者队列、双重断开检测重连机制、唤醒锁管理、异步数据发送结果（`SendResult`/`BroadcastResult`）、带最终结果返回的发送重试、优雅断开跟踪（gracefullyDisconnectedPeers Set）和多格式数据类型兼容性支持（ArrayBuffer/Blob/Uint8Array/TypedArray）。加入房间（joinRoom）采用 15 秒超时，并在 join 未返回时启用“等效成功信号”提前判定成功：Initiator 收到 `ready/recipient-ready`，Recipient 收到 `offer`；触发后立即设置 inRoom 并清理监听/定时器，降低弱网下误报。
     - `frontend/lib/webrtc_Initiator.ts` — 发起方实现，处理`ready`/`recipient-ready`事件，创建 RTCPeerConnection 和主动式 DataChannel，发送 offer，处理 answer 响应，支持 256KB 缓冲阈值配置。
     - `frontend/lib/webrtc_Recipient.ts` — 接收方实现，处理`offer`事件，创建 RTCPeerConnection 和响应式 DataChannel（ondatachannel），生成并发送 answer，处理`initiator-online`重连信号和现有连接清理。
     - `frontend/lib/webrtcService.ts` — WebRTC 服务单例封装（跨路由常驻），管理 sender/receiver 实例，提供统一业务接口，处理连接状态变更、数据广播、文件请求和连接断开清理。
   - 发送（sender）
     - `frontend/lib/fileSender.ts` — 发送端向后兼容包装层，内部使用 FileTransferOrchestrator 提供统一服务。
-    - `frontend/lib/transfer/FileTransferOrchestrator.ts` — 发送端主编排器，集成所有组件管理文件传输生命周期。
+    - `frontend/lib/transfer/FileTransferOrchestrator.ts` — 发送端主编排器，集成所有组件管理文件传输生命周期；文件元数据发送已改为等待底层 async send 结果，避免“上层判失败、底层晚发成功”的语义错位。
     - `frontend/lib/transfer/StreamingFileReader.ts` — 高性能流式文件读取器，采用 32MB 批次+64KB 网络块的双层缓冲架构。
     - `frontend/lib/transfer/NetworkTransmitter.ts` — 网络传输器，使用 WebRTC 原生背压控制，支持嵌入元数据分片发送。
     - `frontend/lib/transfer/StateManager.ts` — 状态管理中心，跟踪 peer 状态、待发送文件、文件夹元数据。
@@ -83,12 +83,12 @@
     - `frontend/lib/transfer/TransferConfig.ts` — 传输配置管理，定义文件读取 4MB 分片、32MB 批次、64KB 网络发送块。
   - 接收（receiver）
     - `frontend/lib/fileReceiver.ts` — 接收端向后兼容包装层，内部使用 FileReceiveOrchestrator 提供统一服务。
-    - `frontend/lib/receive/FileReceiveOrchestrator.ts` — 接收端主编排器，集成所有组件管理文件接收生命周期，支持断点续传和磁盘流式写入。
+    - `frontend/lib/receive/FileReceiveOrchestrator.ts` — 接收端主编排器，集成所有组件管理文件接收生命周期，支持断点续传和磁盘流式写入；控制消息（`fileRequest`、完成确认）会等待 async send 的最终结果后再推进状态。
     - `frontend/lib/receive/ReceptionStateManager.ts` — 状态管理中心，管理文件元数据、活跃接收状态、文件夹进度、保存类型配置。
     - `frontend/lib/receive/ChunkProcessor.ts` — 分片处理器，处理多种数据格式转换、嵌入元数据解析、分片验证和索引映射。
     - `frontend/lib/receive/StreamingFileWriter.ts` — 流式文件写入器，包含 SequencedDiskWriter 严格顺序写入机制，支持大文件磁盘流式写入。
     - `frontend/lib/receive/FileAssembler.ts` — 内存文件组装器，处理小块文件的内存重组、完整性校验和文件对象创建。
-    - `frontend/lib/receive/MessageProcessor.ts` — 消息处理器，负责 WebRTC 消息路由（fileMeta/stringMetadata/fileRequest/folderReceiveComplete）。
+    - `frontend/lib/receive/MessageProcessor.ts` — 消息处理器，负责 WebRTC 消息路由（fileMeta/stringMetadata/fileRequest/folderReceiveComplete）；所有外发控制消息统一返回 `SendResult`，供编排层显式处理失败。
     - `frontend/lib/receive/ProgressReporter.ts` — 进度报告器，处理文件/文件夹进度计算、速度统计和节流回调。
     - `frontend/lib/receive/ReceptionConfig.ts` — 接收配置管理，定义大文件阈值 1GB、64KB 分片、缓冲区大小和调试开关。
   - 工具与辅助

@@ -22,7 +22,10 @@ class FileSender {
     console.log("[FileSender] ✅ Initialized with modular architecture");
   }
 
-  public sendFileMeta(files: CustomFile[], peerId?: string): void {
+  public async sendFileMeta(
+    files: CustomFile[],
+    peerId?: string
+  ): Promise<void> {
     return this.orchestrator.sendFileMeta(files, peerId);
   }
 

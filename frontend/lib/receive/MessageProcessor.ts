@@ -7,6 +7,7 @@ import {
   FileReceiveComplete,
   FolderReceiveComplete,
   FileHandlers,
+  SendResult,
 } from "@/types/webrtc";
 import { ReceptionStateManager } from "./ReceptionStateManager";
 import { ReceptionConfig } from "./ReceptionConfig";
@@ -129,7 +130,10 @@ export class MessageProcessor {
   /**
    * Send file request message
    */
-  sendFileRequest(fileId: string, offset: number = 0): boolean {
+  async sendFileRequest(
+    fileId: string,
+    offset: number = 0
+  ): Promise<SendResult> {
     const peerId = this.stateManager.getCurrentPeerId();
     if (!peerId) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
@@ -137,34 +141,41 @@ export class MessageProcessor {
           `[DEBUG] ERROR: Cannot send fileRequest - no peerId available!`
         );
       }
-      return false;
+      return this.buildMissingPeerResult("missing_current_peer");
     }
 
     const request: FileRequest = { type: "fileRequest", fileId, offset };
-    const success = this.webrtcConnection.sendData(JSON.stringify(request), peerId);
+    const result = await this.webrtcConnection.sendData(
+      JSON.stringify(request),
+      peerId
+    );
     
-    if (success) {
+    if (result.ok) {
       this.delegate.log("log", "Sent fileRequest", { request, peerId });
     } else {
-      this.delegate.log("error", "Failed to send fileRequest", { request, peerId });
+      this.delegate.log("error", "Failed to send fileRequest", {
+        request,
+        peerId,
+        sendResult: result,
+      });
     }
     
-    return success;
+    return result;
   }
 
   /**
    * Send file receive complete message
    */
-  sendFileReceiveComplete(
+  async sendFileReceiveComplete(
     fileId: string,
     receivedSize: number,
     receivedChunks: number,
     storeUpdated: boolean
-  ): boolean {
+  ): Promise<SendResult> {
     const peerId = this.stateManager.getCurrentPeerId();
     if (!peerId) {
       this.delegate.log("warn", "Cannot send file receive complete - no peer ID");
-      return false;
+      return this.buildMissingPeerResult("missing_current_peer");
     }
 
     const completeMessage: FileReceiveComplete = {
@@ -175,12 +186,12 @@ export class MessageProcessor {
       storeUpdated,
     };
 
-    const success = this.webrtcConnection.sendData(
+    const result = await this.webrtcConnection.sendData(
       JSON.stringify(completeMessage),
       peerId
     );
 
-    if (success) {
+    if (result.ok) {
       this.delegate.log("log", "Sent file receive complete", {
         fileId,
         receivedSize,
@@ -191,24 +202,25 @@ export class MessageProcessor {
       this.delegate.log("error", "Failed to send file receive complete", {
         fileId,
         peerId,
+        sendResult: result,
       });
     }
 
-    return success;
+    return result;
   }
 
   /**
    * Send folder receive complete message
    */
-  sendFolderReceiveComplete(
+  async sendFolderReceiveComplete(
     folderName: string,
     completedFileIds: string[],
     allStoreUpdated: boolean
-  ): boolean {
+  ): Promise<SendResult> {
     const peerId = this.stateManager.getCurrentPeerId();
     if (!peerId) {
       this.delegate.log("warn", "Cannot send folder receive complete - no peer ID");
-      return false;
+      return this.buildMissingPeerResult("missing_current_peer");
     }
 
     const completeMessage: FolderReceiveComplete = {
@@ -218,18 +230,18 @@ export class MessageProcessor {
       allStoreUpdated,
     };
 
-    const success = this.webrtcConnection.sendData(
+    const result = await this.webrtcConnection.sendData(
       JSON.stringify(completeMessage),
       peerId
     );
 
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
       postLogToBackend(
-        `[DEBUG] 📤 Sent folderReceiveComplete - folderName: ${folderName}, completedFiles: ${completedFileIds.length}, allStoreUpdated: ${allStoreUpdated}, success: ${success}`
+        `[DEBUG] 📤 Sent folderReceiveComplete - folderName: ${folderName}, completedFiles: ${completedFileIds.length}, allStoreUpdated: ${allStoreUpdated}, success: ${result.ok}`
       );
     }
 
-    if (success) {
+    if (result.ok) {
       this.delegate.log("log", "Sent folder receive complete", {
         folderName,
         completedFiles: completedFileIds.length,
@@ -239,10 +251,11 @@ export class MessageProcessor {
       this.delegate.log("error", "Failed to send folder receive complete", {
         folderName,
         peerId,
+        sendResult: result,
       });
     }
 
-    return success;
+    return result;
   }
 
   /**
@@ -275,6 +288,16 @@ export class MessageProcessor {
   isConnectionAvailable(): boolean {
     const peerId = this.stateManager.getCurrentPeerId();
     return !!peerId && !!this.webrtcConnection;
+  }
+
+  private buildMissingPeerResult(reason: string): SendResult {
+    return {
+      ok: false,
+      peerId: "",
+      attempts: 0,
+      finalState: "missing",
+      reason,
+    };
   }
 
   /**

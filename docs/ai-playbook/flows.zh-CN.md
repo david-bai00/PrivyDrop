@@ -115,7 +115,9 @@
 - **ICE 候选者队列机制**：连接未就绪时缓存候选者到 `iceCandidatesQueue` Map，连接就绪后批量处理；支持候选者失效时的重新入队和连接状态验证
 - **唤醒锁管理**：连接建立时通过 `WakeLockManager` 请求屏幕唤醒锁，连接断开时释放，优化移动端传输稳定性
 - **优雅断开跟踪**：`gracefullyDisconnectedPeers` Set 跟踪正常断开的 peer，发送重试时跳过这些 peer，避免不必要的重试
-- **数据通道发送重试**：5 次重试机制，间隔从 100ms 递增到 1000ms，支持 `gracefullyDisconnectedPeers` 检测跳过重试
+- **数据通道发送语义**：`sendData()/sendToPeer()` 统一为 async，调用方必须等待最终 `SendResult`，不再存在“同步返回失败、后台继续偷偷重试”的双重语义
+- **数据通道发送重试**：底层仍保留原有重试窗口（首轮 100ms，后续 1000ms），但重试被纳入同一个 Promise 生命周期，只有最终成功或最终失败两种结果
+- **Map 一致性**：广播发送和全量 cleanup 统一通过 `Map` 迭代处理 peer/dataChannel，避免对象式遍历导致的失效分支
 
 **后端信令与房间管理**：
 
@@ -154,6 +156,7 @@ Socket.IO 事件处理流程：
 - 关键约束：
   - 分片大小：按浏览器/网络选择安全范围；注意通道缓冲阈值。
   - 背压：检查 `RTCDataChannel.bufferedAmount` 并按需节流。
+  - 发送结果：控制消息和数据发送都必须等待 async send 的最终结果，再决定是否进入失败分支或更新状态。
   - 完成：仅在收到 `fileReceiveComplete`/`folderReceiveComplete` 后标记 100%。
   - 续传：`fileRequest` 可设计为带 offset/range 以支持续传。
 
@@ -166,7 +169,7 @@ Socket.IO 事件处理流程：
 - 数据流原则：单向数据流（Store → Hooks → Components）；Hooks 做适配，组件只消费不修改。
 - **实用调试策略**：
   - 为连接状态变化与 Store 更新添加结构化日志；遇到时序/竞态可用 `setTimeout(..., 0)` 调整更新顺序
-  - DataChannel 发送重试机制：`sendToPeer()` 支持 5 次重试，间隔 100ms→1000ms 递增；优雅断开的 peer 跳过重试
+  - DataChannel 发送重试机制：`sendToPeer()` 以 async 方式返回最终 `SendResult`；优雅断开的 peer 跳过重试，调用方不应再基于同步布尔值判断发送成败
   - WebRTC 数据类型兼容性：支持 `ArrayBuffer`/`Blob`/`Uint8Array`/`TypedArray` 多种格式，解决 Firefox 兼容性问题
   - 连接状态监控：`connectionState` 变化时触发相应的处理逻辑（connected/disconnected/failed/closed）
   - 背压控制：DataChannel 设置 `bufferedAmountLowThreshold = 256KB`，发送时检查 `bufferedAmount` 状态
