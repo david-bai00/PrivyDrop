@@ -7,6 +7,7 @@ import {
   getSocketOptions,
   config,
 } from "@/app/config/environment";
+import { generateFileId } from "@/lib/fileUtils";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 
 class WebRTCService {
@@ -131,7 +132,7 @@ class WebRTCService {
 
       // Check if file already exists to avoid duplicates
       const existingFile = store.retrievedFiles.find(
-        (f) => f.name === file.name && f.size === file.size
+        (existingFile) => generateFileId(existingFile) === generateFileId(file)
       );
 
       if (!existingFile) {

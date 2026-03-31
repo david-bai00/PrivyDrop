@@ -157,6 +157,7 @@ Socket.IO 事件处理流程：
   - 分片大小：按浏览器/网络选择安全范围；注意通道缓冲阈值。
   - 背压：检查 `RTCDataChannel.bufferedAmount` 并按需节流。
   - 发送结果：控制消息和数据发送都必须等待 async send 的最终结果，再决定是否进入失败分支或更新状态。
+  - 文件标识：发送列表、下载匹配、进度与接收去重统一使用稳定 `fileId`，不要再以 `name` 或展示字段作为底层主键。
   - 完成：仅在收到 `fileReceiveComplete`/`folderReceiveComplete` 后标记 100%。
   - 续传：`fileRequest` 可设计为带 offset/range 以支持续传。
 
@@ -166,6 +167,7 @@ Socket.IO 事件处理流程：
 - 接收方重连与房间状态：正确的状态重置；UI 严格来源于 Store；离开/重进需清理相关状态；遵循 `initiator-online`/`recipient-ready` 的时序再发起 offer；重连后校验房间成员关系。
 - 缓存 roomId 的重连：若存在缓存 `roomId`，确保依赖在线状态同步（`initiator-online`/`recipient-ready`）触发重新协商；后端需保证 socket↔room 映射在断开/重连路径上被正确清理与恢复。
 - 多次传输计数：避免过度“去重”掩盖真实的二次下载；依赖正确的状态清理。
+- 同名文件问题：发送端去重、删除和接收端下载匹配都应基于 `fileId`，否则会在不同目录或不同来源的同名文件场景下误删、误判或下载错文件。
 - 数据流原则：单向数据流（Store → Hooks → Components）；Hooks 做适配，组件只消费不修改。
 - **实用调试策略**：
   - 为连接状态变化与 Store 更新添加结构化日志；遇到时序/竞态可用 `setTimeout(..., 0)` 调整更新顺序

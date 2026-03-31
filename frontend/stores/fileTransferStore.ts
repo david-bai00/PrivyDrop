@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { CustomFile, FileMeta } from "@/types/webrtc";
+import { generateFileId } from "@/lib/fileUtils";
 
 interface FileTransferState {
   // Room-related state
@@ -174,7 +175,9 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
         };
       } else {
         return {
-          sendFiles: state.sendFiles.filter((file) => file.name !== meta.name),
+          sendFiles: state.sendFiles.filter(
+            (file) => generateFileId(file) !== meta.fileId
+          ),
         };
       }
     }),

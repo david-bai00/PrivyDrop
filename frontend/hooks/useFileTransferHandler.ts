@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { CustomFile, FileMeta, fileMetadata } from "@/types/webrtc";
 import JSZip from "jszip";
-import { downloadAs } from "@/lib/fileUtils";
+import { downloadAs, generateFileId } from "@/lib/fileUtils";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { postLogToBackend } from "@/app/config/api";
 import type { FileTransferText } from "@/types/clipboardText";
@@ -45,7 +45,7 @@ export function useFileTransferHandler({
     (pickedFiles: CustomFile[]) => {
       const newFiles = pickedFiles.filter(
         (pf) =>
-          !sendFiles.some((ef) => ef.name === pf.name && ef.size === pf.size)
+          !sendFiles.some((ef) => generateFileId(ef) === generateFileId(pf))
       );
       if (newFiles.length < pickedFiles.length) {
         putMessageInMs(text.fileExist, true);
@@ -95,7 +95,7 @@ export function useFileTransferHandler({
           const { retrievedFiles: latestRetrievedFiles } =
             useFileTransferStore.getState();
           const fileToDownload = latestRetrievedFiles.find(
-            (f) => f.name === meta.name
+            (f) => generateFileId(f) === meta.fileId
           );
 
           if (fileToDownload) {
@@ -117,11 +117,13 @@ export function useFileTransferHandler({
             return true;
           } else {
             // Debug log: Record the case where file is not found
-            const availableFileNames = latestRetrievedFiles.map((f) => f.name);
+            const availableFileIds = latestRetrievedFiles.map((f) =>
+              generateFileId(f)
+            );
             postLogToBackend(
-              `File NOT found! Looking for: "${
-                meta.name
-              }", Available files: [${availableFileNames.join(", ")}]`
+              `File NOT found! Looking for fileId: "${
+                meta.fileId
+              }", Available fileIds: [${availableFileIds.join(", ")}]`
             );
           }
 

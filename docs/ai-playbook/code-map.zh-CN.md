@@ -58,7 +58,7 @@
 
   - `frontend/hooks/useWebRTCConnection.ts` — WebRTC 生命周期与编排 API。
   - `frontend/hooks/useRoomManager.ts` — 房间创建/加入/校验与 UI 状态，支持缓存 ID 重连（≥8 字符自动发送 initiator-online）。
-  - `frontend/hooks/useFileTransferHandler.ts` — 文件/文本负载编排与回调，使用 getState() 修复闭包问题，支持 JSZip 文件夹下载。
+  - `frontend/hooks/useFileTransferHandler.ts` — 文件/文本负载编排与回调，使用 getState() 修复闭包问题，支持 JSZip 文件夹下载；发送去重与单文件下载匹配统一基于稳定 `fileId`，避免同名文件误判。
   - `frontend/hooks/useClipboardActions.ts` — 剪贴板操作与状态管理，支持现代 API 和 document.execCommand 降级，处理 HTML/富文本粘贴。
   - `frontend/hooks/useClipboardAppMessages.ts` — 应用消息处理（shareMessage/retrieveMessage），4 秒自动消失机制。
   - `frontend/hooks/useLocale.ts` — 国际化语言切换，基于 pathname 解析。
@@ -102,7 +102,7 @@
 
 - `frontend/stores/` — 共享应用状态（Zustand）。
 
-  - `frontend/stores/fileTransferStore.ts` — 传输进度/状态的唯一事实来源（Zustand 单例，跨路由保持）。
+  - `frontend/stores/fileTransferStore.ts` — 传输进度/状态的唯一事实来源（Zustand 单例，跨路由保持）；发送列表删除和进度主键以 `fileId` 为准，避免 UI 展示字段参与底层匹配。
 
 - `frontend/types/`、`frontend/constants/` — 类型定义与常量。
 
