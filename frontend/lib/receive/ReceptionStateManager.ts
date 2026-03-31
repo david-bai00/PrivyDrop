@@ -26,6 +26,12 @@ export interface ActiveFileReception {
   isFinalized?: boolean;
 }
 
+export type ReceptionLifecycleState =
+  | "idle"
+  | "receiving"
+  | "shutting_down"
+  | "resetting";
+
 /**
  * 🚀 Reception state management
  * Centrally manages all file reception state data
@@ -44,6 +50,7 @@ export class ReceptionStateManager {
   private activeFileReception: ActiveFileReception | null = null;
   private activeStringReception: CurrentString | null = null;
   private currentFolderName: string | null = null;
+  private lifecycleState: ReceptionLifecycleState = "idle";
   
   // Peer information
   private currentPeerId: string = "";
@@ -158,6 +165,11 @@ export class ReceptionStateManager {
     if (this.activeFileReception) {
       throw new Error("Another file reception is already in progress");
     }
+    if (this.lifecycleState !== "idle") {
+      throw new Error(
+        `Cannot start file reception while receiver is ${this.lifecycleState}`
+      );
+    }
 
     return new Promise<void>((resolve, reject) => {
       this.activeFileReception = {
@@ -174,6 +186,7 @@ export class ReceptionStateManager {
         chunkSequenceMap: new Map<number, boolean>(),
         isFinalized: false,
       };
+      this.lifecycleState = "receiving";
     });
   }
 
@@ -201,6 +214,7 @@ export class ReceptionStateManager {
       this.activeFileReception.completionNotifier.resolve();
     }
     this.activeFileReception = null;
+    this.lifecycleState = "idle";
   }
 
   /**
@@ -211,6 +225,7 @@ export class ReceptionStateManager {
       this.activeFileReception.completionNotifier.reject(reason);
     }
     this.activeFileReception = null;
+    this.lifecycleState = "idle";
   }
 
   // ===== String Reception Management =====
@@ -285,6 +300,20 @@ export class ReceptionStateManager {
   }
 
   /**
+   * Set lifecycle state
+   */
+  public setLifecycleState(state: ReceptionLifecycleState): void {
+    this.lifecycleState = state;
+  }
+
+  /**
+   * Get lifecycle state
+   */
+  public getLifecycleState(): ReceptionLifecycleState {
+    return this.lifecycleState;
+  }
+
+  /**
    * Set save directory
    */
   public setSaveDirectory(directory: FileSystemDirectoryHandle | null): void {
@@ -327,6 +356,7 @@ export class ReceptionStateManager {
     this.activeStringReception = null;
     this.currentFolderName = null;
     this.currentPeerId = "";
+    this.lifecycleState = "idle";
     // Note: saveDirectory is preserved
   }
 
@@ -337,6 +367,7 @@ export class ReceptionStateManager {
     this.activeFileReception = null;
     this.activeStringReception = null;
     this.currentFolderName = null;
+    this.lifecycleState = "idle";
     // Note: preserve pendingFilesMeta, folderProgresses, saveType for potential resume
   }
 
@@ -351,6 +382,7 @@ export class ReceptionStateManager {
       hasActiveStringReception: !!this.activeStringReception,
       currentFolderName: this.currentFolderName,
       currentPeerId: this.currentPeerId,
+      lifecycleState: this.lifecycleState,
       hasSaveDirectory: !!this.saveDirectory,
       saveTypeCount: Object.keys(this.saveType).length,
     };

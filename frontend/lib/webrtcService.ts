@@ -150,7 +150,7 @@ class WebRTCService {
     // Ensure clean state before joining
     if (!isSender) {
       // Force reset FileReceiver state to prevent "already in progress" errors
-      this.fileReceiver.forceReset();
+      await this.fileReceiver.forceReset();
     }
 
     const peer = isSender ? this.sender : this.receiver;
@@ -175,7 +175,7 @@ class WebRTCService {
       useFileTransferStore.getState().setSharePeerCount(0);
     } else {
       // Clean up receiver - force reset to ensure complete cleanup
-      this.fileReceiver.forceReset();
+      await this.fileReceiver.forceReset();
       await this.receiver.leaveRoomAndCleanup();
       useFileTransferStore.getState().setIsReceiverInRoom(false);
       useFileTransferStore.getState().setRetrievePeerCount(0);
@@ -209,11 +209,15 @@ class WebRTCService {
   }
 
   public requestFile(fileId: string): void {
-    this.fileReceiver.requestFile(fileId);
+    void this.fileReceiver.requestFile(fileId).catch((error) => {
+      console.error("[WebRTC Service] requestFile failed:", error);
+    });
   }
 
   public requestFolder(folderName: string): void {
-    this.fileReceiver.requestFolder(folderName);
+    void this.fileReceiver.requestFolder(folderName).catch((error) => {
+      console.error("[WebRTC Service] requestFolder failed:", error);
+    });
   }
 
   public async setReceiverDirectoryHandle(
@@ -252,7 +256,14 @@ class WebRTCService {
         
         // Catch the error that gracefulShutdown may throw
         try {
-          this.fileReceiver.gracefulShutdown(`SENDER_${reason}`);
+          void this.fileReceiver
+            .gracefulShutdown(`SENDER_${reason}`)
+            .catch((error) => {
+              console.error(
+                "[WebRTC Service] gracefulShutdown failed:",
+                error
+              );
+            });
         } catch (error) {
           console.log(`[WebRTC Service] Expected error during graceful shutdown:`, error instanceof Error ? error.message : String(error));
         }

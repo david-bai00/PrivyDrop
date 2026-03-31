@@ -168,6 +168,7 @@ Socket.IO 事件处理流程：
 - 缓存 roomId 的重连：若存在缓存 `roomId`，确保依赖在线状态同步（`initiator-online`/`recipient-ready`）触发重新协商；后端需保证 socket↔room 映射在断开/重连路径上被正确清理与恢复。
 - 多次传输计数：避免过度“去重”掩盖真实的二次下载；依赖正确的状态清理。
 - 同名文件问题：发送端去重、删除和接收端下载匹配都应基于 `fileId`，否则会在不同目录或不同来源的同名文件场景下误删、误判或下载错文件。
+- 接收关闭语义：`gracefulShutdown/forceReset/cleanup` 应先 await 活跃 writer/stream 收尾，再 reject 当前接收并清理状态；关闭过程中不允许新的 `requestFile/requestFolder` 进入。
 - 数据流原则：单向数据流（Store → Hooks → Components）；Hooks 做适配，组件只消费不修改。
 - **实用调试策略**：
   - 为连接状态变化与 Store 更新添加结构化日志；遇到时序/竞态可用 `setTimeout(..., 0)` 调整更新顺序

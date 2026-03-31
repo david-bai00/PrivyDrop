@@ -1,6 +1,10 @@
 import WebRTC_Recipient from "../webrtc_Recipient";
 import { CustomFile, fileMetadata } from "@/types/webrtc";
-import { ReceptionStateManager } from "./ReceptionStateManager";
+import {
+  ActiveFileReception,
+  ReceptionLifecycleState,
+  ReceptionStateManager,
+} from "./ReceptionStateManager";
 import { MessageProcessor, MessageProcessorDelegate } from "./MessageProcessor";
 import { ChunkProcessor } from "./ChunkProcessor";
 import {
@@ -23,6 +27,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
   private streamingFileWriter: StreamingFileWriter;
   private fileAssembler: FileAssembler;
   private progressReporter: ProgressReporter;
+  private lifecycleTask: Promise<void> | null = null;
 
   // Callbacks
   public onFileMetaReceived: ((meta: fileMetadata) => void) | undefined =
@@ -84,6 +89,8 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
    * Request a single file from the peer
    */
   public async requestFile(fileId: string, singleFile = true): Promise<void> {
+    this.ensureReceiverAvailable("request a file");
+
     const activeReception = this.stateManager.getActiveFileReception();
     if (activeReception) {
       this.log("warn", "Another file reception is already in progress.");
@@ -180,6 +187,8 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
    * Request all files belonging to a folder from the peer
    */
   public async requestFolder(folderName: string): Promise<void> {
+    this.ensureReceiverAvailable("request a folder");
+
     const folderProgress = this.stateManager.getFolderProgress(folderName);
     if (!folderProgress || folderProgress.fileIds.length === 0) {
       this.log("warn", "No files found for the requested folder.", {
@@ -293,6 +302,13 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
    * Handle binary chunk data
    */
   private async handleBinaryChunkData(data: any): Promise<void> {
+    if (this.isReceiverTransitioning()) {
+      this.log("warn", "Ignoring binary chunk while receiver is transitioning", {
+        lifecycleState: this.stateManager.getLifecycleState(),
+      });
+      return;
+    }
+
     const activeReception = this.stateManager.getActiveFileReception();
     if (!activeReception) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
@@ -626,18 +642,11 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
 
     const reception = this.stateManager.getActiveFileReception();
     if (reception) {
-      // Clean up resources on error
-      if (reception.sequencedWriter) {
-        reception.sequencedWriter.close().catch((err: any) => {
-          this.log(
-            "error",
-            "Error closing sequenced writer during error cleanup",
-            { err }
-          );
-        });
-      }
-
-      this.stateManager.failFileReception(new Error(message));
+      void this.closeAndAbortActiveReception(
+        reception,
+        "error cleanup",
+        message
+      );
     }
   }
 
@@ -646,48 +655,46 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
   /**
    * Graceful shutdown
    */
-  public gracefulShutdown(reason: string = "CONNECTION_LOST"): void {
-    this.log("log", `Graceful shutdown initiated: ${reason}`);
+  public async gracefulShutdown(
+    reason: string = "CONNECTION_LOST"
+  ): Promise<void> {
+    await this.runLifecycleTransition("shutting_down", async () => {
+      this.log("log", `Graceful shutdown initiated: ${reason}`);
 
-    const reception = this.stateManager.getActiveFileReception();
-    if (reception?.sequencedWriter && reception?.writeStream) {
-      this.log("log", "Attempting to gracefully close streams on shutdown.");
-
-      // Close sequenced writer and write stream
-      reception.sequencedWriter.close().catch((err: any) => {
-        this.log(
-          "error",
-          "Error closing sequenced writer during graceful shutdown",
-          { err }
+      const reception = this.stateManager.getActiveFileReception();
+      if (reception) {
+        await this.closeAndAbortActiveReception(
+          reception,
+          "graceful shutdown",
+          reason
         );
-      });
+      }
 
-      reception.writeStream.close().catch((err: any) => {
-        this.log("error", "Error closing stream during graceful shutdown", {
-          err,
-        });
-      });
-    }
-
-    this.stateManager.gracefulCleanup();
-    this.log("log", "Graceful shutdown completed");
+      this.stateManager.gracefulCleanup();
+      this.log("log", "Graceful shutdown completed");
+    });
   }
 
   /**
    * Force reset all internal states
    */
-  public forceReset(): void {
-    this.log("log", "Force resetting FileReceiveOrchestrator state");
+  public async forceReset(): Promise<void> {
+    await this.runLifecycleTransition("resetting", async () => {
+      this.log("log", "Force resetting FileReceiveOrchestrator state");
 
-    const reception = this.stateManager.getActiveFileReception();
-    if (reception?.sequencedWriter && reception?.writeStream) {
-      reception.sequencedWriter.close().catch(console.error);
-      reception.writeStream.close().catch(console.error);
-    }
+      const reception = this.stateManager.getActiveFileReception();
+      if (reception) {
+        await this.closeAndAbortActiveReception(
+          reception,
+          "force reset",
+          "FORCE_RESET"
+        );
+      }
 
-    this.stateManager.forceReset();
-    this.progressReporter.resetAllProgress();
-    this.log("log", "FileReceiveOrchestrator state force reset completed");
+      this.stateManager.forceReset();
+      this.progressReporter.resetAllProgress();
+      this.log("log", "FileReceiveOrchestrator state force reset completed");
+    });
   }
 
   /**
@@ -725,10 +732,79 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
   /**
    * Clean up all resources
    */
-  public cleanup(): void {
-    this.stateManager.gracefulCleanup();
+  public async cleanup(): Promise<void> {
+    await this.gracefulShutdown("CLEANUP");
     this.progressReporter.cleanup();
     this.messageProcessor.cleanup();
     this.log("log", "FileReceiveOrchestrator cleaned up");
+  }
+
+  private ensureReceiverAvailable(action: string): void {
+    const lifecycleState = this.stateManager.getLifecycleState();
+    if (lifecycleState === "idle") {
+      return;
+    }
+
+    throw new Error(`Cannot ${action} while receiver is ${lifecycleState}`);
+  }
+
+  private isReceiverTransitioning(): boolean {
+    const lifecycleState = this.stateManager.getLifecycleState();
+    return (
+      lifecycleState === "shutting_down" || lifecycleState === "resetting"
+    );
+  }
+
+  private async runLifecycleTransition(
+    nextState: ReceptionLifecycleState,
+    action: () => Promise<void>
+  ): Promise<void> {
+    if (this.lifecycleTask) {
+      await this.lifecycleTask;
+      return;
+    }
+
+    this.stateManager.setLifecycleState(nextState);
+    this.lifecycleTask = action().finally(() => {
+      this.lifecycleTask = null;
+    });
+    await this.lifecycleTask;
+  }
+
+  private async closeAndAbortActiveReception(
+    reception: ActiveFileReception,
+    action: string,
+    reason: string
+  ): Promise<void> {
+    await this.closeActiveReceptionResources(reception, action);
+
+    if (this.stateManager.getActiveFileReception() === reception) {
+      this.stateManager.failFileReception(new Error(reason));
+    }
+  }
+
+  private async closeActiveReceptionResources(
+    reception: ActiveFileReception,
+    action: string
+  ): Promise<void> {
+    if (reception.sequencedWriter) {
+      try {
+        await reception.sequencedWriter.close();
+      } catch (err) {
+        this.log("error", `Error closing sequenced writer during ${action}`, {
+          err,
+        });
+      }
+    }
+
+    if (reception.writeStream) {
+      try {
+        await reception.writeStream.close();
+      } catch (err) {
+        this.log("error", `Error closing write stream during ${action}`, {
+          err,
+        });
+      }
+    }
   }
 }

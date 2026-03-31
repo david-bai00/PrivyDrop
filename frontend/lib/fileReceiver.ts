@@ -96,8 +96,10 @@ class FileReceiver {
   /**
    * Graceful shutdown
    */
-  public gracefulShutdown(reason: string = "CONNECTION_LOST"): void {
-    this.orchestrator.gracefulShutdown(reason);
+  public async gracefulShutdown(
+    reason: string = "CONNECTION_LOST"
+  ): Promise<void> {
+    await this.orchestrator.gracefulShutdown(reason);
 
     // Update saveType for backward compatibility
     this.saveType = {};
@@ -106,8 +108,8 @@ class FileReceiver {
   /**
    * Force reset all internal states
    */
-  public forceReset(): void {
-    this.orchestrator.forceReset();
+  public async forceReset(): Promise<void> {
+    await this.orchestrator.forceReset();
 
     // Update saveType for backward compatibility
     this.saveType = {};
@@ -123,8 +125,8 @@ class FileReceiver {
   /**
    * Clean up all resources
    */
-  public cleanup(): void {
-    this.orchestrator.cleanup();
+  public async cleanup(): Promise<void> {
+    await this.orchestrator.cleanup();
     this.saveType = {};
   }
 
