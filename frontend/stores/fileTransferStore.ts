@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { CustomFile, FileMeta } from "@/types/webrtc";
 import { generateFileId } from "@/lib/fileUtils";
+import {
+  WebRTCConnectionBadgeState,
+  WebRTCLifecycleState,
+} from "@/types/webrtcLifecycle";
 
 interface FileTransferState {
   // Room-related state
@@ -11,22 +15,14 @@ interface FileTransferState {
   retrieveRoomStatusText: string;
 
   // WebRTC connection state - Sender
-  shareConnectionState:
-    | "idle"
-    | "connecting"
-    | "connected"
-    | "disconnected"
-    | "failed";
+  shareConnectionState: WebRTCConnectionBadgeState;
+  shareLifecycleState: WebRTCLifecycleState;
   isSenderInRoom: boolean;
   sharePeerCount: number;
 
   // WebRTC connection state - Receiver
-  retrieveConnectionState:
-    | "idle"
-    | "connecting"
-    | "connected"
-    | "disconnected"
-    | "failed";
+  retrieveConnectionState: WebRTCConnectionBadgeState;
+  retrieveLifecycleState: WebRTCLifecycleState;
   isReceiverInRoom: boolean;
   retrievePeerCount: number;
   senderDisconnected: boolean;
@@ -61,14 +57,12 @@ interface FileTransferState {
   setRetrieveRoomStatusText: (text: string) => void;
 
   // WebRTC connection-related actions
-  setShareConnectionState: (
-    state: "idle" | "connecting" | "connected" | "disconnected" | "failed"
-  ) => void;
+  setShareConnectionState: (state: WebRTCConnectionBadgeState) => void;
+  setShareLifecycleState: (state: WebRTCLifecycleState) => void;
   setIsSenderInRoom: (isInRoom: boolean) => void;
   setSharePeerCount: (count: number) => void;
-  setRetrieveConnectionState: (
-    state: "idle" | "connecting" | "connected" | "disconnected" | "failed"
-  ) => void;
+  setRetrieveConnectionState: (state: WebRTCConnectionBadgeState) => void;
+  setRetrieveLifecycleState: (state: WebRTCLifecycleState) => void;
   setIsReceiverInRoom: (isInRoom: boolean) => void;
   setRetrievePeerCount: (count: number) => void;
   setSenderDisconnected: (disconnected: boolean) => void;
@@ -123,9 +117,11 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
   shareRoomStatusText: "",
   retrieveRoomStatusText: "",
   shareConnectionState: "idle",
+  shareLifecycleState: "idle",
   isSenderInRoom: false,
   sharePeerCount: 0,
   retrieveConnectionState: "idle",
+  retrieveLifecycleState: "idle",
   isReceiverInRoom: false,
   retrievePeerCount: 0,
   senderDisconnected: false,
@@ -152,10 +148,12 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
 
   // WebRTC connection-related actions
   setShareConnectionState: (state) => set({ shareConnectionState: state }),
+  setShareLifecycleState: (state) => set({ shareLifecycleState: state }),
   setIsSenderInRoom: (isInRoom) => set({ isSenderInRoom: isInRoom }),
   setSharePeerCount: (count) => set({ sharePeerCount: count }),
   setRetrieveConnectionState: (state) =>
     set({ retrieveConnectionState: state }),
+  setRetrieveLifecycleState: (state) => set({ retrieveLifecycleState: state }),
   setIsReceiverInRoom: (isInRoom) => set({ isReceiverInRoom: isInRoom }),
   setRetrievePeerCount: (count) => set({ retrievePeerCount: count }),
   setSenderDisconnected: (disconnected) =>

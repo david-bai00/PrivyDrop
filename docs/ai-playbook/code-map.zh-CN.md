@@ -32,9 +32,9 @@
     - 等效成功信号：在 `joinResponse` 之前若收到 `ready/recipient-ready/offer`，提前判定入房成功并清理 3s/15s 定时器。
     - 其他：房间状态文案、分享链接生成、离开房间、输入校验（750ms 防抖）。
   - `useConnectionFeedback.ts`
-    - 状态归一化：`new/connecting`→`negotiating`；`failed/closed`→`disconnected`（复用 `utils/rtcPhase.ts`）。
+    - 状态归一化：优先读取 Store 中的 lifecycle state；`joining/waiting_for_peer/negotiating`→`negotiating`，`reconnecting`→`disconnected` phase（复用 `utils/rtcPhase.ts`）。
     - 协商慢提示：8s 定时器（`rtc_slow`），单次协商仅提示一次；若在后台到时则挂起，回到前台且仍协商时补发一次（复用 `useOneShotSlowHint`）。
-    - 一次性提示：首次 `connected`（`rtc_connected`）仅提示一次；断开前台重连（`rtc_reconnecting`）与恢复（`rtc_restored`）。
+    - 一次性提示：首次 `connected`（`rtc_connected`）仅提示一次；`reconnecting` 进入时提示前台重连（`rtc_reconnecting`），恢复到 `connected` 时提示 `rtc_restored`。
 
 - i18n 文案与类型
   - 文案定义：`frontend/constants/messages/*.{ts}`（已补齐 zh/en/ja/es/de/fr/ko）。
@@ -68,11 +68,11 @@
 - `frontend/lib/` — 核心库与工具。
 
   - WebRTC 基础与角色
-    - `frontend/lib/webrtc_base.ts` — WebRTC 基础类，提供 Socket.IO 信令、RTCPeerConnection/DataChannel 的 `Map` 管理、ICE 候选者队列、双重断开检测重连机制、唤醒锁管理、异步数据发送结果（`SendResult`/`BroadcastResult`）、带最终结果返回的发送重试、优雅断开跟踪（gracefullyDisconnectedPeers Set）和多格式数据类型兼容性支持（ArrayBuffer/Blob/Uint8Array/TypedArray）。加入房间（joinRoom）采用 15 秒超时，并在 join 未返回时启用“等效成功信号”提前判定成功：Initiator 收到 `ready/recipient-ready`，Recipient 收到 `offer`；触发后立即设置 inRoom 并清理监听/定时器，降低弱网下误报。
+    - `frontend/lib/webrtc_base.ts` — WebRTC 基础类，提供 Socket.IO 信令、RTCPeerConnection/DataChannel 的 `Map` 管理、ICE 候选者队列、双重断开检测重连机制、唤醒锁管理、异步数据发送结果（`SendResult`/`BroadcastResult`）、带最终结果返回的发送重试、优雅断开跟踪（gracefullyDisconnectedPeers Set）和多格式数据类型兼容性支持（ArrayBuffer/Blob/Uint8Array/TypedArray）。加入房间（joinRoom）采用 15 秒超时，并在 join 未返回时启用“等效成功信号”提前判定成功：Initiator 收到 `ready/recipient-ready`，Recipient 收到 `offer`；触发后立即设置 inRoom 并清理监听/定时器，降低弱网下误报。该层还会发出 `join/reconnect/leave` 生命周期事件，供 service 统一驱动状态机。
     - `frontend/lib/webrtc_Initiator.ts` — 发起方实现，处理`ready`/`recipient-ready`事件，创建 RTCPeerConnection 和主动式 DataChannel，发送 offer，处理 answer 响应，支持 256KB 缓冲阈值配置。
     - `frontend/lib/webrtc_Recipient.ts` — 接收方实现，处理`offer`事件，创建 RTCPeerConnection 和响应式 DataChannel（ondatachannel），生成并发送 answer，处理`initiator-online`重连信号和现有连接清理。
-    - `frontend/lib/webrtcService.ts` — WebRTC 服务单例封装（跨路由常驻），管理 sender/receiver 实例，提供统一业务接口，处理连接状态变更、数据广播、文件请求和连接断开清理；现在通过单一 `WebRTCServiceEvent` 事件表向上层发出连接/传输事件，不再直接写 Zustand，并提供 `getSessionInfo()` 这类只读查询接口给 hooks 使用。
-    - `frontend/lib/app/WebRTCStoreCoordinator.ts` — 薄应用编排层，订阅 `webrtcService` 的显式事件表并统一写入 `fileTransferStore`；同时负责 sender DataChannel 打开后的自动广播与按 peer 清理进度。
+    - `frontend/lib/webrtcService.ts` — WebRTC 服务单例封装（跨路由常驻），管理 sender/receiver 实例，提供统一业务接口，处理连接状态变更、数据广播、文件请求和连接断开清理；现在维护权威连接 lifecycle state（`idle/joining/waiting_for_peer/negotiating/connected/reconnecting/leaving/failed`），并通过单一 `WebRTCServiceEvent` 事件表向上层发出连接/传输事件，不再直接写 Zustand，同时提供 `getSessionInfo()` / `getLifecycleState()` 这类只读查询接口给 hooks 和协调层使用。
+    - `frontend/lib/app/WebRTCStoreCoordinator.ts` — 薄应用编排层，订阅 `webrtcService` 的显式事件表并统一写入 `fileTransferStore`；负责把权威 lifecycle state 派生为兼容的 badge state，同时处理 sender DataChannel 打开后的自动广播与按 peer 清理进度。
   - 发送（sender）
     - `frontend/lib/fileSender.ts` — 发送端向后兼容包装层，内部使用 FileTransferOrchestrator 提供统一服务。
     - `frontend/lib/transfer/FileTransferOrchestrator.ts` — 发送端主编排器，集成所有组件管理文件传输生命周期；文件元数据发送已改为等待底层 async send 结果，避免“上层判失败、底层晚发成功”的语义错位。
@@ -103,13 +103,14 @@
 
 - `frontend/stores/` — 共享应用状态（Zustand）。
 
-  - `frontend/stores/fileTransferStore.ts` — 传输进度/状态的唯一事实来源（Zustand 单例，跨路由保持）；发送列表删除和进度主键以 `fileId` 为准，避免 UI 展示字段参与底层匹配。底层 lib 不再直接 import 此 store，当前主要写入口为 hooks 与 `frontend/lib/app/WebRTCStoreCoordinator.ts`。
+  - `frontend/stores/fileTransferStore.ts` — 传输进度/状态的唯一事实来源（Zustand 单例，跨路由保持）；发送列表删除和进度主键以 `fileId` 为准，避免 UI 展示字段参与底层匹配。连接相关状态分为权威 lifecycle state 与兼容 badge state 两层。底层 lib 不再直接 import 此 store，当前主要写入口为 hooks 与 `frontend/lib/app/WebRTCStoreCoordinator.ts`。
 
 - `frontend/types/`、`frontend/constants/` — 类型定义与常量。
 
   - `frontend/types/global.d.ts` — 全局类型定义（lodash 模块、FileSystemDirectoryHandle 接口）。
   - `frontend/types/messages.ts` — 多语言消息与 UI 内容类型定义（Meta、Text、Messages 等国际化结构）。
   - `frontend/types/webrtc.ts` — WebRTC 传输协议类型（文件元数据、分片结构、状态机接口）。
+  - `frontend/types/webrtcLifecycle.ts` — 连接生命周期状态与兼容 badge 状态定义，包含 lifecycle→badge 的派生映射。
   - `frontend/constants/messages/` — 多语言消息文件（7 种语言：en、zh、de、es、fr、ja、ko）。
   - `frontend/constants/i18n-config.ts` — 国际化配置（默认语言、支持语言列表、显示名称映射）。
 

@@ -29,7 +29,52 @@ interface CallbackTypes {
   ) => void;
   onPeerDisconnected?: (peerId: string) => void;
   onError?: (error: WebRTCError) => void;
+  onLifecycleEvent?: (event: BaseWebRTCLifecycleEvent) => void;
 }
+
+export type BaseWebRTCLifecycleEvent =
+  | {
+      type: "join_started";
+      roomId: string;
+      isInitiator: boolean;
+    }
+  | {
+      type: "join_succeeded";
+      roomId: string;
+      isInitiator: boolean;
+    }
+  | {
+      type: "join_failed";
+      roomId: string;
+      isInitiator: boolean;
+      error: string;
+    }
+  | {
+      type: "reconnect_started";
+      roomId: string;
+      isInitiator: boolean;
+    }
+  | {
+      type: "reconnect_succeeded";
+      roomId: string;
+      isInitiator: boolean;
+    }
+  | {
+      type: "reconnect_failed";
+      roomId: string;
+      isInitiator: boolean;
+      error: string;
+    }
+  | {
+      type: "leave_started";
+      roomId: string | null;
+      isInitiator: boolean;
+    }
+  | {
+      type: "leave_completed";
+      roomId: string | null;
+      isInitiator: boolean;
+    };
 
 export interface WebRTCConfig {
   iceServers: RTCIceServer[];
@@ -54,6 +99,7 @@ export default class BaseWebRTC {
     | null;
   public onPeerDisconnected: CallbackTypes["onPeerDisconnected"] | null;
   public onError: CallbackTypes["onError"] | null;
+  public onLifecycleEvent: CallbackTypes["onLifecycleEvent"] | null;
 
   protected iceCandidatesQueue: Map<string, RTCIceCandidateInit[]>;
   public roomId: string | null;
@@ -83,6 +129,7 @@ export default class BaseWebRTC {
     this.onConnectionStateChange = null; // Monitors and responds to connection state changes
     this.onPeerDisconnected = null;
     this.onError = null;
+    this.onLifecycleEvent = null;
 
     this.iceCandidatesQueue = new Map(); // Stores ICE candidates for each peer
     this.roomId = null;
@@ -195,6 +242,11 @@ export default class BaseWebRTC {
     // Widen condition: if either side disconnected or socketId changed, try to rejoin
     if (this.isPeerDisconnected || this.isSocketDisconnected || socketIdChanged) {
       this.reconnectionInProgress = true;
+      this.onLifecycleEvent?.({
+        type: "reconnect_started",
+        roomId: this.roomId,
+        isInitiator: this.isInitiator,
+      });
       if (developmentEnv === "development") {
         postLogToBackend(
           `Starting reconnection. socketDisc:${this.isSocketDisconnected}, peerDisc:${this.isPeerDisconnected}, socketIdChanged:${socketIdChanged}, isInitiator:${this.isInitiator}`
@@ -210,7 +262,18 @@ export default class BaseWebRTC {
         // Reset states
         this.isSocketDisconnected = false;
         this.isPeerDisconnected = false;
+        this.onLifecycleEvent?.({
+          type: "reconnect_succeeded",
+          roomId: this.roomId,
+          isInitiator: this.isInitiator,
+        });
       } catch (error) {
+        this.onLifecycleEvent?.({
+          type: "reconnect_failed",
+          roomId: this.roomId,
+          isInitiator: this.isInitiator,
+          error: error instanceof Error ? error.message : String(error),
+        });
         this.fireError("Reconnection failed", { error });
       } finally {
         this.reconnectionInProgress = false;
@@ -469,6 +532,13 @@ export default class BaseWebRTC {
       return;
     }
     this.isInitiator = isInitiator;
+    if (!this.reconnectionInProgress) {
+      this.onLifecycleEvent?.({
+        type: "join_started",
+        roomId,
+        isInitiator: this.isInitiator,
+      });
+    }
     return new Promise<void>((resolve, reject) => {
       let settled = false; // Prevent multiple resolve/reject
 
@@ -494,6 +564,14 @@ export default class BaseWebRTC {
         cleanup(joinResponseHandler, eqHandlers);
         this.isInRoom = false;
         this.roomId = null;
+        if (!this.reconnectionInProgress) {
+          this.onLifecycleEvent?.({
+            type: "join_failed",
+            roomId,
+            isInitiator: this.isInitiator,
+            error: "Join room timeout",
+          });
+        }
         reject(new Error("Join room timeout"));
       }, 15000);
 
@@ -514,6 +592,13 @@ export default class BaseWebRTC {
             `peerId:${this.socket.id} Early-joined (${reason}) room:${roomId}, isInitiator:${this.isInitiator}`
           );
         cleanup(joinResponseHandler, eqHandlers);
+        if (!this.reconnectionInProgress) {
+          this.onLifecycleEvent?.({
+            type: "join_succeeded",
+            roomId,
+            isInitiator: this.isInitiator,
+          });
+        }
         resolve();
       };
 
@@ -558,6 +643,14 @@ export default class BaseWebRTC {
           this.roomId = null;
           if (developmentEnv === "development")
             postLogToBackend(`Failed to join room,message:${response.message}`);
+          if (!this.reconnectionInProgress) {
+            this.onLifecycleEvent?.({
+              type: "join_failed",
+              roomId,
+              isInitiator: this.isInitiator,
+              error: response.message,
+            });
+          }
           this.fireError("Failed to join room", { message: response.message });
           reject(new Error(response.message));
         }
@@ -573,6 +666,14 @@ export default class BaseWebRTC {
           cleanup(joinResponseHandler, eqHandlers);
           this.isInRoom = false;
           this.roomId = null;
+          if (!this.reconnectionInProgress) {
+            this.onLifecycleEvent?.({
+              type: "join_failed",
+              roomId,
+              isInitiator: this.isInitiator,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
           reject(error);
         }
       }
@@ -739,6 +840,12 @@ export default class BaseWebRTC {
 
   // Public method to leave room and cleanup connections while keeping socket alive
   public async leaveRoomAndCleanup(): Promise<void> {
+    const previousRoomId = this.roomId;
+    this.onLifecycleEvent?.({
+      type: "leave_started",
+      roomId: previousRoomId,
+      isInitiator: this.isInitiator,
+    });
     // Clean up all peer connections
     for (const peerId of Array.from(this.peerConnections.keys())) {
       await this.cleanupExistingConnection(peerId);
@@ -757,6 +864,11 @@ export default class BaseWebRTC {
       "log",
       "Left room and cleaned up connections, socket remains connected"
     );
+    this.onLifecycleEvent?.({
+      type: "leave_completed",
+      roomId: previousRoomId,
+      isInitiator: this.isInitiator,
+    });
   }
   // Abstract method declaration
   protected createDataChannel(_peerId: string) {

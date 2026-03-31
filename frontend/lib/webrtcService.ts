@@ -3,18 +3,18 @@ import WebRTC_Recipient from "@/lib/webrtc_Recipient";
 import FileSender from "@/lib/fileSender";
 import FileReceiver from "@/lib/fileReceiver";
 import { CustomFile, fileMetadata } from "@/types/webrtc";
+import type { BaseWebRTCLifecycleEvent } from "@/lib/webrtc_base";
+import {
+  WebRTCLifecycleState,
+  WebRTCConnectionBadgeState,
+} from "@/types/webrtcLifecycle";
 import {
   getIceServers,
   getSocketOptions,
   config,
 } from "@/app/config/environment";
 
-export type WebRTCStoreConnectionState =
-  | "idle"
-  | "connecting"
-  | "connected"
-  | "disconnected"
-  | "failed";
+export type WebRTCStoreConnectionState = WebRTCConnectionBadgeState;
 
 export type WebRTCServiceRole = "sender" | "receiver";
 export type TransferDirection = "send" | "receive";
@@ -27,10 +27,10 @@ export interface WebRTCSessionInfo {
 
 export type WebRTCServiceEvent =
   | {
-      type: "connection_state_changed";
+      type: "lifecycle_state_changed";
       role: WebRTCServiceRole;
-      state: WebRTCStoreConnectionState;
-      peerId: string;
+      state: WebRTCLifecycleState;
+      previousState: WebRTCLifecycleState;
     }
   | {
       type: "peer_count_changed";
@@ -87,6 +87,10 @@ class WebRTCService {
 
   private static instance: WebRTCService;
   private observer: WebRTCServiceObserver | null = null;
+  private lifecycleStates: Record<WebRTCServiceRole, WebRTCLifecycleState> = {
+    sender: "idle",
+    receiver: "idle",
+  };
 
   private constructor() {
     const apiUrl = (config.API_URL || "").trim();
@@ -127,25 +131,27 @@ class WebRTCService {
     };
   }
 
+  public getLifecycleState(role: WebRTCServiceRole): WebRTCLifecycleState {
+    return this.lifecycleStates[role];
+  }
+
   private emitEvent(event: WebRTCServiceEvent): void {
     this.observer?.onEvent(event);
   }
 
   private initializeEventHandlers(): void {
+    this.sender.onLifecycleEvent = (event) => {
+      this.handlePeerLifecycleEvent("sender", event);
+    };
+
     this.sender.onConnectionStateChange = (state, peerId) => {
-      const normalizedState = this.normalizeConnectionState(state);
+      const normalizedState = this.normalizeRtcState(state);
       console.log(
         `[WebRTC Service] Sender connection state: ${normalizedState} for peer ${peerId}`
       );
 
-      this.emitEvent({
-        type: "connection_state_changed",
-        role: "sender",
-        state: normalizedState,
-        peerId,
-      });
-
       if (normalizedState === "connected") {
+        this.setLifecycleState("sender", "connected");
         this.emitEvent({
           type: "peer_count_changed",
           role: "sender",
@@ -165,6 +171,8 @@ class WebRTCService {
             speed,
           });
         }, peerId);
+      } else if (normalizedState === "negotiating") {
+        this.setLifecycleState("sender", "negotiating");
       } else if (
         normalizedState === "failed" ||
         normalizedState === "disconnected"
@@ -188,23 +196,22 @@ class WebRTCService {
 
     this.sender.onError = (error) => {
       console.error("[WebRTC Service] Sender error:", error.message);
+      this.setLifecycleState("sender", "failed");
       this.clearAllTransferProgress();
     };
 
+    this.receiver.onLifecycleEvent = (event) => {
+      this.handlePeerLifecycleEvent("receiver", event);
+    };
+
     this.receiver.onConnectionStateChange = (state, peerId) => {
-      const normalizedState = this.normalizeConnectionState(state);
+      const normalizedState = this.normalizeRtcState(state);
       console.log(
         `[WebRTC Service] Receiver connection state: ${normalizedState} for peer ${peerId}`
       );
 
-      this.emitEvent({
-        type: "connection_state_changed",
-        role: "receiver",
-        state: normalizedState,
-        peerId,
-      });
-
       if (normalizedState === "connected") {
+        this.setLifecycleState("receiver", "connected");
         this.emitEvent({
           type: "peer_count_changed",
           role: "receiver",
@@ -224,6 +231,8 @@ class WebRTCService {
             speed,
           });
         });
+      } else if (normalizedState === "negotiating") {
+        this.setLifecycleState("receiver", "negotiating");
       } else if (
         normalizedState === "failed" ||
         normalizedState === "disconnected"
@@ -238,6 +247,7 @@ class WebRTCService {
 
     this.receiver.onConnectionEstablished = (peerId) => {
       this.fileSender.handlePeerReconnection(peerId);
+      this.setLifecycleState("receiver", "connected");
       this.emitEvent({
         type: "sender_disconnected_changed",
         disconnected: false,
@@ -252,6 +262,12 @@ class WebRTCService {
     this.receiver.onPeerDisconnected = (peerId) => {
       console.log(`[WebRTC Service] Receiver peer disconnected: ${peerId}`);
       this.handleConnectionDisconnect(peerId, false, "PEER_DISCONNECTED");
+    };
+
+    this.receiver.onError = (error) => {
+      console.error("[WebRTC Service] Receiver error:", error.message);
+      this.setLifecycleState("receiver", "failed");
+      this.clearAllTransferProgress();
     };
 
     this.fileReceiver.onStringReceived = (data) => {
@@ -366,11 +382,60 @@ class WebRTCService {
     return this.fileReceiver.saveType;
   }
 
-  private normalizeConnectionState(
+  private handlePeerLifecycleEvent(
+    role: WebRTCServiceRole,
+    event: BaseWebRTCLifecycleEvent
+  ): void {
+    switch (event.type) {
+      case "join_started":
+        this.setLifecycleState(role, "joining");
+        return;
+      case "join_succeeded":
+      case "reconnect_succeeded":
+        this.setLifecycleState(
+          role,
+          this.getPeerConnectionCount(role) > 0
+            ? "negotiating"
+            : "waiting_for_peer"
+        );
+        return;
+      case "reconnect_started":
+        this.setLifecycleState(role, "reconnecting");
+        return;
+      case "join_failed":
+      case "reconnect_failed":
+        this.setLifecycleState(role, "failed");
+        return;
+      case "leave_started":
+        this.setLifecycleState(role, "leaving");
+        return;
+      case "leave_completed":
+        this.setLifecycleState(role, "idle");
+        return;
+      default:
+        return;
+    }
+  }
+
+  private getPeerConnectionCount(role: WebRTCServiceRole): number {
+    return role === "sender"
+      ? this.sender.peerConnections.size
+      : this.receiver.peerConnections.size;
+  }
+
+  private normalizeRtcState(
     state: RTCPeerConnectionState
-  ): WebRTCStoreConnectionState {
-    if (state === "connected" || state === "connecting" || state === "failed") {
-      return state;
+  ): "idle" | "negotiating" | "connected" | "disconnected" | "failed" {
+    if (state === "connected") {
+      return "connected";
+    }
+
+    if (state === "new" || state === "connecting") {
+      return "negotiating";
+    }
+
+    if (state === "failed") {
+      return "failed";
     }
 
     if (state === "closed" || state === "disconnected") {
@@ -378,6 +443,24 @@ class WebRTCService {
     }
 
     return "idle";
+  }
+
+  private setLifecycleState(
+    role: WebRTCServiceRole,
+    state: WebRTCLifecycleState
+  ): void {
+    const previousState = this.lifecycleStates[role];
+    if (previousState === state) {
+      return;
+    }
+
+    this.lifecycleStates[role] = state;
+    this.emitEvent({
+      type: "lifecycle_state_changed",
+      role,
+      state,
+      previousState,
+    });
   }
 
   private handleConnectionDisconnect(
@@ -390,6 +473,10 @@ class WebRTCService {
     );
 
     this.immediateTransferCleanup(peerId, isSender, reason);
+    const role: WebRTCServiceRole = isSender ? "sender" : "receiver";
+    if (this.lifecycleStates[role] !== "leaving") {
+      this.setLifecycleState(role, "reconnecting");
+    }
     this.updateConnectionState(isSender);
   }
 
@@ -472,6 +559,8 @@ class WebRTCService {
         this.sender.cleanUpBeforeExit(),
         this.receiver.cleanUpBeforeExit(),
       ]);
+      this.setLifecycleState("sender", "idle");
+      this.setLifecycleState("receiver", "idle");
       console.log("[WebRTC Service] Cleanup completed");
     } catch (error) {
       console.error("[WebRTC Service] Error during cleanup:", error);

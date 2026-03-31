@@ -6,6 +6,7 @@ import {
   webrtcService,
 } from "@/lib/webrtcService";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
+import { mapLifecycleToConnectionBadgeState } from "@/types/webrtcLifecycle";
 import { CustomFile, fileMetadata } from "@/types/webrtc";
 
 type PeerProgress = { progress: number; speed: number };
@@ -20,17 +21,14 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
     }
 
     webrtcService.setObserver(this);
+    this.syncInitialState();
     this.attached = true;
   }
 
   public onEvent(event: WebRTCServiceEvent): void {
     switch (event.type) {
-      case "connection_state_changed":
-        if (event.role === "sender") {
-          useFileTransferStore.getState().setShareConnectionState(event.state);
-        } else {
-          useFileTransferStore.getState().setRetrieveConnectionState(event.state);
-        }
+      case "lifecycle_state_changed":
+        this.handleLifecycleStateChanged(event);
         return;
       case "peer_count_changed":
         if (event.role === "sender") {
@@ -74,7 +72,42 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
     }
   }
 
-  private handleTransferProgress(event: Extract<WebRTCServiceEvent, { type: "transfer_progress" }>): void {
+  private handleLifecycleStateChanged(
+    event: Extract<WebRTCServiceEvent, { type: "lifecycle_state_changed" }>
+  ): void {
+    const store = useFileTransferStore.getState();
+    const connectionBadgeState = mapLifecycleToConnectionBadgeState(event.state);
+
+    if (event.role === "sender") {
+      store.setShareLifecycleState(event.state);
+      store.setShareConnectionState(connectionBadgeState);
+      return;
+    }
+
+    store.setRetrieveLifecycleState(event.state);
+    store.setRetrieveConnectionState(connectionBadgeState);
+  }
+
+  private syncInitialState(): void {
+    const store = useFileTransferStore.getState();
+    const senderLifecycle = webrtcService.getLifecycleState("sender");
+    const receiverLifecycle = webrtcService.getLifecycleState("receiver");
+
+    store.setShareLifecycleState(senderLifecycle);
+    store.setShareConnectionState(
+      mapLifecycleToConnectionBadgeState(senderLifecycle)
+    );
+    store.setRetrieveLifecycleState(receiverLifecycle);
+    store.setRetrieveConnectionState(
+      mapLifecycleToConnectionBadgeState(receiverLifecycle)
+    );
+    store.setIsSenderInRoom(webrtcService.getSessionInfo("sender").inRoom);
+    store.setIsReceiverInRoom(webrtcService.getSessionInfo("receiver").inRoom);
+  }
+
+  private handleTransferProgress(
+    event: Extract<WebRTCServiceEvent, { type: "transfer_progress" }>
+  ): void {
     const store = useFileTransferStore.getState();
 
     if (event.direction === "send") {

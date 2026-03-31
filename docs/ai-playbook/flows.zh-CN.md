@@ -112,6 +112,7 @@
 - **双重断开检测**：Socket.IO 断开触发 `disconnect` 事件 → 标记 `isSocketDisconnected = true`；P2P 连接断开触发 `disconnected` 状态 → 标记 `isPeerDisconnected = true`，自动调用 `cleanupExistingConnection()` 清理资源
 - **重连触发条件**：仅当 socket 和 P2P 都断开时才启动重连 → `attemptReconnection()`，防止重复重连；使用 `reconnectionInProgress` 标志防止并发重连
 - **状态恢复机制**：重连时调用 `joinRoom(roomId, isInitiator, sendInitiatorOnline)` 恢复状态，发送方自动发送 `initiator-online` 信号，接收方响应 `recipient-ready`
+- **连接生命周期状态机**：连接层显式区分 `idle/joining/waiting_for_peer/negotiating/connected/reconnecting/leaving/failed`，由 `webrtcService` 统一管理并通过事件表上抛；UI 不再直接把 `RTCPeerConnectionState` 当作业务状态
 - **ICE 候选者队列机制**：连接未就绪时缓存候选者到 `iceCandidatesQueue` Map，连接就绪后批量处理；支持候选者失效时的重新入队和连接状态验证
 - **唤醒锁管理**：连接建立时通过 `WakeLockManager` 请求屏幕唤醒锁，连接断开时释放，优化移动端传输稳定性
 - **优雅断开跟踪**：`gracefullyDisconnectedPeers` Set 跟踪正常断开的 peer，发送重试时跳过这些 peer，避免不必要的重试
@@ -217,6 +218,7 @@ Store (fileTransferStore)
 - 初始化 `WebRTCStoreCoordinator`，确保底层连接/传输事件能统一写入 Store
 - 暴露 webrtcService 方法（broadcastDataToAllPeers、requestFile、requestFolder）
 - 广播时显式从 Store 读取 `shareContent/sendFiles` 传给 service，避免 service 反向依赖 Zustand
+- 连接反馈优先读取 Store 中的 lifecycle state，再映射到 UI phase；`reconnecting` 文案不再依赖旧的 `disconnected` 近似态
 - 提供连接重置方法（resetSenderConnection、resetReceiverConnection）
 - 不再暴露 `sender/receiver` 内部实例，减少 hooks/组件对底层连接对象的耦合
 
@@ -239,7 +241,7 @@ Store (fileTransferStore)
 **WebRTCStoreCoordinator**（薄应用编排层）：
 
 - 订阅 `webrtcService` 的显式 `WebRTCServiceEvent` 事件表，统一写 `fileTransferStore`
-- 负责连接状态、peer 数、发送/接收进度、接收内容和接收文件列表的 store 同步
+- 负责连接 lifecycle state、兼容 badge state、peer 数、发送/接收进度、接收内容和接收文件列表的 store 同步
 - 在 sender DataChannel 打开后，从 Store 读取当前内容并触发自动广播
 - 在 peer 断开时，按方向清理对应 peer 的进度记录并重新计算 `isAnyFileTransferring`
 
@@ -383,7 +385,7 @@ Store (fileTransferStore)
 ### 数据流模式
 
 - **单向数据流**：Store → Hooks → Components
-- **状态管理集中化**：所有状态通过 `useFileTransferStore` 统一管理；底层 `webrtcService` 不再直接 import Store，由 `WebRTCStoreCoordinator` 承接状态写入
+- **状态管理集中化**：所有状态通过 `useFileTransferStore` 统一管理；底层 `webrtcService` 不再直接 import Store，由 `WebRTCStoreCoordinator` 承接状态写入。连接状态分为权威 lifecycle state 和兼容 badge state 两层，避免 UI 直接绑定底层连接枚举
 - **错误处理标准化**：统一的消息提示机制（putMessageInMs）
 - **国际化集成**：useLocale + getDictionary 提供多语言支持
 

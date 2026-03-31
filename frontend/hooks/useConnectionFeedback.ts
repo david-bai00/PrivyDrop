@@ -17,12 +17,18 @@ export function useConnectionFeedback({
   text,
   putMessageInMs,
 }: UseConnectionFeedbackProps) {
-  const { shareConnectionState, retrieveConnectionState } =
-    useFileTransferStore();
+  const {
+    shareConnectionState,
+    retrieveConnectionState,
+    shareLifecycleState,
+    retrieveLifecycleState,
+  } = useFileTransferStore();
 
   // Track previous phases and connection history via refs
   const prevShareRef = useRef<Phase>("idle");
   const prevRecvRef = useRef<Phase>("idle");
+  const prevShareLifecycleRef = useRef<string>("idle");
+  const prevRecvLifecycleRef = useRef<string>("idle");
   const everShareRef = useRef<boolean>(false);
   const everRecvRef = useRef<boolean>(false);
   const wasDiscShareRef = useRef<boolean>(false);
@@ -52,11 +58,15 @@ export function useConnectionFeedback({
 
   // Bridge RTC connection state changes to UI messages
   useEffect(() => {
-    const nowShare: Phase = mapPhase(shareConnectionState as any);
-    const nowRecv: Phase = mapPhase(retrieveConnectionState as any);
+    const currentShareState = shareLifecycleState || shareConnectionState;
+    const currentRecvState = retrieveLifecycleState || retrieveConnectionState;
+    const nowShare: Phase = mapPhase(currentShareState);
+    const nowRecv: Phase = mapPhase(currentRecvState);
 
     const prevShare = prevShareRef.current;
     const prevRecv = prevRecvRef.current;
+    const prevShareLifecycle = prevShareLifecycleRef.current;
+    const prevRecvLifecycle = prevRecvLifecycleRef.current;
 
     // Update refs for visibility handler to read latest
     sharePhaseRef.current = nowShare;
@@ -82,7 +92,16 @@ export function useConnectionFeedback({
       wasDiscShareRef.current = false;
       disarmRtcSlow();
     }
-    if (nowShare === "disconnected") {
+    if (currentShareState === "reconnecting") {
+       const isForeground =
+         typeof document !== "undefined" && document.visibilityState === "visible";
+       if (prevShareLifecycle !== "reconnecting" && isForeground) {
+          const msg = text.reconnecting;
+         if (msg) putMessageInMs(msg, true, 4000);
+      }
+      wasDiscShareRef.current = true;
+      disarmRtcSlow();
+    } else if (nowShare === "disconnected") {
        const isForeground =
          typeof document !== "undefined" && document.visibilityState === "visible";
        if ((everShareRef.current || wasDiscShareRef.current) && isForeground) {
@@ -113,7 +132,16 @@ export function useConnectionFeedback({
       wasDiscRecvRef.current = false;
       disarmRtcSlow();
     }
-    if (nowRecv === "disconnected") {
+    if (currentRecvState === "reconnecting") {
+       const isForeground =
+         typeof document !== "undefined" && document.visibilityState === "visible";
+       if (prevRecvLifecycle !== "reconnecting" && isForeground) {
+          const msg = text.reconnecting;
+         if (msg) putMessageInMs(msg, false, 4000);
+      }
+      wasDiscRecvRef.current = true;
+      disarmRtcSlow();
+    } else if (nowRecv === "disconnected") {
        const isForeground =
          typeof document !== "undefined" && document.visibilityState === "visible";
        if ((everRecvRef.current || wasDiscRecvRef.current) && isForeground) {
@@ -133,7 +161,9 @@ export function useConnectionFeedback({
     // Save previous for next comparison
     prevShareRef.current = nowShare;
     prevRecvRef.current = nowRecv;
-  }, [text, shareConnectionState, retrieveConnectionState, putMessageInMs, armRtcSlow, disarmRtcSlow, resetRtcSlow]);
+    prevShareLifecycleRef.current = currentShareState;
+    prevRecvLifecycleRef.current = currentRecvState;
+  }, [text, shareConnectionState, retrieveConnectionState, shareLifecycleState, retrieveLifecycleState, putMessageInMs, armRtcSlow, disarmRtcSlow, resetRtcSlow]);
 
   // Visibility change: when returning to foreground, if still disconnected, hint "reconnecting"
   useEffect(() => {
@@ -146,7 +176,8 @@ export function useConnectionFeedback({
 
        if (
          (everShareRef.current || wasDiscShareRef.current) &&
-         nowShare === "disconnected"
+         (prevShareLifecycleRef.current === "reconnecting" ||
+           nowShare === "disconnected")
        ) {
           const msg = text.reconnecting;
          if (msg) putMessageInMs(msg, true, 4000);
@@ -154,7 +185,8 @@ export function useConnectionFeedback({
       }
        if (
          (everRecvRef.current || wasDiscRecvRef.current) &&
-         nowRecv === "disconnected"
+         (prevRecvLifecycleRef.current === "reconnecting" ||
+           nowRecv === "disconnected")
        ) {
           const msg = text.reconnecting;
          if (msg) putMessageInMs(msg, false, 4000);
