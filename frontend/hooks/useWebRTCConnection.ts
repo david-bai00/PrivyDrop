@@ -66,7 +66,7 @@ export function useWebRTCConnection({}: UseWebRTCConnectionProps) {
     getReceiverSaveType: webrtcService.getReceiverSaveType.bind(webrtcService),
 
     // Reset connection methods
-    resetSenderConnection: () => webrtcService.leaveRoom(true),
-    resetReceiverConnection: () => webrtcService.leaveRoom(false),
+    resetSenderConnection: () => webrtcService.shutdownSender("leave_room"),
+    resetReceiverConnection: () => webrtcService.shutdownReceiver("leave_room"),
   };
 }

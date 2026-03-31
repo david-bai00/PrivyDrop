@@ -48,8 +48,8 @@ export function useRoomManager({
     setShareLink,
     setShareRoomStatusText,
     setRetrieveRoomStatusText,
-    resetReceiverState,
-    resetSenderApp,
+    applyReceiverStoreReset,
+    applySenderStoreReset,
   } = useFileTransferStore();
 
   // A ref to indicate join side for slow-hint message orientation
@@ -218,25 +218,23 @@ export function useRoomManager({
         : text.status.leftRoom;
       putMessageInMs(message, false);
 
-      // Reset receiver state (clears all as per requirement)
-      resetReceiverState();
-
-      // Clean up WebRTC connection
-      await webrtcService.leaveRoom(false);
+      // Clean up WebRTC connection first to stop incoming events, then reset store.
+      await webrtcService.shutdownReceiver("leave_room");
+      applyReceiverStoreReset("leave_room");
     } catch (error) {
       console.error("[RoomManager] Receiver failed to leave room:", error);
       putMessageInMs(text.messages.leaveRoomError, true);
     }
-  }, [isAnyFileTransferring, putMessageInMs, resetReceiverState, text.messages.confirmLeave, text.messages.leaveRoomError, text.messages.leaveSuccess, text.status.leftRoom]);
+  }, [applyReceiverStoreReset, isAnyFileTransferring, putMessageInMs, text.messages.confirmLeave, text.messages.leaveRoomError, text.messages.leaveSuccess, text.status.leftRoom]);
 
   // Sender reset app state
   const resetSenderAppState = useCallback(async () => {
     try {
-      // 1. Clean up WebRTC connection
-      await webrtcService.leaveRoom(true);
+      // 1. Clean up WebRTC connection through explicit sender shutdown action.
+      await webrtcService.shutdownSender("reset_app");
 
-      // 2. Clear share link and progress
-      resetSenderApp();
+      // 2. Reset sender-owned store state
+      applySenderStoreReset("reset_app");
 
       // 3. Fetch new room ID from backend
       const newRoomId = await fetchRoom();
@@ -246,7 +244,7 @@ export function useRoomManager({
       console.error("[RoomManager] Failed to reset sender state:", error);
       putMessageInMs(text.messages.resetSenderStateError, true);
     }
-  }, [putMessageInMs, resetSenderApp, setShareRoomId, setInitShareRoomId, text.messages.resetSenderStateError]);
+  }, [applySenderStoreReset, putMessageInMs, setShareRoomId, setInitShareRoomId, text.messages.resetSenderStateError]);
 
   const handleLeaveSenderRoom = useCallback(async () => {
     if (isAnyFileTransferring) {

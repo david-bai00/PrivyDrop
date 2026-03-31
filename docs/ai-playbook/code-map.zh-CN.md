@@ -56,8 +56,8 @@
 
 - `frontend/hooks/` — 业务逻辑中枢（React Hooks）。
 
-  - `frontend/hooks/useWebRTCConnection.ts` — WebRTC 生命周期与编排 API；初始化 `WebRTCStoreCoordinator`，并在广播时从 Store 显式读取 `shareContent/sendFiles` 传给 service，不再暴露 `sender/receiver` 内部实例。
-  - `frontend/hooks/useRoomManager.ts` — 房间创建/加入/校验与 UI 状态，支持缓存 ID 重连（≥8 字符自动发送 initiator-online）；分享广播改为显式把当前 Store 中的内容/文件传给 `webrtcService`，离房时通过 `getSessionInfo()` 读取 room/peer 信息，避免直接访问内部连接对象。
+  - `frontend/hooks/useWebRTCConnection.ts` — WebRTC 生命周期与编排 API；初始化 `WebRTCStoreCoordinator`，并在广播时从 Store 显式读取 `shareContent/sendFiles` 传给 service，不再暴露 `sender/receiver` 内部实例；重置连接时直接走 `shutdownSender("leave_room")` / `shutdownReceiver("leave_room")`。
+  - `frontend/hooks/useRoomManager.ts` — 房间创建/加入/校验与 UI 状态，支持缓存 ID 重连（≥8 字符自动发送 initiator-online）；分享广播改为显式把当前 Store 中的内容/文件传给 `webrtcService`，离房时通过 `getSessionInfo()` 读取 room/peer 信息，避免直接访问内部连接对象；sender/receiver 离房与重置已切换为显式 shutdown action + store reset action。
   - `frontend/hooks/useFileTransferHandler.ts` — 文件/文本负载编排与回调，使用 getState() 修复闭包问题，支持 JSZip 文件夹下载；发送去重与单文件下载匹配统一基于稳定 `fileId`，避免同名文件误判。
   - `frontend/hooks/useClipboardActions.ts` — 剪贴板操作与状态管理，支持现代 API 和 document.execCommand 降级，处理 HTML/富文本粘贴。
   - `frontend/hooks/useClipboardAppMessages.ts` — 应用消息处理（shareMessage/retrieveMessage），4 秒自动消失机制。
@@ -71,11 +71,12 @@
     - `frontend/lib/webrtc_base.ts` — WebRTC 基础类，提供 Socket.IO 信令、RTCPeerConnection/DataChannel 的 `Map` 管理、ICE 候选者队列、双重断开检测重连机制、唤醒锁管理、异步数据发送结果（`SendResult`/`BroadcastResult`）、带最终结果返回的发送重试、优雅断开跟踪（gracefullyDisconnectedPeers Set）和多格式数据类型兼容性支持（ArrayBuffer/Blob/Uint8Array/TypedArray）。加入房间（joinRoom）采用 15 秒超时，并在 join 未返回时启用“等效成功信号”提前判定成功：Initiator 收到 `ready/recipient-ready`，Recipient 收到 `offer`；触发后立即设置 inRoom 并清理监听/定时器，降低弱网下误报。该层还会发出 `join/reconnect/leave` 生命周期事件，供 service 统一驱动状态机。
     - `frontend/lib/webrtc_Initiator.ts` — 发起方实现，处理`ready`/`recipient-ready`事件，创建 RTCPeerConnection 和主动式 DataChannel，发送 offer，处理 answer 响应，支持 256KB 缓冲阈值配置。
     - `frontend/lib/webrtc_Recipient.ts` — 接收方实现，处理`offer`事件，创建 RTCPeerConnection 和响应式 DataChannel（ondatachannel），生成并发送 answer，处理`initiator-online`重连信号和现有连接清理。
-    - `frontend/lib/webrtcService.ts` — WebRTC 服务单例封装（跨路由常驻），管理 sender/receiver 实例，提供统一业务接口，处理连接状态变更、数据广播、文件请求和连接断开清理；现在维护权威连接 lifecycle state（`idle/joining/waiting_for_peer/negotiating/connected/reconnecting/leaving/failed`），并通过单一 `WebRTCServiceEvent` 事件表向上层发出连接/传输事件，不再直接写 Zustand，同时提供 `getSessionInfo()` / `getLifecycleState()` 这类只读查询接口给 hooks 和协调层使用。
+    - `frontend/lib/webrtcService.ts` — WebRTC 服务单例封装（跨路由常驻），管理 sender/receiver 实例，提供统一业务接口，处理连接状态变更、数据广播、文件请求和连接断开清理；现在维护权威连接 lifecycle state（`idle/joining/waiting_for_peer/negotiating/connected/reconnecting/leaving/failed`），并通过单一 `WebRTCServiceEvent` 事件表向上层发出连接/传输事件，不再直接写 Zustand，同时提供 `getSessionInfo()` / `getLifecycleState()` 这类只读查询接口给 hooks 和协调层使用。sender/receiver 离房与 cleanup 进一步收敛为显式 `shutdownSender()` / `shutdownReceiver()` 动作入口。
     - `frontend/lib/app/WebRTCStoreCoordinator.ts` — 薄应用编排层，订阅 `webrtcService` 的显式事件表并统一写入 `fileTransferStore`；负责把权威 lifecycle state 派生为兼容的 badge state，同时处理 sender DataChannel 打开后的自动广播与按 peer 清理进度。
   - 发送（sender）
-    - `frontend/lib/fileSender.ts` — 发送端向后兼容包装层，内部使用 FileTransferOrchestrator 提供统一服务。
+    - `frontend/lib/fileSender.ts` — 发送端向后兼容包装层，内部使用 FileTransferOrchestrator 提供统一服务；新增 `shutdown(action)`，把 sender 清理语义从零散 `cleanup()` 收敛到显式动作。
     - `frontend/lib/transfer/FileTransferOrchestrator.ts` — 发送端主编排器，集成所有组件管理文件传输生命周期；文件元数据发送已改为等待底层 async send 结果，避免“上层判失败、底层晚发成功”的语义错位。
+    - `frontend/lib/transfer/senderShutdown.ts` — 发送侧关闭动作策略表，定义 `leave_room/reset_app/cleanup` 的连接保持与发送状态清理策略。
     - `frontend/lib/transfer/StreamingFileReader.ts` — 高性能流式文件读取器，采用 32MB 批次+64KB 网络块的双层缓冲架构。
     - `frontend/lib/transfer/NetworkTransmitter.ts` — 网络传输器，使用 WebRTC 原生背压控制，支持嵌入元数据分片发送。
     - `frontend/lib/transfer/StateManager.ts` — 状态管理中心，跟踪 peer 状态、待发送文件、文件夹元数据。
@@ -104,7 +105,8 @@
 
 - `frontend/stores/` — 共享应用状态（Zustand）。
 
-  - `frontend/stores/fileTransferStore.ts` — 传输进度/状态的唯一事实来源（Zustand 单例，跨路由保持）；发送列表删除和进度主键以 `fileId` 为准，避免 UI 展示字段参与底层匹配。连接相关状态分为权威 lifecycle state 与兼容 badge state 两层。底层 lib 不再直接 import 此 store，当前主要写入口为 hooks 与 `frontend/lib/app/WebRTCStoreCoordinator.ts`。
+  - `frontend/stores/fileTransferStore.ts` — 传输进度/状态的唯一事实来源（Zustand 单例，跨路由保持）；发送列表删除和进度主键以 `fileId` 为准，避免 UI 展示字段参与底层匹配。连接相关状态分为权威 lifecycle state 与兼容 badge state 两层。底层 lib 不再直接 import 此 store，当前主要写入口为 hooks 与 `frontend/lib/app/WebRTCStoreCoordinator.ts`；sender/receiver reset 已升级为显式 action（`applySenderStoreReset` / `applyReceiverStoreReset`）。
+  - `frontend/stores/transferStoreReset.ts` — Store reset 动作策略与 transfer activity 计算工具；定义 sender/receiver reset 的清理边界，避免 sender reset 误清 receiver 侧进度。
 
 - `frontend/types/`、`frontend/constants/` — 类型定义与常量。
 

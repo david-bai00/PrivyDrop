@@ -5,6 +5,13 @@ import {
   WebRTCConnectionBadgeState,
   WebRTCLifecycleState,
 } from "@/types/webrtcLifecycle";
+import {
+  SenderStoreResetAction,
+  ReceiverStoreResetAction,
+  getSenderStoreResetPolicy,
+  getReceiverStoreResetPolicy,
+  hasActiveTransferProgress,
+} from "@/stores/transferStoreReset";
 
 interface FileTransferState {
   // Room-related state
@@ -105,6 +112,8 @@ interface FileTransferState {
   setRetrieveRoomId: (input: string) => void;
 
   // Reset-related actions
+  applyReceiverStoreReset: (action: ReceiverStoreResetAction) => void;
+  applySenderStoreReset: (action: SenderStoreResetAction) => void;
   resetReceiverState: () => void;
   resetSenderApp: () => void;
 }
@@ -238,24 +247,56 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
   setShareMessage: (message) => set({ shareMessage: message }),
   setRetrieveMessage: (message) => set({ retrieveMessage: message }),
 
-  resetReceiverState: () => {
-    // 🔧 Only reset Store state - FileReceiver cleanup is handled by webrtcService.leaveRoom()
-    set({
-      retrievedContent: "",
-      retrievedFiles: [],
-      retrievedFileMetas: [], // Clear file metadata in Store
-      retrievePeerCount: 0,
-      senderDisconnected: false,
-      receiveProgress: {},
-      retrieveRoomStatusText: "",
-    });
-  },
+  applyReceiverStoreReset: (action) =>
+    set((state) => {
+      const policy = getReceiverStoreResetPolicy(action);
+      const nextReceiveProgress = policy.clearReceiveProgress
+        ? {}
+        : state.receiveProgress;
+
+      return {
+        retrievedContent: policy.clearRetrievedContent
+          ? ""
+          : state.retrievedContent,
+        retrievedFiles: policy.clearRetrievedFiles ? [] : state.retrievedFiles,
+        retrievedFileMetas: policy.clearRetrievedFileMetas
+          ? []
+          : state.retrievedFileMetas,
+        retrievePeerCount: 0,
+        senderDisconnected: policy.clearSenderDisconnected
+          ? false
+          : state.senderDisconnected,
+        receiveProgress: nextReceiveProgress,
+        retrieveRoomStatusText: policy.clearRetrieveRoomStatusText
+          ? ""
+          : state.retrieveRoomStatusText,
+        isAnyFileTransferring: hasActiveTransferProgress(
+          state.sendProgress,
+          nextReceiveProgress
+        ),
+      };
+    }),
+
+  applySenderStoreReset: (action) =>
+    set((state) => {
+      const policy = getSenderStoreResetPolicy(action);
+      const nextSendProgress = policy.clearSendProgress ? {} : state.sendProgress;
+
+      return {
+        shareLink: policy.clearShareLink ? "" : state.shareLink,
+        shareRoomStatusText: policy.clearShareRoomStatusText
+          ? ""
+          : state.shareRoomStatusText,
+        sendProgress: nextSendProgress,
+        isAnyFileTransferring: hasActiveTransferProgress(
+          nextSendProgress,
+          state.receiveProgress
+        ),
+      };
+    }),
+
+  resetReceiverState: () => get().applyReceiverStoreReset("leave_room"),
 
   resetSenderApp: () =>
-    set({
-      shareLink: "",
-      sendProgress: {},
-      receiveProgress: {},
-      isAnyFileTransferring: false,
-    }),
+    get().applySenderStoreReset("reset_app"),
 }));

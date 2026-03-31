@@ -13,6 +13,11 @@ import {
   getSocketOptions,
   config,
 } from "@/app/config/environment";
+import {
+  SenderShutdownAction,
+  getSenderShutdownPolicy,
+} from "@/lib/transfer/senderShutdown";
+import { ReceiverShutdownAction } from "@/lib/receive";
 
 export type WebRTCStoreConnectionState = WebRTCConnectionBadgeState;
 
@@ -304,32 +309,59 @@ class WebRTCService {
 
   public async leaveRoom(isSender: boolean): Promise<void> {
     if (isSender) {
-      this.fileSender.cleanup();
-      await this.sender.leaveRoomAndCleanup();
-      this.emitEvent({
-        type: "room_status_changed",
-        role: "sender",
-        inRoom: false,
-      });
-      this.emitEvent({
-        type: "peer_count_changed",
-        role: "sender",
-        count: 0,
-      });
+      await this.shutdownSender("leave_room");
     } else {
-      await this.fileReceiver.leaveRoom();
-      await this.receiver.leaveRoomAndCleanup();
-      this.emitEvent({
-        type: "room_status_changed",
-        role: "receiver",
-        inRoom: false,
-      });
-      this.emitEvent({
-        type: "peer_count_changed",
-        role: "receiver",
-        count: 0,
-      });
+      await this.shutdownReceiver("leave_room");
     }
+  }
+
+  public async shutdownSender(action: SenderShutdownAction): Promise<void> {
+    const policy = getSenderShutdownPolicy(action);
+    this.fileSender.shutdown(action);
+
+    if (policy.keepSocketAlive) {
+      await this.sender.leaveRoomAndCleanup();
+    } else {
+      await this.sender.cleanUpBeforeExit();
+    }
+
+    this.emitEvent({
+      type: "room_status_changed",
+      role: "sender",
+      inRoom: false,
+    });
+    this.emitEvent({
+      type: "peer_count_changed",
+      role: "sender",
+      count: 0,
+    });
+    this.emitEvent({ type: "transfer_progress_cleared", direction: "send" });
+  }
+
+  public async shutdownReceiver(action: ReceiverShutdownAction): Promise<void> {
+    await this.fileReceiver.shutdown(action, `SERVICE_${action.toUpperCase()}`);
+
+    if (action === "cleanup") {
+      await this.receiver.cleanUpBeforeExit();
+    } else if (action === "leave_room") {
+      await this.receiver.leaveRoomAndCleanup();
+    }
+
+    this.emitEvent({
+      type: "room_status_changed",
+      role: "receiver",
+      inRoom: false,
+    });
+    this.emitEvent({
+      type: "peer_count_changed",
+      role: "receiver",
+      count: 0,
+    });
+    this.emitEvent({
+      type: "sender_disconnected_changed",
+      disconnected: false,
+    });
+    this.emitEvent({ type: "transfer_progress_cleared", direction: "receive" });
   }
 
   public async broadcastDataToAllPeers(
@@ -555,10 +587,9 @@ class WebRTCService {
   public async cleanup(): Promise<void> {
     console.log("[WebRTC Service] Starting cleanup...");
     try {
-      await this.fileReceiver.cleanup();
       await Promise.all([
-        this.sender.cleanUpBeforeExit(),
-        this.receiver.cleanUpBeforeExit(),
+        this.shutdownSender("cleanup"),
+        this.shutdownReceiver("cleanup"),
       ]);
       this.setLifecycleState("sender", "idle");
       this.setLifecycleState("receiver", "idle");

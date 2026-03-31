@@ -4,6 +4,10 @@
 import WebRTC_Initiator from "./webrtc_Initiator";
 import { CustomFile } from "@/types/webrtc";
 import { FileTransferOrchestrator } from "./transfer/FileTransferOrchestrator";
+import {
+  SenderShutdownAction,
+  getSenderShutdownPolicy,
+} from "./transfer/senderShutdown";
 
 /**
  * 🚀 FileSender - Backward compatible wrapper layer
@@ -49,8 +53,18 @@ class FileSender {
     console.log(`[FileSender] Handled peer reconnection for ${peerId}`);
   }
 
+  public shutdown(action: SenderShutdownAction): void {
+    const policy = getSenderShutdownPolicy(action);
+
+    if (policy.clearTransferState) {
+      this.orchestrator.cleanup();
+    }
+
+    console.log(`[FileSender] Shutdown completed with action ${action}`);
+  }
+
   public cleanup(): void {
-    return this.orchestrator.cleanup();
+    return this.shutdown("cleanup");
   }
 }
 
