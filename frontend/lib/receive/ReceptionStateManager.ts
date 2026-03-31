@@ -29,8 +29,10 @@ export interface ActiveFileReception {
 export type ReceptionLifecycleState =
   | "idle"
   | "receiving"
-  | "shutting_down"
-  | "resetting";
+  | "disconnecting"
+  | "leaving_room"
+  | "resetting"
+  | "cleaning_up";
 
 /**
  * 🚀 Reception state management
@@ -346,29 +348,37 @@ export class ReceptionStateManager {
   // ===== State Reset and Cleanup =====
 
   /**
-   * Force reset all states (for reconnection scenarios)
+   * Reset receiver state using an explicit preservation policy.
    */
-  public forceReset(): void {
-    this.pendingFilesMeta.clear();
-    this.folderProgresses = {};
-    this.saveType = {};
+  public resetState(options?: {
+    preserveMetadata?: boolean;
+    preserveSaveType?: boolean;
+    preserveSaveDirectory?: boolean;
+  }): void {
+    const {
+      preserveMetadata = false,
+      preserveSaveType = false,
+      preserveSaveDirectory = true,
+    } = options ?? {};
+
+    if (!preserveMetadata) {
+      this.pendingFilesMeta.clear();
+      this.folderProgresses = {};
+    }
+
+    if (!preserveSaveType) {
+      this.saveType = {};
+    }
+
     this.activeFileReception = null;
     this.activeStringReception = null;
     this.currentFolderName = null;
     this.currentPeerId = "";
     this.lifecycleState = "idle";
-    // Note: saveDirectory is preserved
-  }
 
-  /**
-   * Graceful cleanup (preserve some state for potential resume)
-   */
-  public gracefulCleanup(): void {
-    this.activeFileReception = null;
-    this.activeStringReception = null;
-    this.currentFolderName = null;
-    this.lifecycleState = "idle";
-    // Note: preserve pendingFilesMeta, folderProgresses, saveType for potential resume
+    if (!preserveSaveDirectory) {
+      this.saveDirectory = null;
+    }
   }
 
   /**

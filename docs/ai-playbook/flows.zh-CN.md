@@ -113,6 +113,7 @@
 - **重连触发条件**：仅当 socket 和 P2P 都断开时才启动重连 → `attemptReconnection()`，防止重复重连；使用 `reconnectionInProgress` 标志防止并发重连
 - **状态恢复机制**：重连时调用 `joinRoom(roomId, isInitiator, sendInitiatorOnline)` 恢复状态，发送方自动发送 `initiator-online` 信号，接收方响应 `recipient-ready`
 - **连接生命周期状态机**：连接层显式区分 `idle/joining/waiting_for_peer/negotiating/connected/reconnecting/leaving/failed`，由 `webrtcService` 统一管理并通过事件表上抛；UI 不再直接把 `RTCPeerConnectionState` 当作业务状态
+- **接收侧关闭动作表**：接收编排层显式区分 `peer_disconnect/leave_room/force_reset/cleanup` 四类动作，统一由策略表决定是否保留 metadata/saveType/saveDirectory、是否允许 resume 以及是否释放内部处理器
 - **ICE 候选者队列机制**：连接未就绪时缓存候选者到 `iceCandidatesQueue` Map，连接就绪后批量处理；支持候选者失效时的重新入队和连接状态验证
 - **唤醒锁管理**：连接建立时通过 `WakeLockManager` 请求屏幕唤醒锁，连接断开时释放，优化移动端传输稳定性
 - **优雅断开跟踪**：`gracefullyDisconnectedPeers` Set 跟踪正常断开的 peer，发送重试时跳过这些 peer，避免不必要的重试
@@ -169,7 +170,7 @@ Socket.IO 事件处理流程：
 - 缓存 roomId 的重连：若存在缓存 `roomId`，确保依赖在线状态同步（`initiator-online`/`recipient-ready`）触发重新协商；后端需保证 socket↔room 映射在断开/重连路径上被正确清理与恢复。
 - 多次传输计数：避免过度“去重”掩盖真实的二次下载；依赖正确的状态清理。
 - 同名文件问题：发送端去重、删除和接收端下载匹配都应基于 `fileId`，否则会在不同目录或不同来源的同名文件场景下误删、误判或下载错文件。
-- 接收关闭语义：`gracefulShutdown/forceReset/cleanup` 应先 await 活跃 writer/stream 收尾，再 reject 当前接收并清理状态；关闭过程中不允许新的 `requestFile/requestFolder` 进入。
+- 接收关闭语义：接收侧动作统一走 `shutdown(action, reason)`；`peer_disconnect` 保留 metadata/saveType/saveDirectory 以支持 resume，`leave_room/force_reset/cleanup` 则清掉房间相关内存状态。所有动作都先 await 活跃 writer/stream 收尾，再 reject 当前接收并清理状态；关闭过程中不允许新的 `requestFile/requestFolder` 进入。
 - 数据流原则：单向数据流（Store → Hooks → Components）；Hooks 做适配，组件只消费不修改。
 - **实用调试策略**：
   - 为连接状态变化与 Store 更新添加结构化日志；遇到时序/竞态可用 `setTimeout(..., 0)` 调整更新顺序

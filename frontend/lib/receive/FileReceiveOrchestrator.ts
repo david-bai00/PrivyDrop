@@ -5,6 +5,10 @@ import {
   ReceptionLifecycleState,
   ReceptionStateManager,
 } from "./ReceptionStateManager";
+import {
+  getReceiverShutdownPolicy,
+  ReceiverShutdownAction,
+} from "./receiverShutdown";
 import { MessageProcessor, MessageProcessorDelegate } from "./MessageProcessor";
 import { ChunkProcessor } from "./ChunkProcessor";
 import {
@@ -658,43 +662,14 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
   public async gracefulShutdown(
     reason: string = "CONNECTION_LOST"
   ): Promise<void> {
-    await this.runLifecycleTransition("shutting_down", async () => {
-      this.log("log", `Graceful shutdown initiated: ${reason}`);
-
-      const reception = this.stateManager.getActiveFileReception();
-      if (reception) {
-        await this.closeAndAbortActiveReception(
-          reception,
-          "graceful shutdown",
-          reason
-        );
-      }
-
-      this.stateManager.gracefulCleanup();
-      this.log("log", "Graceful shutdown completed");
-    });
+    await this.shutdown("peer_disconnect", reason);
   }
 
   /**
    * Force reset all internal states
    */
   public async forceReset(): Promise<void> {
-    await this.runLifecycleTransition("resetting", async () => {
-      this.log("log", "Force resetting FileReceiveOrchestrator state");
-
-      const reception = this.stateManager.getActiveFileReception();
-      if (reception) {
-        await this.closeAndAbortActiveReception(
-          reception,
-          "force reset",
-          "FORCE_RESET"
-        );
-      }
-
-      this.stateManager.forceReset();
-      this.progressReporter.resetAllProgress();
-      this.log("log", "FileReceiveOrchestrator state force reset completed");
-    });
+    await this.shutdown("force_reset", "FORCE_RESET");
   }
 
   /**
@@ -733,10 +708,58 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
    * Clean up all resources
    */
   public async cleanup(): Promise<void> {
-    await this.gracefulShutdown("CLEANUP");
-    this.progressReporter.cleanup();
-    this.messageProcessor.cleanup();
-    this.log("log", "FileReceiveOrchestrator cleaned up");
+    await this.shutdown("cleanup", "CLEANUP");
+  }
+
+  public async leaveRoom(): Promise<void> {
+    await this.shutdown("leave_room", "LEAVE_ROOM");
+  }
+
+  public async handlePeerDisconnect(
+    reason: string = "CONNECTION_LOST"
+  ): Promise<void> {
+    await this.shutdown("peer_disconnect", reason);
+  }
+
+  public async shutdown(
+    action: ReceiverShutdownAction,
+    reason?: string
+  ): Promise<void> {
+    const policy = getReceiverShutdownPolicy(action);
+    const shutdownReason = reason ?? action.toUpperCase();
+
+    await this.runLifecycleTransition(policy.lifecycleState, async () => {
+      this.log("log", `Receiver shutdown action: ${action}`, {
+        reason: shutdownReason,
+        policy,
+      });
+
+      const reception = this.stateManager.getActiveFileReception();
+      if (reception) {
+        await this.closeAndAbortActiveReception(
+          reception,
+          action,
+          shutdownReason
+        );
+      }
+
+      this.stateManager.resetState({
+        preserveMetadata: policy.preserveMetadata,
+        preserveSaveType: policy.preserveSaveType,
+        preserveSaveDirectory: policy.preserveSaveDirectory,
+      });
+
+      if (policy.resetProgress) {
+        this.progressReporter.resetAllProgress();
+      }
+
+      if (policy.disposeProcessors) {
+        this.progressReporter.cleanup();
+        this.messageProcessor.cleanup();
+      }
+
+      this.log("log", `Receiver shutdown action completed: ${action}`);
+    });
   }
 
   private ensureReceiverAvailable(action: string): void {
@@ -751,7 +774,10 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
   private isReceiverTransitioning(): boolean {
     const lifecycleState = this.stateManager.getLifecycleState();
     return (
-      lifecycleState === "shutting_down" || lifecycleState === "resetting"
+      lifecycleState === "disconnecting" ||
+      lifecycleState === "leaving_room" ||
+      lifecycleState === "resetting" ||
+      lifecycleState === "cleaning_up"
     );
   }
 

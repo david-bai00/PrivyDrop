@@ -4,6 +4,7 @@
 import WebRTC_Recipient from "./webrtc_Recipient";
 import { CustomFile, fileMetadata } from "@/types/webrtc";
 import { createFileReceiveService, FileReceiveOrchestrator } from "./receive";
+import { ReceiverShutdownAction } from "./receive/receiverShutdown";
 
 /**
  * 🚀 FileReceiver - Compatibility wrapper for the new modular architecture
@@ -99,9 +100,22 @@ class FileReceiver {
   public async gracefulShutdown(
     reason: string = "CONNECTION_LOST"
   ): Promise<void> {
-    await this.orchestrator.gracefulShutdown(reason);
+    await this.handlePeerDisconnect(reason);
 
     // Update saveType for backward compatibility
+    this.saveType = {};
+  }
+
+  public async handlePeerDisconnect(
+    reason: string = "CONNECTION_LOST"
+  ): Promise<void> {
+    await this.orchestrator.handlePeerDisconnect(reason);
+    this.saveType = {};
+  }
+
+  public async leaveRoom(): Promise<void> {
+    await this.orchestrator.leaveRoom();
+
     this.saveType = {};
   }
 
@@ -127,6 +141,14 @@ class FileReceiver {
    */
   public async cleanup(): Promise<void> {
     await this.orchestrator.cleanup();
+    this.saveType = {};
+  }
+
+  public async shutdown(
+    action: ReceiverShutdownAction,
+    reason?: string
+  ): Promise<void> {
+    await this.orchestrator.shutdown(action, reason);
     this.saveType = {};
   }
 

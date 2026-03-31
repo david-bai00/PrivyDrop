@@ -9,6 +9,8 @@ export { ReceptionConfig } from "./ReceptionConfig";
 // State management
 export { ReceptionStateManager } from "./ReceptionStateManager";
 export type { ActiveFileReception } from "./ReceptionStateManager";
+export type { ReceiverShutdownAction, ReceiverShutdownPolicy } from "./receiverShutdown";
+export { getReceiverShutdownPolicy } from "./receiverShutdown";
 
 // Data processing
 export { ChunkProcessor } from "./ChunkProcessor";

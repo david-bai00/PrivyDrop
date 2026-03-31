@@ -289,7 +289,7 @@ class WebRTCService {
     forceInitiatorOnline: boolean = false
   ): Promise<void> {
     if (!isSender) {
-      await this.fileReceiver.forceReset();
+      await this.fileReceiver.shutdown("force_reset", "JOIN_NEW_ROOM");
     }
 
     const peer = isSender ? this.sender : this.receiver;
@@ -317,7 +317,7 @@ class WebRTCService {
         count: 0,
       });
     } else {
-      await this.fileReceiver.forceReset();
+      await this.fileReceiver.leaveRoom();
       await this.receiver.leaveRoomAndCleanup();
       this.emitEvent({
         type: "room_status_changed",
@@ -497,9 +497,9 @@ class WebRTCService {
 
       try {
         void this.fileReceiver
-          .gracefulShutdown(`SENDER_${reason}`)
-          .catch((error) => {
-            console.error("[WebRTC Service] gracefulShutdown failed:", error);
+          .handlePeerDisconnect(`SENDER_${reason}`)
+          .catch((error: unknown) => {
+            console.error("[WebRTC Service] Receiver disconnect handling failed:", error);
           });
       } catch (error) {
         console.log(
@@ -555,6 +555,7 @@ class WebRTCService {
   public async cleanup(): Promise<void> {
     console.log("[WebRTC Service] Starting cleanup...");
     try {
+      await this.fileReceiver.cleanup();
       await Promise.all([
         this.sender.cleanUpBeforeExit(),
         this.receiver.cleanUpBeforeExit(),

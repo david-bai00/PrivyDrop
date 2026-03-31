@@ -83,9 +83,10 @@
     - `frontend/lib/transfer/MessageHandler.ts` — 消息处理器，负责 WebRTC 消息路由（fileRequest/fileReceiveComplete/folderReceiveComplete）。
     - `frontend/lib/transfer/TransferConfig.ts` — 传输配置管理，定义文件读取 4MB 分片、32MB 批次、64KB 网络发送块。
   - 接收（receiver）
-    - `frontend/lib/fileReceiver.ts` — 接收端向后兼容包装层，内部使用 FileReceiveOrchestrator 提供统一服务；关闭相关 API 已统一为 async，调用方可以等待关闭完成。
-    - `frontend/lib/receive/FileReceiveOrchestrator.ts` — 接收端主编排器，集成所有组件管理文件接收生命周期，支持断点续传和磁盘流式写入；控制消息（`fileRequest`、完成确认）会等待 async send 的最终结果后再推进状态；`gracefulShutdown/forceReset/cleanup` 会先关闭活跃资源，再清理状态。
-    - `frontend/lib/receive/ReceptionStateManager.ts` — 状态管理中心，管理文件元数据、活跃接收状态、文件夹进度、保存类型配置；增加轻量 lifecycle state，用于阻止关闭过程中的新请求进入。
+    - `frontend/lib/fileReceiver.ts` — 接收端向后兼容包装层，内部使用 FileReceiveOrchestrator 提供统一服务；关闭相关 API 已统一为 async，并新增显式动作化关闭入口（`peer_disconnect/leave_room/force_reset/cleanup`），调用方可以等待关闭完成。
+    - `frontend/lib/receive/FileReceiveOrchestrator.ts` — 接收端主编排器，集成所有组件管理文件接收生命周期，支持断点续传和磁盘流式写入；控制消息（`fileRequest`、完成确认）会等待 async send 的最终结果后再推进状态；关闭路径已统一为单一 `shutdown(action, reason)`，由策略表决定是否保留 metadata/saveType/saveDirectory 和是否释放内部处理器。
+    - `frontend/lib/receive/ReceptionStateManager.ts` — 状态管理中心，管理文件元数据、活跃接收状态、文件夹进度、保存类型配置；接收 lifecycle 细分为 `idle/receiving/disconnecting/leaving_room/resetting/cleaning_up`，并通过 `resetState()` 按保留策略统一收敛状态。
+    - `frontend/lib/receive/receiverShutdown.ts` — 接收侧关闭动作策略表，定义 `peer_disconnect/leave_room/force_reset/cleanup` 的保留项、生命周期状态与进度/处理器清理策略。
     - `frontend/lib/receive/ChunkProcessor.ts` — 分片处理器，处理多种数据格式转换、嵌入元数据解析、分片验证和索引映射。
     - `frontend/lib/receive/StreamingFileWriter.ts` — 流式文件写入器，包含 SequencedDiskWriter 严格顺序写入机制，支持大文件磁盘流式写入。
     - `frontend/lib/receive/FileAssembler.ts` — 内存文件组装器，处理小块文件的内存重组、完整性校验和文件对象创建。
