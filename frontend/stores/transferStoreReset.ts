@@ -1,3 +1,4 @@
+// Keep store reset boundaries aligned with the documented shutdown matrix.
 export type PeerProgress = { progress: number; speed: number };
 export type TransferProgressState = Record<string, Record<string, PeerProgress>>;
 

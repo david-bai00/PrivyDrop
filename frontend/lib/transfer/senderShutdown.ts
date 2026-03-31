@@ -1,3 +1,4 @@
+// Keep sender shutdown semantics aligned with the documented shutdown matrix.
 export type SenderShutdownAction = "leave_room" | "reset_app" | "cleanup";
 
 export interface SenderShutdownPolicy {

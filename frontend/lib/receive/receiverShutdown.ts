@@ -1,3 +1,4 @@
+// Keep receiver shutdown semantics aligned with the documented shutdown matrix.
 import type { ReceptionLifecycleState } from "./ReceptionStateManager";
 
 export type ReceiverShutdownAction =

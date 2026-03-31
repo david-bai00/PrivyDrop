@@ -108,6 +108,7 @@
   - `frontend/stores/fileTransferStore.ts` — 传输进度/状态的唯一事实来源（Zustand 单例，跨路由保持）；发送列表删除和进度主键以 `fileId` 为准，避免 UI 展示字段参与底层匹配。连接相关状态分为权威 lifecycle state 与兼容 badge state 两层。底层 lib 不再直接 import 此 store，当前主要写入口为 hooks 与 `frontend/lib/app/WebRTCStoreCoordinator.ts`；sender/receiver reset 已升级为显式 action（`applySenderStoreReset` / `applyReceiverStoreReset`）。
   - `frontend/stores/transferStoreReset.ts` — Store reset 动作策略与 transfer activity 计算工具；定义 sender/receiver reset 的清理边界，避免 sender reset 误清 receiver 侧进度。
 
+
 - `frontend/types/`、`frontend/constants/` — 类型定义与常量。
 
   - `frontend/types/global.d.ts` — 全局类型定义（lodash 模块、FileSystemDirectoryHandle 接口）。

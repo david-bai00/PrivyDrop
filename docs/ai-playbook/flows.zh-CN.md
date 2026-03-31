@@ -174,6 +174,7 @@ Socket.IO 事件处理流程：
 - 同名文件问题：发送端去重、删除和接收端下载匹配都应基于 `fileId`，否则会在不同目录或不同来源的同名文件场景下误删、误判或下载错文件。
 - 接收关闭语义：接收侧动作统一走 `shutdown(action, reason)`；`peer_disconnect` 保留 metadata/saveType/saveDirectory 以支持 resume，`leave_room/force_reset/cleanup` 则清掉房间相关内存状态。所有动作都先 await 活跃 writer/stream 收尾，再 reject 当前接收并清理状态；关闭过程中不允许新的 `requestFile/requestFolder` 进入。
 - 发送关闭语义：sender 退出相关流程统一走 `shutdownSender(action)`；room manager 不再手拼 `fileSender.cleanup() + leaveRoom(true) + resetSenderApp()`，而是按显式动作驱动 service 与 store 两层收敛。
+- 统一行为矩阵：sender/receiver/store 的关闭与重置语义必须保持一致；新增动作时必须同步更新 sender/receiver/store 策略文件与对应回归清单。
 - 数据流原则：单向数据流（Store → Hooks → Components）；Hooks 做适配，组件只消费不修改。
 - **实用调试策略**：
   - 为连接状态变化与 Store 更新添加结构化日志；遇到时序/竞态可用 `setTimeout(..., 0)` 调整更新顺序
