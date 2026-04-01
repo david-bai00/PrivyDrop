@@ -6,7 +6,8 @@
     "dev": "next dev -H 0.0.0.0 -p 3002",
     "build": "next build",
     "start": "next start -p 3002",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@mdx-js/loader": "^3.1.0",
@@ -58,6 +59,7 @@
     "eslint-config-next": "14.2.5",
     "postcss": "^8.4.40",
     "tailwindcss": "^3.4.7",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^4.1.2"
   }
 }

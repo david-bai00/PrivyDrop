@@ -71,6 +71,7 @@
     - `frontend/lib/webrtc_base.ts` — WebRTC 基础类，提供 Socket.IO 信令、RTCPeerConnection/DataChannel 的 `Map` 管理、ICE 候选者队列、双重断开检测重连机制、唤醒锁管理、异步数据发送结果（`SendResult`/`BroadcastResult`）、带最终结果返回的发送重试、优雅断开跟踪（gracefullyDisconnectedPeers Set）和多格式数据类型兼容性支持（ArrayBuffer/Blob/Uint8Array/TypedArray）。加入房间（joinRoom）采用 15 秒超时，并在 join 未返回时启用“等效成功信号”提前判定成功：Initiator 收到 `ready/recipient-ready`，Recipient 收到 `offer`；触发后立即设置 inRoom 并清理监听/定时器，降低弱网下误报。该层还会发出 `join/reconnect/leave` 生命周期事件，供 service 统一驱动状态机。
     - `frontend/lib/webrtc_Initiator.ts` — 发起方实现，处理`ready`/`recipient-ready`事件，创建 RTCPeerConnection 和主动式 DataChannel，发送 offer，处理 answer 响应，支持 256KB 缓冲阈值配置。
     - `frontend/lib/webrtc_Recipient.ts` — 接收方实现，处理`offer`事件，创建 RTCPeerConnection 和响应式 DataChannel（ondatachannel），生成并发送 answer，处理`initiator-online`重连信号和现有连接清理。
+    - `frontend/lib/webrtcLifecycleMachine.ts` — 纯连接生命周期规则模块，封装 RTC 状态归一化、join/reconnect/leave 生命周期事件到权威 lifecycle state 的映射，以及 reconnect 进入条件；作为最小单测护栏的规则来源。
     - `frontend/lib/webrtcService.ts` — WebRTC 服务单例封装（跨路由常驻），管理 sender/receiver 实例，提供统一业务接口，处理连接状态变更、数据广播、文件请求和连接断开清理；现在维护权威连接 lifecycle state（`idle/joining/waiting_for_peer/negotiating/connected/reconnecting/leaving/failed`），并通过单一 `WebRTCServiceEvent` 事件表向上层发出连接/传输事件，不再直接写 Zustand，同时提供 `getSessionInfo()` / `getLifecycleState()` 这类只读查询接口给 hooks 和协调层使用。sender/receiver 离房与 cleanup 进一步收敛为显式 `shutdownSender()` / `shutdownReceiver()` 动作入口。
     - `frontend/lib/app/WebRTCStoreCoordinator.ts` — 薄应用编排层，订阅 `webrtcService` 的显式事件表并统一写入 `fileTransferStore`；负责把权威 lifecycle state 派生为兼容的 badge state，同时处理 sender DataChannel 打开后的自动广播与按 peer 清理进度。
     - `frontend/lib/logger.ts` — 统一运行时日志入口，封装 `debug/info/warn/error` 与后端日志门控；开发/测试环境允许 console + backend，生产环境禁止后端调试日志上报。
@@ -125,10 +126,12 @@
   - `frontend/lib/blog.ts` — 博客工具函数，支持多语言文章读取、frontmatter 解析、标签提取和内容验证。
 
 - **配置与构建**
-  - `frontend/package.json`、`frontend/tsconfig.json`、`frontend/tailwind.config.ts` — 项目配置。
+  - `frontend/package.json`、`frontend/tsconfig.json`、`frontend/tailwind.config.ts` — 项目配置；前端最小单测入口为 `pnpm test:unit`（Vitest）。
   - `frontend/next.config.mjs`、`frontend/postcss.config.mjs`、`frontend/components.json` — Next.js 与组件配置。
+  - `frontend/vitest.config.ts` — Vitest 配置，提供 `@/` 路径别名并将最小单测限定在 `frontend/tests/unit/**/*.test.ts`。
   - `frontend/.eslintrc.json` — 代码检查配置。
   - `frontend/Dockerfile`、`frontend/health-check.js` — Docker 部署与健康检查。
+  - `frontend/tests/unit/*.test.ts` — 最小自动化护栏，当前覆盖 lifecycle 规则、sender/receiver shutdown 策略与 store reset 边界。
 
 ## 后端（Express，Socket.IO，Redis）
 

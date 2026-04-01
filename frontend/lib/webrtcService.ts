@@ -9,6 +9,11 @@ import {
   WebRTCConnectionBadgeState,
 } from "@/types/webrtcLifecycle";
 import {
+  normalizeRtcConnectionState,
+  resolveLifecycleStateFromPeerEvent,
+  shouldTransitionToReconnecting,
+} from "@/lib/webrtcLifecycleMachine";
+import {
   getIceServers,
   getSocketOptions,
   config,
@@ -153,7 +158,7 @@ class WebRTCService {
     };
 
     this.sender.onConnectionStateChange = (state, peerId) => {
-      const normalizedState = this.normalizeRtcState(state);
+      const normalizedState = normalizeRtcConnectionState(state);
       logger.info("Sender connection state changed", {
         state: normalizedState,
         peerId,
@@ -214,7 +219,7 @@ class WebRTCService {
     };
 
     this.receiver.onConnectionStateChange = (state, peerId) => {
-      const normalizedState = this.normalizeRtcState(state);
+      const normalizedState = normalizeRtcConnectionState(state);
       logger.info("Receiver connection state changed", {
         state: normalizedState,
         peerId,
@@ -423,63 +428,16 @@ class WebRTCService {
     role: WebRTCServiceRole,
     event: BaseWebRTCLifecycleEvent
   ): void {
-    switch (event.type) {
-      case "join_started":
-        this.setLifecycleState(role, "joining");
-        return;
-      case "join_succeeded":
-      case "reconnect_succeeded":
-        this.setLifecycleState(
-          role,
-          this.getPeerConnectionCount(role) > 0
-            ? "negotiating"
-            : "waiting_for_peer"
-        );
-        return;
-      case "reconnect_started":
-        this.setLifecycleState(role, "reconnecting");
-        return;
-      case "join_failed":
-      case "reconnect_failed":
-        this.setLifecycleState(role, "failed");
-        return;
-      case "leave_started":
-        this.setLifecycleState(role, "leaving");
-        return;
-      case "leave_completed":
-        this.setLifecycleState(role, "idle");
-        return;
-      default:
-        return;
-    }
+    this.setLifecycleState(
+      role,
+      resolveLifecycleStateFromPeerEvent(event, this.getPeerConnectionCount(role))
+    );
   }
 
   private getPeerConnectionCount(role: WebRTCServiceRole): number {
     return role === "sender"
       ? this.sender.peerConnections.size
       : this.receiver.peerConnections.size;
-  }
-
-  private normalizeRtcState(
-    state: RTCPeerConnectionState
-  ): "idle" | "negotiating" | "connected" | "disconnected" | "failed" {
-    if (state === "connected") {
-      return "connected";
-    }
-
-    if (state === "new" || state === "connecting") {
-      return "negotiating";
-    }
-
-    if (state === "failed") {
-      return "failed";
-    }
-
-    if (state === "closed" || state === "disconnected") {
-      return "disconnected";
-    }
-
-    return "idle";
   }
 
   private setLifecycleState(
@@ -509,7 +467,7 @@ class WebRTCService {
 
     this.immediateTransferCleanup(peerId, isSender, reason);
     const role: WebRTCServiceRole = isSender ? "sender" : "receiver";
-    if (this.lifecycleStates[role] !== "leaving") {
+    if (shouldTransitionToReconnecting(this.lifecycleStates[role])) {
       this.setLifecycleState(role, "reconnecting");
     }
     this.updateConnectionState(isSender);
