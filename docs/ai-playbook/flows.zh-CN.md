@@ -122,7 +122,7 @@
 - **数据通道发送语义**：`sendData()/sendToPeer()` 统一为 async，调用方必须等待最终 `SendResult`，不再存在“同步返回失败、后台继续偷偷重试”的双重语义
 - **数据通道发送重试**：底层仍保留原有重试窗口（首轮 100ms，后续 1000ms），但重试被纳入同一个 Promise 生命周期，只有最终成功或最终失败两种结果
 - **Map 一致性**：广播发送和全量 cleanup 统一通过 `Map` 迭代处理 peer/dataChannel，避免对象式遍历导致的失效分支
-- **最小自动化护栏**：前端已引入 Vitest；首批单测覆盖 lifecycle 规则、sender/receiver shutdown 策略与 store reset 边界。后续状态机或发送语义调整，应优先补纯模块测试，再考虑浏览器/WebRTC mock
+- **最小自动化护栏**：前端已引入 Vitest；当前单测覆盖 lifecycle 规则、async send 结果语义、sender/receiver shutdown 策略与 store reset 边界。后续状态机或发送语义调整，应优先补纯模块测试，再考虑浏览器/WebRTC mock
 
 **后端信令与房间管理**：
 
@@ -177,6 +177,7 @@ Socket.IO 事件处理流程：
 - 发送关闭语义：sender 退出相关流程统一走 `shutdownSender(action)`；room manager 不再手拼 `fileSender.cleanup() + leaveRoom(true) + resetSenderApp()`，而是按显式动作驱动 service 与 store 两层收敛。
 - 统一行为矩阵：sender/receiver/store 的关闭与重置语义必须保持一致；新增动作时必须同步更新 sender/receiver/store 策略文件与对应回归清单。
 - 生命周期规则来源：连接生命周期迁移规则已抽到 `frontend/lib/webrtcLifecycleMachine.ts`；修改 join/reconnect/leave 状态行为时必须同步更新对应单测。
+- 发送结果规则来源：`sendData()/sendToPeer()` 的最终结果语义已抽到 `frontend/lib/webrtcSendMachine.ts`；修改重试窗口、优雅断开或广播聚合规则时必须同步更新对应单测。
 - 数据流原则：单向数据流（Store → Hooks → Components）；Hooks 做适配，组件只消费不修改。
 - **实用调试策略**：
   - 为连接状态变化与 Store 更新添加结构化日志；热路径统一走 `frontend/lib/logger.ts`，避免直接散落 `console.*` / `postLogToBackend()`

@@ -3,6 +3,11 @@ import io, { Socket, ManagerOptions, SocketOptions } from "socket.io-client";
 import { WakeLockManager } from "./wakeLockManager";
 import { BroadcastResult, SendResult } from "@/types/webrtc";
 import { createLogger, logWithLegacyLevel } from "@/lib/logger";
+import {
+  buildBroadcastResult,
+  buildSendResult,
+  sendToPeerWithRetry,
+} from "@/lib/webrtcSendMachine";
 
 const logger = createLogger("BaseWebRTC");
 
@@ -704,103 +709,41 @@ export default class BaseWebRTC {
       peerIds.map((currentPeerId) => this.sendToPeer(data, currentPeerId))
     );
 
-    return {
-      ok: results.every((result) => result.ok),
-      results,
-    };
+    return buildBroadcastResult(results);
   }
   // Send to a specific peer
   public async sendToPeer(data: any, peerId: string): Promise<SendResult> {
-    if (this.gracefullyDisconnectedPeers.has(peerId)) {
-      this.log(
-        "log",
-        `Peer ${peerId} has gracefully disconnected, skipping send`
-      );
-      return this.buildSendResult(
-        false,
-        peerId,
-        0,
-        "gracefully_disconnected",
-        "peer_gracefully_disconnected"
-      );
-    }
-
-    const immediateResult = this.trySendToPeer(data, peerId, 1);
-    if (immediateResult) {
-      return immediateResult;
-    }
-
-    logger.warn("Data channel not ready", {
+    return sendToPeerWithRetry({
       peerId,
-      state: this.getDataChannelState(peerId) || "undefined",
-    });
-    this.log("warn", `Data channel not ready for peer ${peerId}. Retrying...`);
-    return this.retryDataSend(data, peerId);
-  }
-
-  protected async retryDataSend(data: any, peerId: string): Promise<SendResult> {
-    if (this.gracefullyDisconnectedPeers.has(peerId)) {
-      this.log(
-        "log",
-        `Peer ${peerId} has gracefully disconnected, skipping retry`
-      );
-      return this.buildSendResult(
-        false,
-        peerId,
-        0,
-        "gracefully_disconnected",
-        "peer_gracefully_disconnected"
-      );
-    }
-
-    const maxRetryAttempts = 6;
-
-    for (let retryIndex = 0; retryIndex < maxRetryAttempts; retryIndex++) {
-      const attemptNumber = retryIndex + 2;
-      const delayMs = retryIndex === 0 ? 100 : 1000;
-
-      await this.delay(delayMs);
-
-      if (this.gracefullyDisconnectedPeers.has(peerId)) {
+      isGracefullyDisconnected: () =>
+        this.gracefullyDisconnectedPeers.has(peerId),
+      trySend: (attemptNumber) => this.trySendToPeer(data, peerId, attemptNumber),
+      getFinalState: () => this.getDataChannelState(peerId),
+      delay: (ms) => this.delay(ms),
+      onChannelNotReady: () => {
+        logger.warn("Data channel not ready", {
+          peerId,
+          state: this.getDataChannelState(peerId) || "undefined",
+        });
+        this.log("warn", `Data channel not ready for peer ${peerId}. Retrying...`);
+      },
+      onRetry: (attemptNumber, maxRetryAttempts) => {
         this.log(
           "log",
-          `Peer ${peerId} gracefully disconnected during retry, stopping`
+          `Retrying to send data to peer ${peerId}. Attempt ${attemptNumber - 1} of ${maxRetryAttempts}`
         );
-        return this.buildSendResult(
-          false,
-          peerId,
-          attemptNumber,
-          "gracefully_disconnected",
-          "peer_gracefully_disconnected"
+      },
+      onFailure: (failureResult) => {
+        this.fireError(
+          `Failed to send data to peer ${peerId} after maximum retries`,
+          {
+            peerId,
+            attempts: failureResult.attempts,
+            finalState: failureResult.finalState,
+          }
         );
-      }
-
-      const retryResult = this.trySendToPeer(data, peerId, attemptNumber);
-      if (retryResult) {
-        return retryResult;
-      }
-
-      this.log(
-        "log",
-        `Retrying to send data to peer ${peerId}. Attempt ${attemptNumber - 1} of ${maxRetryAttempts}`
-      );
-    }
-
-    const failureResult = this.buildSendResult(
-      false,
-      peerId,
-      maxRetryAttempts + 1,
-      this.getDataChannelState(peerId),
-      "data_channel_not_ready"
-    );
-
-    this.fireError(`Failed to send data to peer ${peerId} after maximum retries`, {
-      peerId,
-      attempts: failureResult.attempts,
-      finalState: failureResult.finalState,
+      },
     });
-
-    return failureResult;
   }
 
   /**
@@ -892,11 +835,11 @@ export default class BaseWebRTC {
 
     try {
       dataChannel.send(data);
-      return this.buildSendResult(true, peerId, attempts, dataChannel.readyState);
+      return buildSendResult(true, peerId, attempts, dataChannel.readyState);
     } catch (error) {
       logger.error("sendToPeer error", { peerId, attempts, error });
       this.log("error", `Error sending data to peer ${peerId}`, { error });
-      return this.buildSendResult(
+      return buildSendResult(
         false,
         peerId,
         attempts,
@@ -904,22 +847,6 @@ export default class BaseWebRTC {
         error instanceof Error ? error.message : String(error)
       );
     }
-  }
-
-  private buildSendResult(
-    ok: boolean,
-    peerId: string,
-    attempts: number,
-    finalState: SendResult["finalState"],
-    reason?: string
-  ): SendResult {
-    return {
-      ok,
-      peerId,
-      attempts,
-      finalState,
-      reason,
-    };
   }
 
   private getDataChannelState(
