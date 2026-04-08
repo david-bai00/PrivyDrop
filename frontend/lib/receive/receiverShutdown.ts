@@ -9,6 +9,11 @@ export type ReceiverShutdownAction =
 
 export type ReceiverShutdownLifecycleState = ReceptionShutdownLifecycleState;
 
+export interface ReceiverShutdownRequest {
+  action: ReceiverShutdownAction;
+  reason: string;
+}
+
 export interface ReceiverShutdownPolicy {
   action: ReceiverShutdownAction;
   lifecycleState: ReceiverShutdownLifecycleState;
@@ -20,6 +25,13 @@ export interface ReceiverShutdownPolicy {
   resetProgress: boolean;
   disposeProcessors: boolean;
 }
+
+const RECEIVER_SHUTDOWN_PRIORITY: Record<ReceiverShutdownAction, number> = {
+  peer_disconnect: 0,
+  leave_room: 1,
+  force_reset: 2,
+  cleanup: 3,
+};
 
 const RECEIVER_SHUTDOWN_POLICIES: Record<
   ReceiverShutdownAction,
@@ -75,4 +87,27 @@ export function getReceiverShutdownPolicy(
   action: ReceiverShutdownAction
 ): ReceiverShutdownPolicy {
   return RECEIVER_SHUTDOWN_POLICIES[action];
+}
+
+export function mergeReceiverShutdownRequests(
+  current: ReceiverShutdownRequest | null,
+  next: ReceiverShutdownRequest
+): ReceiverShutdownRequest {
+  if (!current) {
+    return next;
+  }
+
+  const currentPriority = RECEIVER_SHUTDOWN_PRIORITY[current.action];
+  const nextPriority = RECEIVER_SHUTDOWN_PRIORITY[next.action];
+
+  if (nextPriority > currentPriority) {
+    return next;
+  }
+
+  if (nextPriority === currentPriority) {
+    // Keep the latest reason for better debugging context.
+    return { ...current, reason: next.reason };
+  }
+
+  return current;
 }

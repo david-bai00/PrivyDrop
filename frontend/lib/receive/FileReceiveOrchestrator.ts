@@ -2,13 +2,13 @@ import WebRTC_Recipient from "../webrtc_Recipient";
 import { CustomFile, fileMetadata } from "@/types/webrtc";
 import {
   ActiveFileReception,
-  ReceptionLifecycleState,
-  ReceptionShutdownLifecycleState,
   ReceptionStateManager,
 } from "./ReceptionStateManager";
 import {
   getReceiverShutdownPolicy,
   ReceiverShutdownAction,
+  ReceiverShutdownRequest,
+  mergeReceiverShutdownRequests,
 } from "./receiverShutdown";
 import { MessageProcessor, MessageProcessorDelegate } from "./MessageProcessor";
 import { ChunkProcessor } from "./ChunkProcessor";
@@ -38,7 +38,8 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
   private streamingFileWriter: StreamingFileWriter;
   private fileAssembler: FileAssembler;
   private progressReporter: ProgressReporter;
-  private lifecycleTask: Promise<void> | null = null;
+  private shutdownDrainTask: Promise<void> | null = null;
+  private pendingShutdown: ReceiverShutdownRequest | null = null;
 
   // Callbacks
   public onFileMetaReceived: ((meta: fileMetadata) => void) | undefined =
@@ -738,10 +739,53 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     action: ReceiverShutdownAction,
     reason?: string
   ): Promise<void> {
-    const policy = getReceiverShutdownPolicy(action);
     const shutdownReason = reason ?? action.toUpperCase();
+    this.enqueueShutdown({ action, reason: shutdownReason });
+    const task = this.shutdownDrainTask;
+    if (!task) {
+      return;
+    }
+    await task;
+  }
 
-    await this.runLifecycleTransition(policy.lifecycleState, async () => {
+  private enqueueShutdown(request: ReceiverShutdownRequest): void {
+    this.pendingShutdown = mergeReceiverShutdownRequests(
+      this.pendingShutdown,
+      request
+    );
+
+    if (this.shutdownDrainTask) {
+      return;
+    }
+
+    this.shutdownDrainTask = this.drainShutdownQueue().finally(() => {
+      this.shutdownDrainTask = null;
+    });
+  }
+
+  private async drainShutdownQueue(): Promise<void> {
+    while (this.pendingShutdown) {
+      const request = this.pendingShutdown;
+      this.pendingShutdown = null;
+
+      await this.executeShutdown(request.action, request.reason);
+    }
+  }
+
+  private async executeShutdown(
+    action: ReceiverShutdownAction,
+    shutdownReason: string
+  ): Promise<void> {
+    const policy = getReceiverShutdownPolicy(action);
+
+    this.stateManager.setLifecycleState(
+      resolveReceptionLifecycleState(this.stateManager.getLifecycleState(), {
+        type: "enter_shutdown",
+        nextState: policy.lifecycleState,
+      })
+    );
+
+    await (async () => {
       this.log("log", `Receiver shutdown action: ${action}`, {
         reason: shutdownReason,
         policy,
@@ -772,7 +816,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       }
 
       this.log("log", `Receiver shutdown action completed: ${action}`);
-    });
+    })();
   }
 
   private ensureReceiverAvailable(action: string): void {
@@ -788,27 +832,6 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     return isTransitioningReceptionLifecycle(
       this.stateManager.getLifecycleState()
     );
-  }
-
-  private async runLifecycleTransition(
-    nextState: ReceptionShutdownLifecycleState,
-    action: () => Promise<void>
-  ): Promise<void> {
-    if (this.lifecycleTask) {
-      await this.lifecycleTask;
-      return;
-    }
-
-    this.stateManager.setLifecycleState(
-      resolveReceptionLifecycleState(this.stateManager.getLifecycleState(), {
-        type: "enter_shutdown",
-        nextState,
-      })
-    );
-    this.lifecycleTask = action().finally(() => {
-      this.lifecycleTask = null;
-    });
-    await this.lifecycleTask;
   }
 
   private async closeAndAbortActiveReception(
