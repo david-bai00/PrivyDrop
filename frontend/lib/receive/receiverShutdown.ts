@@ -1,5 +1,5 @@
 // Keep receiver shutdown semantics aligned with the documented shutdown matrix.
-import type { ReceptionLifecycleState } from "./ReceptionStateManager";
+import type { ReceptionShutdownLifecycleState } from "./ReceptionStateManager";
 
 export type ReceiverShutdownAction =
   | "peer_disconnect"
@@ -7,9 +7,11 @@ export type ReceiverShutdownAction =
   | "force_reset"
   | "cleanup";
 
+export type ReceiverShutdownLifecycleState = ReceptionShutdownLifecycleState;
+
 export interface ReceiverShutdownPolicy {
   action: ReceiverShutdownAction;
-  lifecycleState: ReceptionLifecycleState;
+  lifecycleState: ReceiverShutdownLifecycleState;
   preserveMetadata: boolean;
   preserveSaveType: boolean;
   preserveSaveDirectory: boolean;

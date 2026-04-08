@@ -8,6 +8,10 @@ import {
   buildSendResult,
   sendToPeerWithRetry,
 } from "@/lib/webrtcSendMachine";
+import {
+  cleanupPeerCollection,
+  mapPeerCollection,
+} from "@/lib/webrtcConnectionCollection";
 
 const logger = createLogger("BaseWebRTC");
 
@@ -704,9 +708,9 @@ export default class BaseWebRTC {
       return this.sendToPeer(data, peerId);
     }
 
-    const peerIds = Array.from(this.dataChannels.keys());
-    const results = await Promise.all(
-      peerIds.map((currentPeerId) => this.sendToPeer(data, currentPeerId))
+    const results = await mapPeerCollection(
+      this.dataChannels,
+      (currentPeerId) => this.sendToPeer(data, currentPeerId)
     );
 
     return buildBroadcastResult(results);
@@ -775,10 +779,8 @@ export default class BaseWebRTC {
   }
 
   public async cleanUpBeforeExit() {
-    await Promise.all(
-      Array.from(this.peerConnections.keys()).map((peerId) =>
-        this.cleanupExistingConnection(peerId)
-      )
+    await cleanupPeerCollection(this.peerConnections, (peerId) =>
+      this.cleanupExistingConnection(peerId)
     );
     if (this.socket) {
       this.socket.disconnect();
@@ -795,9 +797,9 @@ export default class BaseWebRTC {
       isInitiator: this.isInitiator,
     });
     // Clean up all peer connections
-    for (const peerId of Array.from(this.peerConnections.keys())) {
-      await this.cleanupExistingConnection(peerId);
-    }
+    await cleanupPeerCollection(this.peerConnections, (peerId) =>
+      this.cleanupExistingConnection(peerId)
+    );
 
     // Reset room-related state but keep socket connected
     this.isInRoom = false;

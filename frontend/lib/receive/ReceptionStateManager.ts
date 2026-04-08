@@ -4,6 +4,11 @@ import {
   CurrentString,
   CustomFile,
 } from "@/types/webrtc";
+import {
+  buildReceptionResetPlan,
+  canStartReception,
+  resolveReceptionLifecycleState,
+} from "./receptionStateMachine";
 
 /**
  * 🚀 Active file reception state interface
@@ -26,13 +31,17 @@ export interface ActiveFileReception {
   isFinalized?: boolean;
 }
 
-export type ReceptionLifecycleState =
-  | "idle"
-  | "receiving"
+export type ReceptionOperationalState = "idle" | "receiving";
+
+export type ReceptionShutdownLifecycleState =
   | "disconnecting"
   | "leaving_room"
   | "resetting"
   | "cleaning_up";
+
+export type ReceptionLifecycleState =
+  | ReceptionOperationalState
+  | ReceptionShutdownLifecycleState;
 
 /**
  * 🚀 Reception state management
@@ -167,7 +176,7 @@ export class ReceptionStateManager {
     if (this.activeFileReception) {
       throw new Error("Another file reception is already in progress");
     }
-    if (this.lifecycleState !== "idle") {
+    if (!canStartReception(this.lifecycleState)) {
       throw new Error(
         `Cannot start file reception while receiver is ${this.lifecycleState}`
       );
@@ -188,7 +197,9 @@ export class ReceptionStateManager {
         chunkSequenceMap: new Map<number, boolean>(),
         isFinalized: false,
       };
-      this.lifecycleState = "receiving";
+      this.lifecycleState = resolveReceptionLifecycleState(this.lifecycleState, {
+        type: "start_file_reception",
+      });
     });
   }
 
@@ -216,7 +227,9 @@ export class ReceptionStateManager {
       this.activeFileReception.completionNotifier.resolve();
     }
     this.activeFileReception = null;
-    this.lifecycleState = "idle";
+    this.lifecycleState = resolveReceptionLifecycleState(this.lifecycleState, {
+      type: "complete_file_reception",
+    });
   }
 
   /**
@@ -227,7 +240,9 @@ export class ReceptionStateManager {
       this.activeFileReception.completionNotifier.reject(reason);
     }
     this.activeFileReception = null;
-    this.lifecycleState = "idle";
+    this.lifecycleState = resolveReceptionLifecycleState(this.lifecycleState, {
+      type: "fail_file_reception",
+    });
   }
 
   // ===== String Reception Management =====
@@ -355,28 +370,30 @@ export class ReceptionStateManager {
     preserveSaveType?: boolean;
     preserveSaveDirectory?: boolean;
   }): void {
-    const {
-      preserveMetadata = false,
-      preserveSaveType = false,
-      preserveSaveDirectory = true,
-    } = options ?? {};
+    const resetPlan = buildReceptionResetPlan(options);
 
-    if (!preserveMetadata) {
+    if (resetPlan.clearMetadata) {
       this.pendingFilesMeta.clear();
       this.folderProgresses = {};
     }
 
-    if (!preserveSaveType) {
+    if (resetPlan.clearSaveType) {
       this.saveType = {};
     }
 
-    this.activeFileReception = null;
-    this.activeStringReception = null;
-    this.currentFolderName = null;
-    this.currentPeerId = "";
-    this.lifecycleState = "idle";
+    if (resetPlan.clearActiveReceptionState) {
+      this.activeFileReception = null;
+      this.activeStringReception = null;
+    }
 
-    if (!preserveSaveDirectory) {
+    if (resetPlan.clearCurrentContext) {
+      this.currentFolderName = null;
+      this.currentPeerId = "";
+    }
+
+    this.lifecycleState = resetPlan.nextLifecycleState;
+
+    if (resetPlan.clearSaveDirectory) {
       this.saveDirectory = null;
     }
   }

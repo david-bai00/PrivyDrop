@@ -3,6 +3,7 @@ import { CustomFile, fileMetadata } from "@/types/webrtc";
 import {
   ActiveFileReception,
   ReceptionLifecycleState,
+  ReceptionShutdownLifecycleState,
   ReceptionStateManager,
 } from "./ReceptionStateManager";
 import {
@@ -17,6 +18,10 @@ import {
 import { FileAssembler } from "./FileAssembler";
 import { ProgressReporter, ProgressCallback } from "./ProgressReporter";
 import { ReceptionConfig } from "./ReceptionConfig";
+import {
+  isTransitioningReceptionLifecycle,
+  resolveReceptionLifecycleState,
+} from "./receptionStateMachine";
 import { ChunkRangeCalculator } from "@/lib/utils/ChunkRangeCalculator";
 import { createLogger, logWithLegacyLevel } from "@/lib/logger";
 
@@ -780,17 +785,13 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
   }
 
   private isReceiverTransitioning(): boolean {
-    const lifecycleState = this.stateManager.getLifecycleState();
-    return (
-      lifecycleState === "disconnecting" ||
-      lifecycleState === "leaving_room" ||
-      lifecycleState === "resetting" ||
-      lifecycleState === "cleaning_up"
+    return isTransitioningReceptionLifecycle(
+      this.stateManager.getLifecycleState()
     );
   }
 
   private async runLifecycleTransition(
-    nextState: ReceptionLifecycleState,
+    nextState: ReceptionShutdownLifecycleState,
     action: () => Promise<void>
   ): Promise<void> {
     if (this.lifecycleTask) {
@@ -798,7 +799,12 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       return;
     }
 
-    this.stateManager.setLifecycleState(nextState);
+    this.stateManager.setLifecycleState(
+      resolveReceptionLifecycleState(this.stateManager.getLifecycleState(), {
+        type: "enter_shutdown",
+        nextState,
+      })
+    );
     this.lifecycleTask = action().finally(() => {
       this.lifecycleTask = null;
     });

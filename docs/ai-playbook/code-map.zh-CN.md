@@ -72,6 +72,7 @@
     - `frontend/lib/webrtc_Initiator.ts` — 发起方实现，处理`ready`/`recipient-ready`事件，创建 RTCPeerConnection 和主动式 DataChannel，发送 offer，处理 answer 响应，支持 256KB 缓冲阈值配置。
     - `frontend/lib/webrtc_Recipient.ts` — 接收方实现，处理`offer`事件，创建 RTCPeerConnection 和响应式 DataChannel（ondatachannel），生成并发送 answer，处理`initiator-online`重连信号和现有连接清理。
     - `frontend/lib/webrtcLifecycleMachine.ts` — 纯连接生命周期规则模块，封装 RTC 状态归一化、join/reconnect/leave 生命周期事件到权威 lifecycle state 的映射，以及 reconnect 进入条件；作为最小单测护栏的规则来源。
+    - `frontend/lib/webrtcConnectionCollection.ts` — 纯 `Map` 遍历规则模块，封装 peer 集合快照、广播映射与 cleanup 遍历，避免遍历过程中因集合突变漏处理 peer。
     - `frontend/lib/webrtcSendMachine.ts` — 纯发送结果规则模块，封装 `SendResult`/`BroadcastResult` 构造、单 peer 重试决策与广播聚合；作为 async send 结果语义的最小单测护栏来源。
     - `frontend/lib/webrtcService.ts` — WebRTC 服务单例封装（跨路由常驻），管理 sender/receiver 实例，提供统一业务接口，处理连接状态变更、数据广播、文件请求和连接断开清理；现在维护权威连接 lifecycle state（`idle/joining/waiting_for_peer/negotiating/connected/reconnecting/leaving/failed`），并通过单一 `WebRTCServiceEvent` 事件表向上层发出连接/传输事件，不再直接写 Zustand，同时提供 `getSessionInfo()` / `getLifecycleState()` 这类只读查询接口给 hooks 和协调层使用。sender/receiver 离房与 cleanup 进一步收敛为显式 `shutdownSender()` / `shutdownReceiver()` 动作入口。
     - `frontend/lib/app/WebRTCStoreCoordinator.ts` — 薄应用编排层，订阅 `webrtcService` 的显式事件表并统一写入 `fileTransferStore`；负责把权威 lifecycle state 派生为兼容的 badge state，同时处理 sender DataChannel 打开后的自动广播与按 peer 清理进度。
@@ -89,7 +90,8 @@
   - 接收（receiver）
     - `frontend/lib/fileReceiver.ts` — 接收端向后兼容包装层，内部使用 FileReceiveOrchestrator 提供统一服务；关闭相关 API 已统一为 async，并新增显式动作化关闭入口（`peer_disconnect/leave_room/force_reset/cleanup`），调用方可以等待关闭完成。
     - `frontend/lib/receive/FileReceiveOrchestrator.ts` — 接收端主编排器，集成所有组件管理文件接收生命周期，支持断点续传和磁盘流式写入；控制消息（`fileRequest`、完成确认）会等待 async send 的最终结果后再推进状态；关闭路径已统一为单一 `shutdown(action, reason)`，由策略表决定是否保留 metadata/saveType/saveDirectory 和是否释放内部处理器。
-    - `frontend/lib/receive/ReceptionStateManager.ts` — 状态管理中心，管理文件元数据、活跃接收状态、文件夹进度、保存类型配置；接收 lifecycle 细分为 `idle/receiving/disconnecting/leaving_room/resetting/cleaning_up`，并通过 `resetState()` 按保留策略统一收敛状态。
+    - `frontend/lib/receive/ReceptionStateManager.ts` — 状态管理中心，管理文件元数据、活跃接收状态、文件夹进度、保存类型配置；接收 lifecycle 细分为 `idle/receiving/disconnecting/leaving_room/resetting/cleaning_up`，并把 operational/shutdown 状态分别建模为 `ReceptionOperationalState` 与 `ReceptionShutdownLifecycleState`；通过 `resetState()` 按保留策略统一收敛状态。
+    - `frontend/lib/receive/receptionStateMachine.ts` — 纯接收生命周期规则模块，封装接收开始/结束/关闭迁移与 reset plan，作为接收状态机最小单测护栏来源。
     - `frontend/lib/receive/receiverShutdown.ts` — 接收侧关闭动作策略表，定义 `peer_disconnect/leave_room/force_reset/cleanup` 的保留项、生命周期状态与进度/处理器清理策略。
     - `frontend/lib/receive/ChunkProcessor.ts` — 分片处理器，处理多种数据格式转换、嵌入元数据解析、分片验证和索引映射。
     - `frontend/lib/receive/StreamingFileWriter.ts` — 流式文件写入器，包含 SequencedDiskWriter 严格顺序写入机制，支持大文件磁盘流式写入。
@@ -132,7 +134,7 @@
   - `frontend/vitest.config.ts` — Vitest 配置，提供 `@/` 路径别名并将最小单测限定在 `frontend/tests/unit/**/*.test.ts`。
   - `frontend/.eslintrc.json` — 代码检查配置。
   - `frontend/Dockerfile`、`frontend/health-check.js` — Docker 部署与健康检查。
-  - `frontend/tests/unit/*.test.ts` — 最小自动化护栏，当前覆盖 lifecycle 规则、async send 结果语义、sender/receiver shutdown 策略与 store reset 边界。
+  - `frontend/tests/unit/*.test.ts` — 最小自动化护栏，当前覆盖 lifecycle 规则、async send 结果语义、`Map` 广播/cleanup 规则、接收状态机、sender/receiver shutdown 策略与 store reset 边界。
 
 ## 后端（Express，Socket.IO，Redis）
 
