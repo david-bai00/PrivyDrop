@@ -38,13 +38,12 @@ export class NetworkTransmitter {
       //   developmentEnv === "development" &&
       //   (metadata.chunkIndex % 100 === 0 || metadata.isLastChunk)
       // ) {
-      //   postLogToBackend(
-      //     `[DEBUG] ✓ CHUNK #${metadata.chunkIndex}/${
-      //       metadata.totalChunks
-      //     } sent, size: ${(chunkData.byteLength / 1024).toFixed(
-      //       1
-      //     )}KB, isLast: ${metadata.isLastChunk}`
-      //   );
+      //   logger.debug("Chunk sent", {
+      //     chunkIndex: metadata.chunkIndex,
+      //     totalChunks: metadata.totalChunks,
+      //     chunkSizeKb: Number((chunkData.byteLength / 1024).toFixed(1)),
+      //     isLastChunk: metadata.isLastChunk,
+      //   });
       // }
 
       return true;
@@ -154,13 +153,13 @@ export class NetworkTransmitter {
       // Only output backpressure logs in development environment
       // if (developmentEnv === "development") {
       //   const waitTime = performance.now() - startTime;
-      //   postLogToBackend(
-      //     `[DEBUG] 🚀 BACKPRESSURE - wait: ${waitTime.toFixed(
-      //       1
-      //     )}ms, buffered: ${(initialBuffered / 1024).toFixed(0)}KB -> ${(
-      //       dataChannel.bufferedAmount / 1024
-      //     ).toFixed(0)}KB`
-      //   );
+      //   logger.debug("Backpressure released", {
+      //     waitTimeMs: Number(waitTime.toFixed(1)),
+      //     bufferedBeforeKb: Number((initialBuffered / 1024).toFixed(0)),
+      //     bufferedAfterKb: Number(
+      //       (dataChannel.bufferedAmount / 1024).toFixed(0)
+      //     ),
+      //   });
       // }
     }
   }

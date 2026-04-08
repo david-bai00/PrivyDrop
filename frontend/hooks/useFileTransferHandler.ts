@@ -3,8 +3,10 @@ import { CustomFile, FileMeta, fileMetadata } from "@/types/webrtc";
 import JSZip from "jszip";
 import { downloadAs, generateFileId } from "@/lib/fileUtils";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
-import { postLogToBackend } from "@/app/config/api";
+import { createLogger } from "@/lib/logger";
 import type { FileTransferText } from "@/types/clipboardText";
+
+const logger = createLogger("useFileTransferHandler");
 
 interface UseFileTransferHandlerProps {
   text: FileTransferText;
@@ -101,16 +103,17 @@ export function useFileTransferHandler({
           if (fileToDownload) {
             // Check if file is empty
             if (fileToDownload.size === 0) {
-              postLogToBackend(
-                `ERROR: File has 0 size! This explains the 0-byte download.`
-              );
+              logger.error("Downloaded file has zero size", {
+                fileId: meta.fileId,
+              });
             }
 
             // Check if file is a valid Blob
             if (!(fileToDownload instanceof Blob)) {
-              postLogToBackend(
-                `WARNING: File is not a Blob object, type: ${typeof fileToDownload}`
-              );
+              logger.warn("Downloaded value is not a Blob", {
+                fileId: meta.fileId,
+                valueType: typeof fileToDownload,
+              });
             }
 
             downloadAs(fileToDownload, fileToDownload.name);
@@ -120,11 +123,10 @@ export function useFileTransferHandler({
             const availableFileIds = latestRetrievedFiles.map((f) =>
               generateFileId(f)
             );
-            postLogToBackend(
-              `File NOT found! Looking for fileId: "${
-                meta.fileId
-              }", Available fileIds: [${availableFileIds.join(", ")}]`
-            );
+            logger.debug("Downloaded file not found in store", {
+              fileId: meta.fileId,
+              availableFileIds,
+            });
           }
 
           return false;

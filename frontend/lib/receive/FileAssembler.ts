@@ -1,8 +1,8 @@
 import { CustomFile, fileMetadata } from "@/types/webrtc";
 import { ReceptionConfig } from "./ReceptionConfig";
-import { postLogToBackend } from "@/app/config/api";
+import { createLogger } from "@/lib/logger";
 
-const developmentEnv = process.env.NODE_ENV;
+const logger = createLogger("FileAssembler");
 
 /**
  * 🚀 File assembly result interface
@@ -41,11 +41,17 @@ export class FileAssembler {
 
     // Final verification
     const sizeDifference = meta.size - totalChunkSize;
-    if (Math.abs(sizeDifference) > ReceptionConfig.VALIDATION_CONFIG.MAX_SIZE_DIFFERENCE_BYTES) {
+    if (
+      Math.abs(sizeDifference) >
+      ReceptionConfig.VALIDATION_CONFIG.MAX_SIZE_DIFFERENCE_BYTES
+    ) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        postLogToBackend(
-          `[DEBUG] ❌ SIZE_MISMATCH - difference: ${sizeDifference} bytes (threshold: ${ReceptionConfig.VALIDATION_CONFIG.MAX_SIZE_DIFFERENCE_BYTES})`
-        );
+        logger.debug("File assembly size mismatch", {
+          fileName: meta.name,
+          sizeDifference,
+          threshold:
+            ReceptionConfig.VALIDATION_CONFIG.MAX_SIZE_DIFFERENCE_BYTES,
+        });
       }
     }
 
@@ -79,9 +85,14 @@ export class FileAssembler {
     }
 
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-      postLogToBackend(
-        `[DEBUG] ✅ File assembled - ${meta.name}, chunks: ${validChunks}/${chunks.length}, size: ${totalChunkSize}/${meta.size}, stored: ${storeUpdated}`
-      );
+      logger.debug("File assembled in memory", {
+        fileName: meta.name,
+        validChunks,
+        totalChunks: chunks.length,
+        totalChunkSize,
+        expectedSize: meta.size,
+        storeUpdated,
+      });
     }
 
     return {
@@ -120,9 +131,10 @@ export class FileAssembler {
     });
 
     const sizeDifference = expectedSize - totalSize;
-    const isComplete = 
-      validChunks === expectedChunksCount && 
-      Math.abs(sizeDifference) <= ReceptionConfig.VALIDATION_CONFIG.MAX_SIZE_DIFFERENCE_BYTES;
+    const isComplete =
+      validChunks === expectedChunksCount &&
+      Math.abs(sizeDifference) <=
+        ReceptionConfig.VALIDATION_CONFIG.MAX_SIZE_DIFFERENCE_BYTES;
 
     return {
       isComplete,

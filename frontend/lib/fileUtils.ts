@@ -1,5 +1,7 @@
 import { CustomFile } from "@/types/webrtc";
-import { postLogToBackend } from "@/app/config/api";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("fileUtils");
 
 // Adaptively format the file size with units
 export const formatFileSize = (sizeInBytes: number): string => {
@@ -29,16 +31,14 @@ export const downloadAs = async (
 ): Promise<void> => {
   // Check if file is empty
   if (file.size === 0) {
-    postLogToBackend(
-      `[Download Debug] CRITICAL ERROR: downloadAs received a file with 0 size! This is the root cause of the 0-byte download issue.`
-    );
+    logger.error("downloadAs received an empty file", { saveName });
     throw new Error("Cannot download file with 0 size");
   }
 
   try {
     return await standardDownload(file, saveName);
   } catch (error) {
-    postLogToBackend(`[Download Debug] ERROR in downloadAs: ${error}`);
+    logger.error("downloadAs failed", { saveName, error });
     throw error;
   }
 };

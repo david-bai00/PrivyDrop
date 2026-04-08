@@ -1,7 +1,9 @@
 import { CustomFile } from "@/types/webrtc";
 import { TransferConfig } from "./TransferConfig";
 import { ChunkRangeCalculator } from "@/lib/utils/ChunkRangeCalculator";
-import { postLogToBackend } from "@/app/config/api";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger("StreamingFileReader");
 const developmentEnv = process.env.NODE_ENV;
 /**
  * 🚀 Network chunk interface
@@ -61,9 +63,14 @@ export class StreamingFileReader {
         startOffset,
         this.NETWORK_CHUNK_SIZE
       );
-      postLogToBackend(
-        `[SEND-SUMMARY] File: ${file.name}, offset: ${startOffset}, startChunk: ${chunkRange.startChunk}, endChunk: ${chunkRange.endChunk}, willSend: ${chunkRange.totalChunks}, absoluteTotal: ${chunkRange.absoluteTotalChunks}`
-      );
+      logger.debug("Streaming file send summary", {
+        fileName: file.name,
+        startOffset,
+        startChunk: chunkRange.startChunk,
+        endChunk: chunkRange.endChunk,
+        chunksToSend: chunkRange.totalChunks,
+        absoluteTotalChunks: chunkRange.absoluteTotalChunks,
+      });
     }
   }
 
@@ -105,9 +112,15 @@ export class StreamingFileReader {
     //   const isRealLast = isLast && globalChunkIndex === expectedLastChunk;
 
     //   if (isFirst || isRealLast) {
-    //     postLogToBackend(
-    //       `[BOUNDARY] Chunk #${globalChunkIndex}/${totalChunks}, isFirst: ${isFirst}, isLast: ${isRealLast}, startIdx: ${this.startChunkIndex}, expectedLastIdx: ${expectedLastChunk}, size: ${networkChunk.byteLength}`
-    //     );
+    //     logger.debug("Chunk boundary reached", {
+    //       chunkIndex: globalChunkIndex,
+    //       totalChunks,
+    //       isFirst,
+    //       isRealLast,
+    //       startChunkIndex: this.startChunkIndex,
+    //       expectedLastChunkIndex: expectedLastChunk,
+    //       chunkSize: networkChunk.byteLength,
+    //     });
     //   }
     // }
 
@@ -199,15 +212,14 @@ export class StreamingFileReader {
       if (developmentEnv === "development" && batchSize > this.BATCH_SIZE / 2) {
         const totalTime = performance.now() - startTime;
         const speedMBps = batchSize / 1024 / 1024 / (totalTime / 1000);
-        postLogToBackend(
-          `[BATCH-READ] 📖 size: ${(batchSize / 1024 / 1024).toFixed(
-            1
-          )}MB, speed: ${speedMBps.toFixed(1)}MB/s`
-        );
+        logger.debug("Read streaming batch", {
+          batchSizeMb: Number((batchSize / 1024 / 1024).toFixed(1)),
+          speedMbPerSecond: Number(speedMBps.toFixed(1)),
+        });
       }
     } catch (error) {
       if (developmentEnv === "development") {
-        postLogToBackend(`[DEBUG] ❌ BATCH_READ failed: ${error}`);
+        logger.debug("Streaming batch read failed", { error });
       }
       throw new Error(`Failed to load file batch: ${error}`);
     } finally {
@@ -358,9 +370,7 @@ export class StreamingFileReader {
     this.currentChunkIndexInBatch = 0; // Reset to 0, loadNextBatch will recalculate
 
     if (developmentEnv === "development") {
-      postLogToBackend(
-        `[DEBUG] 🔄 StreamingFileReader reset - startOffset:${startOffset}`
-      );
+      logger.debug("StreamingFileReader reset", { startOffset });
     }
   }
 
