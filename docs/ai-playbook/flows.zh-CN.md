@@ -122,7 +122,7 @@
 - **数据通道发送语义**：`sendData()/sendToPeer()` 统一为 async，调用方必须等待最终 `SendResult`，不再存在“同步返回失败、后台继续偷偷重试”的双重语义
 - **数据通道发送重试**：底层仍保留原有重试窗口（首轮 100ms，后续 1000ms），但重试被纳入同一个 Promise 生命周期，只有最终成功或最终失败两种结果
 - **Map 一致性**：广播发送和全量 cleanup 统一通过 `Map` 迭代处理 peer/dataChannel，避免对象式遍历导致的失效分支
-- **最小自动化护栏**：前端已引入 Vitest；当前单测覆盖 lifecycle 规则、async send 结果语义、`Map` 广播/cleanup、接收状态机、ChunkProcessor 分片包解析/校验边界、ReceptionStateManager 核心状态与 reset 保留策略、sender/receiver shutdown 策略与 store reset 边界、sender/receiver/store 关闭矩阵一致性，以及 app coordinator 的领域写入口边界。后续状态机或发送语义调整，应优先补纯模块测试，再考虑浏览器/WebRTC mock
+- **最小自动化护栏**：前端已引入 Vitest；当前单测覆盖 lifecycle 规则、async send 结果语义、`Map` 广播/cleanup、接收状态机、ChunkProcessor 分片包解析/校验边界、ReceptionStateManager 核心状态与 reset 保留策略、sender/receiver shutdown 策略与 store reset 边界、sender/receiver/store 关闭矩阵一致性，以及 app coordinator 的领域写入口与 sender payload 广播边界。后续状态机或发送语义调整，应优先补纯模块测试，再考虑浏览器/WebRTC mock
 
 **后端信令与房间管理**：
 
@@ -231,7 +231,7 @@ Store (fileTransferStore)
   - 初始化 `WebRTCStoreCoordinator`，确保底层连接/传输事件能统一写入 Store
   - 暴露 webrtcService 方法（broadcastDataToAllPeers、requestFile、requestFolder）
   - 重置接口改为显式动作：sender/receiver 分别调用 `shutdownSender("leave_room")` / `shutdownReceiver("leave_room")`
-- 广播时显式从 Store 读取 `shareContent/sendFiles` 传给 service，避免 service 反向依赖 Zustand
+- 广播入口已收敛到 `WebRTCStoreCoordinator.broadcastCurrentSenderPayload()`，hook 不再自己从 Store 读取 `shareContent/sendFiles` 组装发送参数
 - 连接反馈优先读取 Store 中的 lifecycle state，再映射到 UI phase；`reconnecting` 文案不再依赖旧的 `disconnected` 近似态
 - 提供连接重置方法（resetSenderConnection、resetReceiverConnection）
 - 不再暴露 `sender/receiver` 内部实例，减少 hooks/组件对底层连接对象的耦合
@@ -242,6 +242,7 @@ Store (fileTransferStore)
 - 下载功能：handleDownloadFile（支持文件夹压缩下载）
 - 关键修复：使用 `useFileTransferStore.getState()` 获取最新状态，避免闭包问题
 - 重试机制：最大 3 次重试，50ms 间隔，详细错误日志
+- sender payload 的写入口（`shareContent/sendFiles`）已改走 `WebRTCStoreCoordinator` command；hook 只保留 UI 适配与提示，不再直接调用底层 store action
 
 **useRoomManager**（房间生命周期管理）：
 
@@ -249,14 +250,15 @@ Store (fileTransferStore)
 - 离开保护：传输中确认提示（isAnyFileTransferring 检查）
 - 状态文本：动态更新房间状态文本
 - 链接生成：自动生成分享链接
-- 分享广播：显式把当前 Store 中的文本/文件传给 `webrtcService.broadcastDataToAllPeers()`
+- 分享广播：统一走 `WebRTCStoreCoordinator.broadcastCurrentSenderPayload()`，hook 不再直接拼装 sender payload
 - 离房前的 roomId/peerId 读取改为走 `webrtcService.getSessionInfo()`，不再直接访问 `sender/receiver` 实例字段
 
 **WebRTCStoreCoordinator**（薄应用编排层）：
 
 - 订阅 `webrtcService` 的显式 `WebRTCServiceEvent` 事件表，统一写 `fileTransferStore`
 - 负责连接 lifecycle state、兼容 badge state、peer 数、发送/接收进度、接收内容和接收文件列表的 store 同步
-- 在 sender DataChannel 打开后，从 Store 读取当前内容并触发自动广播
+- 承接 sender room 选择、sender/receiver reset、receiver 已接收结果清空，以及 sender payload（`shareContent/sendFiles`）更新与广播等显式 command
+- 在 sender DataChannel 打开后，通过统一 command 从 Store 读取当前内容并触发自动广播
 - 在 peer 断开时，按方向清理对应 peer 的进度记录并重新计算 `isAnyFileTransferring`
 
 **usePageSetup**（页面初始化）：

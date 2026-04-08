@@ -1,11 +1,16 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  addSenderFiles,
+  broadcastCurrentSenderPayload,
   clearReceiverRetrievedArtifacts,
+  removeSenderFile,
   resetReceiverDomainState,
   resetSenderDomainState,
+  setSenderShareContent,
   setSenderRoomSelection,
 } from "@/lib/app/WebRTCStoreCoordinator";
+import { webrtcService } from "@/lib/webrtcService";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 
 const INITIAL_STORE_STATE = {
@@ -40,6 +45,7 @@ const INITIAL_STORE_STATE = {
 
 describe("WebRTCStoreCoordinator commands", () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     useFileTransferStore.setState(INITIAL_STORE_STATE);
   });
 
@@ -51,6 +57,52 @@ describe("WebRTCStoreCoordinator commands", () => {
     setSenderRoomSelection("room-b", { markAsInitial: true });
     expect(useFileTransferStore.getState().shareRoomId).toBe("room-b");
     expect(useFileTransferStore.getState().initShareRoomId).toBe("room-b");
+  });
+
+  it("updates sender payload through the coordinator boundary", () => {
+    const fileA = {
+      name: "a.txt",
+      fullName: "a.txt",
+      folderName: "",
+      size: 1,
+      type: "text/plain",
+      lastModified: 1,
+    } as any;
+    const duplicateFileA = {
+      name: "a-copy.txt",
+      fullName: "a.txt",
+      folderName: "",
+      size: 1,
+      type: "text/plain",
+      lastModified: 1,
+    } as any;
+    const fileB = {
+      name: "b.txt",
+      fullName: "folder/b.txt",
+      folderName: "folder",
+      size: 2,
+      type: "text/plain",
+      lastModified: 2,
+    } as any;
+
+    setSenderShareContent("hello world");
+    const addResult = addSenderFiles([fileA, duplicateFileA, fileB]);
+
+    expect(addResult.addedFiles).toEqual([fileA, fileB]);
+    expect(addResult.duplicateFiles).toEqual([duplicateFileA]);
+    expect(useFileTransferStore.getState().shareContent).toBe("hello world");
+    expect(useFileTransferStore.getState().sendFiles).toEqual([fileA, fileB]);
+
+    removeSenderFile({
+      name: "a.txt",
+      fullName: "a.txt",
+      folderName: "",
+      size: 1,
+      fileType: "text/plain",
+      fileId: "a.txt-1-text/plain-1",
+    });
+
+    expect(useFileTransferStore.getState().sendFiles).toEqual([fileB]);
   });
 
   it("resets sender-owned domain state through the coordinator boundary", () => {
@@ -122,5 +174,32 @@ describe("WebRTCStoreCoordinator commands", () => {
     expect(state.shareLink).toBe("https://example.test/share/room-a");
     expect(state.sendProgress).not.toEqual({});
     expect(state.isAnyFileTransferring).toBe(true);
+  });
+
+  it("broadcasts the current sender payload through the coordinator boundary", async () => {
+    useFileTransferStore.setState({
+      shareContent: "payload",
+      sendFiles: [
+        {
+          name: "payload.txt",
+          fullName: "payload.txt",
+          folderName: "",
+          size: 7,
+          type: "text/plain",
+          lastModified: 7,
+        } as any,
+      ],
+    });
+
+    const broadcastSpy = vi
+      .spyOn(webrtcService, "broadcastDataToAllPeers")
+      .mockResolvedValue(true);
+
+    await expect(broadcastCurrentSenderPayload()).resolves.toBe(true);
+
+    expect(broadcastSpy).toHaveBeenCalledWith(
+      "payload",
+      useFileTransferStore.getState().sendFiles
+    );
   });
 });

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import {
+  broadcastCurrentSenderPayload,
   ensureWebRTCStoreCoordinator,
   resetReceiverDomainState,
   resetSenderDomainState,
@@ -40,8 +41,6 @@ export function useRoomManager({
     shareRoomStatusText,
     retrieveRoomStatusText,
     activeTab,
-    shareContent,
-    sendFiles,
     sharePeerCount,
     retrievePeerCount,
     senderDisconnected,
@@ -183,8 +182,7 @@ export function useRoomManager({
       if (sharePeerCount === 0) {
         putMessageInMs(text.messages.waiting, true);
       } else {
-        // Directly call the service's broadcast method
-        await webrtcService.broadcastDataToAllPeers(shareContent, sendFiles);
+        await broadcastCurrentSenderPayload();
       }
 
       // Update share link
@@ -194,7 +192,7 @@ export function useRoomManager({
       console.error("[RoomManager] Failed to generate share link:", error);
       putMessageInMs(text.messages.generateShareLinkError, true);
     }
-  }, [text.messages.generateShareLinkError, text.messages.waiting, putMessageInMs, shareRoomId, sharePeerCount, setShareLink, shareContent, sendFiles]);
+  }, [text.messages.generateShareLinkError, text.messages.waiting, putMessageInMs, shareRoomId, sharePeerCount, setShareLink]);
 
   const handleLeaveReceiverRoom = useCallback(async () => {
     if (isAnyFileTransferring) {

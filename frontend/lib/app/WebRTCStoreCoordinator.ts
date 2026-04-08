@@ -7,7 +7,7 @@ import {
 } from "@/lib/webrtcService";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { mapLifecycleToConnectionBadgeState } from "@/types/webrtcLifecycle";
-import { CustomFile, fileMetadata } from "@/types/webrtc";
+import { CustomFile, FileMeta, fileMetadata } from "@/types/webrtc";
 
 type PeerProgress = { progress: number; speed: number };
 type ProgressState = Record<string, Record<string, PeerProgress>>;
@@ -97,6 +97,49 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
     store.setRetrievedContent("");
     store.setRetrievedFiles([]);
     store.setRetrievedFileMetas([]);
+  }
+
+  public setSenderShareContent(content: string): void {
+    useFileTransferStore.getState().setShareContent(content);
+  }
+
+  public addSenderFiles(files: CustomFile[]): {
+    addedFiles: CustomFile[];
+    duplicateFiles: CustomFile[];
+  } {
+    const store = useFileTransferStore.getState();
+    const existingFileIds = new Set(
+      store.sendFiles.map((file) => generateFileId(file))
+    );
+    const addedFiles: CustomFile[] = [];
+    const duplicateFiles: CustomFile[] = [];
+
+    for (const file of files) {
+      const fileId = generateFileId(file);
+
+      if (existingFileIds.has(fileId)) {
+        duplicateFiles.push(file);
+        continue;
+      }
+
+      existingFileIds.add(fileId);
+      addedFiles.push(file);
+    }
+
+    if (addedFiles.length > 0) {
+      store.addSendFiles(addedFiles);
+    }
+
+    return { addedFiles, duplicateFiles };
+  }
+
+  public removeSenderFile(meta: FileMeta): void {
+    useFileTransferStore.getState().removeSendFile(meta);
+  }
+
+  public async broadcastCurrentSenderPayload(): Promise<boolean> {
+    const { shareContent, sendFiles } = useFileTransferStore.getState();
+    return await webrtcService.broadcastDataToAllPeers(shareContent, sendFiles);
   }
 
   private handleLifecycleStateChanged(
@@ -207,10 +250,7 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
   }
 
   private handleSenderDataChannelOpened(): void {
-    const { shareContent, sendFiles } = useFileTransferStore.getState();
-
-    void webrtcService
-      .broadcastDataToAllPeers(shareContent, sendFiles)
+    void this.broadcastCurrentSenderPayload()
       .catch((error) => {
         console.error(
           "[WebRTCStoreCoordinator] Auto broadcast failed:",
@@ -294,4 +334,23 @@ export function resetReceiverDomainState(
 
 export function clearReceiverRetrievedArtifacts(): void {
   coordinator.clearReceiverRetrievedArtifacts();
+}
+
+export function setSenderShareContent(content: string): void {
+  coordinator.setSenderShareContent(content);
+}
+
+export function addSenderFiles(files: CustomFile[]): {
+  addedFiles: CustomFile[];
+  duplicateFiles: CustomFile[];
+} {
+  return coordinator.addSenderFiles(files);
+}
+
+export function removeSenderFile(meta: FileMeta): void {
+  coordinator.removeSenderFile(meta);
+}
+
+export async function broadcastCurrentSenderPayload(): Promise<boolean> {
+  return await coordinator.broadcastCurrentSenderPayload();
 }

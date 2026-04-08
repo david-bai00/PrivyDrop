@@ -13,6 +13,10 @@ const FORBIDDEN_PATTERNS = [
   "setRetrievedFileMetas",
   "setShareRoomId",
   "setInitShareRoomId",
+  "setShareContent",
+  "setSendFiles",
+  "addSendFiles",
+  "removeSendFile",
 ];
 
 function listSourceFiles(root: string): string[] {
