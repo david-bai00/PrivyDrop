@@ -10,8 +10,11 @@ import {
 } from "@/types/webrtcLifecycle";
 import {
   normalizeRtcConnectionState,
+  type NormalizedRtcConnectionState,
+  resolveLifecycleStateAfterDisconnect,
   resolveLifecycleStateFromPeerEvent,
-  shouldTransitionToReconnecting,
+  resolveLifecycleStateFromPeerSnapshot,
+  summarizePeerConnectionStates,
 } from "@/lib/webrtcLifecycleMachine";
 import {
   getIceServers,
@@ -104,6 +107,13 @@ class WebRTCService {
     sender: "idle",
     receiver: "idle",
   };
+  private peerConnectionStates: Record<
+    WebRTCServiceRole,
+    Map<string, NormalizedRtcConnectionState>
+  > = {
+    sender: new Map(),
+    receiver: new Map(),
+  };
 
   private constructor() {
     const apiUrl = (config.API_URL || "").trim();
@@ -165,7 +175,8 @@ class WebRTCService {
       });
 
       if (normalizedState === "connected") {
-        this.setLifecycleState("sender", "connected");
+        this.setPeerConnectionState("sender", peerId, normalizedState);
+        this.syncLifecycleStateFromPeerSnapshot("sender");
         this.emitEvent({
           type: "peer_count_changed",
           role: "sender",
@@ -186,7 +197,8 @@ class WebRTCService {
           });
         }, peerId);
       } else if (normalizedState === "negotiating") {
-        this.setLifecycleState("sender", "negotiating");
+        this.setPeerConnectionState("sender", peerId, normalizedState);
+        this.syncLifecycleStateFromPeerSnapshot("sender");
       } else if (
         normalizedState === "failed" ||
         normalizedState === "disconnected"
@@ -210,6 +222,7 @@ class WebRTCService {
 
     this.sender.onError = (error) => {
       logger.error("Sender error", { message: error.message });
+      this.clearPeerConnectionStates("sender");
       this.setLifecycleState("sender", "failed");
       this.clearAllTransferProgress();
     };
@@ -226,7 +239,8 @@ class WebRTCService {
       });
 
       if (normalizedState === "connected") {
-        this.setLifecycleState("receiver", "connected");
+        this.setPeerConnectionState("receiver", peerId, normalizedState);
+        this.syncLifecycleStateFromPeerSnapshot("receiver");
         this.emitEvent({
           type: "peer_count_changed",
           role: "receiver",
@@ -247,7 +261,8 @@ class WebRTCService {
           });
         });
       } else if (normalizedState === "negotiating") {
-        this.setLifecycleState("receiver", "negotiating");
+        this.setPeerConnectionState("receiver", peerId, normalizedState);
+        this.syncLifecycleStateFromPeerSnapshot("receiver");
       } else if (
         normalizedState === "failed" ||
         normalizedState === "disconnected"
@@ -262,7 +277,8 @@ class WebRTCService {
 
     this.receiver.onConnectionEstablished = (peerId) => {
       this.fileSender.handlePeerReconnection(peerId);
-      this.setLifecycleState("receiver", "connected");
+      this.setPeerConnectionState("receiver", peerId, "connected");
+      this.syncLifecycleStateFromPeerSnapshot("receiver");
       this.emitEvent({
         type: "sender_disconnected_changed",
         disconnected: false,
@@ -281,6 +297,7 @@ class WebRTCService {
 
     this.receiver.onError = (error) => {
       logger.error("Receiver error", { message: error.message });
+      this.clearPeerConnectionStates("receiver");
       this.setLifecycleState("receiver", "failed");
       this.clearAllTransferProgress();
     };
@@ -340,6 +357,7 @@ class WebRTCService {
       role: "sender",
       inRoom: false,
     });
+    this.clearPeerConnectionStates("sender");
     this.emitEvent({
       type: "peer_count_changed",
       role: "sender",
@@ -362,6 +380,7 @@ class WebRTCService {
       role: "receiver",
       inRoom: false,
     });
+    this.clearPeerConnectionStates("receiver");
     this.emitEvent({
       type: "peer_count_changed",
       role: "receiver",
@@ -428,6 +447,10 @@ class WebRTCService {
     role: WebRTCServiceRole,
     event: BaseWebRTCLifecycleEvent
   ): void {
+    if (event.type === "join_started" || event.type === "leave_completed") {
+      this.clearPeerConnectionStates(role);
+    }
+
     this.setLifecycleState(
       role,
       resolveLifecycleStateFromPeerEvent(event, this.getPeerConnectionCount(role))
@@ -467,10 +490,56 @@ class WebRTCService {
 
     this.immediateTransferCleanup(peerId, isSender, reason);
     const role: WebRTCServiceRole = isSender ? "sender" : "receiver";
-    if (shouldTransitionToReconnecting(this.lifecycleStates[role])) {
-      this.setLifecycleState(role, "reconnecting");
-    }
+    this.clearPeerConnectionState(role, peerId);
+    this.syncLifecycleStateAfterDisconnect(role);
     this.updateConnectionState(isSender);
+  }
+
+  private setPeerConnectionState(
+    role: WebRTCServiceRole,
+    peerId: string,
+    state: NormalizedRtcConnectionState
+  ): void {
+    this.peerConnectionStates[role].set(peerId, state);
+  }
+
+  private clearPeerConnectionState(
+    role: WebRTCServiceRole,
+    peerId: string
+  ): void {
+    this.peerConnectionStates[role].delete(peerId);
+  }
+
+  private clearPeerConnectionStates(role: WebRTCServiceRole): void {
+    this.peerConnectionStates[role].clear();
+  }
+
+  private syncLifecycleStateFromPeerSnapshot(role: WebRTCServiceRole): void {
+    const connection = role === "sender" ? this.sender : this.receiver;
+    this.setLifecycleState(
+      role,
+      resolveLifecycleStateFromPeerSnapshot({
+        currentState: this.lifecycleStates[role],
+        inRoom: connection.isInRoom,
+        peerSummary: summarizePeerConnectionStates(
+          Array.from(this.peerConnectionStates[role].values())
+        ),
+      })
+    );
+  }
+
+  private syncLifecycleStateAfterDisconnect(role: WebRTCServiceRole): void {
+    const connection = role === "sender" ? this.sender : this.receiver;
+    this.setLifecycleState(
+      role,
+      resolveLifecycleStateAfterDisconnect({
+        currentState: this.lifecycleStates[role],
+        inRoom: connection.isInRoom,
+        peerSummary: summarizePeerConnectionStates(
+          Array.from(this.peerConnectionStates[role].values())
+        ),
+      })
+    );
   }
 
   private immediateTransferCleanup(

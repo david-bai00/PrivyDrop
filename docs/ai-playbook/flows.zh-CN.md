@@ -112,7 +112,7 @@
 - **双重断开检测**：Socket.IO 断开触发 `disconnect` 事件 → 标记 `isSocketDisconnected = true`；P2P 连接断开触发 `disconnected` 状态 → 标记 `isPeerDisconnected = true`，自动调用 `cleanupExistingConnection()` 清理资源
 - **重连触发条件**：仅当 socket 和 P2P 都断开时才启动重连 → `attemptReconnection()`，防止重复重连；使用 `reconnectionInProgress` 标志防止并发重连
 - **状态恢复机制**：重连时调用 `joinRoom(roomId, isInitiator, sendInitiatorOnline)` 恢复状态，发送方自动发送 `initiator-online` 信号，接收方响应 `recipient-ready`
-- **连接生命周期状态机**：连接层显式区分 `idle/joining/waiting_for_peer/negotiating/connected/reconnecting/leaving/failed`，由 `webrtcService` 统一管理并通过事件表上抛；UI 不再直接把 `RTCPeerConnectionState` 当作业务状态
+- **连接生命周期状态机**：连接层显式区分 `idle/joining/waiting_for_peer/negotiating/connected/reconnecting/leaving/failed`，由 `webrtcService` 统一管理并通过事件表上抛；UI 不再直接把 `RTCPeerConnectionState` 当作业务状态。整体 lifecycle 现在按 peer 状态聚合推导：`connected` 优先于 `negotiating`，空房内等待保持 `waiting_for_peer`，最后一个活跃 peer 断开后才进入 `reconnecting`，`failed/leaving` 属于显式终态，不会被后续零散 peer 事件静默覆盖。
 - **接收侧关闭动作表**：接收编排层显式区分 `peer_disconnect/leave_room/force_reset/cleanup` 四类动作，统一由策略表决定是否保留 metadata/saveType/saveDirectory、是否允许 resume 以及是否释放内部处理器
 - **发送侧关闭动作表**：发送侧显式区分 `leave_room/reset_app/cleanup`，由 `webrtcService.shutdownSender()` 和 `FileSender.shutdown()` 统一执行；`leave_room/reset_app` 保持 socket 在线，仅清空当前房间连接与发送状态，`cleanup` 则连 socket 一并回收
 - **Store reset 语义**：Store 侧显式区分 sender/receiver reset 动作；sender reset 只清 sender 自有进度和分享链接，不再顺手清 receiver 进度，`isAnyFileTransferring` 会根据剩余 send/receive progress 重新计算
@@ -177,6 +177,7 @@ Socket.IO 事件处理流程：
 - 发送关闭语义：sender 退出相关流程统一走 `shutdownSender(action)`；room manager 不再手拼 `fileSender.cleanup() + leaveRoom(true) + resetSenderApp()`，而是按显式动作驱动 service 与 store 两层收敛。
 - 统一行为矩阵：sender/receiver/store 的关闭与重置语义必须保持一致；新增动作时必须同步更新 sender/receiver/store 策略文件与对应回归清单。
 - 生命周期规则来源：连接生命周期迁移规则已抽到 `frontend/lib/webrtcLifecycleMachine.ts`；修改 join/reconnect/leave 状态行为时必须同步更新对应单测。
+- 聚合不变量：多 peer 混合态下，整体 lifecycle 必须由 peer 快照聚合推导，不允许被单个 peer 的 `negotiating/disconnected` 事件直接降级；修改聚合优先级或断开后恢复语义时必须同步更新单测。
 - `Map` 遍历规则来源：广播与 cleanup 的 peer 集合快照逻辑已抽到 `frontend/lib/webrtcConnectionCollection.ts`；修改集合遍历方式时必须同步更新对应单测。
 - 发送结果规则来源：`sendData()/sendToPeer()` 的最终结果语义已抽到 `frontend/lib/webrtcSendMachine.ts`；修改重试窗口、优雅断开或广播聚合规则时必须同步更新对应单测。
 - 接收状态规则来源：接收 lifecycle 迁移与 reset 保留计划已抽到 `frontend/lib/receive/receptionStateMachine.ts`；修改接收关闭/重置行为时必须同步更新对应单测。

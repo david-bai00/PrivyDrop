@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  type NormalizedRtcConnectionState,
   normalizeRtcConnectionState,
+  resolveLifecycleStateAfterDisconnect,
   resolveLifecycleStateFromPeerEvent,
+  resolveLifecycleStateFromPeerSnapshot,
+  summarizePeerConnectionStates,
   shouldTransitionToReconnecting,
 } from "@/lib/webrtcLifecycleMachine";
 import { mapLifecycleToConnectionBadgeState } from "@/types/webrtcLifecycle";
@@ -122,9 +126,108 @@ describe("resolveLifecycleStateFromPeerEvent", () => {
   });
 });
 
+describe("summarizePeerConnectionStates", () => {
+  it("counts mixed peer connection states for aggregation", () => {
+    const states: NormalizedRtcConnectionState[] = [
+      "connected",
+      "connected",
+      "negotiating",
+      "failed",
+      "idle",
+    ];
+
+    expect(
+      summarizePeerConnectionStates(states)
+    ).toEqual({
+      totalCount: 5,
+      connectedCount: 2,
+      negotiatingCount: 1,
+      disconnectedCount: 0,
+      failedCount: 1,
+      idleCount: 1,
+    });
+  });
+});
+
+describe("resolveLifecycleStateFromPeerSnapshot", () => {
+  it("keeps waiting_for_peer while in room without active peers", () => {
+    expect(
+      resolveLifecycleStateFromPeerSnapshot({
+        currentState: "waiting_for_peer",
+        inRoom: true,
+        peerSummary: summarizePeerConnectionStates([]),
+      })
+    ).toBe("waiting_for_peer");
+  });
+
+  it("prefers connected when peers are in mixed connected and negotiating states", () => {
+    const states: NormalizedRtcConnectionState[] = [
+      "connected",
+      "negotiating",
+    ];
+
+    expect(
+      resolveLifecycleStateFromPeerSnapshot({
+        currentState: "negotiating",
+        inRoom: true,
+        peerSummary: summarizePeerConnectionStates(states),
+      })
+    ).toBe("connected");
+  });
+
+  it("keeps terminal failure until an explicit lifecycle event replaces it", () => {
+    const states: NormalizedRtcConnectionState[] = ["connected"];
+
+    expect(
+      resolveLifecycleStateFromPeerSnapshot({
+        currentState: "failed",
+        inRoom: true,
+        peerSummary: summarizePeerConnectionStates(states),
+      })
+    ).toBe("failed");
+  });
+});
+
+describe("resolveLifecycleStateAfterDisconnect", () => {
+  it("stays connected when other peers remain connected", () => {
+    expect(
+      resolveLifecycleStateAfterDisconnect({
+        currentState: "connected",
+        inRoom: true,
+        peerSummary: summarizePeerConnectionStates(["connected"]),
+      })
+    ).toBe("connected");
+  });
+
+  it("enters reconnecting when the last active peer drops while still in room", () => {
+    expect(
+      resolveLifecycleStateAfterDisconnect({
+        currentState: "connected",
+        inRoom: true,
+        peerSummary: summarizePeerConnectionStates([]),
+      })
+    ).toBe("reconnecting");
+  });
+
+  it("does not escalate waiting_for_peer into reconnecting on empty-room snapshots", () => {
+    expect(
+      resolveLifecycleStateAfterDisconnect({
+        currentState: "waiting_for_peer",
+        inRoom: true,
+        peerSummary: summarizePeerConnectionStates([]),
+      })
+    ).toBe("waiting_for_peer");
+  });
+});
+
 describe("shouldTransitionToReconnecting", () => {
-  it("avoids reconnect transitions while leaving", () => {
-    expect(shouldTransitionToReconnecting("leaving")).toBe(false);
+  it("only reconnects from active or recovering lifecycle states", () => {
     expect(shouldTransitionToReconnecting("connected")).toBe(true);
+    expect(shouldTransitionToReconnecting("negotiating")).toBe(true);
+    expect(shouldTransitionToReconnecting("reconnecting")).toBe(true);
+    expect(shouldTransitionToReconnecting("waiting_for_peer")).toBe(false);
+    expect(shouldTransitionToReconnecting("joining")).toBe(false);
+    expect(shouldTransitionToReconnecting("failed")).toBe(false);
+    expect(shouldTransitionToReconnecting("leaving")).toBe(false);
   });
 });
