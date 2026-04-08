@@ -90,8 +90,8 @@
   - 接收（receiver）
     - `frontend/lib/fileReceiver.ts` — 接收端向后兼容包装层，内部使用 FileReceiveOrchestrator 提供统一服务；关闭相关 API 已统一为 async，并新增显式动作化关闭入口（`peer_disconnect/leave_room/force_reset/cleanup`），调用方可以等待关闭完成。
     - `frontend/lib/receive/FileReceiveOrchestrator.ts` — 接收端主编排器，集成所有组件管理文件接收生命周期，支持断点续传和磁盘流式写入；控制消息（`fileRequest`、完成确认）会等待 async send 的最终结果后再推进状态；关闭路径已统一为单一 `shutdown(action, reason)`，由策略表决定是否保留 metadata/saveType/saveDirectory 和是否释放内部处理器。
-    - `frontend/lib/receive/ReceptionStateManager.ts` — 状态管理中心，管理文件元数据、活跃接收状态、文件夹进度、保存类型配置；接收 lifecycle 细分为 `idle/receiving/disconnecting/leaving_room/resetting/cleaning_up`，并把 operational/shutdown 状态分别建模为 `ReceptionOperationalState` 与 `ReceptionShutdownLifecycleState`；通过 `resetState()` 按保留策略统一收敛状态。
-    - `frontend/lib/receive/receptionStateMachine.ts` — 纯接收生命周期规则模块，封装接收开始/结束/关闭迁移与 reset plan，作为接收状态机最小单测护栏来源。
+    - `frontend/lib/receive/ReceptionStateManager.ts` — 状态管理中心，管理文件元数据、活跃接收状态、文件夹进度、保存类型配置；接收 lifecycle 已细分为 ready/active/shutdown 三组状态：`idle/completed/interrupted/failed`、`preparing/requesting/receiving/finalizing`、`disconnecting/leaving_room/resetting/cleaning_up`；通过显式阶段方法与 `resetState()` 收敛状态，不再由编排层直接手写中间态。
+    - `frontend/lib/receive/receptionStateMachine.ts` — 纯接收生命周期规则模块，封装接收准备、请求发出、首块到达、finalize、失败/中断以及 reset 后目标状态的迁移规则，作为接收状态机最小单测护栏来源。
     - `frontend/lib/receive/receiverShutdown.ts` — 接收侧关闭动作策略表，定义 `peer_disconnect/leave_room/force_reset/cleanup` 的保留项、生命周期状态与进度/处理器清理策略。
     - `frontend/lib/receive/ChunkProcessor.ts` — 分片处理器，处理多种数据格式转换、嵌入元数据解析、分片验证和索引映射。
     - `frontend/lib/receive/StreamingFileWriter.ts` — 流式文件写入器，包含 SequencedDiskWriter 严格顺序写入机制，支持大文件磁盘流式写入。

@@ -173,7 +173,7 @@ Socket.IO 事件处理流程：
 - 缓存 roomId 的重连：若存在缓存 `roomId`，确保依赖在线状态同步（`initiator-online`/`recipient-ready`）触发重新协商；后端需保证 socket↔room 映射在断开/重连路径上被正确清理与恢复。
 - 多次传输计数：避免过度“去重”掩盖真实的二次下载；依赖正确的状态清理。
 - 同名文件问题：发送端去重、删除和接收端下载匹配都应基于 `fileId`，否则会在不同目录或不同来源的同名文件场景下误删、误判或下载错文件。
-- 接收关闭语义：接收侧动作统一走 `shutdown(action, reason)`；`peer_disconnect` 保留 metadata/saveType/saveDirectory 以支持 resume，`leave_room/force_reset/cleanup` 则清掉房间相关内存状态。所有动作都先 await 活跃 writer/stream 收尾，再 reject 当前接收并清理状态；关闭过程中不允许新的 `requestFile/requestFolder` 进入。
+- 接收关闭语义：接收侧动作统一走 `shutdown(action, reason)`；`peer_disconnect` 保留 metadata/saveType/saveDirectory 以支持 resume，并在 reset 后显式落到 `interrupted`，`leave_room/force_reset/cleanup` 则收敛回 `idle`。所有动作都先 await 活跃 writer/stream 收尾，再 reject 当前接收并清理状态；关闭过程中不允许新的 `requestFile/requestFolder` 进入。
 - 发送关闭语义：sender 退出相关流程统一走 `shutdownSender(action)`；room manager 不再手拼 `fileSender.cleanup() + leaveRoom(true) + resetSenderApp()`，而是按显式动作驱动 service 与 store 两层收敛。
 - 统一行为矩阵：sender/receiver/store 的关闭与重置语义必须保持一致；新增动作时必须同步更新 sender/receiver/store 策略文件与对应回归清单。
 - 自动化要求：关闭矩阵不仅要写在策略表和文档里，还要有跨层单测验证 sender/receiver/store 三层是否一致，避免只改一层导致语义漂移。
@@ -181,7 +181,7 @@ Socket.IO 事件处理流程：
 - 聚合不变量：多 peer 混合态下，整体 lifecycle 必须由 peer 快照聚合推导，不允许被单个 peer 的 `negotiating/disconnected` 事件直接降级；修改聚合优先级或断开后恢复语义时必须同步更新单测。
 - `Map` 遍历规则来源：广播与 cleanup 的 peer 集合快照逻辑已抽到 `frontend/lib/webrtcConnectionCollection.ts`；修改集合遍历方式时必须同步更新对应单测。
 - 发送结果规则来源：`sendData()/sendToPeer()` 的最终结果语义已抽到 `frontend/lib/webrtcSendMachine.ts`；修改重试窗口、优雅断开或广播聚合规则时必须同步更新对应单测。
-- 接收状态规则来源：接收 lifecycle 迁移与 reset 保留计划已抽到 `frontend/lib/receive/receptionStateMachine.ts`；修改接收关闭/重置行为时必须同步更新对应单测。
+- 接收状态规则来源：接收 lifecycle 迁移与 reset 保留计划已抽到 `frontend/lib/receive/receptionStateMachine.ts`；当前明确区分 `preparing/requesting/receiving/finalizing/completed/interrupted/failed` 与 shutdown 状态，修改接收关闭/重置行为时必须同步更新对应单测。
 - 类型不变量原则：把“只在 shutdown 流程出现的状态”单独建模为 `ReceptionShutdownLifecycleState`，并在策略表与编排层统一复用；避免在多个文件里重复写 `Exclude<...>` 这类条件类型，以免未来状态枚举扩展时漏改导致语义漂移。
 - 数据流原则：单向数据流（Store → Hooks → Components）；Hooks 做适配，组件只消费不修改。
 - **实用调试策略**：

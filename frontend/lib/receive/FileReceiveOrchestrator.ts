@@ -19,6 +19,7 @@ import { FileAssembler } from "./FileAssembler";
 import { ProgressReporter, ProgressCallback } from "./ProgressReporter";
 import { ReceptionConfig } from "./ReceptionConfig";
 import {
+  canStartReception,
   isTransitioningReceptionLifecycle,
   resolveReceptionLifecycleState,
 } from "./receptionStateMachine";
@@ -185,8 +186,14 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     );
 
     if (shouldSaveToDisk) {
-      await this.createDiskWriteStream(fileInfo, offset);
+      try {
+        await this.createDiskWriteStream(fileInfo, offset);
+      } catch {
+        return receptionPromise;
+      }
     }
+
+    this.stateManager.markFileRequestDispatched();
 
     // Send file request
     const sendResult = await this.messageProcessor.sendFileRequest(fileId, offset);
@@ -418,6 +425,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     }
 
     // Store chunk
+    this.stateManager.markFileReceiving();
     reception.chunks[result.relativeChunkIndex] = result.chunkData;
     reception.chunkSequenceMap.set(result.absoluteChunkIndex, true);
     reception.receivedChunksCount++;
@@ -478,6 +486,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
 
     if (stats.isDataComplete) {
       reception.isFinalized = true;
+      this.stateManager.markFileFinalizing();
 
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
         logger.debug("Starting auto finalization", {
@@ -641,6 +650,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
         err,
         fileName: meta.name,
       });
+      throw err;
     }
   }
 
@@ -804,6 +814,10 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
         preserveMetadata: policy.preserveMetadata,
         preserveSaveType: policy.preserveSaveType,
         preserveSaveDirectory: policy.preserveSaveDirectory,
+        nextLifecycleState:
+          action === "peer_disconnect" && policy.allowResume
+            ? "interrupted"
+            : "idle",
       });
 
       if (policy.resetProgress) {
@@ -821,7 +835,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
 
   private ensureReceiverAvailable(action: string): void {
     const lifecycleState = this.stateManager.getLifecycleState();
-    if (lifecycleState === "idle") {
+    if (canStartReception(lifecycleState)) {
       return;
     }
 
@@ -842,6 +856,16 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     await this.closeActiveReceptionResources(reception, action);
 
     if (this.stateManager.getActiveFileReception() === reception) {
+      if (this.isReceiverTransitioning()) {
+        this.stateManager.cancelActiveFileReception(new Error(reason));
+        return;
+      }
+
+      if (action === "peer_disconnect") {
+        this.stateManager.interruptFileReception(new Error(reason));
+        return;
+      }
+
       this.stateManager.failFileReception(new Error(reason));
     }
   }

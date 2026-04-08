@@ -71,7 +71,7 @@ describe("ReceptionStateManager.startFileReception", () => {
   it("throws when there is already an active reception", async () => {
     const manager = new ReceptionStateManager();
     const promise = manager.startFileReception(buildFileMeta(), 1, 0);
-    expect(manager.getLifecycleState()).toBe("receiving");
+    expect(manager.getLifecycleState()).toBe("preparing");
     expect(manager.getActiveFileReception()).not.toBeNull();
 
     expect(() =>
@@ -86,14 +86,47 @@ describe("ReceptionStateManager.startFileReception", () => {
     const manager = new ReceptionStateManager();
     const promise = manager.startFileReception(buildFileMeta(), 2, 0);
 
-    expect(manager.getLifecycleState()).toBe("receiving");
+    expect(manager.getLifecycleState()).toBe("preparing");
     expect(manager.getActiveFileReception()!.expectedChunksCount).toBe(2);
 
+    manager.markFileRequestDispatched();
+    expect(manager.getLifecycleState()).toBe("requesting");
+
+    manager.markFileReceiving();
+    expect(manager.getLifecycleState()).toBe("receiving");
+
+    manager.markFileFinalizing();
+    expect(manager.getLifecycleState()).toBe("finalizing");
+
     manager.completeFileReception();
-    expect(manager.getLifecycleState()).toBe("idle");
+    expect(manager.getLifecycleState()).toBe("completed");
     expect(manager.getActiveFileReception()).toBeNull();
 
     await expect(promise).resolves.toBeUndefined();
+  });
+
+  it("marks interrupted and failed outcomes explicitly", async () => {
+    const interrupted = new ReceptionStateManager();
+    const interruptedPromise = interrupted.startFileReception(
+      buildFileMeta({ fileId: "file-interrupted" }),
+      1,
+      0
+    );
+    interrupted.markFileRequestDispatched();
+    interrupted.interruptFileReception(new Error("connection lost"));
+    expect(interrupted.getLifecycleState()).toBe("interrupted");
+    await expect(interruptedPromise).rejects.toThrow("connection lost");
+
+    const failed = new ReceptionStateManager();
+    const failedPromise = failed.startFileReception(
+      buildFileMeta({ fileId: "file-failed" }),
+      1,
+      0
+    );
+    failed.markFileRequestDispatched();
+    failed.failFileReception(new Error("request failed"));
+    expect(failed.getLifecycleState()).toBe("failed");
+    await expect(failedPromise).rejects.toThrow("request failed");
   });
 });
 
@@ -131,6 +164,7 @@ describe("ReceptionStateManager.resetState", () => {
       preserveMetadata: true,
       preserveSaveType: true,
       preserveSaveDirectory: true,
+      nextLifecycleState: "interrupted",
     });
 
     expect(manager.getAllFileMetadata().size).toBe(1);
@@ -138,6 +172,7 @@ describe("ReceptionStateManager.resetState", () => {
     expect(manager.getSaveType("file-1")).toBe(true);
     expect(manager.getSaveDirectory()).toBe(directory);
     expect(manager.getCurrentPeerId()).toBe("");
+    expect(manager.getLifecycleState()).toBe("interrupted");
   });
 
   it("clears saveDirectory only when preserveSaveDirectory is false", () => {

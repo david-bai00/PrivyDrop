@@ -31,7 +31,17 @@ export interface ActiveFileReception {
   isFinalized?: boolean;
 }
 
-export type ReceptionOperationalState = "idle" | "receiving";
+export type ReceptionReadyLifecycleState =
+  | "idle"
+  | "completed"
+  | "interrupted"
+  | "failed";
+
+export type ReceptionActiveLifecycleState =
+  | "preparing"
+  | "requesting"
+  | "receiving"
+  | "finalizing";
 
 export type ReceptionShutdownLifecycleState =
   | "disconnecting"
@@ -40,7 +50,8 @@ export type ReceptionShutdownLifecycleState =
   | "cleaning_up";
 
 export type ReceptionLifecycleState =
-  | ReceptionOperationalState
+  | ReceptionReadyLifecycleState
+  | ReceptionActiveLifecycleState
   | ReceptionShutdownLifecycleState;
 
 /**
@@ -198,8 +209,35 @@ export class ReceptionStateManager {
         isFinalized: false,
       };
       this.lifecycleState = resolveReceptionLifecycleState(this.lifecycleState, {
-        type: "start_file_reception",
+        type: "begin_preparing",
       });
+    });
+  }
+
+  /**
+   * Mark the active reception as ready to send the file request.
+   */
+  public markFileRequestDispatched(): void {
+    this.lifecycleState = resolveReceptionLifecycleState(this.lifecycleState, {
+      type: "request_dispatched",
+    });
+  }
+
+  /**
+   * Mark the active reception as receiving after the first validated chunk arrives.
+   */
+  public markFileReceiving(): void {
+    this.lifecycleState = resolveReceptionLifecycleState(this.lifecycleState, {
+      type: "chunk_received",
+    });
+  }
+
+  /**
+   * Mark the active reception as entering the finalization phase.
+   */
+  public markFileFinalizing(): void {
+    this.lifecycleState = resolveReceptionLifecycleState(this.lifecycleState, {
+      type: "begin_finalizing",
     });
   }
 
@@ -230,6 +268,30 @@ export class ReceptionStateManager {
     this.lifecycleState = resolveReceptionLifecycleState(this.lifecycleState, {
       type: "complete_file_reception",
     });
+  }
+
+  /**
+   * Interrupt active file reception without treating it as an unrecoverable failure.
+   */
+  public interruptFileReception(reason: any): void {
+    if (this.activeFileReception?.completionNotifier) {
+      this.activeFileReception.completionNotifier.reject(reason);
+    }
+    this.activeFileReception = null;
+    this.lifecycleState = resolveReceptionLifecycleState(this.lifecycleState, {
+      type: "interrupt_file_reception",
+    });
+  }
+
+  /**
+   * Cancel the active reception without mutating lifecycle state.
+   * This is used by shutdown paths that already entered an explicit shutdown state.
+   */
+  public cancelActiveFileReception(reason: any): void {
+    if (this.activeFileReception?.completionNotifier) {
+      this.activeFileReception.completionNotifier.reject(reason);
+    }
+    this.activeFileReception = null;
   }
 
   /**
@@ -369,6 +431,7 @@ export class ReceptionStateManager {
     preserveMetadata?: boolean;
     preserveSaveType?: boolean;
     preserveSaveDirectory?: boolean;
+    nextLifecycleState?: ReceptionReadyLifecycleState;
   }): void {
     const resetPlan = buildReceptionResetPlan(options);
 

@@ -27,7 +27,63 @@ function createFakeRecipient() {
   };
 }
 
+async function flushAsyncWork(iterations = 6) {
+  for (let index = 0; index < iterations; index += 1) {
+    await Promise.resolve();
+  }
+}
+
 describe("FileReceiveOrchestrator shutdown", () => {
+  it("surfaces preparing and requesting as explicit receiver lifecycle stages", async () => {
+    const recipient = createFakeRecipient();
+    const orchestrator = new FileReceiveOrchestrator(recipient as any);
+
+    const meta: fileMetadata = {
+      type: "fileMeta",
+      fileId: "file-prepare",
+      name: "b.txt",
+      size: 20,
+      fullName: "b.txt",
+      folderName: "",
+      fileType: "text/plain",
+    };
+
+    await recipient.onDataReceived?.(JSON.stringify(meta), "peer-1");
+    await orchestrator.setSaveDirectory({} as FileSystemDirectoryHandle);
+
+    const streamGate = createDeferred<void>();
+    const streamingWriter = (orchestrator as any).streamingFileWriter as {
+      createWriteStream: (...args: unknown[]) => Promise<unknown>;
+    };
+
+    streamingWriter.createWriteStream = async () => {
+      await streamGate.promise;
+      return {
+        fileHandle: null,
+        writeStream: null,
+        sequencedWriter: null,
+      };
+    };
+
+    const requestPromise = orchestrator.requestFile("file-prepare");
+    await flushAsyncWork();
+
+    expect(orchestrator.getTransferStats().stateManager.lifecycleState).toBe(
+      "preparing"
+    );
+
+    streamGate.resolve();
+    await flushAsyncWork();
+
+    expect(orchestrator.getTransferStats().stateManager.lifecycleState).toBe(
+      "requesting"
+    );
+
+    const cleanupPromise = orchestrator.cleanup();
+    await expect(requestPromise).rejects.toThrow();
+    await cleanupPromise;
+  });
+
   it("queues and escalates concurrent shutdown calls instead of dropping later requests", async () => {
     const recipient = createFakeRecipient();
     const orchestrator = new FileReceiveOrchestrator(recipient as any);
@@ -73,5 +129,31 @@ describe("FileReceiveOrchestrator shutdown", () => {
     expect(orchestrator.getPendingFilesMeta().size).toBe(0);
     expect(stateManager.getLifecycleState()).toBe("idle");
   });
-});
 
+  it("lands in interrupted after peer disconnect so resume-capable state is explicit", async () => {
+    const recipient = createFakeRecipient();
+    const orchestrator = new FileReceiveOrchestrator(recipient as any);
+
+    const meta: fileMetadata = {
+      type: "fileMeta",
+      fileId: "file-interrupted",
+      name: "c.txt",
+      size: 30,
+      fullName: "c.txt",
+      folderName: "",
+      fileType: "text/plain",
+    };
+
+    await recipient.onDataReceived?.(JSON.stringify(meta), "peer-1");
+    const requestPromise = orchestrator.requestFile("file-interrupted");
+    await flushAsyncWork();
+
+    await expect(
+      orchestrator.handlePeerDisconnect("TEST_CONNECTION_LOST")
+    ).resolves.toBeUndefined();
+    await expect(requestPromise).rejects.toThrow("TEST_CONNECTION_LOST");
+    expect(orchestrator.getTransferStats().stateManager.lifecycleState).toBe(
+      "interrupted"
+    );
+  });
+});
