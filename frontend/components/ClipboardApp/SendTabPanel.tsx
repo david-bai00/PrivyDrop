@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import CachedIdActionButton from "@/components/ClipboardApp/CachedIdActionButton";
+import { setSenderRoomSelection } from "@/lib/app/WebRTCStoreCoordinator";
 import {
   ReadClipboardButton,
   WriteClipboardButton,
@@ -119,13 +120,7 @@ export function SendTabPanel({
           // fetchRoom() already created the room, so set it as initial room ID
           // This prevents joinRoom() from trying to create it again
           setInputFieldValue(simpleRoomId);
-          const { useFileTransferStore } = await import(
-            "@/stores/fileTransferStore"
-          );
-          const store = useFileTransferStore.getState();
-          store.setShareRoomId(simpleRoomId);
-          // IMPORTANT: Set as initial room ID to prevent duplicate creation
-          store.setInitShareRoomId(simpleRoomId);
+          setSenderRoomSelection(simpleRoomId, { markAsInitial: true });
         } else {
           processRoomIdInput(crypto.randomUUID());
         }

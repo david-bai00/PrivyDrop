@@ -1,6 +1,7 @@
-import { useCallback, useEffect } from "react";
-import { CustomFile, FileMeta, fileMetadata } from "@/types/webrtc";
+import { useCallback } from "react";
+import { CustomFile, FileMeta } from "@/types/webrtc";
 import JSZip from "jszip";
+import { clearReceiverRetrievedArtifacts } from "@/lib/app/WebRTCStoreCoordinator";
 import { downloadAs, generateFileId } from "@/lib/fileUtils";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { createLogger } from "@/lib/logger";
@@ -31,9 +32,6 @@ export function useFileTransferHandler({
     setShareContent,
     addSendFiles,
     removeSendFile,
-    setRetrievedContent,
-    setRetrievedFiles,
-    setRetrievedFileMetas,
   } = useFileTransferStore();
 
   const updateShareContent = useCallback(
@@ -158,10 +156,8 @@ export function useFileTransferHandler({
 
   // Reset function specifically for receiver state (for leave room functionality)
   const resetReceiverState = useCallback(() => {
-    setRetrievedContent("");
-    setRetrievedFiles([]);
-    setRetrievedFileMetas([]);
-  }, [setRetrievedContent, setRetrievedFiles, setRetrievedFileMetas]);
+    clearReceiverRetrievedArtifacts();
+  }, []);
 
   return {
     shareContent,

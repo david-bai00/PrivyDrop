@@ -53,7 +53,7 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
         this.handleTransferProgress(event);
         return;
       case "retrieved_content":
-        useFileTransferStore.getState().setRetrievedContent(event.content);
+        this.setRetrievedContent(event.content);
         return;
       case "retrieved_file_meta":
         this.handleRetrievedFileMeta(event.meta);
@@ -70,6 +70,33 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
       default:
         return;
     }
+  }
+
+  public setSenderRoomSelection(
+    roomId: string,
+    options?: { markAsInitial?: boolean }
+  ): void {
+    const store = useFileTransferStore.getState();
+    store.setShareRoomId(roomId);
+
+    if (options?.markAsInitial) {
+      store.setInitShareRoomId(roomId);
+    }
+  }
+
+  public resetSenderDomainState(action: "reset_app" | "leave_room"): void {
+    useFileTransferStore.getState().applySenderStoreReset(action);
+  }
+
+  public resetReceiverDomainState(action: "leave_room" | "cleanup"): void {
+    useFileTransferStore.getState().applyReceiverStoreReset(action);
+  }
+
+  public clearReceiverRetrievedArtifacts(): void {
+    const store = useFileTransferStore.getState();
+    store.setRetrievedContent("");
+    store.setRetrievedFiles([]);
+    store.setRetrievedFileMetas([]);
   }
 
   private handleLifecycleStateChanged(
@@ -132,6 +159,10 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
     );
 
     store.setRetrievedFileMetas([...filteredMetas, metaWithoutType]);
+  }
+
+  private setRetrievedContent(content: string): void {
+    useFileTransferStore.getState().setRetrievedContent(content);
   }
 
   private handleRetrievedFile(file: CustomFile): void {
@@ -240,4 +271,27 @@ const coordinator = new WebRTCStoreCoordinator();
 
 export function ensureWebRTCStoreCoordinator(): void {
   coordinator.attach();
+}
+
+export function setSenderRoomSelection(
+  roomId: string,
+  options?: { markAsInitial?: boolean }
+): void {
+  coordinator.setSenderRoomSelection(roomId, options);
+}
+
+export function resetSenderDomainState(
+  action: "reset_app" | "leave_room"
+): void {
+  coordinator.resetSenderDomainState(action);
+}
+
+export function resetReceiverDomainState(
+  action: "leave_room" | "cleanup"
+): void {
+  coordinator.resetReceiverDomainState(action);
+}
+
+export function clearReceiverRetrievedArtifacts(): void {
+  coordinator.clearReceiverRetrievedArtifacts();
 }

@@ -122,7 +122,7 @@
 - **数据通道发送语义**：`sendData()/sendToPeer()` 统一为 async，调用方必须等待最终 `SendResult`，不再存在“同步返回失败、后台继续偷偷重试”的双重语义
 - **数据通道发送重试**：底层仍保留原有重试窗口（首轮 100ms，后续 1000ms），但重试被纳入同一个 Promise 生命周期，只有最终成功或最终失败两种结果
 - **Map 一致性**：广播发送和全量 cleanup 统一通过 `Map` 迭代处理 peer/dataChannel，避免对象式遍历导致的失效分支
-- **最小自动化护栏**：前端已引入 Vitest；当前单测覆盖 lifecycle 规则、async send 结果语义、`Map` 广播/cleanup、接收状态机、ChunkProcessor 分片包解析/校验边界、ReceptionStateManager 核心状态与 reset 保留策略、sender/receiver shutdown 策略与 store reset 边界，以及 sender/receiver/store 关闭矩阵的一致性。后续状态机或发送语义调整，应优先补纯模块测试，再考虑浏览器/WebRTC mock
+- **最小自动化护栏**：前端已引入 Vitest；当前单测覆盖 lifecycle 规则、async send 结果语义、`Map` 广播/cleanup、接收状态机、ChunkProcessor 分片包解析/校验边界、ReceptionStateManager 核心状态与 reset 保留策略、sender/receiver shutdown 策略与 store reset 边界、sender/receiver/store 关闭矩阵一致性，以及 app coordinator 的领域写入口边界。后续状态机或发送语义调整，应优先补纯模块测试，再考虑浏览器/WebRTC mock
 
 **后端信令与房间管理**：
 
@@ -399,7 +399,7 @@ Store (fileTransferStore)
 ### 数据流模式
 
 - **单向数据流**：Store → Hooks → Components
-- **状态管理集中化**：所有状态通过 `useFileTransferStore` 统一管理；底层 `webrtcService` 不再直接 import Store，由 `WebRTCStoreCoordinator` 承接状态写入。连接状态分为权威 lifecycle state 和兼容 badge state 两层，避免 UI 直接绑定底层连接枚举
+- **状态管理集中化**：所有状态通过 `useFileTransferStore` 统一管理；底层 `webrtcService` 不再直接 import Store，由 `WebRTCStoreCoordinator` 承接状态写入。连接状态分为权威 lifecycle state 和兼容 badge state 两层，避免 UI 直接绑定底层连接枚举。sender/receiver 的领域状态变更应优先走 coordinator command，hooks/components 不再直接调用 room/reset/retrieved-result 相关 store action
 - **错误处理标准化**：统一的消息提示机制（putMessageInMs）
 - **国际化集成**：useLocale + getDictionary 提供多语言支持
 
