@@ -122,7 +122,7 @@
 - **数据通道发送语义**：`sendData()/sendToPeer()` 统一为 async，调用方必须等待最终 `SendResult`，不再存在“同步返回失败、后台继续偷偷重试”的双重语义
 - **数据通道发送重试**：底层仍保留原有重试窗口（首轮 100ms，后续 1000ms），但重试被纳入同一个 Promise 生命周期，只有最终成功或最终失败两种结果
 - **Map 一致性**：广播发送和全量 cleanup 统一通过 `Map` 迭代处理 peer/dataChannel，避免对象式遍历导致的失效分支
-- **最小自动化护栏**：前端已引入 Vitest；当前单测覆盖 lifecycle 规则、async send 结果语义、`Map` 广播/cleanup、接收状态机、ChunkProcessor 分片包解析/校验边界、ReceptionStateManager 核心状态与 reset 保留策略、sender/receiver shutdown 策略与 store reset 边界。后续状态机或发送语义调整，应优先补纯模块测试，再考虑浏览器/WebRTC mock
+- **最小自动化护栏**：前端已引入 Vitest；当前单测覆盖 lifecycle 规则、async send 结果语义、`Map` 广播/cleanup、接收状态机、ChunkProcessor 分片包解析/校验边界、ReceptionStateManager 核心状态与 reset 保留策略、sender/receiver shutdown 策略与 store reset 边界，以及 sender/receiver/store 关闭矩阵的一致性。后续状态机或发送语义调整，应优先补纯模块测试，再考虑浏览器/WebRTC mock
 
 **后端信令与房间管理**：
 
@@ -176,6 +176,7 @@ Socket.IO 事件处理流程：
 - 接收关闭语义：接收侧动作统一走 `shutdown(action, reason)`；`peer_disconnect` 保留 metadata/saveType/saveDirectory 以支持 resume，`leave_room/force_reset/cleanup` 则清掉房间相关内存状态。所有动作都先 await 活跃 writer/stream 收尾，再 reject 当前接收并清理状态；关闭过程中不允许新的 `requestFile/requestFolder` 进入。
 - 发送关闭语义：sender 退出相关流程统一走 `shutdownSender(action)`；room manager 不再手拼 `fileSender.cleanup() + leaveRoom(true) + resetSenderApp()`，而是按显式动作驱动 service 与 store 两层收敛。
 - 统一行为矩阵：sender/receiver/store 的关闭与重置语义必须保持一致；新增动作时必须同步更新 sender/receiver/store 策略文件与对应回归清单。
+- 自动化要求：关闭矩阵不仅要写在策略表和文档里，还要有跨层单测验证 sender/receiver/store 三层是否一致，避免只改一层导致语义漂移。
 - 生命周期规则来源：连接生命周期迁移规则已抽到 `frontend/lib/webrtcLifecycleMachine.ts`；修改 join/reconnect/leave 状态行为时必须同步更新对应单测。
 - 聚合不变量：多 peer 混合态下，整体 lifecycle 必须由 peer 快照聚合推导，不允许被单个 peer 的 `negotiating/disconnected` 事件直接降级；修改聚合优先级或断开后恢复语义时必须同步更新单测。
 - `Map` 遍历规则来源：广播与 cleanup 的 peer 集合快照逻辑已抽到 `frontend/lib/webrtcConnectionCollection.ts`；修改集合遍历方式时必须同步更新对应单测。

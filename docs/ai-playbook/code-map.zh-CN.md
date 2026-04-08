@@ -134,7 +134,7 @@
   - `frontend/vitest.config.ts` — Vitest 配置，提供 `@/` 路径别名并将最小单测限定在 `frontend/tests/unit/**/*.test.ts`。
   - `frontend/.eslintrc.json` — 代码检查配置。
   - `frontend/Dockerfile`、`frontend/health-check.js` — Docker 部署与健康检查。
-  - `frontend/tests/unit/*.test.ts` — 最小自动化护栏，当前覆盖 lifecycle 规则、async send 结果语义、`Map` 广播/cleanup 规则、接收状态机、ChunkProcessor 封包解析/校验边界、ReceptionStateManager 核心状态与 reset 保留策略、sender/receiver shutdown 策略与 store reset 边界。
+  - `frontend/tests/unit/*.test.ts` — 最小自动化护栏，当前覆盖 lifecycle 规则、async send 结果语义、`Map` 广播/cleanup 规则、接收状态机、ChunkProcessor 封包解析/校验边界、ReceptionStateManager 核心状态与 reset 保留策略、sender/receiver shutdown 策略与 store reset 边界，以及 sender/receiver/store 关闭矩阵的一致性。
 
 ## 后端（Express，Socket.IO，Redis）
 
