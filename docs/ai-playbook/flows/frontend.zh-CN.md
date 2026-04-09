@@ -19,7 +19,7 @@ SendTabPanel/RetrieveTabPanel (功能面板)
     ↓
 业务中枢 Hooks (状态管理与业务逻辑)
     ↓
-Core Services (webrtcService) + Store (fileTransferStore)
+Core Services (webrtcService) + Stores (clipboardUiStore + fileTransferStore)
 ```
 
 ### ClipboardApp 顶层协调器模式
@@ -28,8 +28,8 @@ Core Services (webrtcService) + Store (fileTransferStore)
 
 - 集成 5 个关键业务 hooks：useWebRTCConnection、useFileTransferHandler、useRoomManager、usePageSetup、useClipboardAppMessages
 - 全局拖拽事件处理：dragenter/dragleave/dragover/drop，支持多文件和文件夹树遍历
-- 双标签页状态管理：发送/接收面板切换，通过 activeTab 控制
-- 统一消息系统：shareMessage/retrieveMessage 4 秒自动消失机制
+- 双标签页、接收端输入框与拖拽提示等纯 UI 输入态统一由 `clipboardUiStore` 管理
+- 统一消息系统：`useClipboardAppMessages` 在组件本地管理 `shareMessage/retrieveMessage`，4 秒自动消失
 
 ### Hook 层级与职责分离
 
@@ -52,6 +52,7 @@ Core Services (webrtcService) + Store (fileTransferStore)
 - 离开保护：传输中确认提示（isAnyFileTransferring 检查）
 - 状态文本：动态更新房间状态文本
 - 链接生成：自动生成分享链接
+- 标签页判断改从 `clipboardUiStore` 读取，不再混入传输领域 store
 
 **usePageSetup**（页面初始化）：
 
@@ -167,7 +168,7 @@ Core Services (webrtcService) + Store (fileTransferStore)
 
 ### 数据流模式
 
-- **单向数据流**：Store → Hooks → Components
-- **状态管理集中化**：所有状态通过 `useFileTransferStore` 统一管理
+- **单向数据流**：Stores → Hooks → Components
+- **状态管理分层**：传输领域状态通过 `useFileTransferStore` 管理，纯 UI 输入态通过 `useClipboardUiStore` 管理
 - **错误处理标准化**：统一的消息提示机制（putMessageInMs）
 - **国际化集成**：useLocale + getDictionary 提供多语言支持

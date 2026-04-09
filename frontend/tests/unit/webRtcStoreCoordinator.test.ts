@@ -36,11 +36,6 @@ const INITIAL_STORE_STATE = {
   sendProgress: {},
   receiveProgress: {},
   isAnyFileTransferring: false,
-  activeTab: "send" as const,
-  retrieveRoomIdInput: "",
-  isDragging: false,
-  shareMessage: "",
-  retrieveMessage: "",
 };
 
 describe("WebRTCStoreCoordinator commands", () => {

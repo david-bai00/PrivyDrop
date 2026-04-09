@@ -8,6 +8,7 @@ import {
 } from "@/lib/app/WebRTCStoreCoordinator";
 import { webrtcService } from "@/lib/webrtcService";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
+import { useClipboardUiStore } from "@/stores/clipboardUiStore";
 import { fetchRoom, createRoom, checkRoom, leaveRoom } from "@/app/config/api";
 import { debounce } from "lodash";
 import { useOneShotSlowHint } from "@/utils/useOneShotSlowHint";
@@ -40,7 +41,6 @@ export function useRoomManager({
     shareLink,
     shareRoomStatusText,
     retrieveRoomStatusText,
-    activeTab,
     sharePeerCount,
     retrievePeerCount,
     senderDisconnected,
@@ -51,6 +51,7 @@ export function useRoomManager({
     setShareRoomStatusText,
     setRetrieveRoomStatusText,
   } = useFileTransferStore();
+  const { activeTab } = useClipboardUiStore();
 
   // A ref to indicate join side for slow-hint message orientation
   const joinSideRef = useRef<boolean>(true);

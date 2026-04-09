@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import type { FileMeta } from "@/types/webrtc";
 
 import { useFileTransferStore } from "@/stores/fileTransferStore";
+import { useClipboardUiStore } from "@/stores/clipboardUiStore";
 
 interface RetrieveTabPanelProps {
   putMessageInMs: (
@@ -18,7 +19,6 @@ interface RetrieveTabPanelProps {
     isShareEnd?: boolean,
     displayTimeMs?: number
   ) => void; // For onLocationPick
-  setRetrieveRoomIdInput: (value: string) => void;
   joinRoom: (isSender: boolean, roomId: string) => void;
   retrieveJoinRoomBtnRef: React.RefObject<HTMLButtonElement>;
   richTextToPlainText: (html: string) => string;
@@ -36,7 +36,6 @@ interface RetrieveTabPanelProps {
 
 export function RetrieveTabPanel({
   putMessageInMs,
-  setRetrieveRoomIdInput,
   joinRoom,
   retrieveJoinRoomBtnRef,
   richTextToPlainText,
@@ -54,10 +53,10 @@ export function RetrieveTabPanel({
   const tSaveLocation = useTranslations("text.clipboard.saveLocation");
   const tCommon = useTranslations("text.common");
   const t = useTranslations("text.clipboard");
+  const { retrieveRoomIdInput, setRetrieveRoomIdInput } = useClipboardUiStore();
   // Get the status from the store
   const {
     retrieveRoomStatusText,
-    retrieveRoomIdInput,
     retrievedContent,
     retrievedFileMetas,
     receiveProgress,

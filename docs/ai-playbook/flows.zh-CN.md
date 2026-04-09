@@ -211,7 +211,7 @@ Core Services (webrtcService)
     ↓
 Thin App Coordinator (WebRTCStoreCoordinator)
     ↓
-Store (fileTransferStore)
+Stores (clipboardUiStore + fileTransferStore)
 ```
 
 ### ClipboardApp 顶层协调器模式
@@ -220,8 +220,8 @@ Store (fileTransferStore)
 
 - 集成 5 个关键业务 hooks：useWebRTCConnection、useFileTransferHandler、useRoomManager、usePageSetup、useClipboardAppMessages
 - 全局拖拽事件处理：dragenter/dragleave/dragover/drop，支持多文件和文件夹树遍历
-- 双标签页状态管理：发送/接收面板切换，通过 activeTab 控制
-- 统一消息系统：shareMessage/retrieveMessage 4 秒自动消失机制
+- 双标签页、接收房间输入与拖拽提示等纯 UI 输入态已收敛到 `clipboardUiStore`
+- 统一消息系统：`useClipboardAppMessages` 在组件本地管理 `shareMessage/retrieveMessage`，4 秒自动消失
 
 ### Hook 层级与职责分离
 
@@ -251,6 +251,7 @@ Store (fileTransferStore)
 - 状态文本：动态更新房间状态文本
 - 链接生成：自动生成分享链接
 - 分享广播：统一走 `WebRTCStoreCoordinator.broadcastCurrentSenderPayload()`，hook 不再直接拼装 sender payload
+- 发送/接收标签页等纯 UI 判断改读 `clipboardUiStore`，不再混在传输领域 store
 - 离房前的 roomId/peerId 读取改为走 `webrtcService.getSessionInfo()`，不再直接访问 `sender/receiver` 实例字段
 
 **WebRTCStoreCoordinator**（薄应用编排层）：
@@ -258,6 +259,7 @@ Store (fileTransferStore)
 - 订阅 `webrtcService` 的显式 `WebRTCServiceEvent` 事件表，统一写 `fileTransferStore`
 - 负责连接 lifecycle state、兼容 badge state、peer 数、发送/接收进度、接收内容和接收文件列表的 store 同步
 - 承接 sender room 选择、sender/receiver reset、receiver 已接收结果清空，以及 sender payload（`shareContent/sendFiles`）更新与广播等显式 command
+- 不负责标签页、拖拽态、接收端输入框这类纯 UI 输入态；这类状态单独放在 `clipboardUiStore`
 - 在 sender DataChannel 打开后，通过统一 command 从 Store 读取当前内容并触发自动广播
 - 在 peer 断开时，按方向清理对应 peer 的进度记录并重新计算 `isAnyFileTransferring`
 

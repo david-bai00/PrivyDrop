@@ -46,15 +46,6 @@ interface FileTransferState {
   receiveProgress: Record<string, any>;
   isAnyFileTransferring: boolean;
 
-  // UI state
-  activeTab: "send" | "retrieve";
-  retrieveRoomIdInput: string;
-  isDragging: boolean;
-
-  // Message state
-  shareMessage: string;
-  retrieveMessage: string;
-
   // Actions
   // Room-related actions
   setShareRoomId: (id: string) => void;
@@ -101,16 +92,6 @@ interface FileTransferState {
   clearReceiveProgress: (fileId: string, peerId: string) => void;
   setIsAnyFileTransferring: (transferring: boolean) => void;
 
-  // UI state-related actions
-  setActiveTab: (tab: "send" | "retrieve") => void;
-  setRetrieveRoomIdInput: (input: string) => void;
-  setIsDragging: (dragging: boolean) => void;
-
-  // Message-related actions
-  setShareMessage: (message: string) => void;
-  setRetrieveMessage: (message: string) => void;
-  setRetrieveRoomId: (input: string) => void;
-
   // Reset-related actions
   applyReceiverStoreReset: (action: ReceiverStoreResetAction) => void;
   applySenderStoreReset: (action: SenderStoreResetAction) => void;
@@ -142,11 +123,6 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
   sendProgress: {},
   receiveProgress: {},
   isAnyFileTransferring: false,
-  activeTab: "send",
-  retrieveRoomIdInput: "",
-  isDragging: false,
-  shareMessage: "",
-  retrieveMessage: "",
 
   // Actions implementation
   setShareRoomId: (id) => set({ shareRoomId: id }),
@@ -238,14 +214,6 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
     }),
   setIsAnyFileTransferring: (transferring) =>
     set({ isAnyFileTransferring: transferring }),
-
-  setActiveTab: (tab) => set({ activeTab: tab }),
-  setRetrieveRoomIdInput: (input) => set({ retrieveRoomIdInput: input }),
-  setRetrieveRoomId: (input) => set({ retrieveRoomIdInput: input }),
-  setIsDragging: (dragging) => set({ isDragging: dragging }),
-
-  setShareMessage: (message) => set({ shareMessage: message }),
-  setRetrieveMessage: (message) => set({ retrieveMessage: message }),
 
   applyReceiverStoreReset: (action) =>
     set((state) => {

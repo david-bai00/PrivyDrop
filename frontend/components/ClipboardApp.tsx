@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useCallback, useEffect, useMemo } from "react";
+import React, { useRef, useCallback, useEffect } from "react";
 import { useMessages, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import useRichTextToPlainText from "../hooks/useRichTextToPlainText";
@@ -15,6 +15,7 @@ import { RetrieveTabPanel } from "./ClipboardApp/RetrieveTabPanel";
 import FullScreenDropZone from "./ClipboardApp/FullScreenDropZone";
 import { traverseFileTree } from "@/lib/fileUtils";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
+import { useClipboardUiStore } from "@/stores/clipboardUiStore";
 import { getCachedId } from "@/lib/roomIdCache";
 import { useConnectionFeedback } from "@/hooks/useConnectionFeedback";
 import type { Messages } from "@/types/messages";
@@ -33,24 +34,26 @@ const ClipboardApp = () => {
   const retrieveJoinRoomBtnRef = useRef<HTMLButtonElement>(null);
 
   usePageSetup({
-    setRetrieveRoomId: useFileTransferStore.getState().setRetrieveRoomIdInput,
-    setActiveTab: useFileTransferStore.getState().setActiveTab,
+    setRetrieveRoomId: useClipboardUiStore.getState().setRetrieveRoomIdInput,
+    setActiveTab: useClipboardUiStore.getState().setActiveTab,
     retrieveJoinRoomBtnRef,
   });
 
   // Get state from store
   const {
-    activeTab,
-    isDragging,
     shareRoomId,
     shareLink,
+    // for auto-join on receiver side
+    isReceiverInRoom,
+  } = useFileTransferStore();
+  const {
+    activeTab,
+    isDragging,
+    retrieveRoomIdInput,
     setIsDragging,
     setRetrieveRoomIdInput,
     setActiveTab,
-    // for auto-join on receiver side
-    isReceiverInRoom,
-    retrieveRoomIdInput,
-  } = useFileTransferStore();
+  } = useClipboardUiStore();
 
   const richTextToPlainText = useRichTextToPlainText();
 
@@ -257,7 +260,6 @@ const ClipboardApp = () => {
           ) : (
             <RetrieveTabPanel
               putMessageInMs={putMessageInMs}
-              setRetrieveRoomIdInput={setRetrieveRoomIdInput}
               joinRoom={joinRoom}
               retrieveJoinRoomBtnRef={retrieveJoinRoomBtnRef}
               richTextToPlainText={richTextToPlainText}

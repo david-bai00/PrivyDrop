@@ -22,7 +22,7 @@
 
 - `frontend/components/` — UI，包括协调器与子组件。
 
-  - `frontend/components/ClipboardApp.tsx` — 顶层 UI 协调器，集成 5 个业务 hooks（useWebRTCConnection/useFileTransferHandler/useRoomManager/usePageSetup/useClipboardAppMessages），处理全局拖拽事件和双标签页（发送/接收）管理。
+  - `frontend/components/ClipboardApp.tsx` — 顶层 UI 协调器，集成 5 个业务 hooks（useWebRTCConnection/useFileTransferHandler/useRoomManager/usePageSetup/useClipboardAppMessages），处理全局拖拽事件，并消费 `clipboardUiStore` 中的双标签页、接收端输入框与拖拽提示等纯 UI 输入态。
     - 体验增强：切到接收端（retrieve）且满足“未在房间、URL 无 roomId、输入为空、存在缓存ID”时自动填充并加入房间（读取 `frontend/lib/roomIdCache.ts`）。
     - 连接反馈：集成 `useConnectionFeedback`（`frontend/hooks/useConnectionFeedback.ts`），桥接 WebRTC 连接态到 UI 文案，含协商中提示、8s 慢连接提示、断开/重连/恢复提示（前台可见时提示）。慢提示统一复用 `frontend/utils/useOneShotSlowHint.ts`。
 
@@ -57,12 +57,12 @@
 - `frontend/hooks/` — 业务逻辑中枢（React Hooks）。
 
   - `frontend/hooks/useWebRTCConnection.ts` — WebRTC 生命周期与编排 API；初始化 `WebRTCStoreCoordinator`，广播入口已收敛到 coordinator command，不再由 hook 自己读取 `shareContent/sendFiles` 组装发送参数，也不再暴露 `sender/receiver` 内部实例；重置连接时直接走 `shutdownSender("leave_room")` / `shutdownReceiver("leave_room")`。
-  - `frontend/hooks/useRoomManager.ts` — 房间创建/加入/校验与 UI 状态，支持缓存 ID 重连（≥8 字符自动发送 initiator-online）；分享广播、sender/receiver 离房、roomId 选择与 sender reset 都改为调用 `WebRTCStoreCoordinator` command，离房时通过 `getSessionInfo()` 读取 room/peer 信息，避免直接访问内部连接对象或在 hook 内直接拼领域状态写入。
+  - `frontend/hooks/useRoomManager.ts` — 房间创建/加入/校验与 UI 状态，支持缓存 ID 重连（≥8 字符自动发送 initiator-online）；分享广播、sender/receiver 离房、roomId 选择与 sender reset 都改为调用 `WebRTCStoreCoordinator` command，离房时通过 `getSessionInfo()` 读取 room/peer 信息，避免直接访问内部连接对象或在 hook 内直接拼领域状态写入。标签页判断改从 `clipboardUiStore` 读取，不再混入 `fileTransferStore`。
   - `frontend/hooks/useFileTransferHandler.ts` — 文件/文本负载编排与回调，使用 getState() 修复闭包问题，支持 JSZip 文件夹下载；发送去重、sender payload 写入与单文件下载匹配统一基于稳定 `fileId` 与 `WebRTCStoreCoordinator` command，避免同名文件误判和 hook 直写 store。receiver 结果清空也已改走 coordinator command。
   - `frontend/hooks/useClipboardActions.ts` — 剪贴板操作与状态管理，支持现代 API 和 document.execCommand 降级，处理 HTML/富文本粘贴。
   - `frontend/hooks/useClipboardAppMessages.ts` — 应用消息处理（shareMessage/retrieveMessage），4 秒自动消失机制。
   - `frontend/hooks/useLocale.ts` — 国际化语言切换，基于 pathname 解析。
-  - `frontend/hooks/usePageSetup.ts` — 页面配置与 SEO 设置，处理 URL 参数 roomId 自动加入和引荐来源追踪。
+  - `frontend/hooks/usePageSetup.ts` — 页面配置与 SEO 设置，处理 URL 参数 roomId 自动加入和引荐来源追踪；自动加入时写入 `clipboardUiStore` 的接收端输入框与标签页状态。
   - `frontend/hooks/useRichTextToPlainText.ts` — 富文本转纯文本工具，处理块级元素换行和文本节点包装。
 
 - `frontend/lib/` — 核心库与工具。
@@ -110,7 +110,8 @@
 
 - `frontend/stores/` — 共享应用状态（Zustand）。
 
-  - `frontend/stores/fileTransferStore.ts` — 传输进度/状态的唯一事实来源（Zustand 单例，跨路由保持）；发送列表删除和进度主键以 `fileId` 为准，避免 UI 展示字段参与底层匹配。连接相关状态分为权威 lifecycle state 与兼容 badge state 两层。底层 lib 不再直接 import 此 store；sender/receiver 的领域状态写入已进一步收敛到 `frontend/lib/app/WebRTCStoreCoordinator.ts`，包括 room/reset/retrieved-result 与 sender payload 这类业务状态，store 中保留的 reset action 主要由编排层调用。
+  - `frontend/stores/fileTransferStore.ts` — 传输进度/状态的唯一事实来源（Zustand 单例，跨路由保持）；发送列表删除和进度主键以 `fileId` 为准，避免 UI 展示字段参与底层匹配。连接相关状态分为权威 lifecycle state 与兼容 badge state 两层。底层 lib 不再直接 import 此 store；sender/receiver 的领域状态写入已进一步收敛到 `frontend/lib/app/WebRTCStoreCoordinator.ts`，包括 room/reset/retrieved-result 与 sender payload 这类业务状态。纯 UI 输入态（标签页、接收端输入框、拖拽提示）已移出该 store。
+  - `frontend/stores/clipboardUiStore.ts` — 纯 UI 输入态 store，承载 `activeTab`、`retrieveRoomIdInput`、`isDragging`，用于把页面交互状态与传输领域状态拆分开。
   - `frontend/stores/transferStoreReset.ts` — Store reset 动作策略与 transfer activity 计算工具；定义 sender/receiver reset 的清理边界，避免 sender reset 误清 receiver 侧进度。
 
 
