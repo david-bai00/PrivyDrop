@@ -7,8 +7,6 @@ export type ReceiverStoreResetAction = "leave_room" | "cleanup";
 
 export interface SenderStoreResetPolicy {
   action: SenderStoreResetAction;
-  clearShareLink: boolean;
-  clearShareRoomStatusText: boolean;
   clearSendProgress: boolean;
   clearSenderDraftPayload: boolean;
   clearSenderPublishedPayload: boolean;
@@ -19,7 +17,6 @@ export interface ReceiverStoreResetPolicy {
   clearRetrievedContent: boolean;
   clearRetrievedFiles: boolean;
   clearRetrievedFileMetas: boolean;
-  clearRetrieveRoomStatusText: boolean;
   clearReceiveProgress: boolean;
   clearSenderDisconnected: boolean;
 }
@@ -30,24 +27,18 @@ const SENDER_STORE_RESET_POLICIES: Record<
 > = {
   leave_room: {
     action: "leave_room",
-    clearShareLink: true,
-    clearShareRoomStatusText: true,
     clearSendProgress: true,
     clearSenderDraftPayload: false,
     clearSenderPublishedPayload: false,
   },
   reset_app: {
     action: "reset_app",
-    clearShareLink: true,
-    clearShareRoomStatusText: true,
     clearSendProgress: true,
     clearSenderDraftPayload: false,
     clearSenderPublishedPayload: false,
   },
   cleanup: {
     action: "cleanup",
-    clearShareLink: true,
-    clearShareRoomStatusText: true,
     clearSendProgress: true,
     clearSenderDraftPayload: true,
     clearSenderPublishedPayload: true,
@@ -63,7 +54,6 @@ const RECEIVER_STORE_RESET_POLICIES: Record<
     clearRetrievedContent: true,
     clearRetrievedFiles: true,
     clearRetrievedFileMetas: true,
-    clearRetrieveRoomStatusText: true,
     clearReceiveProgress: true,
     clearSenderDisconnected: true,
   },
@@ -72,7 +62,6 @@ const RECEIVER_STORE_RESET_POLICIES: Record<
     clearRetrievedContent: true,
     clearRetrievedFiles: true,
     clearRetrievedFileMetas: true,
-    clearRetrieveRoomStatusText: true,
     clearReceiveProgress: true,
     clearSenderDisconnected: true,
   },

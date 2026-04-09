@@ -115,7 +115,7 @@
 - **连接生命周期状态机**：连接层显式区分 `idle/joining/waiting_for_peer/negotiating/connected/reconnecting/leaving/failed`，由 `webrtcService` 统一管理并通过事件表上抛；UI 不再直接把 `RTCPeerConnectionState` 当作业务状态。整体 lifecycle 现在按 peer 状态聚合推导：`connected` 优先于 `negotiating`，空房内等待保持 `waiting_for_peer`，最后一个活跃 peer 断开后才进入 `reconnecting`，`failed/leaving` 属于显式终态，不会被后续零散 peer 事件静默覆盖。
 - **接收侧关闭动作表**：接收编排层显式区分 `peer_disconnect/leave_room/force_reset/cleanup` 四类动作，统一由策略表决定是否保留 metadata/saveType/saveDirectory、是否允许 resume 以及是否释放内部处理器
 - **发送侧关闭动作表**：发送侧显式区分 `leave_room/reset_app/cleanup`，由 `webrtcService.shutdownSender()` 和 `FileSender.shutdown()` 统一执行；`leave_room/reset_app` 保持 socket 在线，仅清空当前房间连接与发送状态，`cleanup` 则连 socket 一并回收
-- **Store reset 语义**：Store 侧显式区分 sender/receiver reset 动作；sender reset 只清 sender 自有进度和分享链接，不再顺手清 receiver 进度，`isAnyFileTransferring` 会根据剩余 send/receive progress 重新计算
+- **Store reset 语义**：Store 侧显式区分 sender/receiver reset 动作；sender reset 只清 sender 自有进度，不再顺手清 receiver 进度，`isAnyFileTransferring` 会根据剩余 send/receive progress 重新计算；房间状态文案与分享链接已改为 UI 侧按领域事实派生
 - **ICE 候选者队列机制**：连接未就绪时缓存候选者到 `iceCandidatesQueue` Map，连接就绪后批量处理；支持候选者失效时的重新入队和连接状态验证
 - **唤醒锁管理**：连接建立时通过 `WakeLockManager` 请求屏幕唤醒锁，连接断开时释放，优化移动端传输稳定性
 - **优雅断开跟踪**：`gracefullyDisconnectedPeers` Set 跟踪正常断开的 peer，发送重试时跳过这些 peer，避免不必要的重试
@@ -282,7 +282,7 @@ Stores (clipboardUiStore + fileTransferStore)
 - 房间 ID 双模式生成：4 位数字（后端 API 生成）和 UUID（前端 crypto API）
 - 富文本编辑器集成（动态导入，SSR 禁用）
 - 文件上传处理和文件列表管理
-- 分享链接生成与二维码显示
+- 分享链接与顶部状态文案由 UI 按当前 sender 房间事实派生，二维码仅在 sender 已入房时显示
 
 **RetrieveTabPanel 接收面板**：
 

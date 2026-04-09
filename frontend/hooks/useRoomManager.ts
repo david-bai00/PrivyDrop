@@ -16,10 +16,6 @@ import type { RoomManagerText } from "@/types/clipboardText";
 
 ensureWebRTCStoreCoordinator();
 
-function format_peopleMsg(template: string, peerCount: number) {
-  return template.replace("{peerCount}", peerCount.toString());
-}
-
 // Remove all WebRTC related props dependencies
 interface UseRoomManagerProps {
   text: RoomManagerText;
@@ -38,18 +34,12 @@ export function useRoomManager({
   const {
     shareRoomId,
     initShareRoomId,
-    shareLink,
-    shareRoomStatusText,
-    retrieveRoomStatusText,
     sharePeerCount,
     retrievePeerCount,
     senderDisconnected,
     isSenderInRoom,
     isReceiverInRoom,
     isAnyFileTransferring,
-    setShareLink,
-    setShareRoomStatusText,
-    setRetrieveRoomStatusText,
   } = useFileTransferStore();
   const { activeTab } = useClipboardUiStore();
 
@@ -138,10 +128,7 @@ export function useRoomManager({
           6000
         );
 
-        // Update share link
         if (isSenderSide) {
-          const link = `${window.location.origin}${window.location.pathname}?roomId=${actualRoomId}`;
-          setShareLink(link);
           if (actualRoomId !== shareRoomId) {
             setSenderRoomSelection(actualRoomId);
           }
@@ -168,7 +155,6 @@ export function useRoomManager({
       activeTab,
       initShareRoomId,
       shareRoomId,
-      setShareLink,
       armJoinSlow,
       disarmJoinSlow,
       resetJoinSlow,
@@ -185,15 +171,17 @@ export function useRoomManager({
       } else {
         await publishAndBroadcastSenderDraft();
       }
-
-      // Update share link
-      const link = `${window.location.origin}${window.location.pathname}?roomId=${shareRoomId}`;
-      setShareLink(link);
     } catch (error) {
       console.error("[RoomManager] Failed to generate share link:", error);
       putMessageInMs(text.messages.generateShareLinkError, true);
     }
-  }, [text.messages.generateShareLinkError, text.messages.waiting, putMessageInMs, shareRoomId, sharePeerCount, setShareLink]);
+  }, [
+    text.messages.generateShareLinkError,
+    text.messages.waiting,
+    putMessageInMs,
+    shareRoomId,
+    sharePeerCount,
+  ]);
 
   const handleLeaveReceiverRoom = useCallback(async () => {
     if (isAnyFileTransferring) {
@@ -320,52 +308,10 @@ export function useRoomManager({
     activeTab,
   ]);
 
-  // Room status text update
-  useEffect(() => {
-    const isInRoom = activeTab === "send" ? isSenderInRoom : isReceiverInRoom;
-    const currentPeerCount =
-      activeTab === "send" ? sharePeerCount : retrievePeerCount;
-    let statusText = "";
-
-    if (!isInRoom) {
-      statusText =
-        activeTab === "retrieve"
-          ? text.status.receiverCanAccept
-          : text.status.roomEmpty;
-    } else if (currentPeerCount === 0) {
-      statusText = text.status.onlyOne;
-    } else {
-      statusText =
-        activeTab === "send"
-          ? format_peopleMsg(text.status.peopleCount, currentPeerCount + 1)
-          : text.status.connected;
-    }
-
-    if (activeTab === "send") setShareRoomStatusText(statusText);
-    else setRetrieveRoomStatusText(statusText);
-  }, [
-    activeTab,
-    sharePeerCount,
-    retrievePeerCount,
-    text.status.connected,
-    text.status.onlyOne,
-    text.status.peopleCount,
-    text.status.receiverCanAccept,
-    text.status.roomEmpty,
-    senderDisconnected,
-    isSenderInRoom,
-    isReceiverInRoom,
-    setShareRoomStatusText,
-    setRetrieveRoomStatusText,
-  ]);
-
   return {
     // State
     shareRoomId,
     initShareRoomId,
-    shareLink,
-    shareRoomStatusText,
-    retrieveRoomStatusText,
     sharePeerCount,
     retrievePeerCount,
     senderDisconnected,

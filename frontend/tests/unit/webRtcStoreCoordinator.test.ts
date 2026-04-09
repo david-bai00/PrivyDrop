@@ -18,9 +18,6 @@ import { useFileTransferStore } from "@/stores/fileTransferStore";
 const INITIAL_STORE_STATE = {
   shareRoomId: "",
   initShareRoomId: "",
-  shareLink: "",
-  shareRoomStatusText: "",
-  retrieveRoomStatusText: "",
   shareConnectionState: "idle" as const,
   shareLifecycleState: "idle" as const,
   isSenderInRoom: false,
@@ -115,8 +112,6 @@ describe("WebRTCStoreCoordinator commands", () => {
 
   it("resets sender-owned domain state through the coordinator boundary", () => {
     useFileTransferStore.setState({
-      shareLink: "https://example.test/share/room-a",
-      shareRoomStatusText: "sender-active",
       sendProgress: {
         fileA: {
           peerA: { progress: 0.5, speed: 128 },
@@ -136,8 +131,6 @@ describe("WebRTCStoreCoordinator commands", () => {
     resetSenderDomainState("reset_app");
 
     const state = useFileTransferStore.getState();
-    expect(state.shareLink).toBe("");
-    expect(state.shareRoomStatusText).toBe("");
     expect(state.sendProgress).toEqual({});
     expect(state.retrievedContent).toBe("keep-me");
     expect(state.retrievedFiles).toHaveLength(1);
@@ -150,14 +143,12 @@ describe("WebRTCStoreCoordinator commands", () => {
       retrievedContent: "hello",
       retrievedFiles: [{ name: "a.txt" } as any],
       retrievedFileMetas: [{ fileId: "file-a" } as any],
-      retrieveRoomStatusText: "receiver-active",
       senderDisconnected: true,
       receiveProgress: {
         fileA: {
           peerA: { progress: 0.4, speed: 32 },
         },
       },
-      shareLink: "https://example.test/share/room-a",
       sendProgress: {
         fileB: {
           peerB: { progress: 0.7, speed: 64 },
@@ -171,15 +162,12 @@ describe("WebRTCStoreCoordinator commands", () => {
     expect(state.retrievedContent).toBe("");
     expect(state.retrievedFiles).toEqual([]);
     expect(state.retrievedFileMetas).toEqual([]);
-    expect(state.retrieveRoomStatusText).toBe("receiver-active");
     expect(state.receiveProgress).not.toEqual({});
 
     resetReceiverDomainState("leave_room");
     state = useFileTransferStore.getState();
-    expect(state.retrieveRoomStatusText).toBe("");
     expect(state.senderDisconnected).toBe(false);
     expect(state.receiveProgress).toEqual({});
-    expect(state.shareLink).toBe("https://example.test/share/room-a");
     expect(state.sendProgress).not.toEqual({});
     expect(state.isAnyFileTransferring).toBe(true);
   });

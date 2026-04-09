@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useCallback, useEffect } from "react";
+import React, { useRef, useCallback, useEffect, useMemo } from "react";
 import { useMessages, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import useRichTextToPlainText from "../hooks/useRichTextToPlainText";
@@ -18,6 +18,7 @@ import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { useClipboardUiStore } from "@/stores/clipboardUiStore";
 import { getCachedId } from "@/lib/roomIdCache";
 import { useConnectionFeedback } from "@/hooks/useConnectionFeedback";
+import { buildSenderShareLink } from "@/lib/app/roomPresentation";
 import type { Messages } from "@/types/messages";
 
 const ClipboardApp = () => {
@@ -42,7 +43,7 @@ const ClipboardApp = () => {
   // Get state from store
   const {
     shareRoomId,
-    shareLink,
+    isSenderInRoom,
     // for auto-join on receiver side
     isReceiverInRoom,
   } = useFileTransferStore();
@@ -56,6 +57,18 @@ const ClipboardApp = () => {
   } = useClipboardUiStore();
 
   const richTextToPlainText = useRichTextToPlainText();
+  const shareLink = useMemo(() => {
+    if (typeof window === "undefined") {
+      return "";
+    }
+
+    return buildSenderShareLink({
+      roomId: shareRoomId,
+      isInRoom: isSenderInRoom,
+      origin: window.location.origin,
+      pathname: window.location.pathname,
+    });
+  }, [isSenderInRoom, shareRoomId]);
 
   // Initialize File Transfer Handler Hook
   const {

@@ -11,9 +11,6 @@ import {
 const INITIAL_STORE_STATE = {
   shareRoomId: "",
   initShareRoomId: "",
-  shareLink: "",
-  shareRoomStatusText: "",
-  retrieveRoomStatusText: "",
   shareConnectionState: "idle" as const,
   shareLifecycleState: "idle" as const,
   isSenderInRoom: false,
@@ -60,9 +57,6 @@ describe("shutdown matrix consistency", () => {
         expect(shutdownPolicy.keepSocketAlive).toBe(true);
       }
 
-      expect(storePolicy.clearShareLink).toBe(true);
-      expect(storePolicy.clearShareRoomStatusText).toBe(true);
-
       if (action === "cleanup") {
         expect(storePolicy.clearSenderDraftPayload).toBe(true);
         expect(storePolicy.clearSenderPublishedPayload).toBe(true);
@@ -89,7 +83,6 @@ describe("shutdown matrix consistency", () => {
       expect(storePolicy.clearRetrievedContent).toBe(true);
       expect(storePolicy.clearRetrievedFiles).toBe(true);
       expect(storePolicy.clearRetrievedFileMetas).toBe(true);
-      expect(storePolicy.clearRetrieveRoomStatusText).toBe(true);
       expect(storePolicy.clearSenderDisconnected).toBe(true);
     }
   });
@@ -113,8 +106,6 @@ describe("shutdown matrix consistency", () => {
 
   it("sender store reset clears only sender-owned state", () => {
     useFileTransferStore.setState({
-      shareLink: "https://example.test/share/room-a",
-      shareRoomStatusText: "sender-active",
       senderDraftContent: "draft",
       senderDraftFiles: [{ name: "draft.txt" } as any],
       senderPublishedContent: "published",
@@ -141,8 +132,6 @@ describe("shutdown matrix consistency", () => {
 
     const state = useFileTransferStore.getState();
 
-    expect(state.shareLink).toBe("");
-    expect(state.shareRoomStatusText).toBe("");
     expect(state.sendProgress).toEqual({});
     expect(state.senderDraftContent).toBe("draft");
     expect(state.senderDraftFiles).toEqual([{ name: "draft.txt" }]);
@@ -163,8 +152,6 @@ describe("shutdown matrix consistency", () => {
 
   it("receiver store reset clears only receiver-owned state", () => {
     useFileTransferStore.setState({
-      shareLink: "https://example.test/share/room-a",
-      shareRoomStatusText: "keep-sender",
       sendProgress: {
         sendFile: {
           peerA: { progress: 0.5, speed: 128 },
@@ -173,7 +160,6 @@ describe("shutdown matrix consistency", () => {
       retrievedContent: "clear-me",
       retrievedFiles: [{ name: "clear.txt" } as any],
       retrievedFileMetas: [{ name: "clear.txt", size: 2 } as any],
-      retrieveRoomStatusText: "receiver-active",
       receiveProgress: {
         receiveFile: {
           peerB: { progress: 0.25, speed: 64 },
@@ -190,12 +176,9 @@ describe("shutdown matrix consistency", () => {
     expect(state.retrievedContent).toBe("");
     expect(state.retrievedFiles).toEqual([]);
     expect(state.retrievedFileMetas).toEqual([]);
-    expect(state.retrieveRoomStatusText).toBe("");
     expect(state.retrievePeerCount).toBe(0);
     expect(state.receiveProgress).toEqual({});
     expect(state.senderDisconnected).toBe(false);
-    expect(state.shareLink).toBe("https://example.test/share/room-a");
-    expect(state.shareRoomStatusText).toBe("keep-sender");
     expect(state.sendProgress).toEqual({
       sendFile: {
         peerA: { progress: 0.5, speed: 128 },

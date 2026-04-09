@@ -30,7 +30,7 @@
   - `useRoomManager.ts`
     - 入房流程：`join_inProgress`（立即）、`join_slow`（3s，复用 `useOneShotSlowHint`）、`join_timeout`（15s）；join 成功/失败均清理定时器。
     - 等效成功信号：在 `joinResponse` 之前若收到 `ready/recipient-ready/offer`，提前判定入房成功并清理 3s/15s 定时器。
-    - 其他：房间状态文案、分享链接生成、离开房间、输入校验（750ms 防抖）。
+    - 其他：离开房间、输入校验（750ms 防抖）；房间状态文案与分享链接已改为 UI 侧按领域事实派生，不再回写 `fileTransferStore`。
   - `useConnectionFeedback.ts`
     - 状态归一化：优先读取 Store 中的 lifecycle state；`joining/waiting_for_peer/negotiating`→`negotiating`，`reconnecting`→`disconnected` phase（复用 `utils/rtcPhase.ts`）。
     - 协商慢提示：8s 定时器（`rtc_slow`），单次协商仅提示一次；若在后台到时则挂起，回到前台且仍协商时补发一次（复用 `useOneShotSlowHint`）。
@@ -39,9 +39,9 @@
 - i18n 文案与类型
   - 文案定义：`frontend/constants/messages/*.{ts}`（已补齐 zh/en/ja/es/de/fr/ko）。
   - 类型定义：`frontend/types/messages.ts`（`ClipboardApp` 下包含 `join_*` 与 `rtc_*` 文案键）。
-  - `frontend/components/ClipboardApp/SendTabPanel.tsx` — 发送面板，集成富文本编辑器、文件上传、房间 ID 生成（支持 4 位数字/UUID 两种模式）、分享链接生成。
+  - `frontend/components/ClipboardApp/SendTabPanel.tsx` — 发送面板，集成富文本编辑器、文件上传、房间 ID 生成（支持 4 位数字/UUID 两种模式）；顶部房间状态文案改为按 `isSenderInRoom/sharePeerCount` 现算，不再依赖 store 中的展示缓存。
     - 体验增强：点击“使用缓存ID”将立即触发加入房间（sender 侧），减少一次手动点击。
-  - `frontend/components/ClipboardApp/RetrieveTabPanel.tsx` — 接收面板，处理房间加入、文件接收、目录选择（File System Access API）、富文本内容显示。
+  - `frontend/components/ClipboardApp/RetrieveTabPanel.tsx` — 接收面板，处理房间加入、文件接收、目录选择（File System Access API）、富文本内容显示；顶部房间状态文案改为按 `isReceiverInRoom/retrievePeerCount` 现算。
   - `frontend/components/ClipboardApp/FileListDisplay.tsx` — 文件列表显示组件，支持文件/文件夹分组显示、进度跟踪、多浏览器下载策略（Chrome 自动下载/其他浏览器手动保存）、下载计数统计。
   - `frontend/components/ClipboardApp/FullScreenDropZone.tsx` — 全屏拖拽提示组件，文件拖拽时的视觉反馈。
   - `frontend/components/ClipboardApp/*` — 其他子组件：FileUploadHandler（文件上传处理）、ShareCard（二维码分享）、TransferProgress（进度条）、CachedIdActionButton（缓存 ID 操作）、FileTransferButton（文件传输按钮）。
@@ -76,6 +76,7 @@
     - `frontend/lib/webrtcSendMachine.ts` — 纯发送结果规则模块，封装 `SendResult`/`BroadcastResult` 构造、单 peer 重试决策与广播聚合；作为 async send 结果语义的最小单测护栏来源。
     - `frontend/lib/webrtcService.ts` — WebRTC 服务单例封装（跨路由常驻），管理 sender/receiver 实例，提供统一业务接口，处理连接状态变更、数据广播、文件请求和连接断开清理；现在维护权威连接 lifecycle state（`idle/joining/waiting_for_peer/negotiating/connected/reconnecting/leaving/failed`），并通过单一 `WebRTCServiceEvent` 事件表向上层发出连接/传输事件，不再直接写 Zustand，同时提供 `getSessionInfo()` / `getLifecycleState()` 这类只读查询接口给 hooks 和协调层使用。内部额外维护按 peer 的归一化连接状态快照，避免多 peer 混合态时被单个 `negotiating/disconnected` 事件错误覆盖整体 lifecycle。sender/receiver 离房与 cleanup 进一步收敛为显式 `shutdownSender()` / `shutdownReceiver()` 动作入口。
     - `frontend/lib/app/WebRTCStoreCoordinator.ts` — 薄应用编排层，订阅 `webrtcService` 的显式事件表并统一写入 `fileTransferStore`；负责把权威 lifecycle state 派生为兼容的 badge state，同时处理 sender DataChannel 打开后的自动广播与按 peer 清理进度。当前还承接 sender room 选择、sender/receiver domain reset、receiver 已接收结果清空，以及 sender payload 的 draft/published 更新、发布与广播等显式 command，作为 hooks/components 的领域状态写入口边界。
+    - `frontend/lib/app/roomPresentation.ts` — 房间展示层派生 helper，负责根据 sender/receiver 的领域事实计算顶部状态文案，并在 sender 已入房时生成分享链接；用于避免把本地化展示文案和链接缓存写回领域 store。
     - `frontend/lib/logger.ts` — 统一运行时日志入口，封装 `debug/info/warn/error` 与后端日志门控；开发/测试环境允许 console + backend，生产环境禁止后端调试日志上报。
   - 发送（sender）
     - `frontend/lib/fileSender.ts` — 发送端向后兼容包装层，内部使用 FileTransferOrchestrator 提供统一服务；新增 `shutdown(action)`，把 sender 清理语义从零散 `cleanup()` 收敛到显式动作。
@@ -110,7 +111,7 @@
 
 - `frontend/stores/` — 共享应用状态（Zustand）。
 
-  - `frontend/stores/fileTransferStore.ts` — 传输进度/状态的唯一事实来源（Zustand 单例，跨路由保持）；发送列表删除和进度主键以 `fileId` 为准，避免 UI 展示字段参与底层匹配。连接相关状态分为权威 lifecycle state 与兼容 badge state 两层。底层 lib 不再直接 import 此 store；sender/receiver 的领域状态写入已进一步收敛到 `frontend/lib/app/WebRTCStoreCoordinator.ts`，包括 room/reset/retrieved-result 与 sender payload 这类业务状态。sender payload 已显式拆成 `draft` 与 `published` 两层，并提供 `isSenderPayloadDirty` 派生位；纯 UI 输入态（标签页、接收端输入框、拖拽提示）已移出该 store。
+  - `frontend/stores/fileTransferStore.ts` — 传输进度/状态的唯一事实来源（Zustand 单例，跨路由保持）；发送列表删除和进度主键以 `fileId` 为准，避免 UI 展示字段参与底层匹配。连接相关状态分为权威 lifecycle state 与兼容 badge state 两层。底层 lib 不再直接 import 此 store；sender/receiver 的领域状态写入已进一步收敛到 `frontend/lib/app/WebRTCStoreCoordinator.ts`，包括 room/reset/retrieved-result 与 sender payload 这类业务状态。sender payload 已显式拆成 `draft` 与 `published` 两层，并提供 `isSenderPayloadDirty` 派生位；纯 UI 输入态（标签页、接收端输入框、拖拽提示）以及房间展示层信息（状态文案、分享链接）都已从该 store 移出。
   - `frontend/stores/clipboardUiStore.ts` — 纯 UI 输入态 store，承载 `activeTab`、`retrieveRoomIdInput`、`isDragging`，用于把页面交互状态与传输领域状态拆分开。
   - `frontend/stores/transferStoreReset.ts` — Store reset 动作策略与 transfer activity 计算工具；定义 sender/receiver reset 的清理边界，避免 sender reset 误清 receiver 侧进度。
 

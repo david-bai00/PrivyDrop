@@ -1,7 +1,8 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { getReceiverRoomStatusText } from "@/lib/app/roomPresentation";
 import {
   ReadClipboardButton,
   WriteClipboardButton,
@@ -56,12 +57,12 @@ export function RetrieveTabPanel({
   const { retrieveRoomIdInput, setRetrieveRoomIdInput } = useClipboardUiStore();
   // Get the status from the store
   const {
-    retrieveRoomStatusText,
     retrievedContent,
     retrievedFileMetas,
     receiveProgress,
     isAnyFileTransferring,
     isReceiverInRoom,
+    retrievePeerCount,
   } = useFileTransferStore();
 
   const onLocationPick = useCallback(async (): Promise<boolean> => {
@@ -98,13 +99,22 @@ export function RetrieveTabPanel({
     [requestFile, requestFolder]
   );
 
+  const retrieveRoomStatusText = useMemo(
+    () =>
+      getReceiverRoomStatusText({
+        isInRoom: isReceiverInRoom,
+        peerCount: retrievePeerCount,
+        receiverCanAcceptLabel: tStatus("receiverCanAccept"),
+        onlyOneLabel: tStatus("onlyOne"),
+        connectedLabel: tStatus("connected"),
+      }),
+    [isReceiverInRoom, retrievePeerCount, tStatus]
+  );
+
   return (
     <div id="retrieve-panel" role="tabpanel" aria-labelledby="retrieve-tab">
       <div className="mb-3 text-sm text-muted-foreground">
-        {retrieveRoomStatusText ||
-          (isReceiverInRoom
-            ? tStatus("connected")
-            : tStatus("receiverCanAccept"))}
+        {retrieveRoomStatusText}
       </div>
       <div className="space-y-3 mb-4">
         {/* Room ID input section */}

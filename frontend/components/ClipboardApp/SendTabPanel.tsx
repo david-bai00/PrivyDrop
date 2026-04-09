@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import CachedIdActionButton from "@/components/ClipboardApp/CachedIdActionButton";
+import { getSenderRoomStatusText } from "@/lib/app/roomPresentation";
 import { setSenderRoomSelection } from "@/lib/app/WebRTCStoreCoordinator";
 import {
   ReadClipboardButton,
@@ -70,10 +71,10 @@ export function SendTabPanel({
   const {
     senderDraftContent: shareContent,
     senderDraftFiles: sendFiles,
-    shareRoomStatusText,
     sendProgress,
     isAnyFileTransferring,
     isSenderInRoom,
+    sharePeerCount,
   } = useFileTransferStore();
   // Local state for immediate response in the input field
   const [inputFieldValue, setInputFieldValue] = useState<string>(
@@ -133,13 +134,22 @@ export function SendTabPanel({
     setIsSimpleIdMode(!isSimpleIdMode);
   }, [isSimpleIdMode, processRoomIdInput, setInputFieldValue]);
 
+  const shareRoomStatusText = useMemo(
+    () =>
+      getSenderRoomStatusText({
+        isInRoom: isSenderInRoom,
+        peerCount: sharePeerCount,
+        roomEmptyLabel: tStatus("roomEmpty"),
+        onlyOneLabel: tStatus("onlyOne"),
+        peopleCountLabel: tStatus("peopleCount"),
+      }),
+    [isSenderInRoom, sharePeerCount, tStatus]
+  );
+
   return (
     <div id="send-panel" role="tabpanel" aria-labelledby="send-tab">
       <div className="mb-3 text-sm text-muted-foreground">
-        {shareRoomStatusText ||
-          (isSenderInRoom
-            ? tStatus("onlyOne")
-            : tStatus("roomEmpty"))}
+        {shareRoomStatusText}
       </div>
       <RichTextEditor value={shareContent} onChange={updateShareContent} />
       <div className="flex flex-col sm:flex-row gap-2 my-3">

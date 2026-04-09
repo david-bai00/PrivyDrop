@@ -10,8 +10,6 @@ describe("store reset policies", () => {
   it("keeps sender reset behavior scoped to sender state", () => {
     expect(getSenderStoreResetPolicy("leave_room")).toEqual({
       action: "leave_room",
-      clearShareLink: true,
-      clearShareRoomStatusText: true,
       clearSendProgress: true,
       clearSenderDraftPayload: false,
       clearSenderPublishedPayload: false,
@@ -19,8 +17,6 @@ describe("store reset policies", () => {
 
     expect(getSenderStoreResetPolicy("reset_app")).toEqual({
       action: "reset_app",
-      clearShareLink: true,
-      clearShareRoomStatusText: true,
       clearSendProgress: true,
       clearSenderDraftPayload: false,
       clearSenderPublishedPayload: false,
@@ -28,8 +24,6 @@ describe("store reset policies", () => {
 
     expect(getSenderStoreResetPolicy("cleanup")).toEqual({
       action: "cleanup",
-      clearShareLink: true,
-      clearShareRoomStatusText: true,
       clearSendProgress: true,
       clearSenderDraftPayload: true,
       clearSenderPublishedPayload: true,
@@ -42,7 +36,6 @@ describe("store reset policies", () => {
       clearRetrievedContent: true,
       clearRetrievedFiles: true,
       clearRetrievedFileMetas: true,
-      clearRetrieveRoomStatusText: true,
       clearReceiveProgress: true,
       clearSenderDisconnected: true,
     });
@@ -52,7 +45,6 @@ describe("store reset policies", () => {
       clearRetrievedContent: true,
       clearRetrievedFiles: true,
       clearRetrievedFileMetas: true,
-      clearRetrieveRoomStatusText: true,
       clearReceiveProgress: true,
       clearSenderDisconnected: true,
     });

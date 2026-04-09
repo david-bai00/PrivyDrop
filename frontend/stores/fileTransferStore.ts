@@ -17,9 +17,6 @@ interface FileTransferState {
   // Room-related state
   shareRoomId: string;
   initShareRoomId: string;
-  shareLink: string;
-  shareRoomStatusText: string;
-  retrieveRoomStatusText: string;
 
   // WebRTC connection state - Sender
   shareConnectionState: WebRTCConnectionBadgeState;
@@ -53,9 +50,6 @@ interface FileTransferState {
   // Room-related actions
   setShareRoomId: (id: string) => void;
   setInitShareRoomId: (id: string) => void;
-  setShareLink: (link: string) => void;
-  setShareRoomStatusText: (text: string) => void;
-  setRetrieveRoomStatusText: (text: string) => void;
 
   // WebRTC connection-related actions
   setShareConnectionState: (state: WebRTCConnectionBadgeState) => void;
@@ -107,9 +101,6 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
   // Initial state
   shareRoomId: "",
   initShareRoomId: "",
-  shareLink: "",
-  shareRoomStatusText: "",
-  retrieveRoomStatusText: "",
   shareConnectionState: "idle",
   shareLifecycleState: "idle",
   isSenderInRoom: false,
@@ -134,9 +125,6 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
   // Actions implementation
   setShareRoomId: (id) => set({ shareRoomId: id }),
   setInitShareRoomId: (id) => set({ initShareRoomId: id }),
-  setShareLink: (link) => set({ shareLink: link }),
-  setShareRoomStatusText: (text) => set({ shareRoomStatusText: text }),
-  setRetrieveRoomStatusText: (text) => set({ retrieveRoomStatusText: text }),
 
   // WebRTC connection-related actions
   setShareConnectionState: (state) => set({ shareConnectionState: state }),
@@ -291,9 +279,6 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
           ? false
           : state.senderDisconnected,
         receiveProgress: nextReceiveProgress,
-        retrieveRoomStatusText: policy.clearRetrieveRoomStatusText
-          ? ""
-          : state.retrieveRoomStatusText,
         isAnyFileTransferring: hasActiveTransferProgress(
           state.sendProgress,
           nextReceiveProgress
@@ -319,10 +304,6 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
         : state.senderPublishedFiles;
 
       return {
-        shareLink: policy.clearShareLink ? "" : state.shareLink,
-        shareRoomStatusText: policy.clearShareRoomStatusText
-          ? ""
-          : state.shareRoomStatusText,
         senderDraftContent: nextSenderDraftContent,
         senderDraftFiles: nextSenderDraftFiles,
         senderPublishedContent: nextSenderPublishedContent,

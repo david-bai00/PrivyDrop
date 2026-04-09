@@ -73,7 +73,7 @@ Core Services (webrtcService) + Stores (clipboardUiStore + fileTransferStore)
 - 房间 ID 双模式生成：4 位数字（后端 API 生成）和 UUID（前端 crypto API）
 - 富文本编辑器集成（动态导入，SSR 禁用）
 - 文件上传处理和文件列表管理
-- 分享链接生成与二维码显示
+- 分享链接与顶部状态文案由 UI 按当前 sender 房间事实派生，二维码仅在 sender 已入房时显示
 
 **RetrieveTabPanel 接收面板**：
 
