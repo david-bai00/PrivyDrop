@@ -13,10 +13,11 @@ const FORBIDDEN_PATTERNS = [
   "setRetrievedFileMetas",
   "setShareRoomId",
   "setInitShareRoomId",
-  "setShareContent",
-  "setSendFiles",
-  "addSendFiles",
-  "removeSendFile",
+  "setSenderDraftContent",
+  "setSenderDraftFiles",
+  "addSenderDraftFiles",
+  "removeSenderDraftFile",
+  "publishSenderDraftPayload",
 ];
 
 function listSourceFiles(root: string): string[] {
@@ -50,7 +51,14 @@ describe("domain store writes stay behind the app coordinator boundary", () => {
         const content = fs.readFileSync(filePath, "utf8");
 
         for (const pattern of FORBIDDEN_PATTERNS) {
-          if (content.includes(pattern)) {
+          const destructuredFromStore = new RegExp(
+            `\\{[^}]*\\b${pattern}\\b[^}]*\\}\\s*=\\s*useFileTransferStore\\(`
+          ).test(content);
+          const calledFromStore = new RegExp(
+            `useFileTransferStore(?:\\.getState\\(\\))?\\.[^(\\n]*\\b${pattern}\\b`
+          ).test(content);
+
+          if (destructuredFromStore || calledFromStore) {
             violations.push(`${path.relative(FRONTEND_ROOT, filePath)}:${pattern}`);
           }
         }

@@ -13,6 +13,8 @@ describe("store reset policies", () => {
       clearShareLink: true,
       clearShareRoomStatusText: true,
       clearSendProgress: true,
+      clearSenderDraftPayload: false,
+      clearSenderPublishedPayload: false,
     });
 
     expect(getSenderStoreResetPolicy("reset_app")).toEqual({
@@ -20,6 +22,8 @@ describe("store reset policies", () => {
       clearShareLink: true,
       clearShareRoomStatusText: true,
       clearSendProgress: true,
+      clearSenderDraftPayload: false,
+      clearSenderPublishedPayload: false,
     });
 
     expect(getSenderStoreResetPolicy("cleanup")).toEqual({
@@ -27,6 +31,8 @@ describe("store reset policies", () => {
       clearShareLink: true,
       clearShareRoomStatusText: true,
       clearSendProgress: true,
+      clearSenderDraftPayload: true,
+      clearSenderPublishedPayload: true,
     });
   });
 

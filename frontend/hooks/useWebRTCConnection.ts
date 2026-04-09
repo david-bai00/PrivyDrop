@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import {
-  broadcastCurrentSenderPayload,
+  publishAndBroadcastSenderDraft,
   ensureWebRTCStoreCoordinator,
 } from "@/lib/app/WebRTCStoreCoordinator";
 import { webrtcService } from "@/lib/webrtcService";
@@ -58,7 +58,7 @@ export function useWebRTCConnection({}: UseWebRTCConnectionProps) {
     receiveProgress,
 
     // Methods exposed directly from service
-    broadcastDataToAllPeers: broadcastCurrentSenderPayload,
+    broadcastDataToAllPeers: publishAndBroadcastSenderDraft,
     requestFile: webrtcService.requestFile.bind(webrtcService),
     requestFolder: webrtcService.requestFolder.bind(webrtcService),
     setReceiverDirectoryHandle:

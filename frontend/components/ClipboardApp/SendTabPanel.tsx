@@ -68,8 +68,8 @@ export function SendTabPanel({
   const tCommon = useTranslations("text.common");
   // Get the status from the store
   const {
-    shareContent,
-    sendFiles,
+    senderDraftContent: shareContent,
+    senderDraftFiles: sendFiles,
     shareRoomStatusText,
     sendProgress,
     isAnyFileTransferring,

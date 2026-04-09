@@ -2,10 +2,10 @@ import { useCallback } from "react";
 import { CustomFile, FileMeta } from "@/types/webrtc";
 import JSZip from "jszip";
 import {
-  addSenderFiles,
+  addSenderDraftFiles,
   clearReceiverRetrievedArtifacts,
-  removeSenderFile,
-  setSenderShareContent,
+  removeSenderDraftFile,
+  setSenderDraftContent,
 } from "@/lib/app/WebRTCStoreCoordinator";
 import { downloadAs, generateFileId } from "@/lib/fileUtils";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
@@ -29,8 +29,8 @@ export function useFileTransferHandler({
 }: UseFileTransferHandlerProps) {
   // Get state from store
   const {
-    shareContent,
-    sendFiles,
+    senderDraftContent,
+    senderDraftFiles,
     retrievedContent,
     retrievedFiles,
     retrievedFileMetas,
@@ -38,14 +38,14 @@ export function useFileTransferHandler({
 
   const updateShareContent = useCallback(
     (content: string) => {
-      setSenderShareContent(content);
+      setSenderDraftContent(content);
     },
     []
   );
 
   const addFilesToSend = useCallback(
     (pickedFiles: CustomFile[]) => {
-      const { duplicateFiles } = addSenderFiles(pickedFiles);
+      const { duplicateFiles } = addSenderDraftFiles(pickedFiles);
 
       if (duplicateFiles.length > 0) {
         putMessageInMs(text.fileExist, true);
@@ -56,7 +56,7 @@ export function useFileTransferHandler({
 
   const removeFileToSend = useCallback(
     (metaToRemove: FileMeta) => {
-      removeSenderFile(metaToRemove);
+      removeSenderDraftFile(metaToRemove);
     },
     []
   );
@@ -159,8 +159,8 @@ export function useFileTransferHandler({
   }, []);
 
   return {
-    shareContent,
-    sendFiles,
+    shareContent: senderDraftContent,
+    sendFiles: senderDraftFiles,
     retrievedContent,
     retrievedFiles,
     retrievedFileMetas,

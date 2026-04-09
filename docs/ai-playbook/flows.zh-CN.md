@@ -231,7 +231,7 @@ Stores (clipboardUiStore + fileTransferStore)
   - 初始化 `WebRTCStoreCoordinator`，确保底层连接/传输事件能统一写入 Store
   - 暴露 webrtcService 方法（broadcastDataToAllPeers、requestFile、requestFolder）
   - 重置接口改为显式动作：sender/receiver 分别调用 `shutdownSender("leave_room")` / `shutdownReceiver("leave_room")`
-- 广播入口已收敛到 `WebRTCStoreCoordinator.broadcastCurrentSenderPayload()`，hook 不再自己从 Store 读取 `shareContent/sendFiles` 组装发送参数
+- 广播入口已收敛到 `WebRTCStoreCoordinator.publishAndBroadcastSenderDraft()`；hook 不再自己从 Store 读取 sender payload 组装发送参数，`Sync` UI 不变，但底层语义已明确为“发布当前 draft 并广播 published 快照”
 - 连接反馈优先读取 Store 中的 lifecycle state，再映射到 UI phase；`reconnecting` 文案不再依赖旧的 `disconnected` 近似态
 - 提供连接重置方法（resetSenderConnection、resetReceiverConnection）
 - 不再暴露 `sender/receiver` 内部实例，减少 hooks/组件对底层连接对象的耦合
@@ -242,7 +242,7 @@ Stores (clipboardUiStore + fileTransferStore)
 - 下载功能：handleDownloadFile（支持文件夹压缩下载）
 - 关键修复：使用 `useFileTransferStore.getState()` 获取最新状态，避免闭包问题
 - 重试机制：最大 3 次重试，50ms 间隔，详细错误日志
-- sender payload 的写入口（`shareContent/sendFiles`）已改走 `WebRTCStoreCoordinator` command；hook 只保留 UI 适配与提示，不再直接调用底层 store action
+- sender payload 的写入口已改走 `WebRTCStoreCoordinator` command；hook 只保留 UI 适配与提示，不再直接调用底层 store action。面板继续编辑 draft，但不会把未发布修改直接当成自动广播的权威内容
 
 **useRoomManager**（房间生命周期管理）：
 
@@ -250,7 +250,7 @@ Stores (clipboardUiStore + fileTransferStore)
 - 离开保护：传输中确认提示（isAnyFileTransferring 检查）
 - 状态文本：动态更新房间状态文本
 - 链接生成：自动生成分享链接
-- 分享广播：统一走 `WebRTCStoreCoordinator.broadcastCurrentSenderPayload()`，hook 不再直接拼装 sender payload
+- 分享广播：统一走 `WebRTCStoreCoordinator.publishAndBroadcastSenderDraft()`，hook 不再直接拼装 sender payload；`Sync` 仍是原入口，但内部改为“先 publish draft，再广播 published”
 - 发送/接收标签页等纯 UI 判断改读 `clipboardUiStore`，不再混在传输领域 store
 - 离房前的 roomId/peerId 读取改为走 `webrtcService.getSessionInfo()`，不再直接访问 `sender/receiver` 实例字段
 
@@ -258,9 +258,9 @@ Stores (clipboardUiStore + fileTransferStore)
 
 - 订阅 `webrtcService` 的显式 `WebRTCServiceEvent` 事件表，统一写 `fileTransferStore`
 - 负责连接 lifecycle state、兼容 badge state、peer 数、发送/接收进度、接收内容和接收文件列表的 store 同步
-- 承接 sender room 选择、sender/receiver reset、receiver 已接收结果清空，以及 sender payload（`shareContent/sendFiles`）更新与广播等显式 command
+- 承接 sender room 选择、sender/receiver reset、receiver 已接收结果清空，以及 sender payload draft/published 更新与广播等显式 command
 - 不负责标签页、拖拽态、接收端输入框这类纯 UI 输入态；这类状态单独放在 `clipboardUiStore`
-- 在 sender DataChannel 打开后，通过统一 command 从 Store 读取当前内容并触发自动广播
+- 在 sender DataChannel 打开后，通过统一 command 自动广播最近一次 published 快照，而不是用户尚未 `Sync` 的 draft
 - 在 peer 断开时，按方向清理对应 peer 的进度记录并重新计算 `isAnyFileTransferring`
 
 **usePageSetup**（页面初始化）：

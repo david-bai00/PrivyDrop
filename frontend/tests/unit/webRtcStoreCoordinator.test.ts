@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  addSenderFiles,
-  broadcastCurrentSenderPayload,
+  addSenderDraftFiles,
+  broadcastPublishedSenderPayload,
   clearReceiverRetrievedArtifacts,
-  removeSenderFile,
+  publishAndBroadcastSenderDraft,
+  publishSenderDraftPayload,
+  removeSenderDraftFile,
   resetReceiverDomainState,
   resetSenderDomainState,
-  setSenderShareContent,
+  setSenderDraftContent,
   setSenderRoomSelection,
 } from "@/lib/app/WebRTCStoreCoordinator";
 import { webrtcService } from "@/lib/webrtcService";
@@ -28,8 +30,11 @@ const INITIAL_STORE_STATE = {
   isReceiverInRoom: false,
   retrievePeerCount: 0,
   senderDisconnected: false,
-  shareContent: "",
-  sendFiles: [],
+  senderDraftContent: "",
+  senderDraftFiles: [],
+  senderPublishedContent: "",
+  senderPublishedFiles: [],
+  isSenderPayloadDirty: false,
   retrievedContent: "",
   retrievedFiles: [],
   retrievedFileMetas: [],
@@ -80,15 +85,23 @@ describe("WebRTCStoreCoordinator commands", () => {
       lastModified: 2,
     } as any;
 
-    setSenderShareContent("hello world");
-    const addResult = addSenderFiles([fileA, duplicateFileA, fileB]);
+    setSenderDraftContent("hello world");
+    const addResult = addSenderDraftFiles([fileA, duplicateFileA, fileB]);
 
     expect(addResult.addedFiles).toEqual([fileA, fileB]);
     expect(addResult.duplicateFiles).toEqual([duplicateFileA]);
-    expect(useFileTransferStore.getState().shareContent).toBe("hello world");
-    expect(useFileTransferStore.getState().sendFiles).toEqual([fileA, fileB]);
+    expect(useFileTransferStore.getState().senderDraftContent).toBe(
+      "hello world"
+    );
+    expect(useFileTransferStore.getState().senderDraftFiles).toEqual([
+      fileA,
+      fileB,
+    ]);
+    expect(useFileTransferStore.getState().senderPublishedContent).toBe("");
+    expect(useFileTransferStore.getState().senderPublishedFiles).toEqual([]);
+    expect(useFileTransferStore.getState().isSenderPayloadDirty).toBe(true);
 
-    removeSenderFile({
+    removeSenderDraftFile({
       name: "a.txt",
       fullName: "a.txt",
       folderName: "",
@@ -97,7 +110,7 @@ describe("WebRTCStoreCoordinator commands", () => {
       fileId: "a.txt-1-text/plain-1",
     });
 
-    expect(useFileTransferStore.getState().sendFiles).toEqual([fileB]);
+    expect(useFileTransferStore.getState().senderDraftFiles).toEqual([fileB]);
   });
 
   it("resets sender-owned domain state through the coordinator boundary", () => {
@@ -171,10 +184,10 @@ describe("WebRTCStoreCoordinator commands", () => {
     expect(state.isAnyFileTransferring).toBe(true);
   });
 
-  it("broadcasts the current sender payload through the coordinator boundary", async () => {
+  it("publishes sender draft payload before broadcasting it", async () => {
     useFileTransferStore.setState({
-      shareContent: "payload",
-      sendFiles: [
+      senderDraftContent: "draft-payload",
+      senderDraftFiles: [
         {
           name: "payload.txt",
           fullName: "payload.txt",
@@ -184,17 +197,91 @@ describe("WebRTCStoreCoordinator commands", () => {
           lastModified: 7,
         } as any,
       ],
+      senderPublishedContent: "old-published",
+      senderPublishedFiles: [],
+      isSenderPayloadDirty: true,
     });
 
     const broadcastSpy = vi
       .spyOn(webrtcService, "broadcastDataToAllPeers")
       .mockResolvedValue(true);
 
-    await expect(broadcastCurrentSenderPayload()).resolves.toBe(true);
+    await expect(publishAndBroadcastSenderDraft()).resolves.toBe(true);
 
     expect(broadcastSpy).toHaveBeenCalledWith(
-      "payload",
-      useFileTransferStore.getState().sendFiles
+      "draft-payload",
+      useFileTransferStore.getState().senderPublishedFiles
     );
+    expect(useFileTransferStore.getState().senderPublishedContent).toBe(
+      "draft-payload"
+    );
+    expect(useFileTransferStore.getState().senderPublishedFiles).toEqual(
+      useFileTransferStore.getState().senderDraftFiles
+    );
+    expect(useFileTransferStore.getState().isSenderPayloadDirty).toBe(false);
+  });
+
+  it("broadcasts only the published sender payload snapshot", async () => {
+    const publishedFile = {
+      name: "published.txt",
+      fullName: "published.txt",
+      folderName: "",
+      size: 9,
+      type: "text/plain",
+      lastModified: 9,
+    } as any;
+    const draftFile = {
+      name: "draft.txt",
+      fullName: "draft.txt",
+      folderName: "",
+      size: 5,
+      type: "text/plain",
+      lastModified: 5,
+    } as any;
+
+    useFileTransferStore.setState({
+      senderDraftContent: "draft-only-change",
+      senderDraftFiles: [draftFile],
+      senderPublishedContent: "published-payload",
+      senderPublishedFiles: [publishedFile],
+      isSenderPayloadDirty: true,
+    });
+
+    const broadcastSpy = vi
+      .spyOn(webrtcService, "broadcastDataToAllPeers")
+      .mockResolvedValue(true);
+
+    await expect(broadcastPublishedSenderPayload()).resolves.toBe(true);
+
+    expect(broadcastSpy).toHaveBeenCalledWith("published-payload", [
+      publishedFile,
+    ]);
+  });
+
+  it("marks sender payload as clean after publishing the current draft", () => {
+    const draftFile = {
+      name: "draft.txt",
+      fullName: "draft.txt",
+      folderName: "",
+      size: 5,
+      type: "text/plain",
+      lastModified: 5,
+    } as any;
+
+    useFileTransferStore.setState({
+      senderDraftContent: "draft",
+      senderDraftFiles: [draftFile],
+      senderPublishedContent: "",
+      senderPublishedFiles: [],
+      isSenderPayloadDirty: true,
+    });
+
+    publishSenderDraftPayload();
+
+    expect(useFileTransferStore.getState().senderPublishedContent).toBe("draft");
+    expect(useFileTransferStore.getState().senderPublishedFiles).toEqual([
+      draftFile,
+    ]);
+    expect(useFileTransferStore.getState().isSenderPayloadDirty).toBe(false);
   });
 });

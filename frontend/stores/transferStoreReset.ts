@@ -10,6 +10,8 @@ export interface SenderStoreResetPolicy {
   clearShareLink: boolean;
   clearShareRoomStatusText: boolean;
   clearSendProgress: boolean;
+  clearSenderDraftPayload: boolean;
+  clearSenderPublishedPayload: boolean;
 }
 
 export interface ReceiverStoreResetPolicy {
@@ -31,18 +33,24 @@ const SENDER_STORE_RESET_POLICIES: Record<
     clearShareLink: true,
     clearShareRoomStatusText: true,
     clearSendProgress: true,
+    clearSenderDraftPayload: false,
+    clearSenderPublishedPayload: false,
   },
   reset_app: {
     action: "reset_app",
     clearShareLink: true,
     clearShareRoomStatusText: true,
     clearSendProgress: true,
+    clearSenderDraftPayload: false,
+    clearSenderPublishedPayload: false,
   },
   cleanup: {
     action: "cleanup",
     clearShareLink: true,
     clearShareRoomStatusText: true,
     clearSendProgress: true,
+    clearSenderDraftPayload: true,
+    clearSenderPublishedPayload: true,
   },
 };
 

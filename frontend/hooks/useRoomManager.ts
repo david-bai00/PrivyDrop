@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import {
-  broadcastCurrentSenderPayload,
   ensureWebRTCStoreCoordinator,
+  publishAndBroadcastSenderDraft,
   resetReceiverDomainState,
   resetSenderDomainState,
   setSenderRoomSelection,
@@ -183,7 +183,7 @@ export function useRoomManager({
       if (sharePeerCount === 0) {
         putMessageInMs(text.messages.waiting, true);
       } else {
-        await broadcastCurrentSenderPayload();
+        await publishAndBroadcastSenderDraft();
       }
 
       // Update share link

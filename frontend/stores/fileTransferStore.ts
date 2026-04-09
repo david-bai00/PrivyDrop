@@ -35,8 +35,11 @@ interface FileTransferState {
   senderDisconnected: boolean;
 
   // File transfer state
-  shareContent: string;
-  sendFiles: CustomFile[];
+  senderDraftContent: string;
+  senderDraftFiles: CustomFile[];
+  senderPublishedContent: string;
+  senderPublishedFiles: CustomFile[];
+  isSenderPayloadDirty: boolean;
   retrievedContent: string;
   retrievedFiles: CustomFile[];
   retrievedFileMetas: FileMeta[];
@@ -66,10 +69,11 @@ interface FileTransferState {
   setSenderDisconnected: (disconnected: boolean) => void;
 
   // File transfer-related actions
-  setShareContent: (content: string) => void;
-  setSendFiles: (files: CustomFile[]) => void;
-  addSendFiles: (files: CustomFile[]) => void;
-  removeSendFile: (meta: FileMeta) => void;
+  setSenderDraftContent: (content: string) => void;
+  setSenderDraftFiles: (files: CustomFile[]) => void;
+  addSenderDraftFiles: (files: CustomFile[]) => void;
+  removeSenderDraftFile: (meta: FileMeta) => void;
+  publishSenderDraftPayload: () => void;
   setRetrievedContent: (content: string) => void;
   setRetrievedFiles: (files: CustomFile[]) => void;
   setRetrievedFileMetas: (metas: FileMeta[]) => void;
@@ -115,8 +119,11 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
   isReceiverInRoom: false,
   retrievePeerCount: 0,
   senderDisconnected: false,
-  shareContent: "",
-  sendFiles: [],
+  senderDraftContent: "",
+  senderDraftFiles: [],
+  senderPublishedContent: "",
+  senderPublishedFiles: [],
+  isSenderPayloadDirty: false,
   retrievedContent: "",
   retrievedFiles: [],
   retrievedFileMetas: [],
@@ -144,26 +151,75 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
   setSenderDisconnected: (disconnected) =>
     set({ senderDisconnected: disconnected }),
 
-  setShareContent: (content) => set({ shareContent: content }),
-  setSendFiles: (files) => set({ sendFiles: files }),
-  addSendFiles: (files) =>
-    set((state) => ({ sendFiles: [...state.sendFiles, ...files] })),
-  removeSendFile: (meta) =>
+  setSenderDraftContent: (content) =>
     set((state) => {
-      if (meta.folderName && meta.folderName !== "") {
-        return {
-          sendFiles: state.sendFiles.filter(
-            (file) => file.folderName !== meta.folderName
-          ),
-        };
-      } else {
-        return {
-          sendFiles: state.sendFiles.filter(
-            (file) => generateFileId(file) !== meta.fileId
-          ),
-        };
-      }
+      const nextDraftContent = content;
+
+      return {
+        senderDraftContent: nextDraftContent,
+        isSenderPayloadDirty: hasDirtySenderPayload(
+          nextDraftContent,
+          state.senderDraftFiles,
+          state.senderPublishedContent,
+          state.senderPublishedFiles
+        ),
+      };
     }),
+  setSenderDraftFiles: (files) =>
+    set((state) => {
+      const nextDraftFiles = files;
+
+      return {
+        senderDraftFiles: nextDraftFiles,
+        isSenderPayloadDirty: hasDirtySenderPayload(
+          state.senderDraftContent,
+          nextDraftFiles,
+          state.senderPublishedContent,
+          state.senderPublishedFiles
+        ),
+      };
+    }),
+  addSenderDraftFiles: (files) =>
+    set((state) => {
+      const nextDraftFiles = [...state.senderDraftFiles, ...files];
+
+      return {
+        senderDraftFiles: nextDraftFiles,
+        isSenderPayloadDirty: hasDirtySenderPayload(
+          state.senderDraftContent,
+          nextDraftFiles,
+          state.senderPublishedContent,
+          state.senderPublishedFiles
+        ),
+      };
+    }),
+  removeSenderDraftFile: (meta) =>
+    set((state) => {
+      const nextDraftFiles =
+        meta.folderName && meta.folderName !== ""
+          ? state.senderDraftFiles.filter(
+              (file) => file.folderName !== meta.folderName
+            )
+          : state.senderDraftFiles.filter(
+              (file) => generateFileId(file) !== meta.fileId
+            );
+
+      return {
+        senderDraftFiles: nextDraftFiles,
+        isSenderPayloadDirty: hasDirtySenderPayload(
+          state.senderDraftContent,
+          nextDraftFiles,
+          state.senderPublishedContent,
+          state.senderPublishedFiles
+        ),
+      };
+    }),
+  publishSenderDraftPayload: () =>
+    set((state) => ({
+      senderPublishedContent: state.senderDraftContent,
+      senderPublishedFiles: state.senderDraftFiles,
+      isSenderPayloadDirty: false,
+    })),
   setRetrievedContent: (content) => set({ retrievedContent: content }),
   setRetrievedFiles: (files) => set({ retrievedFiles: files }),
   setRetrievedFileMetas: (metas) => set({ retrievedFileMetas: metas }),
@@ -249,12 +305,34 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
     set((state) => {
       const policy = getSenderStoreResetPolicy(action);
       const nextSendProgress = policy.clearSendProgress ? {} : state.sendProgress;
+      const nextSenderDraftContent = policy.clearSenderDraftPayload
+        ? ""
+        : state.senderDraftContent;
+      const nextSenderDraftFiles = policy.clearSenderDraftPayload
+        ? []
+        : state.senderDraftFiles;
+      const nextSenderPublishedContent = policy.clearSenderPublishedPayload
+        ? ""
+        : state.senderPublishedContent;
+      const nextSenderPublishedFiles = policy.clearSenderPublishedPayload
+        ? []
+        : state.senderPublishedFiles;
 
       return {
         shareLink: policy.clearShareLink ? "" : state.shareLink,
         shareRoomStatusText: policy.clearShareRoomStatusText
           ? ""
           : state.shareRoomStatusText,
+        senderDraftContent: nextSenderDraftContent,
+        senderDraftFiles: nextSenderDraftFiles,
+        senderPublishedContent: nextSenderPublishedContent,
+        senderPublishedFiles: nextSenderPublishedFiles,
+        isSenderPayloadDirty: hasDirtySenderPayload(
+          nextSenderDraftContent,
+          nextSenderDraftFiles,
+          nextSenderPublishedContent,
+          nextSenderPublishedFiles
+        ),
         sendProgress: nextSendProgress,
         isAnyFileTransferring: hasActiveTransferProgress(
           nextSendProgress,
@@ -268,3 +346,26 @@ export const useFileTransferStore = create<FileTransferState>()((set, get) => ({
   resetSenderApp: () =>
     get().applySenderStoreReset("reset_app"),
 }));
+
+function hasDirtySenderPayload(
+  draftContent: string,
+  draftFiles: CustomFile[],
+  publishedContent: string,
+  publishedFiles: CustomFile[]
+): boolean {
+  if (draftContent !== publishedContent) {
+    return true;
+  }
+
+  if (draftFiles.length !== publishedFiles.length) {
+    return true;
+  }
+
+  return draftFiles.some((file, index) => {
+    const publishedFile = publishedFiles[index];
+
+    return (
+      !publishedFile || generateFileId(file) !== generateFileId(publishedFile)
+    );
+  });
+}

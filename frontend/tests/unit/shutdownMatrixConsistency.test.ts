@@ -23,8 +23,11 @@ const INITIAL_STORE_STATE = {
   isReceiverInRoom: false,
   retrievePeerCount: 0,
   senderDisconnected: false,
-  shareContent: "",
-  sendFiles: [],
+  senderDraftContent: "",
+  senderDraftFiles: [],
+  senderPublishedContent: "",
+  senderPublishedFiles: [],
+  isSenderPayloadDirty: false,
   retrievedContent: "",
   retrievedFiles: [],
   retrievedFileMetas: [],
@@ -59,6 +62,14 @@ describe("shutdown matrix consistency", () => {
 
       expect(storePolicy.clearShareLink).toBe(true);
       expect(storePolicy.clearShareRoomStatusText).toBe(true);
+
+      if (action === "cleanup") {
+        expect(storePolicy.clearSenderDraftPayload).toBe(true);
+        expect(storePolicy.clearSenderPublishedPayload).toBe(true);
+      } else {
+        expect(storePolicy.clearSenderDraftPayload).toBe(false);
+        expect(storePolicy.clearSenderPublishedPayload).toBe(false);
+      }
     }
   });
 
@@ -104,6 +115,11 @@ describe("shutdown matrix consistency", () => {
     useFileTransferStore.setState({
       shareLink: "https://example.test/share/room-a",
       shareRoomStatusText: "sender-active",
+      senderDraftContent: "draft",
+      senderDraftFiles: [{ name: "draft.txt" } as any],
+      senderPublishedContent: "published",
+      senderPublishedFiles: [{ name: "published.txt" } as any],
+      isSenderPayloadDirty: true,
       sendProgress: {
         sendFile: {
           peerA: { progress: 0.5, speed: 128 },
@@ -128,6 +144,11 @@ describe("shutdown matrix consistency", () => {
     expect(state.shareLink).toBe("");
     expect(state.shareRoomStatusText).toBe("");
     expect(state.sendProgress).toEqual({});
+    expect(state.senderDraftContent).toBe("draft");
+    expect(state.senderDraftFiles).toEqual([{ name: "draft.txt" }]);
+    expect(state.senderPublishedContent).toBe("published");
+    expect(state.senderPublishedFiles).toEqual([{ name: "published.txt" }]);
+    expect(state.isSenderPayloadDirty).toBe(true);
     expect(state.retrievedContent).toBe("keep-me");
     expect(state.retrievedFiles).toEqual([{ name: "kept.txt" }]);
     expect(state.retrievedFileMetas).toEqual([{ name: "kept.txt", size: 1 }]);

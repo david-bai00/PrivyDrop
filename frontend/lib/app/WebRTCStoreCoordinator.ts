@@ -99,17 +99,17 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
     store.setRetrievedFileMetas([]);
   }
 
-  public setSenderShareContent(content: string): void {
-    useFileTransferStore.getState().setShareContent(content);
+  public setSenderDraftContent(content: string): void {
+    useFileTransferStore.getState().setSenderDraftContent(content);
   }
 
-  public addSenderFiles(files: CustomFile[]): {
+  public addSenderDraftFiles(files: CustomFile[]): {
     addedFiles: CustomFile[];
     duplicateFiles: CustomFile[];
   } {
     const store = useFileTransferStore.getState();
     const existingFileIds = new Set(
-      store.sendFiles.map((file) => generateFileId(file))
+      store.senderDraftFiles.map((file) => generateFileId(file))
     );
     const addedFiles: CustomFile[] = [];
     const duplicateFiles: CustomFile[] = [];
@@ -127,19 +127,33 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
     }
 
     if (addedFiles.length > 0) {
-      store.addSendFiles(addedFiles);
+      store.addSenderDraftFiles(addedFiles);
     }
 
     return { addedFiles, duplicateFiles };
   }
 
-  public removeSenderFile(meta: FileMeta): void {
-    useFileTransferStore.getState().removeSendFile(meta);
+  public removeSenderDraftFile(meta: FileMeta): void {
+    useFileTransferStore.getState().removeSenderDraftFile(meta);
   }
 
-  public async broadcastCurrentSenderPayload(): Promise<boolean> {
-    const { shareContent, sendFiles } = useFileTransferStore.getState();
-    return await webrtcService.broadcastDataToAllPeers(shareContent, sendFiles);
+  public publishSenderDraftPayload(): void {
+    useFileTransferStore.getState().publishSenderDraftPayload();
+  }
+
+  public async broadcastPublishedSenderPayload(): Promise<boolean> {
+    const { senderPublishedContent, senderPublishedFiles } =
+      useFileTransferStore.getState();
+
+    return await webrtcService.broadcastDataToAllPeers(
+      senderPublishedContent,
+      senderPublishedFiles
+    );
+  }
+
+  public async publishAndBroadcastSenderDraft(): Promise<boolean> {
+    this.publishSenderDraftPayload();
+    return await this.broadcastPublishedSenderPayload();
   }
 
   private handleLifecycleStateChanged(
@@ -250,13 +264,9 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
   }
 
   private handleSenderDataChannelOpened(): void {
-    void this.broadcastCurrentSenderPayload()
-      .catch((error) => {
-        console.error(
-          "[WebRTCStoreCoordinator] Auto broadcast failed:",
-          error
-        );
-      });
+    void this.broadcastPublishedSenderPayload().catch((error) => {
+      console.error("[WebRTCStoreCoordinator] Auto broadcast failed:", error);
+    });
   }
 
   private removePeerFromProgress(
@@ -336,21 +346,29 @@ export function clearReceiverRetrievedArtifacts(): void {
   coordinator.clearReceiverRetrievedArtifacts();
 }
 
-export function setSenderShareContent(content: string): void {
-  coordinator.setSenderShareContent(content);
+export function setSenderDraftContent(content: string): void {
+  coordinator.setSenderDraftContent(content);
 }
 
-export function addSenderFiles(files: CustomFile[]): {
+export function addSenderDraftFiles(files: CustomFile[]): {
   addedFiles: CustomFile[];
   duplicateFiles: CustomFile[];
 } {
-  return coordinator.addSenderFiles(files);
+  return coordinator.addSenderDraftFiles(files);
 }
 
-export function removeSenderFile(meta: FileMeta): void {
-  coordinator.removeSenderFile(meta);
+export function removeSenderDraftFile(meta: FileMeta): void {
+  coordinator.removeSenderDraftFile(meta);
 }
 
-export async function broadcastCurrentSenderPayload(): Promise<boolean> {
-  return await coordinator.broadcastCurrentSenderPayload();
+export function publishSenderDraftPayload(): void {
+  coordinator.publishSenderDraftPayload();
+}
+
+export async function broadcastPublishedSenderPayload(): Promise<boolean> {
+  return await coordinator.broadcastPublishedSenderPayload();
+}
+
+export async function publishAndBroadcastSenderDraft(): Promise<boolean> {
+  return await coordinator.publishAndBroadcastSenderDraft();
 }
