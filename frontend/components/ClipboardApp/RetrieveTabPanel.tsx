@@ -10,16 +10,13 @@ import {
 import CachedIdActionButton from "@/components/ClipboardApp/CachedIdActionButton";
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import type { FileMeta } from "@/types/webrtc";
+import type { SideMessageDispatcher } from "@/hooks/useClipboardAppMessages";
 
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { useClipboardUiStore } from "@/stores/clipboardUiStore";
 
 interface RetrieveTabPanelProps {
-  putMessageInMs: (
-    message: string,
-    isShareEnd?: boolean,
-    displayTimeMs?: number
-  ) => void; // For onLocationPick
+  showReceiverMessage: SideMessageDispatcher; // For onLocationPick
   joinRoom: (isSender: boolean, roomId: string) => void;
   retrieveJoinRoomBtnRef: React.RefObject<HTMLButtonElement>;
   richTextToPlainText: (html: string) => string;
@@ -36,7 +33,7 @@ interface RetrieveTabPanelProps {
 }
 
 export function RetrieveTabPanel({
-  putMessageInMs,
+  showReceiverMessage,
   joinRoom,
   retrieveJoinRoomBtnRef,
   richTextToPlainText,
@@ -67,23 +64,23 @@ export function RetrieveTabPanel({
 
   const onLocationPick = useCallback(async (): Promise<boolean> => {
     if (!window.showDirectoryPicker) {
-      putMessageInMs(tSaveLocation("unsupported"), false);
+      showReceiverMessage(tSaveLocation("unsupported"));
       return false;
     }
     if (!window.confirm(tSaveLocation("pickMsg"))) return false;
     try {
       const directoryHandle = await window.showDirectoryPicker();
       await setReceiverDirectoryHandle(directoryHandle);
-      putMessageInMs(tSaveLocation("success"), false);
+      showReceiverMessage(tSaveLocation("success"));
       return true;
     } catch (err: any) {
       if (err.name !== "AbortError") {
         console.error("Failed to set up folder receive:", err);
-        putMessageInMs(tSaveLocation("error"), false);
+        showReceiverMessage(tSaveLocation("error"));
       }
       return false;
     }
-  }, [tSaveLocation, putMessageInMs, setReceiverDirectoryHandle]);
+  }, [tSaveLocation, showReceiverMessage, setReceiverDirectoryHandle]);
 
   const handleFileRequestFromPanel = useCallback(
     (meta: FileMeta) => {
@@ -93,7 +90,7 @@ export function RetrieveTabPanel({
         requestFile(meta.fileId);
       } else {
         console.warn("Cannot request file from panel: missing fileId", meta);
-        // Optionally use putMessageInMs to inform user
+        // Optionally use the receiver message dispatcher to inform the user
       }
     },
     [requestFile, requestFolder]
@@ -128,8 +125,7 @@ export function RetrieveTabPanel({
             <CachedIdActionButton
               getInputValue={() => retrieveRoomIdInput}
               setInputValue={setRetrieveRoomIdInput}
-              putMessageInMs={putMessageInMs}
-              isShareEnd={false}
+              showMessage={showReceiverMessage}
             />
             <Input
               aria-label="Retrieve Room ID"

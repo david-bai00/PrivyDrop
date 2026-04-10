@@ -1,21 +1,16 @@
 import { useCallback, useEffect, useRef } from "react";
 
-type PutFn = (
-  message: string,
-  isShareEnd?: boolean,
-  displayTimeMs?: number
-) => void;
+type MessageDispatcher = (message: string, displayTimeMs?: number) => void;
 
 type MessageFactory = () =>
   | {
       text?: string;
-      isShareEnd?: boolean;
+      showMessage: MessageDispatcher;
     }
   | null;
 
 interface UseOneShotSlowHintOptions {
   thresholdMs: number;
-  putMessageInMs: PutFn;
   getMessage: MessageFactory;
   visibilityGate?: boolean; // default true: only show when document is visible
   displayMs?: number; // default 6000
@@ -27,7 +22,6 @@ interface UseOneShotSlowHintOptions {
 // - reset(): clear timer and reset once-shown & pending flags
 export function useOneShotSlowHint({
   thresholdMs,
-  putMessageInMs,
   getMessage,
   visibilityGate = true,
   displayMs = 6000,
@@ -64,10 +58,10 @@ export function useOneShotSlowHint({
         return;
       }
     }
-    putMessageInMs(payload.text, payload.isShareEnd, displayMs);
+    payload.showMessage(payload.text, displayMs);
     shownRef.current = true;
     pendingRef.current = false;
-  }, [displayMs, getMessage, putMessageInMs, visibilityGate]);
+  }, [displayMs, getMessage, visibilityGate]);
 
   const arm = useCallback(
     (_key?: string) => {

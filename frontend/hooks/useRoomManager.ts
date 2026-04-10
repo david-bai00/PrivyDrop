@@ -13,22 +13,21 @@ import { fetchRoom, createRoom, checkRoom, leaveRoom } from "@/app/config/api";
 import { debounce } from "lodash";
 import { useOneShotSlowHint } from "@/utils/useOneShotSlowHint";
 import type { RoomManagerText } from "@/types/clipboardText";
+import type { SideMessageDispatcher } from "@/hooks/useClipboardAppMessages";
 
 ensureWebRTCStoreCoordinator();
 
 // Remove all WebRTC related props dependencies
 interface UseRoomManagerProps {
   text: RoomManagerText;
-  putMessageInMs: (
-    message: string,
-    isShareEnd?: boolean,
-    displayTimeMs?: number
-  ) => void;
+  showSenderMessage: SideMessageDispatcher;
+  showReceiverMessage: SideMessageDispatcher;
 }
 
 export function useRoomManager({
   text,
-  putMessageInMs,
+  showSenderMessage,
+  showReceiverMessage,
 }: UseRoomManagerProps) {
   // Get state from store
   const {
@@ -43,30 +42,34 @@ export function useRoomManager({
   } = useFileTransferStore();
   const { activeTab } = useClipboardUiStore();
 
-  // A ref to indicate join side for slow-hint message orientation
-  const joinSideRef = useRef<boolean>(true);
+  // Track the active join-side dispatcher for one-shot slow hints.
+  const joinMessageRef = useRef<SideMessageDispatcher>(showSenderMessage);
 
   // One-shot join slow hint (3s), per join attempt
-  const { arm: armJoinSlow, disarm: disarmJoinSlow, reset: resetJoinSlow } = useOneShotSlowHint({
-    thresholdMs: 3000,
-    putMessageInMs,
-    displayMs: 6000,
-    getMessage: () => {
-      return { text: text.join.slow, isShareEnd: joinSideRef.current };
-    },
-    visibilityGate: true,
-  });
+  const { arm: armJoinSlow, disarm: disarmJoinSlow, reset: resetJoinSlow } =
+    useOneShotSlowHint({
+      thresholdMs: 3000,
+      displayMs: 6000,
+      getMessage: () => {
+        return { text: text.join.slow, showMessage: joinMessageRef.current };
+      },
+      visibilityGate: true,
+    });
 
   // Join room method - directly use webrtcService
   const joinRoom = useCallback(
     async (isSenderSide: boolean, roomId: string) => {
+      const showJoinMessage = isSenderSide
+        ? showSenderMessage
+        : showReceiverMessage;
+
       // UI: Joining feedback and slow network hint (one-shot)
-      joinSideRef.current = isSenderSide;
+      joinMessageRef.current = showJoinMessage;
       resetJoinSlow();
 
       try {
         // Immediate feedback on click
-        putMessageInMs(text.join.inProgress, isSenderSide, 6000);
+        showJoinMessage(text.join.inProgress, 6000);
 
         // 3s slow-network hint
         armJoinSlow("join");
@@ -80,20 +83,13 @@ export function useRoomManager({
           try {
             const success = await createRoom(roomId);
             if (!success) {
-              putMessageInMs(
-                text.join.duplicate,
-                isSenderSide
-              );
+              showJoinMessage(text.join.duplicate);
               disarmJoinSlow();
               return;
             }
             setSenderRoomSelection(roomId);
           } catch (error) {
-            putMessageInMs(
-              text.join.failure +
-                  ` (Create room error)`,
-              isSenderSide
-            );
+            showJoinMessage(`${text.join.failure} (Create room error)`);
             disarmJoinSlow();
             return;
           }
@@ -122,11 +118,7 @@ export function useRoomManager({
         );
 
         disarmJoinSlow();
-        putMessageInMs(
-          text.join.success,
-          isSenderSide,
-          6000
-        );
+        showJoinMessage(text.join.success, 6000);
 
         if (isSenderSide) {
           if (actualRoomId !== shareRoomId) {
@@ -143,15 +135,16 @@ export function useRoomManager({
               : error.message === "Join room timeout"
               ? text.join.timeout
               : `${text.join.failure} ${error.message}`;
-         }
+        }
         // Clear joining slow-hint on failure
         disarmJoinSlow();
-        putMessageInMs(errorMsg, isSenderSide);
+        showJoinMessage(errorMsg);
       }
     },
     [
       text,
-      putMessageInMs,
+      showSenderMessage,
+      showReceiverMessage,
       activeTab,
       initShareRoomId,
       shareRoomId,
@@ -167,18 +160,18 @@ export function useRoomManager({
 
     try {
       if (sharePeerCount === 0) {
-        putMessageInMs(text.messages.waiting, true);
+        showSenderMessage(text.messages.waiting);
       } else {
         await publishAndBroadcastSenderDraft();
       }
     } catch (error) {
       console.error("[RoomManager] Failed to generate share link:", error);
-      putMessageInMs(text.messages.generateShareLinkError, true);
+      showSenderMessage(text.messages.generateShareLinkError);
     }
   }, [
     text.messages.generateShareLinkError,
     text.messages.waiting,
-    putMessageInMs,
+    showSenderMessage,
     shareRoomId,
     sharePeerCount,
   ]);
@@ -203,16 +196,23 @@ export function useRoomManager({
       const message = isAnyFileTransferring
         ? text.messages.leaveSuccess
         : text.status.leftRoom;
-      putMessageInMs(message, false);
+      showReceiverMessage(message);
 
       // Clean up WebRTC connection first to stop incoming events, then reset store.
       await webrtcService.shutdownReceiver("leave_room");
       resetReceiverDomainState("leave_room");
     } catch (error) {
       console.error("[RoomManager] Receiver failed to leave room:", error);
-      putMessageInMs(text.messages.leaveRoomError, true);
+      showReceiverMessage(text.messages.leaveRoomError);
     }
-  }, [isAnyFileTransferring, putMessageInMs, text.messages.confirmLeave, text.messages.leaveRoomError, text.messages.leaveSuccess, text.status.leftRoom]);
+  }, [
+    isAnyFileTransferring,
+    showReceiverMessage,
+    text.messages.confirmLeave,
+    text.messages.leaveRoomError,
+    text.messages.leaveSuccess,
+    text.status.leftRoom,
+  ]);
 
   // Sender reset app state
   const resetSenderAppState = useCallback(async () => {
@@ -228,9 +228,9 @@ export function useRoomManager({
       setSenderRoomSelection(newRoomId || "", { markAsInitial: true });
     } catch (error) {
       console.error("[RoomManager] Failed to reset sender state:", error);
-      putMessageInMs(text.messages.resetSenderStateError, true);
+      showSenderMessage(text.messages.resetSenderStateError);
     }
-  }, [putMessageInMs, text.messages.resetSenderStateError]);
+  }, [showSenderMessage, text.messages.resetSenderStateError]);
 
   const handleLeaveSenderRoom = useCallback(async () => {
     if (isAnyFileTransferring) {
@@ -252,15 +252,23 @@ export function useRoomManager({
       const message = isAnyFileTransferring
         ? text.messages.leaveSuccess
         : text.status.leftRoom;
-      putMessageInMs(message, true);
+      showSenderMessage(message);
 
       // Reset sender state and get new room ID (keeps files as per requirement)
       await resetSenderAppState();
     } catch (error) {
       console.error("[RoomManager] Sender failed to leave room:", error);
-      putMessageInMs(text.messages.leaveRoomError, true);
+      showSenderMessage(text.messages.leaveRoomError);
     }
-  }, [isAnyFileTransferring, putMessageInMs, resetSenderAppState, text.messages.confirmLeave, text.messages.leaveRoomError, text.messages.leaveSuccess, text.status.leftRoom]);
+  }, [
+    isAnyFileTransferring,
+    showSenderMessage,
+    resetSenderAppState,
+    text.messages.confirmLeave,
+    text.messages.leaveRoomError,
+    text.messages.leaveSuccess,
+    text.status.leftRoom,
+  ]);
 
   // Room ID input processing
   const processRoomIdInput = useCallback(
@@ -271,22 +279,26 @@ export function useRoomManager({
         const isValid = await checkRoom(input);
         if (isValid) {
           setSenderRoomSelection(input);
-          putMessageInMs(text.roomCheck.available, true);
+          showSenderMessage(text.roomCheck.available);
         } else {
-          putMessageInMs(text.roomCheck.notAvailable, true);
+          showSenderMessage(text.roomCheck.notAvailable);
         }
       } catch (error) {
         console.error("[RoomManager] Failed to validate room:", error);
-        putMessageInMs(text.messages.validateRoomError, true);
+        showSenderMessage(text.messages.validateRoomError);
       }
     }, 750),
-    [putMessageInMs, text.messages.validateRoomError, text.roomCheck.available, text.roomCheck.notAvailable]
+    [
+      showSenderMessage,
+      text.messages.validateRoomError,
+      text.roomCheck.available,
+      text.roomCheck.notAvailable,
+    ]
   );
 
   // Initialize sender room ID
   useEffect(() => {
     if (
-      putMessageInMs &&
       !initShareRoomId &&
       activeTab === "send"
     ) {
@@ -296,14 +308,14 @@ export function useRoomManager({
           setSenderRoomSelection(newRoomId || "", { markAsInitial: true });
         } catch (err) {
           console.error("[RoomManager] Failed to fetch initial room:", err);
-          putMessageInMs(text.messages.fetchRoomError, true);
+          showSenderMessage(text.messages.fetchRoomError);
         }
       };
       initNewRoom();
     }
   }, [
     text.messages.fetchRoomError,
-    putMessageInMs,
+    showSenderMessage,
     initShareRoomId,
     activeTab,
   ]);

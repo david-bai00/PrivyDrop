@@ -25,8 +25,12 @@ const ClipboardApp = () => {
   const messages = useMessages() as Messages;
   const tTabs = useTranslations("text.clipboard.tabs");
   const tTitles = useTranslations("text.clipboard.titles");
-  const { shareMessage, retrieveMessage, putMessageInMs } =
-    useClipboardAppMessages();
+  const {
+    shareMessage,
+    retrieveMessage,
+    showSenderMessage,
+    showReceiverMessage,
+  } = useClipboardAppMessages();
   const roomText = messages.text.clipboard;
   const fileTransferText = messages.text.clipboard.messages;
   const connectionText = messages.text.clipboard.rtc;
@@ -76,7 +80,11 @@ const ClipboardApp = () => {
     addFilesToSend,
     removeFileToSend,
     handleDownloadFile,
-  } = useFileTransferHandler({ text: fileTransferText, putMessageInMs });
+  } = useFileTransferHandler({
+    text: fileTransferText,
+    showSenderMessage,
+    showReceiverMessage,
+  });
 
   // Simplified WebRTC connection initialization
   const {
@@ -84,9 +92,7 @@ const ClipboardApp = () => {
     requestFolder,
     setReceiverDirectoryHandle,
     getReceiverSaveType,
-  } = useWebRTCConnection({
-    putMessageInMs,
-  });
+  } = useWebRTCConnection();
 
   // Greatly simplified room management - No longer need to pass any WebRTC dependencies
   const {
@@ -118,7 +124,8 @@ const ClipboardApp = () => {
         leftRoom: roomText.status.leftRoom,
       },
     },
-    putMessageInMs,
+    showSenderMessage,
+    showReceiverMessage,
   });
 
   const handleFileDrop = useCallback(
@@ -220,7 +227,11 @@ const ClipboardApp = () => {
   ]);
 
   // Connection feedback observer (Hook)
-  useConnectionFeedback({ text: connectionText, putMessageInMs });
+  useConnectionFeedback({
+    text: connectionText,
+    showSenderMessage,
+    showReceiverMessage,
+  });
 
   return (
     <div className="w-full mx-auto px-1 sm:px-1 py-3 sm:py-8 md:max-w-4xl md:container">
@@ -268,11 +279,11 @@ const ClipboardApp = () => {
               shareMessage={shareMessage}
               currentValidatedShareRoomId={shareRoomId}
               handleLeaveSenderRoom={handleLeaveSenderRoom}
-              putMessageInMs={putMessageInMs}
+              showSenderMessage={showSenderMessage}
             />
           ) : (
             <RetrieveTabPanel
-              putMessageInMs={putMessageInMs}
+              showReceiverMessage={showReceiverMessage}
               joinRoom={joinRoom}
               retrieveJoinRoomBtnRef={retrieveJoinRoomBtnRef}
               richTextToPlainText={richTextToPlainText}

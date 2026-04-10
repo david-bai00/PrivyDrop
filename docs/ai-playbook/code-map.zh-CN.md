@@ -60,7 +60,7 @@
   - `frontend/hooks/useRoomManager.ts` — 房间创建/加入/校验与 UI 状态，支持缓存 ID 重连（≥8 字符自动发送 initiator-online）；分享广播、sender/receiver 离房、roomId 选择与 sender reset 都改为调用 `WebRTCStoreCoordinator` command，离房时通过 `getSessionInfo()` 读取 room/peer 信息，避免直接访问内部连接对象或在 hook 内直接拼领域状态写入。标签页判断改从 `clipboardUiStore` 读取，不再混入 `fileTransferStore`。
   - `frontend/hooks/useFileTransferHandler.ts` — 文件/文本负载编排与回调，使用 getState() 修复闭包问题，支持 JSZip 文件夹下载；发送去重、sender draft payload 写入与单文件下载匹配统一基于稳定 `fileId` 与 `WebRTCStoreCoordinator` command，避免同名文件误判和 hook 直写 store。receiver 结果清空也已改走 coordinator command。
   - `frontend/hooks/useClipboardActions.ts` — 剪贴板操作与状态管理，支持现代 API 和 document.execCommand 降级，处理 HTML/富文本粘贴。
-  - `frontend/hooks/useClipboardAppMessages.ts` — 应用消息处理（shareMessage/retrieveMessage），4 秒自动消失机制。
+  - `frontend/hooks/useClipboardAppMessages.ts` — 应用消息处理（shareMessage/retrieveMessage），显式提供 `showSenderMessage/showReceiverMessage` 两个 side-specific dispatcher；内部为 sender/receiver 各自维护 timer，避免旧消息的自动清理计时器提前清掉新消息。
   - `frontend/hooks/useLocale.ts` — 国际化语言切换，基于 pathname 解析。
   - `frontend/hooks/usePageSetup.ts` — 页面配置与 SEO 设置，处理 URL 参数 roomId 自动加入和引荐来源追踪；自动加入时写入 `clipboardUiStore` 的接收端输入框与标签页状态。
   - `frontend/hooks/useRichTextToPlainText.ts` — 富文本转纯文本工具，处理块级元素换行和文本节点包装。

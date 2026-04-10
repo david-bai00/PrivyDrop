@@ -221,7 +221,7 @@ Stores (clipboardUiStore + fileTransferStore)
 - 集成 5 个关键业务 hooks：useWebRTCConnection、useFileTransferHandler、useRoomManager、usePageSetup、useClipboardAppMessages
 - 全局拖拽事件处理：dragenter/dragleave/dragover/drop，支持多文件和文件夹树遍历
 - 双标签页、接收房间输入与拖拽提示等纯 UI 输入态已收敛到 `clipboardUiStore`
-- 统一消息系统：`useClipboardAppMessages` 在组件本地管理 `shareMessage/retrieveMessage`，4 秒自动消失
+- 统一消息系统：`useClipboardAppMessages` 在组件本地管理 `shareMessage/retrieveMessage`，并通过显式 `showSenderMessage/showReceiverMessage` dispatcher 分发提示；sender/receiver 各自维护独立 timer，避免旧消息 timer 提前清掉新消息
 
 ### Hook 层级与职责分离
 
@@ -248,8 +248,7 @@ Stores (clipboardUiStore + fileTransferStore)
 
 - 房间操作：joinRoom（支持缓存 ID 重连）、processRoomIdInput（750ms 防抖）
 - 离开保护：传输中确认提示（isAnyFileTransferring 检查）
-- 状态文本：动态更新房间状态文本
-- 链接生成：自动生成分享链接
+- 状态文本与链接提示改为显式 sender/receiver 消息 dispatcher，不再依赖布尔 side 参数
 - 分享广播：统一走 `WebRTCStoreCoordinator.publishAndBroadcastSenderDraft()`，hook 不再直接拼装 sender payload；`Sync` 仍是原入口，但内部改为“先 publish draft，再广播 published”
 - 发送/接收标签页等纯 UI 判断改读 `clipboardUiStore`，不再混在传输领域 store
 - 离房前的 roomId/peerId 读取改为走 `webrtcService.getSessionInfo()`，不再直接访问 `sender/receiver` 实例字段
@@ -272,8 +271,8 @@ Stores (clipboardUiStore + fileTransferStore)
 **useClipboardAppMessages**（消息管理）：
 
 - 分离式消息状态：shareMessage（发送相关）和 retrieveMessage（接收相关）
-- 统一消息显示接口：putMessageInMs(message, isShareEnd, displayTimeMs)
-- 自动清理机制：4 秒后自动清空消息状态
+- 统一消息显示接口：`showSenderMessage(message, displayTimeMs)` / `showReceiverMessage(message, displayTimeMs)`
+- 自动清理机制：sender/receiver 各自独立计时；新消息会先取消同侧旧 timer，再启动新的自动清理
 
 ### 面板组件特化设计
 
@@ -363,7 +362,7 @@ Stores (clipboardUiStore + fileTransferStore)
 
 节流与展示：
 
-- 所有提示默认 4–6 秒自动消失；通过 `useClipboardAppMessages.putMessageInMs(message, isShareEnd, ms)` 统一展示。
+- 所有提示默认 4–6 秒自动消失；通过 `useClipboardAppMessages.showSenderMessage(...)` / `showReceiverMessage(...)` 统一展示。
 - 连接反馈提示在“状态迁移 + ever/wasDisc 标记 + 可见性判断”三重约束下触发，避免提示风暴。
 
 10. **切到接收端自动加入（缓存 ID）**：当用户切换到接收端、未在房间、URL 无 `roomId`、输入框为空且本地存在缓存 ID 时，自动填充并直接调用加入房间以提升体验。入口：`frontend/components/ClipboardApp.tsx`（监听 `activeTab` 变化，读取 `frontend/lib/roomIdCache.ts`）。
@@ -404,7 +403,7 @@ Stores (clipboardUiStore + fileTransferStore)
 
 - **单向数据流**：Store → Hooks → Components
 - **状态管理集中化**：所有状态通过 `useFileTransferStore` 统一管理；底层 `webrtcService` 不再直接 import Store，由 `WebRTCStoreCoordinator` 承接状态写入。连接状态分为权威 lifecycle state 和兼容 badge state 两层，避免 UI 直接绑定底层连接枚举。sender/receiver 的领域状态变更应优先走 coordinator command，hooks/components 不再直接调用 room/reset/retrieved-result 相关 store action
-- **错误处理标准化**：统一的消息提示机制（putMessageInMs）
+- **错误处理标准化**：统一的 sender/receiver 消息 dispatcher，避免布尔 side 参数和计时器竞态继续扩散
 - **国际化集成**：useLocale + getDictionary 提供多语言支持
 
 ## 8）背压与分片策略深度分析

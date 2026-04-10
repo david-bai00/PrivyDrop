@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import Tooltip from "@/components/Tooltip";
 import { getCachedId, setCachedId } from "@/lib/roomIdCache";
+import type { SideMessageDispatcher } from "@/hooks/useClipboardAppMessages";
 
 /**
  * CachedIdActionButton
@@ -19,15 +20,14 @@ import { getCachedId, setCachedId } from "@/lib/roomIdCache";
  *     "Save ID" mode for saveModeDurationMs (default 3000ms) without filling.
  * - If no cached Room ID exists: the button shows "Save ID" by default; when the
  *   current input length >= 8, clicking saves it to localStorage and reports success
- *   via putMessageInMs, then the button returns to "Use cached ID".
+ *   via the injected message dispatcher, then the button returns to "Use cached ID".
  * - In "Save ID" mode: clicking saves the current input (>= 8) and exits the mode;
  *   if the user does nothing, the mode auto-exits after saveModeDurationMs.
  *
  * Props
  * - messages: i18n dictionary used for labels/tooltips.
  * - getInputValue / setInputValue: provide read/write access to the room ID input.
- * - putMessageInMs: message dispatcher; isShareEnd tells which side (sender/receiver)
- *   should display the toast.
+ * - showMessage: side-specific message dispatcher for sender or receiver panel.
  * - Optional styling/timing overrides: className, variant, size, dblClickWindowMs,
  *   saveModeDurationMs — with sensible defaults for drop‑in usage.
  *
@@ -44,12 +44,7 @@ import { getCachedId, setCachedId } from "@/lib/roomIdCache";
 type Props = {
   getInputValue: () => string;
   setInputValue: (val: string) => void;
-  putMessageInMs: (
-    message: string,
-    isShareEnd?: boolean,
-    displayTimeMs?: number
-  ) => void;
-  isShareEnd: boolean; // true for sender, false for receiver
+  showMessage: SideMessageDispatcher;
   className?: string;
   variant?:
     | "default"
@@ -70,8 +65,7 @@ type Props = {
 export default function CachedIdActionButton({
   getInputValue,
   setInputValue,
-  putMessageInMs,
-  isShareEnd,
+  showMessage,
   className = "w-full sm:w-auto px-4",
   variant = "outline",
   size = "default",
@@ -119,7 +113,7 @@ export default function CachedIdActionButton({
           clearTimeout(saveTimerRef.current);
           saveTimerRef.current = null;
         }
-        putMessageInMs(tCachedId("saveSuccess"), isShareEnd);
+        showMessage(tCachedId("saveSuccess"));
       }
       return;
     }
@@ -163,9 +157,8 @@ export default function CachedIdActionButton({
     isSaveMode,
     getInputValue,
     setInputValue,
-    putMessageInMs,
+    showMessage,
     tCachedId,
-    isShareEnd,
     dblClickWindowMs,
     saveModeDurationMs,
     onUseCached,

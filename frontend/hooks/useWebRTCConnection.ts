@@ -13,15 +13,7 @@ export type PeerProgressDetails = { progress: number; speed: number };
 export type FileProgressPeers = { [peerId: string]: PeerProgressDetails };
 export type ProgressState = { [fileId: string]: FileProgressPeers };
 
-interface UseWebRTCConnectionProps {
-  putMessageInMs: (
-    message: string,
-    isShareEnd?: boolean,
-    displayTimeMs?: number
-  ) => void;
-}
-
-export function useWebRTCConnection({}: UseWebRTCConnectionProps) {
+export function useWebRTCConnection() {
   // Get state from store
   const {
     sharePeerCount,

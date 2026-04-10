@@ -14,6 +14,7 @@ import { FileUploadHandler } from "@/components/ClipboardApp/FileUploadHandler";
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import AnimatedButton from "@/components/ui/AnimatedButton";
 import type { CustomFile, FileMeta } from "@/types/webrtc";
+import type { SideMessageDispatcher } from "@/hooks/useClipboardAppMessages";
 
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 
@@ -41,11 +42,7 @@ interface SendTabPanelProps {
   shareMessage: string;
   currentValidatedShareRoomId: string;
   handleLeaveSenderRoom: () => void; // New prop for leaving room
-  putMessageInMs: (
-    message: string,
-    isShareEnd?: boolean,
-    displayTimeMs?: number
-  ) => void;
+  showSenderMessage: SideMessageDispatcher;
 }
 
 export function SendTabPanel({
@@ -59,7 +56,7 @@ export function SendTabPanel({
   shareMessage,
   currentValidatedShareRoomId,
   handleLeaveSenderRoom,
-  putMessageInMs,
+  showSenderMessage,
 }: SendTabPanelProps) {
   const tActions = useTranslations("text.clipboard.actions");
   const tPlaceholders = useTranslations("text.clipboard.placeholders");
@@ -201,8 +198,7 @@ export function SendTabPanel({
             <CachedIdActionButton
               getInputValue={() => inputFieldValue}
               setInputValue={setInputFieldValue}
-              putMessageInMs={putMessageInMs}
-              isShareEnd={true}
+              showMessage={showSenderMessage}
               disabled={isSenderInRoom}
               onUseCached={(id) => {
                 // Immediately join as sender after applying cached ID

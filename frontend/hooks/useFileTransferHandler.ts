@@ -11,21 +11,20 @@ import { downloadAs, generateFileId } from "@/lib/fileUtils";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { createLogger } from "@/lib/logger";
 import type { FileTransferText } from "@/types/clipboardText";
+import type { SideMessageDispatcher } from "@/hooks/useClipboardAppMessages";
 
 const logger = createLogger("useFileTransferHandler");
 
 interface UseFileTransferHandlerProps {
   text: FileTransferText;
-  putMessageInMs: (
-    message: string,
-    isShareEnd?: boolean,
-    displayTimeMs?: number
-  ) => void;
+  showSenderMessage: SideMessageDispatcher;
+  showReceiverMessage: SideMessageDispatcher;
 }
 
 export function useFileTransferHandler({
   text,
-  putMessageInMs,
+  showSenderMessage,
+  showReceiverMessage,
 }: UseFileTransferHandlerProps) {
   // Get state from store
   const {
@@ -48,10 +47,10 @@ export function useFileTransferHandler({
       const { duplicateFiles } = addSenderDraftFiles(pickedFiles);
 
       if (duplicateFiles.length > 0) {
-        putMessageInMs(text.fileExist, true);
+        showSenderMessage(text.fileExist);
       }
     },
-    [putMessageInMs, text.fileExist]
+    [showSenderMessage, text.fileExist]
   );
 
   const removeFileToSend = useCallback(
@@ -70,7 +69,7 @@ export function useFileTransferHandler({
           (file) => file.folderName === meta.folderName
         );
         if (filesToZip.length === 0) {
-          putMessageInMs(text.noFilesForFolder, false);
+          showReceiverMessage(text.noFilesForFolder);
           return;
         }
         const zip = new JSZip();
@@ -82,7 +81,7 @@ export function useFileTransferHandler({
           downloadAs(content, `${meta.folderName}.zip`);
         } catch (error) {
           console.error("Error creating zip file:", error);
-          putMessageInMs(text.zipError, false);
+          showReceiverMessage(text.zipError);
         }
       } else {
         let retryCount = 0;
@@ -142,15 +141,20 @@ export function useFileTransferHandler({
                 return;
               }
             }
-            putMessageInMs(text.fileNotFound, false);
-           };
+            showReceiverMessage(text.fileNotFound);
+          };
 
           // Execute retry asynchronously without blocking the main thread
           retryWithDelay().catch(console.error);
         }
       }
     },
-    [putMessageInMs, text.fileNotFound, text.noFilesForFolder, text.zipError]
+    [
+      showReceiverMessage,
+      text.fileNotFound,
+      text.noFilesForFolder,
+      text.zipError,
+    ]
   );
 
   // Reset function specifically for receiver state (for leave room functionality)
