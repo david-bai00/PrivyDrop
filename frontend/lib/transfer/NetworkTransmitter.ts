@@ -3,7 +3,7 @@ import { StateManager } from "./StateManager";
 import WebRTC_Initiator from "../webrtc_Initiator";
 import { createLogger } from "@/lib/logger";
 
-const logger = createLogger("NetworkTransmitter");
+const logger = createLogger({ scope: "Transfer.NetworkTransmitter" });
 /**
  * 🚀 Network transmitter - Simplified version
  * Uses WebRTC native bufferedAmountLowThreshold for backpressure control
@@ -34,24 +34,17 @@ export class NetworkTransmitter {
 
       // Key node logs (development environment only)
 
-      // if (
-      //   developmentEnv === "development" &&
-      //   (metadata.chunkIndex % 100 === 0 || metadata.isLastChunk)
-      // ) {
-      //   logger.debug("Chunk sent", {
-      //     chunkIndex: metadata.chunkIndex,
-      //     totalChunks: metadata.totalChunks,
-      //     chunkSizeKb: Number((chunkData.byteLength / 1024).toFixed(1)),
-      //     isLastChunk: metadata.isLastChunk,
-      //   });
-      // }
+      // Optional chunk-level diagnostics can be added here if needed again.
 
       return true;
     } catch (error) {
-      logger.error("Embedded chunk send failed", {
-        chunkIndex: metadata.chunkIndex,
-        totalChunks: metadata.totalChunks,
-        error,
+      logger.error({
+        event: "embedded_chunk_send_failed",
+        context: {
+          chunkIndex: metadata.chunkIndex,
+          totalChunks: metadata.totalChunks,
+          error,
+        },
       });
       return false;
     }
@@ -107,10 +100,13 @@ export class NetworkTransmitter {
       const errorMessage = `sendData failed: ${
         sendResult.reason || sendResult.finalState
       }`;
-      logger.error("sendSingleData failed", {
-        peerId,
-        errorMessage,
-        sendResult,
+      logger.error({
+        event: "single_data_send_failed",
+        context: {
+          peerId,
+          errorMessage,
+          sendResult,
+        },
       });
       throw new Error(errorMessage);
     }
@@ -151,16 +147,7 @@ export class NetworkTransmitter {
       });
 
       // Only output backpressure logs in development environment
-      // if (developmentEnv === "development") {
-      //   const waitTime = performance.now() - startTime;
-      //   logger.debug("Backpressure released", {
-      //     waitTimeMs: Number(waitTime.toFixed(1)),
-      //     bufferedBeforeKb: Number((initialBuffered / 1024).toFixed(0)),
-      //     bufferedAfterKb: Number(
-      //       (dataChannel.bufferedAmount / 1024).toFixed(0)
-      //     ),
-      //   });
-      // }
+      // Optional backpressure diagnostics can be added here if needed again.
     }
   }
 
@@ -185,7 +172,10 @@ export class NetworkTransmitter {
       }
     } catch (error) {
       const errorMessage = `sendWithBackpressure failed: ${error}`;
-      logger.error("sendWithBackpressure failed", { peerId, errorMessage });
+      logger.error({
+        event: "backpressure_send_failed",
+        context: { peerId, errorMessage },
+      });
       throw new Error(errorMessage);
     }
   }
@@ -240,6 +230,8 @@ export class NetworkTransmitter {
    * 🧹 Clean up resources
    */
   public cleanup(): void {
-    logger.debug("NetworkTransmitter cleaned up");
+    logger.debug({
+      event: "network_transmitter_cleaned_up",
+    });
   }
 }

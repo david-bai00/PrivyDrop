@@ -13,9 +13,9 @@ import { ProgressTracker, ProgressCallback } from "./ProgressTracker";
 import { StreamingFileReader } from "./StreamingFileReader";
 import { TransferConfig } from "./TransferConfig";
 import WebRTC_Initiator from "../webrtc_Initiator";
-import { createLogger, logWithLegacyLevel } from "@/lib/logger";
+import { createLogger, type RuntimeLogLevel } from "@/lib/logger";
 
-const logger = createLogger("FileTransferOrchestrator");
+const logger = createLogger({ scope: "Transfer.Orchestrator" });
 /**
  * 🚀 File transfer orchestrator
  * Integrates all components to provide unified file transfer services
@@ -39,7 +39,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     // Set up data handler
     this.setupDataHandler();
 
-    this.log("log", "FileTransferOrchestrator initialized");
+    this.log("info", "transfer_orchestrator_initialized");
   }
   /**
    * 🎯 Send file metadata
@@ -116,9 +116,13 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     }
 
     this.log(
-      "log",
-      `String sent successfully - length: ${content.length}, chunks: ${chunks.length}`,
-      { peerId }
+      "info",
+      "string_sent",
+      {
+        peerId,
+        contentLength: content.length,
+        chunkCount: chunks.length,
+      }
     );
   }
 
@@ -153,11 +157,14 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
    * 📝 Logging (delegated from MessageHandler)
    */
   public log(
-    level: "log" | "warn" | "error",
-    message: string,
+    level: RuntimeLogLevel,
+    event: string,
     context?: Record<string, any>
   ): void {
-    logWithLegacyLevel("FileTransferOrchestrator", level, message, context);
+    logger[level]({
+      event,
+      context,
+    });
   }
 
   // ===== Internal Orchestration Methods =====
@@ -173,7 +180,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     const fileId = generateFileId(file);
     const peerState = this.stateManager.getPeerState(peerId);
     if (peerState.isSending) {
-      this.log("warn", `Already sending file to peer ${peerId}`, { fileId });
+      this.log("warn", "file_send_already_in_progress", { peerId, fileId });
       return;
     }
 
@@ -218,11 +225,14 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     // 1. Initialize streaming file reader
     const streamReader = new StreamingFileReader(file, initialReadOffset);
 
-    logger.debug("Starting transfer", {
-      fileName: file.name,
-      sizeMb: Number((file.size / 1024 / 1024).toFixed(1)),
-      peerId,
-      initialOffset: initialReadOffset,
+    logger.debug({
+      event: "transfer_started",
+      context: {
+        fileName: file.name,
+        sizeMb: Number((file.size / 1024 / 1024).toFixed(1)),
+        peerId,
+        initialOffset: initialReadOffset,
+      },
     });
 
     try {
@@ -272,7 +282,11 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
         } catch (error) {
           this.log(
             "warn",
-            `Chunk send failed #${chunkInfo.chunkIndex}: ${error}`
+            "chunk_send_failed",
+            {
+              chunkIndex: chunkInfo.chunkIndex,
+              error,
+            }
           );
           sendSuccessful = false;
         }
@@ -315,32 +329,41 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
         const startChunkIndex = Math.floor(initialOffset / 65536);
         const expectedChunksSent = expectedTotalChunks - startChunkIndex;
 
-        logger.debug("Transfer complete", {
-          fileName: file.name,
-          durationSeconds: Number((totalTime / 1000).toFixed(1)),
-          speedMbps: Number(avgSpeedMBps.toFixed(1)),
-          chunksSent: networkChunkIndex,
-          expectedChunksSent,
-          startChunkIndex,
-          expectedTotalChunks,
-          initialOffset,
-          totalReadTime,
-          totalSendTime,
-          totalProgressTime,
-          lastProgressTime,
+        logger.debug({
+          event: "transfer_completed",
+          context: {
+            fileName: file.name,
+            durationSeconds: Number((totalTime / 1000).toFixed(1)),
+            speedMbps: Number(avgSpeedMBps.toFixed(1)),
+            chunksSent: networkChunkIndex,
+            expectedChunksSent,
+            startChunkIndex,
+            expectedTotalChunks,
+            initialOffset,
+            totalReadTime,
+            totalSendTime,
+            totalProgressTime,
+            lastProgressTime,
+          },
         });
 
         if (networkChunkIndex !== expectedChunksSent) {
-          logger.warn("Transfer chunk count mismatch", {
-            fileName: file.name,
-            chunksSent: networkChunkIndex,
-            expectedChunksSent,
+          logger.warn({
+            event: "transfer_chunk_count_mismatch",
+            context: {
+              fileName: file.name,
+              chunksSent: networkChunkIndex,
+              expectedChunksSent,
+            },
           });
         }
       }
     } catch (error: any) {
       const errorMessage = `Streaming send error: ${error.message}`;
-      logger.error("Transfer error", { errorMessage, fileId, peerId });
+      logger.error({
+        event: "transfer_failed",
+        context: { errorMessage, fileId, peerId },
+      });
       this.fireError(errorMessage, {
         fileId,
         peerId,
@@ -362,13 +385,13 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
 
       // Check if it has been cleaned up or does not exist
       if (!currentPeerState || !currentPeerState.isSending) {
-        this.log("log", `Transfer completed or peer disconnected: ${peerId}`);
+        this.log("info", "transfer_wait_finished", { peerId });
         break;
       }
 
       // Check if the WebRTC connection is still valid
       if (!this.webrtcConnection.peerConnections.has(peerId)) {
-        this.log("log", `Peer connection lost: ${peerId}, stopping transfer`);
+        this.log("info", "transfer_stopped_peer_connection_lost", { peerId });
         this.stateManager.updatePeerState(peerId, { isSending: false });
         break;
       }
@@ -397,7 +420,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
    * ❌ Abort file sending
    */
   private abortFileSend(fileId: string, peerId: string): void {
-    this.log("warn", `Aborting file send for ${fileId} to ${peerId}`);
+    this.log("warn", "file_send_aborted", { fileId, peerId });
     this.stateManager.resetPeerState(peerId);
   }
 
@@ -452,7 +475,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   public handlePeerReconnection(peerId: string): void {
     // Clear all transfer states for this peer
     this.stateManager.clearPeerState(peerId);
-    this.log("log", `Successfully reset transfer state for reconnected peer ${peerId}`);
+    this.log("info", "peer_transfer_state_reset", { peerId });
   }
 
   /**
@@ -463,6 +486,6 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
     this.networkTransmitter.cleanup();
     this.progressTracker.cleanup();
     this.messageHandler.cleanup();
-    this.log("log", "FileTransferOrchestrator cleaned up");
+    this.log("info", "transfer_orchestrator_cleaned_up");
   }
 }

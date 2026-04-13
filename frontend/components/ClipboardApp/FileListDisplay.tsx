@@ -12,7 +12,7 @@ import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { supportsAutoDownload } from "@/lib/browserUtils";
 import { createLogger } from "@/lib/logger";
 const developmentEnv = process.env.NODE_ENV;
-const logger = createLogger("FileListDisplay");
+const logger = createLogger({ scope: "Clipboard.FileListDisplay" });
 
 function formatFolderDis(template: string, num: number, size: string) {
   return template.replace("{num}", num.toString()).replace("{size}", size);
@@ -255,18 +255,24 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
           if (isAutoDownloadSupported) {
             // Browsers that support automatic downloads like Chrome: Download directly
             if (developmentEnv === "development") {
-              logger.debug("Auto-downloading completed file", {
-                fileId: item.fileId,
-                fileName: item.name,
+              logger.debug({
+                event: "auto_download_started",
+                context: {
+                  fileId: item.fileId,
+                  fileName: item.name,
+                },
               });
             }
             onDownload(item);
           } else {
             // Non-Chrome browsers: Set to save status, wait for user manual click
             if (developmentEnv === "development") {
-              logger.debug("Marking completed file as pending manual save", {
-                fileId: item.fileId,
-                fileName: item.name,
+              logger.debug({
+                event: "manual_save_marked",
+                context: {
+                  fileId: item.fileId,
+                  fileName: item.name,
+                },
               });
             }
             setPendingSave((prev) => ({
@@ -276,10 +282,13 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
           }
         } else {
           if (developmentEnv === "development") {
-            logger.debug("Skipping auto-download for completed file", {
-              fileId: item.fileId,
-              isSaveToDisk,
-              hasOnDownload: !!onDownload,
+            logger.debug({
+              event: "auto_download_skipped",
+              context: {
+                fileId: item.fileId,
+                isSaveToDisk,
+                hasOnDownload: !!onDownload,
+              },
             });
           }
         }

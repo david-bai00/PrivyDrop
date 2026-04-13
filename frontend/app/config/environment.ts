@@ -16,6 +16,12 @@ export const getLoggingConfig = () => ({
   enableBackendLogs: process.env.NODE_ENV !== "production",
   enableDebugConsoleLogs: process.env.NODE_ENV !== "production",
   enableInfoConsoleLogs: process.env.NODE_ENV !== "production",
+  backendSampleRates: {
+    debug: process.env.NODE_ENV === "production" ? 0 : 0.1,
+    info: process.env.NODE_ENV === "production" ? 0 : 0.5,
+    warn: 1,
+    error: 1,
+  },
 });
 
 export const getIceServers = () => {

@@ -185,7 +185,7 @@ Socket.IO 事件处理流程：
 - 类型不变量原则：把“只在 shutdown 流程出现的状态”单独建模为 `ReceptionShutdownLifecycleState`，并在策略表与编排层统一复用；避免在多个文件里重复写 `Exclude<...>` 这类条件类型，以免未来状态枚举扩展时漏改导致语义漂移。
 - 数据流原则：单向数据流（Store → Hooks → Components）；Hooks 做适配，组件只消费不修改。
 - **实用调试策略**：
-  - 为连接状态变化与 Store 更新添加结构化日志；热路径统一走 `frontend/lib/logger.ts`，避免直接散落 `console.*` / `postLogToBackend()`
+  - 为连接状态变化与 Store 更新添加结构化日志；热路径统一走 `frontend/lib/logger.ts`，使用 `createLogger({ scope })` + `{ event, context, sample? }` 契约，避免直接散落 `console.*` / `postLogToBackend()`
   - DataChannel 发送重试机制：`sendToPeer()` 以 async 方式返回最终 `SendResult`；优雅断开的 peer 跳过重试，调用方不应再基于同步布尔值判断发送成败
   - WebRTC 数据类型兼容性：支持 `ArrayBuffer`/`Blob`/`Uint8Array`/`TypedArray` 多种格式，解决 Firefox 兼容性问题
   - 连接状态监控：`connectionState` 变化时触发相应的处理逻辑（connected/disconnected/failed/closed）

@@ -12,9 +12,9 @@ import {
 import { ReceptionStateManager } from "./ReceptionStateManager";
 import { ReceptionConfig } from "./ReceptionConfig";
 import WebRTC_Recipient from "../webrtc_Recipient";
-import { createLogger } from "@/lib/logger";
+import { createLogger, type RuntimeLogLevel } from "@/lib/logger";
 
-const logger = createLogger("MessageProcessor");
+const logger = createLogger({ scope: "Receive.MessageProcessor" });
 
 /**
  * 🚀 Message processor delegate interface
@@ -22,7 +22,7 @@ const logger = createLogger("MessageProcessor");
 export interface MessageProcessorDelegate {
   onFileMetaReceived?: (meta: fileMetadata) => void;
   onStringReceived?: (str: string) => void;
-  log(level: "log" | "warn" | "error", message: string, context?: Record<string, any>): void;
+  log(level: RuntimeLogLevel, event: string, context?: Record<string, any>): void;
 }
 
 /**
@@ -63,13 +63,13 @@ export class MessageProcessor {
         } else {
           this.delegate.log(
             "warn",
-            `Handler not found for message type: ${parsedData.type}`,
+            "message_handler_missing",
             { peerId }
           );
         }
         return null; // String messages don't return binary data
       } catch (error) {
-        this.delegate.log("error", "Error parsing received JSON data", { error, peerId });
+        this.delegate.log("error", "received_json_parse_failed", { error, peerId });
         return null;
       }
     } else {
@@ -93,7 +93,7 @@ export class MessageProcessor {
     } else {
       this.delegate.log(
         "error",
-        "onFileMetaReceived callback not set",
+        "file_meta_callback_missing",
         { fileId: metadata.fileId }
       );
     }
@@ -112,7 +112,7 @@ export class MessageProcessor {
   private handleReceivedStringChunk(data: StringChunk): void {
     const activeStringReception = this.stateManager.getActiveStringReception();
     if (!activeStringReception) {
-      this.delegate.log("warn", "Received string chunk without active reception");
+      this.delegate.log("warn", "string_chunk_without_active_reception");
       return;
     }
 
@@ -137,7 +137,9 @@ export class MessageProcessor {
     const peerId = this.stateManager.getCurrentPeerId();
     if (!peerId) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        logger.error("Cannot send fileRequest without peerId");
+        logger.error({
+          event: "file_request_send_missing_peer",
+        });
       }
       return this.buildMissingPeerResult("missing_current_peer");
     }
@@ -149,9 +151,9 @@ export class MessageProcessor {
     );
     
     if (result.ok) {
-      this.delegate.log("log", "Sent fileRequest", { request, peerId });
+      this.delegate.log("info", "file_request_sent", { request, peerId });
     } else {
-      this.delegate.log("error", "Failed to send fileRequest", {
+      this.delegate.log("error", "file_request_send_failed", {
         request,
         peerId,
         sendResult: result,
@@ -172,7 +174,7 @@ export class MessageProcessor {
   ): Promise<SendResult> {
     const peerId = this.stateManager.getCurrentPeerId();
     if (!peerId) {
-      this.delegate.log("warn", "Cannot send file receive complete - no peer ID");
+      this.delegate.log("warn", "file_receive_complete_send_missing_peer");
       return this.buildMissingPeerResult("missing_current_peer");
     }
 
@@ -190,14 +192,14 @@ export class MessageProcessor {
     );
 
     if (result.ok) {
-      this.delegate.log("log", "Sent file receive complete", {
+      this.delegate.log("info", "file_receive_complete_sent", {
         fileId,
         receivedSize,
         receivedChunks,
         storeUpdated,
       });
     } else {
-      this.delegate.log("error", "Failed to send file receive complete", {
+      this.delegate.log("error", "file_receive_complete_send_failed", {
         fileId,
         peerId,
         sendResult: result,
@@ -217,7 +219,7 @@ export class MessageProcessor {
   ): Promise<SendResult> {
     const peerId = this.stateManager.getCurrentPeerId();
     if (!peerId) {
-      this.delegate.log("warn", "Cannot send folder receive complete - no peer ID");
+      this.delegate.log("warn", "folder_receive_complete_send_missing_peer");
       return this.buildMissingPeerResult("missing_current_peer");
     }
 
@@ -234,23 +236,26 @@ export class MessageProcessor {
     );
 
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-      logger.debug("Sent folder receive complete", {
-        folderName,
-        completedFiles: completedFileIds.length,
-        allStoreUpdated,
-        success: result.ok,
-        peerId,
+      logger.debug({
+        event: "folder_receive_complete_sent",
+        context: {
+          folderName,
+          completedFiles: completedFileIds.length,
+          allStoreUpdated,
+          success: result.ok,
+          peerId,
+        },
       });
     }
 
     if (result.ok) {
-      this.delegate.log("log", "Sent folder receive complete", {
+      this.delegate.log("info", "folder_receive_complete_sent", {
         folderName,
         completedFiles: completedFileIds.length,
         allStoreUpdated,
       });
     } else {
-      this.delegate.log("error", "Failed to send folder receive complete", {
+      this.delegate.log("error", "folder_receive_complete_send_failed", {
         folderName,
         peerId,
         sendResult: result,
@@ -321,7 +326,9 @@ export class MessageProcessor {
    */
   cleanup(): void {
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-      logger.debug("MessageProcessor cleaned up");
+      logger.debug({
+        event: "message_processor_cleaned_up",
+      });
     }
   }
 }

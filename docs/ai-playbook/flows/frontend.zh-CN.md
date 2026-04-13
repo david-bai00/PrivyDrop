@@ -174,4 +174,5 @@ Core Services (webrtcService) + Stores (clipboardUiStore + fileTransferStore)
 - **单向数据流**：Stores → Hooks → Components
 - **状态管理分层**：传输领域状态通过 `useFileTransferStore` 管理，纯 UI 输入态通过 `useClipboardUiStore` 管理
 - **错误处理标准化**：统一的 sender/receiver 消息 dispatcher，避免布尔 side 参数和计时器竞态继续扩散
+- **日志契约标准化**：运行时日志统一走结构化 logger，scope 使用 PascalCase 点分层命名；backend 仅在非生产环境启用，并对高频 `debug/info` 采样，`warn/error` 不采样
 - **国际化集成**：useLocale + getDictionary 提供多语言支持

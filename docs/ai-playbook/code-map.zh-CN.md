@@ -77,7 +77,7 @@
     - `frontend/lib/webrtcService.ts` — WebRTC 服务单例封装（跨路由常驻），管理 sender/receiver 实例，提供统一业务接口，处理连接状态变更、数据广播、文件请求和连接断开清理；现在维护权威连接 lifecycle state（`idle/joining/waiting_for_peer/negotiating/connected/reconnecting/leaving/failed`），并通过单一 `WebRTCServiceEvent` 事件表向上层发出连接/传输事件，不再直接写 Zustand，同时提供 `getSessionInfo()` / `getLifecycleState()` 这类只读查询接口给 hooks 和协调层使用。内部额外维护按 peer 的归一化连接状态快照，避免多 peer 混合态时被单个 `negotiating/disconnected` 事件错误覆盖整体 lifecycle。sender/receiver 离房与 cleanup 进一步收敛为显式 `shutdownSender()` / `shutdownReceiver()` 动作入口。
     - `frontend/lib/app/WebRTCStoreCoordinator.ts` — 薄应用编排层，订阅 `webrtcService` 的显式事件表并统一写入 `fileTransferStore`；负责把权威 lifecycle state 派生为兼容的 badge state，同时处理 sender DataChannel 打开后的自动广播与按 peer 清理进度。当前还承接 sender room 选择、sender/receiver domain reset、receiver 已接收结果清空，以及 sender payload 的 draft/published 更新、发布与广播等显式 command，作为 hooks/components 的领域状态写入口边界。
     - `frontend/lib/app/roomPresentation.ts` — 房间展示层派生 helper，负责根据 sender/receiver 的领域事实计算顶部状态文案，并在 sender 已入房时生成分享链接；用于避免把本地化展示文案和链接缓存写回领域 store。
-    - `frontend/lib/logger.ts` — 统一运行时日志入口，封装 `debug/info/warn/error` 与后端日志门控；开发/测试环境允许 console + backend，生产环境禁止后端调试日志上报。
+    - `frontend/lib/logger.ts` — 统一运行时日志入口，封装结构化 `debug/info/warn/error` 日志；`createLogger({ scope })` 只接受 PascalCase 点分层 scope，调用方统一传 `{ event, context, sample? }`。开发/测试环境允许 console + backend，生产环境禁止后端日志上报；backend 对 `debug/info` 默认采样，`warn/error` 不采样。
   - 发送（sender）
     - `frontend/lib/fileSender.ts` — 发送端向后兼容包装层，内部使用 FileTransferOrchestrator 提供统一服务；新增 `shutdown(action)`，把 sender 清理语义从零散 `cleanup()` 收敛到显式动作。
     - `frontend/lib/transfer/FileTransferOrchestrator.ts` — 发送端主编排器，集成所有组件管理文件传输生命周期；文件元数据发送已改为等待底层 async send 结果，避免“上层判失败、底层晚发成功”的语义错位。

@@ -1,7 +1,7 @@
 import { CustomFile } from "@/types/webrtc";
 import { createLogger } from "@/lib/logger";
 
-const logger = createLogger("fileUtils");
+const logger = createLogger({ scope: "FileUtils" });
 
 // Adaptively format the file size with units
 export const formatFileSize = (sizeInBytes: number): string => {
@@ -31,14 +31,20 @@ export const downloadAs = async (
 ): Promise<void> => {
   // Check if file is empty
   if (file.size === 0) {
-    logger.error("downloadAs received an empty file", { saveName });
+    logger.error({
+      event: "download_empty_file_rejected",
+      context: { saveName },
+    });
     throw new Error("Cannot download file with 0 size");
   }
 
   try {
     return await standardDownload(file, saveName);
   } catch (error) {
-    logger.error("downloadAs failed", { saveName, error });
+    logger.error({
+      event: "download_failed",
+      context: { saveName, error },
+    });
     throw error;
   }
 };

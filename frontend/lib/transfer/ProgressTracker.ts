@@ -2,7 +2,7 @@ import { SpeedCalculator } from "@/lib/speedCalculator";
 import { StateManager } from "./StateManager";
 import { createLogger } from "@/lib/logger";
 
-const logger = createLogger("ProgressTracker");
+const logger = createLogger({ scope: "Transfer.ProgressTracker" });
 /**
  * 🚀 Progress callback type definition
  */
@@ -81,7 +81,10 @@ export class ProgressTracker {
   ): Promise<void> {
     const folderMeta = this.stateManager.getFolderMeta(folderName);
     if (!folderMeta) {
-      logger.warn("Folder metadata not found", { folderName, peerId });
+      logger.warn({
+        event: "folder_metadata_missing",
+        context: { folderName, peerId },
+      });
       return;
     }
 
@@ -98,14 +101,21 @@ export class ProgressTracker {
     // Trigger folder progress callback
     this.triggerProgressCallback(peerId, folderName, progress, speed);
 
-    logger.debug("Folder progress updated", {
-      folderName,
-      progressPercent: Number((progress * 100).toFixed(2)),
-      speedKbps: Number(speed.toFixed(2)),
-      totalSentBytes,
-      totalSize: folderMeta.totalSize,
-      fileProgress,
-      peerId,
+    logger.debug({
+      event: "folder_progress_updated",
+      context: {
+        folderName,
+        progressPercent: Number((progress * 100).toFixed(2)),
+        speedKbps: Number(speed.toFixed(2)),
+        totalSentBytes,
+        totalSize: folderMeta.totalSize,
+        fileProgress,
+        peerId,
+      },
+      sample: {
+        rate: 0.02,
+        key: `${folderName}:${peerId}:${Math.floor(progress * 100)}`,
+      },
     });
   }
 
@@ -130,7 +140,10 @@ export class ProgressTracker {
       try {
         peerState.progressCallback(fileId, progress, speed);
       } catch (error) {
-        logger.error("Progress callback error", { fileId, error, peerId });
+        logger.error({
+          event: "progress_callback_failed",
+          context: { fileId, error, peerId },
+        });
       }
     }
   }
@@ -147,7 +160,10 @@ export class ProgressTracker {
    */
   completeFileProgress(fileId: string, peerId: string): void {
     this.triggerProgressCallback(peerId, fileId, 1.0, 0);
-    logger.debug("File progress completed", { fileId, peerId });
+    logger.debug({
+      event: "file_progress_completed",
+      context: { fileId, peerId },
+    });
   }
 
   /**
@@ -155,7 +171,10 @@ export class ProgressTracker {
    */
   completeFolderProgress(folderName: string, peerId: string): void {
     this.triggerProgressCallback(peerId, folderName, 1.0, 0);
-    logger.debug("Folder progress completed", { folderName, peerId });
+    logger.debug({
+      event: "folder_progress_completed",
+      context: { folderName, peerId },
+    });
   }
 
   /**
@@ -224,6 +243,8 @@ export class ProgressTracker {
    */
   cleanup(): void {
     // SpeedCalculator internally automatically cleans up expired data
-    logger.debug("ProgressTracker cleaned up");
+    logger.debug({
+      event: "progress_tracker_cleaned_up",
+    });
   }
 }

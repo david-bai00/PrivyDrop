@@ -13,7 +13,7 @@ import { createLogger } from "@/lib/logger";
 import type { FileTransferText } from "@/types/clipboardText";
 import { useClipboardAppMessageDispatcher } from "@/hooks/useClipboardAppMessages";
 
-const logger = createLogger("useFileTransferHandler");
+const logger = createLogger({ scope: "Hooks.FileTransferHandler" });
 
 interface UseFileTransferHandlerProps {
   text: FileTransferText;
@@ -95,16 +95,22 @@ export function useFileTransferHandler({ text }: UseFileTransferHandlerProps) {
           if (fileToDownload) {
             // Check if file is empty
             if (fileToDownload.size === 0) {
-              logger.error("Downloaded file has zero size", {
-                fileId: meta.fileId,
+              logger.error({
+                event: "downloaded_file_empty",
+                context: {
+                  fileId: meta.fileId,
+                },
               });
             }
 
             // Check if file is a valid Blob
             if (!(fileToDownload instanceof Blob)) {
-              logger.warn("Downloaded value is not a Blob", {
-                fileId: meta.fileId,
-                valueType: typeof fileToDownload,
+              logger.warn({
+                event: "downloaded_file_invalid_blob",
+                context: {
+                  fileId: meta.fileId,
+                  valueType: typeof fileToDownload,
+                },
               });
             }
 
@@ -115,9 +121,12 @@ export function useFileTransferHandler({ text }: UseFileTransferHandlerProps) {
             const availableFileIds = latestRetrievedFiles.map((f) =>
               generateFileId(f)
             );
-            logger.debug("Downloaded file not found in store", {
-              fileId: meta.fileId,
-              availableFileIds,
+            logger.debug({
+              event: "downloaded_file_missing",
+              context: {
+                fileId: meta.fileId,
+                availableFileIds,
+              },
             });
           }
 

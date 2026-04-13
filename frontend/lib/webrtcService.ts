@@ -28,7 +28,7 @@ import {
 } from "@/lib/transfer/senderShutdown";
 import { ReceiverShutdownAction } from "@/lib/receive";
 
-const logger = createLogger("WebRTCService");
+const logger = createLogger({ scope: "WebRTC.Service" });
 
 export type WebRTCStoreConnectionState = WebRTCConnectionBadgeState;
 
@@ -169,9 +169,12 @@ class WebRTCService {
 
     this.sender.onConnectionStateChange = (state, peerId) => {
       const normalizedState = normalizeRtcConnectionState(state);
-      logger.info("Sender connection state changed", {
-        state: normalizedState,
-        peerId,
+      logger.info({
+        event: "sender_connection_state_changed",
+        context: {
+          state: normalizedState,
+          peerId,
+        },
       });
 
       if (normalizedState === "connected") {
@@ -182,8 +185,11 @@ class WebRTCService {
           role: "sender",
           count: this.sender.peerConnections.size,
         });
-        logger.info("Sender connected", {
-          peerCount: this.sender.peerConnections.size,
+        logger.info({
+          event: "sender_connected",
+          context: {
+            peerCount: this.sender.peerConnections.size,
+          },
         });
 
         this.fileSender.setProgressCallback((fileId, progress, speed) => {
@@ -216,12 +222,18 @@ class WebRTCService {
     };
 
     this.sender.onPeerDisconnected = (peerId) => {
-      logger.info("Sender peer disconnected", { peerId });
+      logger.info({
+        event: "sender_peer_disconnected",
+        context: { peerId },
+      });
       this.handleConnectionDisconnect(peerId, true, "PEER_DISCONNECTED");
     };
 
     this.sender.onError = (error) => {
-      logger.error("Sender error", { message: error.message });
+      logger.error({
+        event: "sender_error",
+        context: { message: error.message },
+      });
       this.clearPeerConnectionStates("sender");
       this.setLifecycleState("sender", "failed");
       this.clearAllTransferProgress();
@@ -233,9 +245,12 @@ class WebRTCService {
 
     this.receiver.onConnectionStateChange = (state, peerId) => {
       const normalizedState = normalizeRtcConnectionState(state);
-      logger.info("Receiver connection state changed", {
-        state: normalizedState,
-        peerId,
+      logger.info({
+        event: "receiver_connection_state_changed",
+        context: {
+          state: normalizedState,
+          peerId,
+        },
       });
 
       if (normalizedState === "connected") {
@@ -246,8 +261,11 @@ class WebRTCService {
           role: "receiver",
           count: this.receiver.peerConnections.size,
         });
-        logger.info("Receiver connected", {
-          peerCount: this.receiver.peerConnections.size,
+        logger.info({
+          event: "receiver_connected",
+          context: {
+            peerCount: this.receiver.peerConnections.size,
+          },
         });
 
         this.fileReceiver.setProgressCallback((fileId, progress, speed) => {
@@ -291,12 +309,18 @@ class WebRTCService {
     };
 
     this.receiver.onPeerDisconnected = (peerId) => {
-      logger.info("Receiver peer disconnected", { peerId });
+      logger.info({
+        event: "receiver_peer_disconnected",
+        context: { peerId },
+      });
       this.handleConnectionDisconnect(peerId, false, "PEER_DISCONNECTED");
     };
 
     this.receiver.onError = (error) => {
-      logger.error("Receiver error", { message: error.message });
+      logger.error({
+        event: "receiver_error",
+        context: { message: error.message },
+      });
       this.clearPeerConnectionStates("receiver");
       this.setLifecycleState("receiver", "failed");
       this.clearAllTransferProgress();
@@ -399,7 +423,9 @@ class WebRTCService {
   ): Promise<boolean> {
     const peerIds = Array.from(this.sender.peerConnections.keys());
     if (peerIds.length === 0) {
-      logger.warn("No connected peers to broadcast to");
+      logger.warn({
+        event: "broadcast_skipped_no_connected_peers",
+      });
       return false;
     }
 
@@ -416,20 +442,29 @@ class WebRTCService {
       );
       return true;
     } catch (error) {
-      logger.error("Broadcast failed", { error });
+      logger.error({
+        event: "broadcast_failed",
+        context: { error },
+      });
       return false;
     }
   }
 
   public requestFile(fileId: string): void {
     void this.fileReceiver.requestFile(fileId).catch((error) => {
-      logger.error("requestFile failed", { fileId, error });
+      logger.error({
+        event: "request_file_failed",
+        context: { fileId, error },
+      });
     });
   }
 
   public requestFolder(folderName: string): void {
     void this.fileReceiver.requestFolder(folderName).catch((error) => {
-      logger.error("requestFolder failed", { folderName, error });
+      logger.error({
+        event: "request_folder_failed",
+        context: { folderName, error },
+      });
     });
   }
 
@@ -486,7 +521,10 @@ class WebRTCService {
     isSender: boolean,
     reason: string
   ): void {
-    logger.info("Connection disconnect", { reason, peerId, isSender });
+    logger.info({
+      event: "connection_disconnected",
+      context: { reason, peerId, isSender },
+    });
 
     this.immediateTransferCleanup(peerId, isSender, reason);
     const role: WebRTCServiceRole = isSender ? "sender" : "receiver";
@@ -553,19 +591,26 @@ class WebRTCService {
     }
 
     if (this.fileReceiver.hasActiveFileReception()) {
-      logger.info("Force cleaning receiver after sender disconnect", {
-        reason,
+      logger.info({
+        event: "receiver_force_cleanup_after_disconnect",
+        context: { reason },
       });
 
       try {
         void this.fileReceiver
           .handlePeerDisconnect(`SENDER_${reason}`)
           .catch((error: unknown) => {
-            logger.error("Receiver disconnect handling failed", { error });
+            logger.error({
+              event: "receiver_disconnect_cleanup_failed",
+              context: { error },
+            });
           });
       } catch (error) {
-        logger.info("Expected error during graceful shutdown", {
-          error: error instanceof Error ? error.message : String(error),
+        logger.info({
+          event: "receiver_graceful_shutdown_expected_error",
+          context: {
+            error: error instanceof Error ? error.message : String(error),
+          },
         });
       }
     }
@@ -580,8 +625,11 @@ class WebRTCService {
         role: "sender",
         count: this.sender.peerConnections.size,
       });
-      logger.info("Sender peer count updated", {
-        peerCount: this.sender.peerConnections.size,
+      logger.info({
+        event: "sender_peer_count_updated",
+        context: {
+          peerCount: this.sender.peerConnections.size,
+        },
       });
       return;
     }
@@ -595,15 +643,20 @@ class WebRTCService {
       type: "sender_disconnected_changed",
       disconnected: true,
     });
-    logger.info("Receiver peer count updated", {
-      peerCount: this.receiver.peerConnections.size,
+    logger.info({
+      event: "receiver_peer_count_updated",
+      context: {
+        peerCount: this.receiver.peerConnections.size,
+      },
     });
   }
 
   private clearAllTransferProgress(): void {
     this.emitEvent({ type: "transfer_progress_cleared", direction: "send" });
     this.emitEvent({ type: "transfer_progress_cleared", direction: "receive" });
-    logger.info("Cleared all transfer progress");
+    logger.info({
+      event: "all_transfer_progress_cleared",
+    });
   }
 
   private clearPeerTransferProgress(
@@ -614,7 +667,9 @@ class WebRTCService {
   }
 
   public async cleanup(): Promise<void> {
-    logger.info("Starting cleanup");
+    logger.info({
+      event: "service_cleanup_started",
+    });
     try {
       await Promise.all([
         this.shutdownSender("cleanup"),
@@ -622,9 +677,14 @@ class WebRTCService {
       ]);
       this.setLifecycleState("sender", "idle");
       this.setLifecycleState("receiver", "idle");
-      logger.info("Cleanup completed");
+      logger.info({
+        event: "service_cleanup_completed",
+      });
     } catch (error) {
-      logger.error("Error during cleanup", { error });
+      logger.error({
+        event: "service_cleanup_failed",
+        context: { error },
+      });
     }
   }
 }

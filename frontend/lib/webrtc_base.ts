@@ -2,7 +2,7 @@
 import io, { Socket, ManagerOptions, SocketOptions } from "socket.io-client";
 import { WakeLockManager } from "./wakeLockManager";
 import { BroadcastResult, SendResult } from "@/types/webrtc";
-import { createLogger, logWithLegacyLevel } from "@/lib/logger";
+import { createLogger, type RuntimeLogLevel } from "@/lib/logger";
 import {
   buildBroadcastResult,
   buildSendResult,
@@ -13,7 +13,7 @@ import {
   mapPeerCollection,
 } from "@/lib/webrtcConnectionCollection";
 
-const logger = createLogger("BaseWebRTC");
+const logger = createLogger({ scope: "WebRTC.Base" });
 
 export class WebRTCError extends Error {
   constructor(message: string, public context?: Record<string, any>) {
@@ -158,17 +158,22 @@ export default class BaseWebRTC {
   }
   // region Logging and Error Handling
   protected log(
-    level: "log" | "warn" | "error",
-    message: string,
-    ...args: any[]
+    level: RuntimeLogLevel,
+    event: string,
+    context?: unknown
   ) {
-    const context = args.length === 0 ? undefined : args.length === 1 ? args[0] : args;
-    logWithLegacyLevel(this.constructor.name, level, message, context);
+    logger[level]({
+      event,
+      context,
+    });
   }
 
   public fireError(message: string, context?: Record<string, any>) {
     const error = new WebRTCError(message, context);
-    this.log("error", message, context);
+    this.log("error", "error_reported", {
+      message,
+      ...(context ? { context } : {}),
+    });
     this.onError?.(error);
   }
   // endregion
@@ -177,7 +182,9 @@ export default class BaseWebRTC {
     this.socket.on("connect", async () => {
       this.peerId = this.socket.id; // Save own ID
       this.isSocketDisconnected = false;
-      this.log("log", `Connected to signaling server, peerId: ${this.peerId}`);
+      this.log("info", "socket_connected", {
+        peerId: this.peerId,
+      });
 
       // Auto re-join if we previously joined a room but socket.id changed
       const hasRoom = !!this.roomId;
@@ -224,10 +231,13 @@ export default class BaseWebRTC {
     this.socket.on("disconnect", () => {
       this.isInRoom = false;
       this.isSocketDisconnected = true;
-      logger.debug("Socket disconnected", {
-        peerId: this.peerId,
-        isInitiator: this.isInitiator,
-        isInRoom: this.isInRoom,
+      logger.debug({
+        event: "socket_disconnected",
+        context: {
+          peerId: this.peerId,
+          isInitiator: this.isInitiator,
+          isInRoom: this.isInRoom,
+        },
       });
       // Attempt to reconnect. On mobile, switching to the background disconnects both P2P and socket connections.
       // The disconnect code executes upon returning, so reconnect directly here; send a new signal to start reconnection.
@@ -235,7 +245,7 @@ export default class BaseWebRTC {
     });
 
     this.socket.on("peer-disconnected", ({ peerId }) => {
-      this.log("log", `Peer ${peerId} has disconnected.`);
+      this.log("info", "peer_disconnected", { peerId });
       this.onPeerDisconnected?.(peerId);
       // We can also clean up the connection here if needed
       this.cleanupExistingConnection(peerId);
@@ -258,11 +268,14 @@ export default class BaseWebRTC {
         roomId: this.roomId,
         isInitiator: this.isInitiator,
       });
-      logger.debug("Starting reconnection", {
-        socketDisconnected: this.isSocketDisconnected,
-        peerDisconnected: this.isPeerDisconnected,
-        socketIdChanged,
-        isInitiator: this.isInitiator,
+      logger.debug({
+        event: "reconnect_started",
+        context: {
+          socketDisconnected: this.isSocketDisconnected,
+          peerDisconnected: this.isPeerDisconnected,
+          socketIdChanged,
+          isInitiator: this.isInitiator,
+        },
       });
 
       try {
@@ -370,7 +383,8 @@ export default class BaseWebRTC {
     } else {
       this.log(
         "warn",
-        `Connection not ready for ${peerId}, keeping candidates queued`
+        "ice_candidates_kept_queued",
+        { peerId }
       );
       // this.log('warn',`remoteDescription`,peerConnection?.remoteDescription);
     }
@@ -433,9 +447,12 @@ export default class BaseWebRTC {
       disconnected: async () => {
         await this.cleanupExistingConnection(peerId);
         this.isPeerDisconnected = true;
-        logger.debug("Peer connection disconnected", {
-          peerId,
-          isInitiator: this.isInitiator,
+        logger.debug({
+          event: "peer_connection_disconnected",
+          context: {
+            peerId,
+            isInitiator: this.isInitiator,
+          },
         });
         // Attempt to reconnect
         this.attemptReconnection();
@@ -457,10 +474,10 @@ export default class BaseWebRTC {
       },
       // The following must be added to prevent errors
       connecting: () => {
-        this.log("log", "Peer is connecting");
+        this.log("info", "peer_connecting", { peerId });
       },
       new: () => {
-        this.log("log", "New connection state");
+        this.log("info", "peer_connection_new", { peerId });
       },
     };
 
@@ -520,17 +537,21 @@ export default class BaseWebRTC {
         error.type === "error";
 
       if (isUserDisconnect) {
-        this.log("log", `Data channel closed by user for peer ${peerId}`, {
+        this.log("info", "data_channel_closed_by_user", {
+          peerId,
           error,
         });
       } else {
-        this.log("error", `Data channel error for peer ${peerId}`, { error });
+        this.log("error", "data_channel_error", { peerId, error });
       }
     };
 
     dataChannel.onclose = () => {
-      logger.debug("Data channel closed", { peerId });
-      this.log("log", `Data channel with ${peerId} closed.`);
+      logger.debug({
+        event: "data_channel_closed",
+        context: { peerId },
+      });
+      this.log("info", "data_channel_close_observed", { peerId });
     };
   }
   // Join a room. sendInitiatorOnline indicates whether to send "initiator online" message after joining.
@@ -599,11 +620,14 @@ export default class BaseWebRTC {
             roomId: this.roomId,
           });
         }
-        logger.debug("Early join completed", {
-          peerId: this.socket.id,
-          reason,
-          roomId,
-          isInitiator: this.isInitiator,
+        logger.debug({
+          event: "join_completed_early",
+          context: {
+            peerId: this.socket.id,
+            reason,
+            roomId,
+            isInitiator: this.isInitiator,
+          },
         });
         cleanup(joinResponseHandler, eqHandlers);
         if (!this.reconnectionInProgress) {
@@ -647,17 +671,23 @@ export default class BaseWebRTC {
               roomId: this.roomId,
             });
           }
-          logger.debug("Join room succeeded", {
-            peerId: this.socket.id,
-            roomId: response.roomId,
-            isInitiator: this.isInitiator,
-            isInRoom: this.isInRoom,
+          logger.debug({
+            event: "join_room_succeeded",
+            context: {
+              peerId: this.socket.id,
+              roomId: response.roomId,
+              isInitiator: this.isInitiator,
+              isInRoom: this.isInRoom,
+            },
           });
           resolve();
         } else {
           this.isInRoom = false;
           this.roomId = null;
-          logger.warn("Join room failed", { roomId, message: response.message });
+          logger.warn({
+            event: "join_room_failed",
+            context: { roomId, message: response.message },
+          });
           if (!this.reconnectionInProgress) {
             this.onLifecycleEvent?.({
               type: "join_failed",
@@ -725,16 +755,24 @@ export default class BaseWebRTC {
       getFinalState: () => this.getDataChannelState(peerId),
       delay: (ms) => this.delay(ms),
       onChannelNotReady: () => {
-        logger.warn("Data channel not ready", {
-          peerId,
-          state: this.getDataChannelState(peerId) || "undefined",
+        logger.warn({
+          event: "data_channel_not_ready",
+          context: {
+            peerId,
+            state: this.getDataChannelState(peerId) || "undefined",
+          },
         });
-        this.log("warn", `Data channel not ready for peer ${peerId}. Retrying...`);
+        this.log("warn", "data_channel_retry_scheduled", { peerId });
       },
       onRetry: (attemptNumber, maxRetryAttempts) => {
         this.log(
-          "log",
-          `Retrying to send data to peer ${peerId}. Attempt ${attemptNumber - 1} of ${maxRetryAttempts}`
+          "info",
+          "send_retry_started",
+          {
+            peerId,
+            attempt: attemptNumber - 1,
+            maxRetryAttempts,
+          }
         );
       },
       onFailure: (failureResult) => {
@@ -755,7 +793,7 @@ export default class BaseWebRTC {
    */
   public markPeerGracefullyDisconnected(peerId: string): void {
     this.gracefullyDisconnectedPeers.add(peerId);
-    this.log("log", `Marked peer ${peerId} as gracefully disconnected`);
+    this.log("info", "peer_marked_gracefully_disconnected", { peerId });
   }
 
   protected async closeDataChannel(peerId: string): Promise<void> {
@@ -811,8 +849,8 @@ export default class BaseWebRTC {
     this.gracefullyDisconnectedPeers.clear(); // Clear graceful disconnect tracking
 
     this.log(
-      "log",
-      "Left room and cleaned up connections, socket remains connected"
+      "info",
+      "left_room_and_cleaned_connections"
     );
     this.onLifecycleEvent?.({
       type: "leave_completed",
@@ -839,8 +877,11 @@ export default class BaseWebRTC {
       dataChannel.send(data);
       return buildSendResult(true, peerId, attempts, dataChannel.readyState);
     } catch (error) {
-      logger.error("sendToPeer error", { peerId, attempts, error });
-      this.log("error", `Error sending data to peer ${peerId}`, { error });
+      logger.error({
+        event: "send_to_peer_failed",
+        context: { peerId, attempts, error },
+      });
+      this.log("error", "send_to_peer_error", { peerId, error });
       return buildSendResult(
         false,
         peerId,

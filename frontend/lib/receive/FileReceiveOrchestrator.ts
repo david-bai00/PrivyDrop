@@ -24,9 +24,9 @@ import {
   resolveReceptionLifecycleState,
 } from "./receptionStateMachine";
 import { ChunkRangeCalculator } from "@/lib/utils/ChunkRangeCalculator";
-import { createLogger, logWithLegacyLevel } from "@/lib/logger";
+import { createLogger, type RuntimeLogLevel } from "@/lib/logger";
 
-const logger = createLogger("FileReceiveOrchestrator");
+const logger = createLogger({ scope: "Receive.Orchestrator" });
 
 /**
  * 🚀 File receive orchestrator
@@ -77,7 +77,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     // Set up data handler
     this.setupDataHandler();
 
-    this.log("log", "FileReceiveOrchestrator initialized");
+    this.log("info", "receive_orchestrator_initialized");
   }
 
   // ===== Public API =====
@@ -106,7 +106,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
 
     const activeReception = this.stateManager.getActiveFileReception();
     if (activeReception) {
-      this.log("warn", "Another file reception is already in progress.");
+      this.log("warn", "file_reception_already_in_progress");
       return;
     }
 
@@ -143,13 +143,13 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
         );
 
         if (offset === fileInfo.size) {
-          this.log("log", "File already fully downloaded.", { fileId });
+          this.log("info", "file_already_downloaded", { fileId });
           this.progressReporter.reportFileComplete(fileId);
           return;
         }
-        this.log("log", `Resuming file from offset: ${offset}`, { fileId });
+        this.log("info", "file_resume_started", { fileId, offset });
       } catch (e) {
-        this.log("log", "Partial file not found, starting from scratch.", {
+        this.log("info", "partial_file_missing_restart_from_zero", {
           fileId,
         });
         offset = 0;
@@ -169,13 +169,16 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
         ReceptionConfig.FILE_CONFIG.CHUNK_SIZE
       );
 
-      logger.debug("Receive summary", {
-        fileName: fileInfo.name,
-        expectedChunksCount,
-        calculatedChunks: chunkRange.totalChunks,
-        startChunk: chunkRange.startChunk,
-        endChunk: chunkRange.endChunk,
-        absoluteTotalChunks: chunkRange.absoluteTotalChunks,
+      logger.debug({
+        event: "receive_summary",
+        context: {
+          fileName: fileInfo.name,
+          expectedChunksCount,
+          calculatedChunks: chunkRange.totalChunks,
+          startChunk: chunkRange.startChunk,
+          endChunk: chunkRange.endChunk,
+          absoluteTotalChunks: chunkRange.absoluteTotalChunks,
+        },
       });
     }
 
@@ -215,7 +218,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
 
     const folderProgress = this.stateManager.getFolderProgress(folderName);
     if (!folderProgress || folderProgress.fileIds.length === 0) {
-      this.log("warn", "No files found for the requested folder.", {
+      this.log("warn", "folder_request_missing_files", {
         folderName,
       });
       return;
@@ -246,9 +249,12 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       initialFolderReceivedSize
     );
     this.log(
-      "log",
-      `Requesting folder, initial received size: ${initialFolderReceivedSize}`,
-      { folderName }
+      "info",
+      "folder_request_started",
+      {
+        folderName,
+        initialFolderReceivedSize,
+      }
     );
 
     this.stateManager.setCurrentFolderName(folderName);
@@ -271,10 +277,13 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     const completedFileIds = folderProgress.fileIds.filter(() => true); // Assume all succeeded
 
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-      logger.debug("Folder request completed", {
-        folderName,
-        completedFiles: completedFileIds.length,
-        totalFiles: folderProgress.fileIds.length,
+      logger.debug({
+        event: "folder_request_completed",
+        context: {
+          folderName,
+          completedFiles: completedFileIds.length,
+          totalFiles: folderProgress.fileIds.length,
+        },
       });
     }
 
@@ -297,11 +306,14 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
   // Note: These are implemented as properties, not methods, to avoid infinite recursion
 
   public log(
-    level: "log" | "warn" | "error",
-    message: string,
+    level: RuntimeLogLevel,
+    event: string,
     context?: Record<string, any>
   ): void {
-    logWithLegacyLevel("FileReceiveOrchestrator", level, message, context);
+    logger[level]({
+      event,
+      context,
+    });
   }
 
   // ===== Internal Methods =====
@@ -328,7 +340,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
    */
   private async handleBinaryChunkData(data: any): Promise<void> {
     if (this.isReceiverTransitioning()) {
-      this.log("warn", "Ignoring binary chunk while receiver is transitioning", {
+      this.log("warn", "binary_chunk_ignored_during_transition", {
         lifecycleState: this.stateManager.getLifecycleState(),
       });
       return;
@@ -337,7 +349,9 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     const activeReception = this.stateManager.getActiveFileReception();
     if (!activeReception) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        logger.error("Received file chunk without active reception");
+        logger.error({
+          event: "binary_chunk_without_active_reception",
+        });
       }
       this.fireError("Received a file chunk without an active file reception.");
       return;
@@ -347,7 +361,9 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     const arrayBuffer = await this.chunkProcessor.convertToArrayBuffer(data);
     if (!arrayBuffer) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        logger.error("Failed to convert binary data to ArrayBuffer");
+        logger.error({
+          event: "binary_chunk_convert_failed",
+        });
       }
       this.fireError("Received unsupported binary data format", {
         dataType: Object.prototype.toString.call(data),
@@ -373,8 +389,11 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     const { chunkMeta, chunkData } = parsed;
     const reception = this.stateManager.getActiveFileReception();
     if (!reception) {
-      logger.info("Ignoring chunk because reception is already closed", {
-        chunkIndex: chunkMeta.chunkIndex,
+      logger.info({
+        event: "chunk_ignored_after_reception_closed",
+        context: {
+          chunkIndex: chunkMeta.chunkIndex,
+        },
       });
       return;
     }
@@ -388,7 +407,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     );
 
     if (!validation.isValid) {
-      this.log("warn", "Chunk validation failed", {
+      this.log("warn", "chunk_validation_failed", {
         errors: validation.errors,
         chunkIndex: chunkMeta.chunkIndex,
       });
@@ -415,10 +434,13 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       )
     ) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        logger.error("Invalid relative chunk index", {
-          absoluteChunkIndex: result.absoluteChunkIndex,
-          relativeChunkIndex: result.relativeChunkIndex,
-          arraySize: reception.chunks.length,
+        logger.error({
+          event: "relative_chunk_index_invalid",
+          context: {
+            absoluteChunkIndex: result.absoluteChunkIndex,
+            relativeChunkIndex: result.relativeChunkIndex,
+            arraySize: reception.chunks.length,
+          },
         });
       }
       return;
@@ -489,9 +511,12 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       this.stateManager.markFileFinalizing();
 
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        logger.debug("Starting auto finalization", {
-          isDataComplete: stats.isDataComplete,
-          fileId: reception.meta.fileId,
+        logger.debug({
+          event: "auto_finalization_started",
+          context: {
+            isDataComplete: stats.isDataComplete,
+            fileId: reception.meta.fileId,
+          },
         });
       }
 
@@ -500,7 +525,10 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
         this.stateManager.completeFileReception();
       } catch (error) {
         if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-          logger.error("Auto-finalize failed", { error });
+          logger.error({
+            event: "auto_finalization_failed",
+            context: { error },
+          });
         }
         this.stateManager.failFileReception(error);
       }
@@ -528,9 +556,12 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     const reception = this.stateManager.getActiveFileReception();
     if (!reception?.writeStream || !reception.fileHandle) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        logger.error("Cannot finalize large file", {
-          hasWriteStream: !!reception?.writeStream,
-          hasFileHandle: !!reception?.fileHandle,
+        logger.error({
+          event: "large_file_finalize_missing_resources",
+          context: {
+            hasWriteStream: !!reception?.writeStream,
+            hasFileHandle: !!reception?.fileHandle,
+          },
         });
       }
       return;
@@ -538,8 +569,11 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
 
     try {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        logger.debug("Starting large file finalization", {
-          fileName: reception.meta.name,
+        logger.debug({
+          event: "large_file_finalization_started",
+          context: {
+            fileName: reception.meta.name,
+          },
         });
       }
 
@@ -553,8 +587,11 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       }
 
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        logger.debug("Large file finalized successfully", {
-          fileName: reception.meta.name,
+        logger.debug({
+          event: "large_file_finalized",
+          context: {
+            fileName: reception.meta.name,
+          },
         });
       }
 
@@ -580,15 +617,21 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       }
 
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        logger.debug("Large file completion confirmation sent", {
-          fileId: reception.meta.fileId,
-          size: stats.currentTotalSize,
-          chunks: stats.sequencedCount,
+        logger.debug({
+          event: "large_file_completion_confirmation_sent",
+          context: {
+            fileId: reception.meta.fileId,
+            size: stats.currentTotalSize,
+            chunks: stats.sequencedCount,
+          },
         });
       }
     } catch (error) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        logger.error("Error during large file finalization", { error });
+        logger.error({
+          event: "large_file_finalization_failed",
+          context: { error },
+        });
       }
       this.fireError("Error finalizing large file", { error });
     }
@@ -665,7 +708,10 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
         component: "FileReceiveOrchestrator",
       });
     } else {
-      this.log("error", message, context);
+      this.log("error", "receive_error_reported", {
+        message,
+        ...(context ? { context } : {}),
+      });
     }
 
     const reception = this.stateManager.getActiveFileReception();
@@ -796,7 +842,8 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     );
 
     await (async () => {
-      this.log("log", `Receiver shutdown action: ${action}`, {
+      this.log("info", "receiver_shutdown_started", {
+        action,
         reason: shutdownReason,
         policy,
       });
@@ -829,7 +876,7 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
         this.messageProcessor.cleanup();
       }
 
-      this.log("log", `Receiver shutdown action completed: ${action}`);
+      this.log("info", "receiver_shutdown_completed", { action });
     })();
   }
 
@@ -878,7 +925,8 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       try {
         await reception.sequencedWriter.close();
       } catch (err) {
-        this.log("error", `Error closing sequenced writer during ${action}`, {
+        this.log("error", "sequenced_writer_close_failed", {
+          action,
           err,
         });
       }
@@ -888,7 +936,8 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
       try {
         await reception.writeStream.close();
       } catch (err) {
-        this.log("error", `Error closing write stream during ${action}`, {
+        this.log("error", "write_stream_close_failed", {
+          action,
           err,
         });
       }

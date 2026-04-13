@@ -2,7 +2,7 @@ import { CustomFile, fileMetadata } from "@/types/webrtc";
 import { ReceptionConfig } from "./ReceptionConfig";
 import { createLogger } from "@/lib/logger";
 
-const logger = createLogger("FileAssembler");
+const logger = createLogger({ scope: "Receive.FileAssembler" });
 
 /**
  * 🚀 File assembly result interface
@@ -46,11 +46,14 @@ export class FileAssembler {
       ReceptionConfig.VALIDATION_CONFIG.MAX_SIZE_DIFFERENCE_BYTES
     ) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        logger.debug("File assembly size mismatch", {
-          fileName: meta.name,
-          sizeDifference,
-          threshold:
-            ReceptionConfig.VALIDATION_CONFIG.MAX_SIZE_DIFFERENCE_BYTES,
+        logger.debug({
+          event: "file_assembly_size_mismatch",
+          context: {
+            fileName: meta.name,
+            sizeDifference,
+            threshold:
+              ReceptionConfig.VALIDATION_CONFIG.MAX_SIZE_DIFFERENCE_BYTES,
+          },
         });
       }
     }
@@ -85,13 +88,16 @@ export class FileAssembler {
     }
 
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-      logger.debug("File assembled in memory", {
-        fileName: meta.name,
-        validChunks,
-        totalChunks: chunks.length,
-        totalChunkSize,
-        expectedSize: meta.size,
-        storeUpdated,
+      logger.debug({
+        event: "file_assembled_in_memory",
+        context: {
+          fileName: meta.name,
+          validChunks,
+          totalChunks: chunks.length,
+          totalChunkSize,
+          expectedSize: meta.size,
+          storeUpdated,
+        },
       });
     }
 

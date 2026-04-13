@@ -3,7 +3,7 @@ import { ReceptionStateManager } from "./ReceptionStateManager";
 import { ReceptionConfig } from "./ReceptionConfig";
 import { createLogger } from "@/lib/logger";
 
-const logger = createLogger("ProgressReporter");
+const logger = createLogger({ scope: "Receive.ProgressReporter" });
 
 /**
  * 🚀 Progress callback type
@@ -89,10 +89,13 @@ export class ProgressReporter {
       }
 
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_PROGRESS_LOGGING && progress >= 1) {
-        logger.debug("File progress reached 100%", {
-          fileId,
-          speedMbps: Number((speed / 1024 / 1024).toFixed(1)),
-          peerId,
+        logger.debug({
+          event: "file_progress_reached_complete",
+          context: {
+            fileId,
+            speedMbps: Number((speed / 1024 / 1024).toFixed(1)),
+            peerId,
+          },
         });
       }
     }
@@ -132,10 +135,13 @@ export class ProgressReporter {
     }
 
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_PROGRESS_LOGGING && progress >= 1) {
-      logger.debug("Folder progress reached 100%", {
-        folderName,
-        speedMbps: Number((speed / 1024 / 1024).toFixed(1)),
-        peerId,
+      logger.debug({
+        event: "folder_progress_reached_complete",
+        context: {
+          folderName,
+          speedMbps: Number((speed / 1024 / 1024).toFixed(1)),
+          peerId,
+        },
       });
     }
   }
@@ -155,10 +161,13 @@ export class ProgressReporter {
     this.fileProgressMap.set(fileId, 1);
 
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_PROGRESS_LOGGING) {
-      logger.debug("File completion reported", {
-        fileId,
-        speedMbps: Number((speed / 1024 / 1024).toFixed(1)),
-        peerId,
+      logger.debug({
+        event: "file_completion_reported",
+        context: {
+          fileId,
+          speedMbps: Number((speed / 1024 / 1024).toFixed(1)),
+          peerId,
+        },
       });
     }
   }
@@ -178,10 +187,13 @@ export class ProgressReporter {
     this.folderProgressMap.set(folderName, 1);
 
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_PROGRESS_LOGGING) {
-      logger.debug("Folder completion reported", {
-        folderName,
-        speedMbps: Number((speed / 1024 / 1024).toFixed(1)),
-        peerId,
+      logger.debug({
+        event: "folder_completion_reported",
+        context: {
+          folderName,
+          speedMbps: Number((speed / 1024 / 1024).toFixed(1)),
+          peerId,
+        },
       });
     }
   }
@@ -311,7 +323,9 @@ export class ProgressReporter {
     this.progressCallback = null;
     
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_PROGRESS_LOGGING) {
-      logger.debug("ProgressReporter cleaned up");
+      logger.debug({
+        event: "progress_reporter_cleaned_up",
+      });
     }
   }
 }

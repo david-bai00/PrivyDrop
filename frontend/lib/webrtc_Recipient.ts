@@ -22,12 +22,15 @@ export default class WebRTC_Recipient extends BaseWebRTC {
 
     // Add listener for initiator re-online
     this.socket.on("initiator-online", ({ roomId }) => {
-      this.log("log", `Received initiator-online for room: ${roomId}`);
+      this.log("info", "initiator_online_received", { roomId });
       // Send a ready response
       this.log(
-        "log",
-        `Sending recipient-ready, my peerId: ${this.socket.id}`,
-        this.peerId
+        "info",
+        "recipient_ready_sent",
+        {
+          peerId: this.peerId,
+          socketId: this.socket.id,
+        }
       );
       // Send a ready response
       this.socket.emit("recipient-ready", {
@@ -46,7 +49,7 @@ export default class WebRTC_Recipient extends BaseWebRTC {
     peerId: string;
     from: string;
   }): Promise<void> {
-    this.log("log", `Handling offer from peer ${from}`);
+    this.log("info", "offer_received", { from, peerId });
     try {
       // 1. Clean up existing connections
       await this.cleanupExistingConnection(from);
@@ -65,7 +68,7 @@ export default class WebRTC_Recipient extends BaseWebRTC {
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
       // Send the answer
-      this.log("log", `Sending answer to peer ${from}`);
+      this.log("info", "answer_sent", { from, peerId });
       this.socket.emit("answer", {
         answer,
         peerId: from,

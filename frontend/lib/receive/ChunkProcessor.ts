@@ -2,7 +2,7 @@ import { EmbeddedChunkMeta } from "@/types/webrtc";
 import { ReceptionConfig } from "./ReceptionConfig";
 import { createLogger } from "@/lib/logger";
 
-const logger = createLogger("ChunkProcessor");
+const logger = createLogger({ scope: "Receive.ChunkProcessor" });
 
 /**
  * 🚀 Chunk processing result interface
@@ -33,16 +33,22 @@ export class ChunkProcessor {
         const arrayBuffer = await data.arrayBuffer();
         if (data.size !== arrayBuffer.byteLength) {
           if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-            logger.warn("Blob size mismatch", {
-              blobSize: data.size,
-              arrayBufferSize: arrayBuffer.byteLength,
+            logger.warn({
+              event: "blob_size_mismatch",
+              context: {
+                blobSize: data.size,
+                arrayBufferSize: arrayBuffer.byteLength,
+              },
             });
           }
         }
         return arrayBuffer;
       } catch (error) {
         if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-          logger.error("Blob conversion failed", { error, originalType });
+          logger.error({
+            event: "blob_conversion_failed",
+            context: { error, originalType },
+          });
         }
         return null;
       }
@@ -57,13 +63,19 @@ export class ChunkProcessor {
         return newArrayBuffer;
       } catch (error) {
         if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-          logger.error("TypedArray conversion failed", { error, originalType });
+          logger.error({
+            event: "typed_array_conversion_failed",
+            context: { error, originalType },
+          });
         }
         return null;
       }
     } else {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        logger.error("Unknown binary data type", { originalType });
+        logger.error({
+          event: "binary_type_unknown",
+          context: { originalType },
+        });
       }
       return null;
     }
@@ -81,8 +93,11 @@ export class ChunkProcessor {
       // 1. Check minimum packet length
       if (arrayBuffer.byteLength < ReceptionConfig.VALIDATION_CONFIG.MIN_PACKET_SIZE) {
         if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-          logger.error("Invalid embedded packet size", {
-            byteLength: arrayBuffer.byteLength,
+          logger.error({
+            event: "embedded_packet_size_invalid",
+            context: {
+              byteLength: arrayBuffer.byteLength,
+            },
           });
         }
         return null;
@@ -96,9 +111,12 @@ export class ChunkProcessor {
       const expectedTotalLength = 4 + metaLength;
       if (arrayBuffer.byteLength < expectedTotalLength) {
         if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-          logger.error("Incomplete embedded packet", {
-            expectedTotalLength,
-            actualLength: arrayBuffer.byteLength,
+          logger.error({
+            event: "embedded_packet_incomplete",
+            context: {
+              expectedTotalLength,
+              actualLength: arrayBuffer.byteLength,
+            },
           });
         }
         return null;
@@ -116,9 +134,12 @@ export class ChunkProcessor {
       // 6. Verify chunk data size
       if (chunkData.byteLength !== chunkMeta.chunkSize) {
         if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-          logger.warn("Chunk size mismatch", {
-            expectedChunkSize: chunkMeta.chunkSize,
-            actualChunkSize: chunkData.byteLength,
+          logger.warn({
+            event: "chunk_size_mismatch",
+            context: {
+              expectedChunkSize: chunkMeta.chunkSize,
+              actualChunkSize: chunkData.byteLength,
+            },
           });
         }
       }
@@ -126,7 +147,10 @@ export class ChunkProcessor {
       return { chunkMeta, chunkData };
     } catch (error) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        logger.error("Failed to parse embedded packet", { error });
+        logger.error({
+          event: "embedded_packet_parse_failed",
+          context: { error },
+        });
       }
       return null;
     }
@@ -147,10 +171,13 @@ export class ChunkProcessor {
 
     // 🎯 Simplify debugging: Only record index mapping when boundary chunk
     if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING && (absoluteChunkIndex <= 2 || relativeChunkIndex <= 2)) {
-      logger.debug("Chunk index map", {
-        absoluteChunkIndex,
-        startChunkIndex,
-        relativeChunkIndex,
+      logger.debug({
+        event: "chunk_index_mapped",
+        context: {
+          absoluteChunkIndex,
+          startChunkIndex,
+          relativeChunkIndex,
+        },
       });
     }
 
@@ -198,11 +225,14 @@ export class ChunkProcessor {
     // 🎯 Simplify logging: Only record critical information when the number does not match
     if (chunkMeta.totalChunks !== expectedChunksCount && calculatedExpected !== expectedChunksCount) {
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
-        logger.warn("Chunk count mismatch", {
-          fileTotalChunks: chunkMeta.totalChunks,
-          expectedChunksCount,
-          calculatedExpected,
-          expectedFileId,
+        logger.warn({
+          event: "chunk_count_mismatch",
+          context: {
+            fileTotalChunks: chunkMeta.totalChunks,
+            expectedChunksCount,
+            calculatedExpected,
+            expectedFileId,
+          },
         });
       }
     }
@@ -244,12 +274,15 @@ export class ChunkProcessor {
     const hasIndexMismatch = writerExpectedIndex !== undefined && absoluteChunkIndex !== writerExpectedIndex;
 
     if (isFirstFew || isLastFew || hasIndexMismatch) {
-      logger.debug("Chunk detail", {
-        absoluteChunkIndex,
-        relativeChunkIndex,
-        writerExpectedIndex,
-        hasIndexMismatch,
-        chunkSize: chunkMeta.chunkSize,
+      logger.debug({
+        event: "chunk_detail_recorded",
+        context: {
+          absoluteChunkIndex,
+          relativeChunkIndex,
+          writerExpectedIndex,
+          hasIndexMismatch,
+          chunkSize: chunkMeta.chunkSize,
+        },
       });
     }
   }
@@ -327,12 +360,15 @@ export class ChunkProcessor {
         }
       }
 
-      logger.debug("Final completion check", {
-        fileName,
-        sequencedCount,
-        expectedChunksCount,
-        sizeDifference: expectedSize - currentTotalSize,
-        missingChunks,
+      logger.debug({
+        event: "completion_check_finalized",
+        context: {
+          fileName,
+          sequencedCount,
+          expectedChunksCount,
+          sizeDifference: expectedSize - currentTotalSize,
+          missingChunks,
+        },
       });
     }
   }

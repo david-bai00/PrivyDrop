@@ -2,22 +2,40 @@ import { postLogToBackend } from "@/app/config/api";
 import { getLoggingConfig } from "@/app/config/environment";
 
 export type RuntimeLogLevel = "debug" | "info" | "warn" | "error";
-export type LegacyConsoleLogLevel = "log" | "warn" | "error";
+
+export interface RuntimeLogSample {
+  rate: number;
+  key?: string;
+}
+
+export interface RuntimeLogEntry {
+  event: string;
+  context?: unknown;
+  sample?: RuntimeLogSample;
+}
+
+export interface RuntimeLogEnvelope {
+  timestamp: string;
+  level: RuntimeLogLevel;
+  scope: string;
+  event: string;
+  context?: unknown;
+}
 
 interface ScopedLogger {
-  debug: (message: string, context?: unknown) => void;
-  info: (message: string, context?: unknown) => void;
-  warn: (message: string, context?: unknown) => void;
-  error: (message: string, context?: unknown) => void;
+  debug: (entry: RuntimeLogEntry) => void;
+  info: (entry: RuntimeLogEntry) => void;
+  warn: (entry: RuntimeLogEntry) => void;
+  error: (entry: RuntimeLogEntry) => void;
+}
+
+interface CreateLoggerOptions {
+  scope: string;
 }
 
 const BACKEND_LOG_LIMIT = 4000;
-
-function normalizeLevel(
-  level: RuntimeLogLevel | LegacyConsoleLogLevel
-): RuntimeLogLevel {
-  return level === "log" ? "info" : level;
-}
+const SCOPE_PATTERN = /^[A-Z][A-Za-z0-9]*(?:\.[A-Z][A-Za-z0-9]*)*$/;
+const EVENT_PATTERN = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/;
 
 function shouldWriteToConsole(level: RuntimeLogLevel): boolean {
   const loggingConfig = getLoggingConfig();
@@ -34,10 +52,6 @@ function shouldWriteToConsole(level: RuntimeLogLevel): boolean {
     default:
       return false;
   }
-}
-
-function shouldWriteToBackend(): boolean {
-  return getLoggingConfig().enableBackendLogs;
 }
 
 function sanitizeValue(value: unknown, seen: WeakSet<object>): unknown {
@@ -81,108 +95,169 @@ function sanitizeValue(value: unknown, seen: WeakSet<object>): unknown {
   return result;
 }
 
-function serializeContext(context?: unknown): string {
+function sanitizeContext(context?: unknown): unknown {
   if (context === undefined) {
-    return "";
+    return undefined;
   }
 
-  if (typeof context === "string") {
-    return context;
-  }
+  return sanitizeValue(context, new WeakSet<object>());
+}
 
+function serializeEnvelope(envelope: RuntimeLogEnvelope): string {
   try {
-    return JSON.stringify(sanitizeValue(context, new WeakSet<object>()));
+    return JSON.stringify(envelope);
   } catch (error) {
-    return `{"serializationError":"${
-      error instanceof Error ? error.message : String(error)
-    }"}`;
+    return JSON.stringify({
+      timestamp: envelope.timestamp,
+      level: envelope.level,
+      scope: envelope.scope,
+      event: envelope.event,
+      context: {
+        serializationError:
+          error instanceof Error ? error.message : String(error),
+      },
+    });
   }
 }
 
-function buildLogLine(
-  scope: string,
-  level: RuntimeLogLevel,
-  message: string,
-  context?: unknown
-): string {
-  const contextText = serializeContext(context);
-  const baseMessage = `[${scope}] ${message}`;
+function hashString(value: string): number {
+  let hash = 2166136261;
 
-  if (!contextText) {
-    return baseMessage;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
   }
 
-  return `${baseMessage} ${contextText}`;
+  return hash >>> 0;
 }
 
-function writeConsole(
+function resolveBackendSampleRate(
   level: RuntimeLogLevel,
-  logLine: string,
-  context?: unknown
-): void {
-  if (!shouldWriteToConsole(level)) {
+  entry: RuntimeLogEntry
+): number {
+  if (level === "warn" || level === "error") {
+    return 1;
+  }
+
+  const loggingConfig = getLoggingConfig();
+  const configuredRate = loggingConfig.backendSampleRates[level];
+  const entryRate = entry.sample?.rate ?? 1;
+
+  return Math.max(0, Math.min(1, configuredRate, entryRate));
+}
+
+function shouldWriteToBackend(
+  level: RuntimeLogLevel,
+  envelope: RuntimeLogEnvelope,
+  entry: RuntimeLogEntry
+): boolean {
+  const loggingConfig = getLoggingConfig();
+
+  if (!loggingConfig.enableBackendLogs) {
+    return false;
+  }
+
+  const sampleRate = resolveBackendSampleRate(level, entry);
+  if (sampleRate >= 1) {
+    return true;
+  }
+  if (sampleRate <= 0) {
+    return false;
+  }
+
+  const sampleKey =
+    entry.sample?.key ?? `${envelope.scope}:${envelope.event}:${serializeEnvelope(envelope)}`;
+  const normalizedHash = hashString(sampleKey) / 0xffffffff;
+
+  return normalizedHash < sampleRate;
+}
+
+function writeConsole(envelope: RuntimeLogEnvelope): void {
+  if (!shouldWriteToConsole(envelope.level)) {
     return;
   }
 
   const consoleMethod =
-    level === "debug"
+    envelope.level === "debug"
       ? console.debug
-      : level === "info"
+      : envelope.level === "info"
         ? console.info
-        : level === "warn"
+        : envelope.level === "warn"
           ? console.warn
           : console.error;
 
-  if (context === undefined) {
-    consoleMethod(logLine);
+  const line = `[${envelope.level.toUpperCase()}] [${envelope.scope}] ${envelope.event}`;
+
+  if (envelope.context === undefined) {
+    consoleMethod(line);
     return;
   }
 
-  consoleMethod(logLine, context);
+  consoleMethod(line, envelope.context);
 }
 
-function writeBackend(level: RuntimeLogLevel, logLine: string): void {
-  if (!shouldWriteToBackend()) {
+function writeBackend(
+  envelope: RuntimeLogEnvelope,
+  entry: RuntimeLogEntry
+): void {
+  if (!shouldWriteToBackend(envelope.level, envelope, entry)) {
     return;
   }
 
-  const backendMessage = `[${level.toUpperCase()}] ${logLine}`.slice(
-    0,
-    BACKEND_LOG_LIMIT
-  );
+  void postLogToBackend(serializeEnvelope(envelope).slice(0, BACKEND_LOG_LIMIT));
+}
 
-  void postLogToBackend(backendMessage);
+function assertValidScope(scope: string): void {
+  if (!SCOPE_PATTERN.test(scope)) {
+    throw new Error(
+      `Invalid logger scope "${scope}". Expected PascalCase or PascalCase.PascalCase.`
+    );
+  }
+}
+
+function assertValidEvent(event: string): void {
+  if (!EVENT_PATTERN.test(event)) {
+    throw new Error(
+      `Invalid logger event "${event}". Expected lower_snake_case.`
+    );
+  }
+}
+
+function createEnvelope(
+  scope: string,
+  level: RuntimeLogLevel,
+  entry: RuntimeLogEntry
+): RuntimeLogEnvelope {
+  assertValidEvent(entry.event);
+
+  const context = sanitizeContext(entry.context);
+
+  return {
+    timestamp: new Date().toISOString(),
+    level,
+    scope,
+    event: entry.event,
+    ...(context === undefined ? {} : { context }),
+  };
 }
 
 function logInternal(
   scope: string,
   level: RuntimeLogLevel,
-  message: string,
-  context?: unknown
+  entry: RuntimeLogEntry
 ): void {
-  const logLine = buildLogLine(scope, level, message, context);
-  writeConsole(level, logLine, context);
-  writeBackend(level, logLine);
+  const envelope = createEnvelope(scope, level, entry);
+  writeConsole(envelope);
+  writeBackend(envelope, entry);
 }
 
-export function createLogger(scope: string): ScopedLogger {
+export function createLogger({ scope }: CreateLoggerOptions): ScopedLogger {
+  assertValidScope(scope);
+
   return {
-    debug: (message: string, context?: unknown) =>
-      logInternal(scope, "debug", message, context),
-    info: (message: string, context?: unknown) =>
-      logInternal(scope, "info", message, context),
-    warn: (message: string, context?: unknown) =>
-      logInternal(scope, "warn", message, context),
-    error: (message: string, context?: unknown) =>
-      logInternal(scope, "error", message, context),
+    debug: (entry: RuntimeLogEntry) => logInternal(scope, "debug", entry),
+    info: (entry: RuntimeLogEntry) => logInternal(scope, "info", entry),
+    warn: (entry: RuntimeLogEntry) => logInternal(scope, "warn", entry),
+    error: (entry: RuntimeLogEntry) => logInternal(scope, "error", entry),
   };
-}
-
-export function logWithLegacyLevel(
-  scope: string,
-  level: LegacyConsoleLogLevel,
-  message: string,
-  context?: unknown
-): void {
-  logInternal(scope, normalizeLevel(level), message, context);
 }

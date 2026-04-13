@@ -3,7 +3,7 @@ import { TransferConfig } from "./TransferConfig";
 import { ChunkRangeCalculator } from "@/lib/utils/ChunkRangeCalculator";
 import { createLogger } from "@/lib/logger";
 
-const logger = createLogger("StreamingFileReader");
+const logger = createLogger({ scope: "Transfer.StreamingFileReader" });
 const developmentEnv = process.env.NODE_ENV;
 /**
  * 🚀 Network chunk interface
@@ -63,13 +63,16 @@ export class StreamingFileReader {
         startOffset,
         this.NETWORK_CHUNK_SIZE
       );
-      logger.debug("Streaming file send summary", {
-        fileName: file.name,
-        startOffset,
-        startChunk: chunkRange.startChunk,
-        endChunk: chunkRange.endChunk,
-        chunksToSend: chunkRange.totalChunks,
-        absoluteTotalChunks: chunkRange.absoluteTotalChunks,
+      logger.debug({
+        event: "streaming_file_send_summary",
+        context: {
+          fileName: file.name,
+          startOffset,
+          startChunk: chunkRange.startChunk,
+          endChunk: chunkRange.endChunk,
+          chunksToSend: chunkRange.totalChunks,
+          absoluteTotalChunks: chunkRange.absoluteTotalChunks,
+        },
       });
     }
   }
@@ -102,27 +105,7 @@ export class StreamingFileReader {
     // 4. Update state
     this.updateChunkState(networkChunk);
 
-    // if (developmentEnv === "development") {
-    //   const totalChunks = this.calculateTotalNetworkChunks();
-
-    //   const isFirst = globalChunkIndex === this.startChunkIndex;
-    //   const expectedLastChunk = Math.floor(
-    //     (this.totalFileSize - 1) / this.NETWORK_CHUNK_SIZE
-    //   );
-    //   const isRealLast = isLast && globalChunkIndex === expectedLastChunk;
-
-    //   if (isFirst || isRealLast) {
-    //     logger.debug("Chunk boundary reached", {
-    //       chunkIndex: globalChunkIndex,
-    //       totalChunks,
-    //       isFirst,
-    //       isRealLast,
-    //       startChunkIndex: this.startChunkIndex,
-    //       expectedLastChunkIndex: expectedLastChunk,
-    //       chunkSize: networkChunk.byteLength,
-    //     });
-    //   }
-    // }
+    // Optional boundary logging can be added here if chunk-level diagnostics are needed again.
 
     return {
       chunk: networkChunk,
@@ -212,14 +195,24 @@ export class StreamingFileReader {
       if (developmentEnv === "development" && batchSize > this.BATCH_SIZE / 2) {
         const totalTime = performance.now() - startTime;
         const speedMBps = batchSize / 1024 / 1024 / (totalTime / 1000);
-        logger.debug("Read streaming batch", {
-          batchSizeMb: Number((batchSize / 1024 / 1024).toFixed(1)),
-          speedMbPerSecond: Number(speedMBps.toFixed(1)),
+        logger.debug({
+          event: "streaming_batch_read",
+          context: {
+            batchSizeMb: Number((batchSize / 1024 / 1024).toFixed(1)),
+            speedMbPerSecond: Number(speedMBps.toFixed(1)),
+          },
+          sample: {
+            rate: 0.05,
+            key: `${this.file.name}:${Math.floor(batchStartOffset / this.BATCH_SIZE)}`,
+          },
         });
       }
     } catch (error) {
       if (developmentEnv === "development") {
-        logger.debug("Streaming batch read failed", { error });
+        logger.debug({
+          event: "streaming_batch_read_failed",
+          context: { error },
+        });
       }
       throw new Error(`Failed to load file batch: ${error}`);
     } finally {
@@ -370,7 +363,10 @@ export class StreamingFileReader {
     this.currentChunkIndexInBatch = 0; // Reset to 0, loadNextBatch will recalculate
 
     if (developmentEnv === "development") {
-      logger.debug("StreamingFileReader reset", { startOffset });
+      logger.debug({
+        event: "streaming_reader_reset",
+        context: { startOffset },
+      });
     }
   }
 

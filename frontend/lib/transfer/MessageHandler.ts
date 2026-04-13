@@ -5,17 +5,17 @@ import {
   FolderReceiveComplete
 } from "@/types/webrtc";
 import { StateManager } from "./StateManager";
-import { createLogger } from "@/lib/logger";
+import { createLogger, type RuntimeLogLevel } from "@/lib/logger";
 
-const logger = createLogger("MessageHandler");
+const logger = createLogger({ scope: "Transfer.MessageHandler" });
 /**
  * 🚀 Message handling interface - Communicate with main orchestrator
  */
 export interface MessageHandlerDelegate {
   handleFileRequest(request: FileRequest, peerId: string): Promise<void>;
   log(
-    level: "log" | "warn" | "error",
-    message: string,
+    level: RuntimeLogLevel,
+    event: string,
     context?: Record<string, any>
   ): void;
 }
@@ -50,7 +50,7 @@ export class MessageHandler {
         );
         break;
       default:
-        this.delegate.log("warn", `Unknown signaling message type received`, {
+        this.delegate.log("warn", "unknown_signaling_message_received", {
           type: message.type,
           peerId,
         });
@@ -67,8 +67,13 @@ export class MessageHandler {
     const offset = request.offset || 0;
 
     this.delegate.log(
-      "log",
-      `Handling file request for ${request.fileId} from ${peerId} with offset ${offset}`
+      "info",
+      "file_request_received",
+      {
+        fileId: request.fileId,
+        peerId,
+        offset,
+      }
     );
 
     // Firefox compatibility fix: Add slightly longer delay to ensure receiver is fully ready
@@ -78,7 +83,7 @@ export class MessageHandler {
     try {
       await this.delegate.handleFileRequest(request, peerId);
     } catch (error) {
-      this.delegate.log("error", `Error handling file request`, {
+      this.delegate.log("error", "file_request_handle_failed", {
         fileId: request.fileId,
         peerId,
         error: error instanceof Error ? error.message : String(error),
@@ -107,7 +112,7 @@ export class MessageHandler {
       // Delete frequent folder progress logs
     }
 
-    this.delegate.log("log", `File reception confirmed by peer ${peerId}`, {
+    this.delegate.log("info", "file_receive_confirmed", {
       fileId: message.fileId,
       receivedSize: message.receivedSize,
       storeUpdated: message.storeUpdated,
@@ -121,10 +126,13 @@ export class MessageHandler {
     message: FolderReceiveComplete,
     peerId: string
   ): void {
-    logger.debug("Folder receive completion confirmed", {
-      folderName: message.folderName,
-      completedFiles: message.completedFileIds.length,
-      peerId,
+    logger.debug({
+      event: "folder_receive_completion_confirmed",
+      context: {
+        folderName: message.folderName,
+        completedFiles: message.completedFileIds.length,
+        peerId,
+      },
     });
 
     // Get peer state to trigger progress callback
@@ -133,15 +141,18 @@ export class MessageHandler {
     // Trigger folder 100% progress
     const folderMeta = this.stateManager.getFolderMeta(message.folderName);
     if (folderMeta) {
-      logger.debug("Setting folder progress to 100%", {
-        folderName: message.folderName,
-        peerId,
+      logger.debug({
+        event: "folder_progress_forced_complete",
+        context: {
+          folderName: message.folderName,
+          peerId,
+        },
       });
       peerState.progressCallback?.(message.folderName, 1, 0);
     } else {
       this.delegate.log(
         "warn",
-        `Folder metadata not found for completed folder`,
+        "completed_folder_metadata_missing",
         {
           folderName: message.folderName,
           peerId,
@@ -149,7 +160,7 @@ export class MessageHandler {
       );
     }
 
-    this.delegate.log("log", `Folder reception confirmed by peer ${peerId}`, {
+    this.delegate.log("info", "folder_receive_confirmed", {
       folderName: message.folderName,
       completedFiles: message.completedFileIds.length,
       allStoreUpdated: message.allStoreUpdated,
@@ -174,6 +185,8 @@ export class MessageHandler {
    * 🧹 Clean up resources
    */
   public cleanup(): void {
-    logger.debug("MessageHandler cleaned up");
+    logger.debug({
+      event: "message_handler_cleaned_up",
+    });
   }
 }

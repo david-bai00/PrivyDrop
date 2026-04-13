@@ -2,7 +2,7 @@
 import BaseWebRTC, { WebRTCConfig } from "./webrtc_base";
 import { createLogger } from "@/lib/logger";
 
-const logger = createLogger("WebRTCInitiator");
+const logger = createLogger({ scope: "WebRTC.Initiator" });
 
 export default class WebRTC_Initiator extends BaseWebRTC {
   constructor(config: WebRTCConfig) {
@@ -17,7 +17,10 @@ export default class WebRTC_Initiator extends BaseWebRTC {
     });
     // Add listener for recipient's response
     this.socket.on("recipient-ready", ({ peerId }) => {
-      logger.debug("Received recipient-ready", { peerId });
+      logger.debug({
+        event: "recipient_ready_received",
+        context: { peerId },
+      });
       this.handleReady({ peerId });
     });
     // Add answer handler listener
@@ -30,7 +33,10 @@ export default class WebRTC_Initiator extends BaseWebRTC {
   private async handleReady({ peerId }: { peerId: string }): Promise<void> {
     // Recipient peerId
     // this.log('log',`Received ready signal from peer ${peerId}`);
-    logger.debug("Received ready signal", { peerId });
+    logger.debug({
+      event: "ready_signal_received",
+      context: { peerId },
+    });
     await this.createPeerConnection(peerId);
     await this.createDataChannel(peerId);
     await this.createAndSendOffer(peerId);
@@ -45,7 +51,10 @@ export default class WebRTC_Initiator extends BaseWebRTC {
     from: string;
   }): Promise<void> {
     // this.log('log',`Handling answer from peer ${from}`);
-    logger.debug("Handling answer", { from, peerId });
+    logger.debug({
+      event: "answer_received",
+      context: { from, peerId },
+    });
     const peerConnection = this.peerConnections.get(from);
     if (!peerConnection) {
       this.fireError(`No peer connection found for peer ${from}`, { from });
@@ -80,7 +89,10 @@ export default class WebRTC_Initiator extends BaseWebRTC {
       this.setupDataChannel(dataChannel, peerId);
       this.dataChannels.set(peerId, dataChannel);
     } catch (error) {
-      logger.error("Error creating data channel", { peerId, error });
+      logger.error({
+        event: "data_channel_create_failed",
+        context: { peerId, error },
+      });
       this.fireError(`Error creating data channel for peer ${peerId}`, {
         error,
         peerId,
@@ -90,7 +102,10 @@ export default class WebRTC_Initiator extends BaseWebRTC {
   // If it is the initiator, create and send an offer to the signaling server to negotiate a connection with the recipient.
   private async createAndSendOffer(peerId: string): Promise<void> {
     // this.log('log', `Creating and sending offer to ${peerId}`);
-    logger.debug("Creating and sending offer", { peerId });
+    logger.debug({
+      event: "offer_creation_started",
+      context: { peerId },
+    });
     const peerConnection = this.peerConnections.get(peerId);
     if (!peerConnection) {
       this.fireError(`No peer connection found for peer ${peerId}`, { peerId });
