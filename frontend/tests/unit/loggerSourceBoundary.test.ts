@@ -49,7 +49,9 @@ describe("logger source boundaries", () => {
 
     for (const filePath of sourceFiles) {
       const source = fs.readFileSync(filePath, "utf8");
-      const matches = source.matchAll(/createLogger\(\{\s*scope:\s*"([^"]+)"/g);
+      const matches = Array.from(
+        source.matchAll(/createLogger\(\{\s*scope:\s*"([^"]+)"/g)
+      );
 
       for (const match of matches) {
         const scope = match[1];

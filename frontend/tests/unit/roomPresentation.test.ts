@@ -14,7 +14,7 @@ describe("roomPresentation", () => {
         peerCount: 0,
         roomEmptyLabel: "room-empty",
         onlyOneLabel: "only-one",
-        peopleCountLabel: "{peerCount} people",
+        peopleCountLabel: (peerCount) => `${peerCount} people`,
       })
     ).toBe("room-empty");
 
@@ -24,7 +24,7 @@ describe("roomPresentation", () => {
         peerCount: 0,
         roomEmptyLabel: "room-empty",
         onlyOneLabel: "only-one",
-        peopleCountLabel: "{peerCount} people",
+        peopleCountLabel: (peerCount) => `${peerCount} people`,
       })
     ).toBe("only-one");
 
@@ -34,7 +34,7 @@ describe("roomPresentation", () => {
         peerCount: 2,
         roomEmptyLabel: "room-empty",
         onlyOneLabel: "only-one",
-        peopleCountLabel: "{peerCount} people",
+        peopleCountLabel: (peerCount) => `${peerCount} people`,
       })
     ).toBe("3 people");
   });

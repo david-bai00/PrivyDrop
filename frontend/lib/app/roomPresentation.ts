@@ -3,7 +3,7 @@ interface SenderRoomStatusOptions {
   peerCount: number;
   roomEmptyLabel: string;
   onlyOneLabel: string;
-  peopleCountLabel: string;
+  peopleCountLabel: (peerCount: number) => string;
 }
 
 interface ReceiverRoomStatusOptions {
@@ -21,13 +21,6 @@ interface SenderShareLinkOptions {
   pathname: string;
 }
 
-function formatPeopleCount(
-  template: string,
-  peerCount: number
-): string {
-  return template.replace("{peerCount}", peerCount.toString());
-}
-
 export function getSenderRoomStatusText({
   isInRoom,
   peerCount,
@@ -43,7 +36,7 @@ export function getSenderRoomStatusText({
     return onlyOneLabel;
   }
 
-  return formatPeopleCount(peopleCountLabel, peerCount + 1);
+  return peopleCountLabel(peerCount + 1);
 }
 
 export function getReceiverRoomStatusText({

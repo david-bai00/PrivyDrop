@@ -136,7 +136,8 @@ export function SendTabPanel({
         peerCount: sharePeerCount,
         roomEmptyLabel: tStatus("roomEmpty"),
         onlyOneLabel: tStatus("onlyOne"),
-        peopleCountLabel: tStatus("peopleCount"),
+        peopleCountLabel: (peerCount) =>
+          tStatus("peopleCount", { peerCount }),
       }),
     [isSenderInRoom, sharePeerCount, tStatus]
   );
