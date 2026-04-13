@@ -22,7 +22,7 @@
 
 - `frontend/components/` — UI，包括协调器与子组件。
 
-  - `frontend/components/ClipboardApp.tsx` — 顶层 UI 协调器，集成 5 个业务 hooks（useWebRTCConnection/useFileTransferHandler/useRoomManager/usePageSetup/useClipboardAppMessages），处理全局拖拽事件，并消费 `clipboardUiStore` 中的双标签页、接收端输入框与拖拽提示等纯 UI 输入态。
+  - `frontend/components/ClipboardApp.tsx` — 顶层 UI 协调器，集成 5 个业务 hooks（useWebRTCConnection/useFileTransferHandler/useRoomManager/usePageSetup/useClipboardAppMessages），处理全局拖拽事件，并消费 `clipboardUiStore` 中的双标签页、接收端输入框与拖拽提示等纯 UI 输入态；消息层现由 `ClipboardAppMessagesProvider` 包裹，相关 hooks/面板通过 side-specific hook 读取 dispatcher 与当前消息，不再由父组件手动透传消息 props。
     - 体验增强：切到接收端（retrieve）且满足“未在房间、URL 无 roomId、输入为空、存在缓存ID”时自动填充并加入房间（读取 `frontend/lib/roomIdCache.ts`）。
     - 连接反馈：集成 `useConnectionFeedback`（`frontend/hooks/useConnectionFeedback.ts`），桥接 WebRTC 连接态到 UI 文案，含协商中提示、8s 慢连接提示、断开/重连/恢复提示（前台可见时提示）。慢提示统一复用 `frontend/utils/useOneShotSlowHint.ts`。
 
@@ -39,9 +39,9 @@
 - i18n 文案与类型
   - 文案定义：`frontend/constants/messages/*.{ts}`（已补齐 zh/en/ja/es/de/fr/ko）。
   - 类型定义：`frontend/types/messages.ts`（`ClipboardApp` 下包含 `join_*` 与 `rtc_*` 文案键）。
-  - `frontend/components/ClipboardApp/SendTabPanel.tsx` — 发送面板，集成富文本编辑器、文件上传、房间 ID 生成（支持 4 位数字/UUID 两种模式）；顶部房间状态文案改为按 `isSenderInRoom/sharePeerCount` 现算，不再依赖 store 中的展示缓存。
+  - `frontend/components/ClipboardApp/SendTabPanel.tsx` — 发送面板，集成富文本编辑器、文件上传、房间 ID 生成（支持 4 位数字/UUID 两种模式）；顶部房间状态文案改为按 `isSenderInRoom/sharePeerCount` 现算，不再依赖 store 中的展示缓存；sender 侧提示改由 `ClipboardSideMessage` 从消息 context 直接渲染。
     - 体验增强：点击“使用缓存ID”将立即触发加入房间（sender 侧），减少一次手动点击。
-  - `frontend/components/ClipboardApp/RetrieveTabPanel.tsx` — 接收面板，处理房间加入、文件接收、目录选择（File System Access API）、富文本内容显示；顶部房间状态文案改为按 `isReceiverInRoom/retrievePeerCount` 现算。
+  - `frontend/components/ClipboardApp/RetrieveTabPanel.tsx` — 接收面板，处理房间加入、文件接收、目录选择（File System Access API）、富文本内容显示；顶部房间状态文案改为按 `isReceiverInRoom/retrievePeerCount` 现算；receiver 侧提示同样通过 `ClipboardSideMessage` 从消息 context 渲染。
   - `frontend/components/ClipboardApp/FileListDisplay.tsx` — 文件列表显示组件，支持文件/文件夹分组显示、进度跟踪、多浏览器下载策略（Chrome 自动下载/其他浏览器手动保存）、下载计数统计。
   - `frontend/components/ClipboardApp/FullScreenDropZone.tsx` — 全屏拖拽提示组件，文件拖拽时的视觉反馈。
   - `frontend/components/ClipboardApp/*` — 其他子组件：FileUploadHandler（文件上传处理）、ShareCard（二维码分享）、TransferProgress（进度条）、CachedIdActionButton（缓存 ID 操作）、FileTransferButton（文件传输按钮）。
@@ -60,7 +60,7 @@
   - `frontend/hooks/useRoomManager.ts` — 房间创建/加入/校验与 UI 状态，支持缓存 ID 重连（≥8 字符自动发送 initiator-online）；分享广播、sender/receiver 离房、roomId 选择与 sender reset 都改为调用 `WebRTCStoreCoordinator` command，离房时通过 `getSessionInfo()` 读取 room/peer 信息，避免直接访问内部连接对象或在 hook 内直接拼领域状态写入。标签页判断改从 `clipboardUiStore` 读取，不再混入 `fileTransferStore`。
   - `frontend/hooks/useFileTransferHandler.ts` — 文件/文本负载编排与回调，使用 getState() 修复闭包问题，支持 JSZip 文件夹下载；发送去重、sender draft payload 写入与单文件下载匹配统一基于稳定 `fileId` 与 `WebRTCStoreCoordinator` command，避免同名文件误判和 hook 直写 store。receiver 结果清空也已改走 coordinator command。
   - `frontend/hooks/useClipboardActions.ts` — 剪贴板操作与状态管理，支持现代 API 和 document.execCommand 降级，处理 HTML/富文本粘贴。
-  - `frontend/hooks/useClipboardAppMessages.ts` — 应用消息处理（shareMessage/retrieveMessage），显式提供 `showSenderMessage/showReceiverMessage` 两个 side-specific dispatcher；内部为 sender/receiver 各自维护 timer，避免旧消息的自动清理计时器提前清掉新消息。
+  - `frontend/hooks/useClipboardAppMessages.ts` — 应用消息处理（shareMessage/retrieveMessage），提供 `ClipboardAppMessagesProvider`、`useClipboardAppMessageDispatcher(side)` 与 `useClipboardAppSideMessage(side)`；内部为 sender/receiver 各自维护 timer，避免旧消息的自动清理计时器提前清掉新消息。
   - `frontend/hooks/useLocale.ts` — 国际化语言切换，基于 pathname 解析。
   - `frontend/hooks/usePageSetup.ts` — 页面配置与 SEO 设置，处理 URL 参数 roomId 自动加入和引荐来源追踪；自动加入时写入 `clipboardUiStore` 的接收端输入框与标签页状态。
   - `frontend/hooks/useRichTextToPlainText.ts` — 富文本转纯文本工具，处理块级元素换行和文本节点包装。

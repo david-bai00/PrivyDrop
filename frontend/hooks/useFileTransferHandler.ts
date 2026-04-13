@@ -11,21 +11,17 @@ import { downloadAs, generateFileId } from "@/lib/fileUtils";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { createLogger } from "@/lib/logger";
 import type { FileTransferText } from "@/types/clipboardText";
-import type { SideMessageDispatcher } from "@/hooks/useClipboardAppMessages";
+import { useClipboardAppMessageDispatcher } from "@/hooks/useClipboardAppMessages";
 
 const logger = createLogger("useFileTransferHandler");
 
 interface UseFileTransferHandlerProps {
   text: FileTransferText;
-  showSenderMessage: SideMessageDispatcher;
-  showReceiverMessage: SideMessageDispatcher;
 }
 
-export function useFileTransferHandler({
-  text,
-  showSenderMessage,
-  showReceiverMessage,
-}: UseFileTransferHandlerProps) {
+export function useFileTransferHandler({ text }: UseFileTransferHandlerProps) {
+  const showSenderMessage = useClipboardAppMessageDispatcher("sender");
+  const showReceiverMessage = useClipboardAppMessageDispatcher("receiver");
   // Get state from store
   const {
     senderDraftContent,

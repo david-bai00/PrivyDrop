@@ -3,19 +3,15 @@ import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { mapPhase, type Phase } from "@/utils/rtcPhase";
 import { useOneShotSlowHint } from "@/utils/useOneShotSlowHint";
 import type { ConnectionFeedbackText } from "@/types/clipboardText";
-import type { SideMessageDispatcher } from "@/hooks/useClipboardAppMessages";
+import { useClipboardAppMessageDispatcher } from "@/hooks/useClipboardAppMessages";
 
 interface UseConnectionFeedbackProps {
   text: ConnectionFeedbackText;
-  showSenderMessage: SideMessageDispatcher;
-  showReceiverMessage: SideMessageDispatcher;
 }
 
-export function useConnectionFeedback({
-  text,
-  showSenderMessage,
-  showReceiverMessage,
-}: UseConnectionFeedbackProps) {
+export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
+  const showSenderMessage = useClipboardAppMessageDispatcher("sender");
+  const showReceiverMessage = useClipboardAppMessageDispatcher("receiver");
   const {
     shareConnectionState,
     retrieveConnectionState,

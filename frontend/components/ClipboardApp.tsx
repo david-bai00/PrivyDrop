@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import useRichTextToPlainText from "../hooks/useRichTextToPlainText";
 import QRCodeComponent from "./ClipboardApp/ShareCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useClipboardAppMessages } from "@/hooks/useClipboardAppMessages";
+import { ClipboardAppMessagesProvider } from "@/hooks/useClipboardAppMessages";
 import { usePageSetup } from "@/hooks/usePageSetup";
 import { useRoomManager } from "@/hooks/useRoomManager";
 import { useWebRTCConnection } from "@/hooks/useWebRTCConnection";
@@ -21,16 +21,10 @@ import { useConnectionFeedback } from "@/hooks/useConnectionFeedback";
 import { buildSenderShareLink } from "@/lib/app/roomPresentation";
 import type { Messages } from "@/types/messages";
 
-const ClipboardApp = () => {
+const ClipboardAppContent = () => {
   const messages = useMessages() as Messages;
   const tTabs = useTranslations("text.clipboard.tabs");
   const tTitles = useTranslations("text.clipboard.titles");
-  const {
-    shareMessage,
-    retrieveMessage,
-    showSenderMessage,
-    showReceiverMessage,
-  } = useClipboardAppMessages();
   const roomText = messages.text.clipboard;
   const fileTransferText = messages.text.clipboard.messages;
   const connectionText = messages.text.clipboard.rtc;
@@ -82,8 +76,6 @@ const ClipboardApp = () => {
     handleDownloadFile,
   } = useFileTransferHandler({
     text: fileTransferText,
-    showSenderMessage,
-    showReceiverMessage,
   });
 
   // Simplified WebRTC connection initialization
@@ -124,8 +116,6 @@ const ClipboardApp = () => {
         leftRoom: roomText.status.leftRoom,
       },
     },
-    showSenderMessage,
-    showReceiverMessage,
   });
 
   const handleFileDrop = useCallback(
@@ -229,8 +219,6 @@ const ClipboardApp = () => {
   // Connection feedback observer (Hook)
   useConnectionFeedback({
     text: connectionText,
-    showSenderMessage,
-    showReceiverMessage,
   });
 
   return (
@@ -276,14 +264,11 @@ const ClipboardApp = () => {
               processRoomIdInput={processRoomIdInput}
               joinRoom={joinRoom}
               generateShareLinkAndBroadcast={generateShareLinkAndBroadcast}
-              shareMessage={shareMessage}
               currentValidatedShareRoomId={shareRoomId}
               handleLeaveSenderRoom={handleLeaveSenderRoom}
-              showSenderMessage={showSenderMessage}
             />
           ) : (
             <RetrieveTabPanel
-              showReceiverMessage={showReceiverMessage}
               joinRoom={joinRoom}
               retrieveJoinRoomBtnRef={retrieveJoinRoomBtnRef}
               richTextToPlainText={richTextToPlainText}
@@ -292,7 +277,6 @@ const ClipboardApp = () => {
               requestFolder={requestFolder}
               setReceiverDirectoryHandle={setReceiverDirectoryHandle}
               getReceiverSaveType={getReceiverSaveType}
-              retrieveMessage={retrieveMessage}
               handleLeaveRoom={handleLeaveReceiverRoom}
             />
           )}
@@ -311,6 +295,14 @@ const ClipboardApp = () => {
         </Card>
       )}
     </div>
+  );
+};
+
+const ClipboardApp = () => {
+  return (
+    <ClipboardAppMessagesProvider>
+      <ClipboardAppContent />
+    </ClipboardAppMessagesProvider>
   );
 };
 

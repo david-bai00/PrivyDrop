@@ -221,7 +221,7 @@ Stores (clipboardUiStore + fileTransferStore)
 - 集成 5 个关键业务 hooks：useWebRTCConnection、useFileTransferHandler、useRoomManager、usePageSetup、useClipboardAppMessages
 - 全局拖拽事件处理：dragenter/dragleave/dragover/drop，支持多文件和文件夹树遍历
 - 双标签页、接收房间输入与拖拽提示等纯 UI 输入态已收敛到 `clipboardUiStore`
-- 统一消息系统：`useClipboardAppMessages` 在组件本地管理 `shareMessage/retrieveMessage`，并通过显式 `showSenderMessage/showReceiverMessage` dispatcher 分发提示；sender/receiver 各自维护独立 timer，避免旧消息 timer 提前清掉新消息
+- 统一消息系统：`ClipboardApp` 以 `ClipboardAppMessagesProvider` 包裹局部消息层；`useClipboardAppMessages` 在 provider 内管理 `shareMessage/retrieveMessage`，并通过显式 `showSenderMessage/showReceiverMessage` dispatcher 分发提示；sender/receiver 各自维护独立 timer，避免旧消息 timer 提前清掉新消息，展示层则由 side-specific message 组件直接消费 context
 
 ### Hook 层级与职责分离
 
@@ -273,6 +273,7 @@ Stores (clipboardUiStore + fileTransferStore)
 - 分离式消息状态：shareMessage（发送相关）和 retrieveMessage（接收相关）
 - 统一消息显示接口：`showSenderMessage(message, displayTimeMs)` / `showReceiverMessage(message, displayTimeMs)`
 - 自动清理机制：sender/receiver 各自独立计时；新消息会先取消同侧旧 timer，再启动新的自动清理
+- 展示边界：通过 `ClipboardAppMessagesProvider`、`useClipboardAppMessageDispatcher(side)`、`useClipboardAppSideMessage(side)` 和 `ClipboardSideMessage` 把消息控制器与展示容器解耦，hooks/面板不再经由 `ClipboardApp` 手动透传消息 props
 
 ### 面板组件特化设计
 

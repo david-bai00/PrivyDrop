@@ -29,7 +29,7 @@ Core Services (webrtcService) + Stores (clipboardUiStore + fileTransferStore)
 - 集成 5 个关键业务 hooks：useWebRTCConnection、useFileTransferHandler、useRoomManager、usePageSetup、useClipboardAppMessages
 - 全局拖拽事件处理：dragenter/dragleave/dragover/drop，支持多文件和文件夹树遍历
 - 双标签页、接收端输入框与拖拽提示等纯 UI 输入态统一由 `clipboardUiStore` 管理
-- 统一消息系统：`useClipboardAppMessages` 在组件本地管理 `shareMessage/retrieveMessage`，并通过显式 `showSenderMessage/showReceiverMessage` dispatcher 分发提示；sender/receiver 各自维护独立 timer，避免旧消息 timer 提前清掉新消息
+- 统一消息系统：`ClipboardApp` 以 `ClipboardAppMessagesProvider` 包裹局部消息层；`useClipboardAppMessages` 在 provider 内管理 `shareMessage/retrieveMessage`，并通过显式 `showSenderMessage/showReceiverMessage` dispatcher 分发提示；sender/receiver 各自维护独立 timer，避免旧消息 timer 提前清掉新消息；`SendTabPanel/RetrieveTabPanel` 通过 `ClipboardSideMessage` 直接消费对应 side 的当前消息
 
 ### Hook 层级与职责分离
 
@@ -51,6 +51,7 @@ Core Services (webrtcService) + Stores (clipboardUiStore + fileTransferStore)
 - 房间操作：joinRoom（支持缓存 ID 重连）、processRoomIdInput（750ms 防抖）
 - 离开保护：传输中确认提示（isAnyFileTransferring 检查）
 - 房间相关提示改为显式 sender/receiver 消息 dispatcher，不再依赖布尔 side 参数
+- 消息 dispatcher 现直接从局部消息 context 读取，不再作为 props 从 `ClipboardApp` 传入
 - 标签页判断改从 `clipboardUiStore` 读取，不再混入传输领域 store
 
 **usePageSetup**（页面初始化）：
@@ -64,6 +65,7 @@ Core Services (webrtcService) + Stores (clipboardUiStore + fileTransferStore)
 - 分离式消息状态：shareMessage（发送相关）和 retrieveMessage（接收相关）
 - 统一消息显示接口：`showSenderMessage(message, displayTimeMs)` / `showReceiverMessage(message, displayTimeMs)`
 - 自动清理机制：sender/receiver 各自独立计时；新消息会先取消同侧旧 timer，再启动新的自动清理
+- 局部消息层边界：`ClipboardAppMessagesProvider` 提供局部 context，`useClipboardAppMessageDispatcher(side)` / `useClipboardAppSideMessage(side)` 负责 side-specific 访问；业务 hooks 和面板不再依赖父组件逐层传递消息文本或 dispatcher props
 
 ### 面板组件特化设计
 
@@ -73,6 +75,7 @@ Core Services (webrtcService) + Stores (clipboardUiStore + fileTransferStore)
 - 富文本编辑器集成（动态导入，SSR 禁用）
 - 文件上传处理和文件列表管理
 - 分享链接与顶部状态文案由 UI 按当前 sender 房间事实派生，二维码仅在 sender 已入房时显示
+- sender 侧底部消息由 `ClipboardSideMessage side="sender"` 直接渲染，不再依赖父组件传入 `shareMessage`
 
 **RetrieveTabPanel 接收面板**：
 
@@ -80,6 +83,7 @@ Core Services (webrtcService) + Stores (clipboardUiStore + fileTransferStore)
 - 富文本内容渲染（dangerouslySetInnerHTML）
 - 文件请求和下载状态管理
 - 保存位置选择和大文件/文件夹提示
+- receiver 侧底部消息由 `ClipboardSideMessage side="receiver"` 直接渲染，不再依赖父组件传入 `retrieveMessage`
 
 **FileListDisplay 文件列表**：
 
@@ -129,7 +133,7 @@ Core Services (webrtcService) + Stores (clipboardUiStore + fileTransferStore)
 - 关键键：`join_inProgress`、`join_slow`、`join_timeout`、`rtc_negotiating`、`rtc_slow`、`rtc_connected`、`rtc_reconnecting`、`rtc_restored`（已在 en/ja/es/de/fr/ko 全部补齐）。
 
 节流与展示：
-- 所有提示默认 4–6 秒自动消失；通过 `useClipboardAppMessages.showSenderMessage(...)` / `showReceiverMessage(...)` 统一展示。
+- 所有提示默认 4–6 秒自动消失；通过 `useClipboardAppMessageDispatcher("sender" | "receiver")` 获取 side-specific dispatcher，并由 `ClipboardSideMessage` 统一展示当前消息。
 - 连接反馈提示在“状态迁移 + ever/wasDisc 标记 + 可见性判断”三重约束下触发，避免提示风暴。
 10. **切到接收端自动加入（缓存ID）**：当用户切换到接收端、未在房间、URL 无 `roomId`、输入框为空且本地存在缓存 ID 时，自动填充并直接调用加入房间以提升体验。入口：`frontend/components/ClipboardApp.tsx`（监听 `activeTab` 变化，读取 `frontend/lib/roomIdCache.ts`）。
 11. **发送端“使用缓存ID”即刻加入**：发送端在 `SendTabPanel` 点击“使用缓存ID”后会立即调用加入房间（而非仅填充输入框）。入口：`frontend/components/ClipboardApp/CachedIdActionButton.tsx`（`onUseCached` 回调）+ `frontend/components/ClipboardApp/SendTabPanel.tsx`。

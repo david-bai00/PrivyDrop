@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import CachedIdActionButton from "@/components/ClipboardApp/CachedIdActionButton";
+import { ClipboardSideMessage } from "@/components/ClipboardApp/ClipboardSideMessage";
 import { getSenderRoomStatusText } from "@/lib/app/roomPresentation";
 import { setSenderRoomSelection } from "@/lib/app/WebRTCStoreCoordinator";
 import {
@@ -14,7 +15,7 @@ import { FileUploadHandler } from "@/components/ClipboardApp/FileUploadHandler";
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import AnimatedButton from "@/components/ui/AnimatedButton";
 import type { CustomFile, FileMeta } from "@/types/webrtc";
-import type { SideMessageDispatcher } from "@/hooks/useClipboardAppMessages";
+import { useClipboardAppMessageDispatcher } from "@/hooks/useClipboardAppMessages";
 
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 
@@ -39,10 +40,8 @@ interface SendTabPanelProps {
   processRoomIdInput: (roomId: string) => void; // Passed from useRoomManager
   joinRoom: (isSender: boolean, roomId: string) => void;
   generateShareLinkAndBroadcast: () => void;
-  shareMessage: string;
   currentValidatedShareRoomId: string;
   handleLeaveSenderRoom: () => void; // New prop for leaving room
-  showSenderMessage: SideMessageDispatcher;
 }
 
 export function SendTabPanel({
@@ -53,10 +52,8 @@ export function SendTabPanel({
   processRoomIdInput,
   joinRoom,
   generateShareLinkAndBroadcast,
-  shareMessage,
   currentValidatedShareRoomId,
   handleLeaveSenderRoom,
-  showSenderMessage,
 }: SendTabPanelProps) {
   const tActions = useTranslations("text.clipboard.actions");
   const tPlaceholders = useTranslations("text.clipboard.placeholders");
@@ -64,6 +61,7 @@ export function SendTabPanel({
   const tTitles = useTranslations("text.clipboard.titles");
   const tStatus = useTranslations("text.clipboard.status");
   const tCommon = useTranslations("text.common");
+  const showSenderMessage = useClipboardAppMessageDispatcher("sender");
   // Get the status from the store
   const {
     senderDraftContent: shareContent,
@@ -242,9 +240,7 @@ export function SendTabPanel({
           </Button>
         </div>
       </div>
-      {shareMessage && (
-        <p className="mt-3 text-sm text-primary">{shareMessage}</p>
-      )}
+      <ClipboardSideMessage side="sender" />
     </div>
   );
 }

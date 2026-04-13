@@ -1,9 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  createElement,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 export type SideMessageDispatcher = (
   message: string,
   displayTimeMs?: number
 ) => void;
+export type ClipboardMessageSide = "sender" | "receiver";
 
 type MessageSetter = (message: string) => void;
 type TimerHandle = ReturnType<typeof setTimeout>;
@@ -21,6 +30,79 @@ export interface AppMessages {
   clearSenderMessage: () => void;
   clearReceiverMessage: () => void;
   dispose: () => void;
+}
+
+type MessageState = Pick<AppMessages, "shareMessage" | "retrieveMessage">;
+type MessageDispatchers = Pick<
+  AppMessages,
+  "showSenderMessage" | "showReceiverMessage"
+>;
+
+const ClipboardAppMessagesContext = createContext<AppMessages | null>(null);
+
+function useClipboardAppMessageState(): AppMessages {
+  const [shareMessage, setShareMessage] = useState("");
+  const [retrieveMessage, setRetrieveMessage] = useState("");
+  const controllerRef = useRef<Omit<AppMessages, "shareMessage" | "retrieveMessage"> | null>(
+    null
+  );
+
+  if (!controllerRef.current) {
+    controllerRef.current = createClipboardMessageController({
+      setSenderMessage: setShareMessage,
+      setReceiverMessage: setRetrieveMessage,
+    });
+  }
+
+  useEffect(() => {
+    const controller = controllerRef.current;
+
+    return () => {
+      controller?.dispose();
+    };
+  }, []);
+
+  const controller = controllerRef.current;
+
+  return {
+    shareMessage,
+    retrieveMessage,
+    showSenderMessage: controller.showSenderMessage,
+    showReceiverMessage: controller.showReceiverMessage,
+    clearSenderMessage: controller.clearSenderMessage,
+    clearReceiverMessage: controller.clearReceiverMessage,
+    dispose: controller.dispose,
+  };
+}
+
+export function selectClipboardSideMessage(
+  messages: MessageState,
+  side: ClipboardMessageSide
+): string {
+  return side === "sender" ? messages.shareMessage : messages.retrieveMessage;
+}
+
+export function selectClipboardSideDispatcher(
+  dispatchers: MessageDispatchers,
+  side: ClipboardMessageSide
+): SideMessageDispatcher {
+  return side === "sender"
+    ? dispatchers.showSenderMessage
+    : dispatchers.showReceiverMessage;
+}
+
+export function ClipboardAppMessagesProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const messages = useClipboardAppMessageState();
+
+  return createElement(
+    ClipboardAppMessagesContext.Provider,
+    { value: messages },
+    children
+  );
 }
 
 export function createClipboardMessageController({
@@ -96,36 +178,29 @@ export function createClipboardMessageController({
 }
 
 export function useClipboardAppMessages(): AppMessages {
-  const [shareMessage, setShareMessage] = useState("");
-  const [retrieveMessage, setRetrieveMessage] = useState("");
-  const controllerRef = useRef<Omit<AppMessages, "shareMessage" | "retrieveMessage"> | null>(
-    null
-  );
+  const context = useContext(ClipboardAppMessagesContext);
 
-  if (!controllerRef.current) {
-    controllerRef.current = createClipboardMessageController({
-      setSenderMessage: setShareMessage,
-      setReceiverMessage: setRetrieveMessage,
-    });
+  if (!context) {
+    throw new Error(
+      "useClipboardAppMessages must be used within ClipboardAppMessagesProvider"
+    );
   }
 
-  useEffect(() => {
-    const controller = controllerRef.current;
+  return context;
+}
 
-    return () => {
-      controller?.dispose();
-    };
-  }, []);
+export function useClipboardAppSideMessage(
+  side: ClipboardMessageSide
+): string {
+  const messages = useClipboardAppMessages();
 
-  const controller = controllerRef.current;
+  return selectClipboardSideMessage(messages, side);
+}
 
-  return {
-    shareMessage,
-    retrieveMessage,
-    showSenderMessage: controller.showSenderMessage,
-    showReceiverMessage: controller.showReceiverMessage,
-    clearSenderMessage: controller.clearSenderMessage,
-    clearReceiverMessage: controller.clearReceiverMessage,
-    dispose: controller.dispose,
-  };
+export function useClipboardAppMessageDispatcher(
+  side: ClipboardMessageSide
+): SideMessageDispatcher {
+  const messages = useClipboardAppMessages();
+
+  return selectClipboardSideDispatcher(messages, side);
 }

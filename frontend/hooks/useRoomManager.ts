@@ -13,22 +13,21 @@ import { fetchRoom, createRoom, checkRoom, leaveRoom } from "@/app/config/api";
 import { debounce } from "lodash";
 import { useOneShotSlowHint } from "@/utils/useOneShotSlowHint";
 import type { RoomManagerText } from "@/types/clipboardText";
-import type { SideMessageDispatcher } from "@/hooks/useClipboardAppMessages";
+import {
+  useClipboardAppMessageDispatcher,
+  type SideMessageDispatcher,
+} from "@/hooks/useClipboardAppMessages";
 
 ensureWebRTCStoreCoordinator();
 
 // Remove all WebRTC related props dependencies
 interface UseRoomManagerProps {
   text: RoomManagerText;
-  showSenderMessage: SideMessageDispatcher;
-  showReceiverMessage: SideMessageDispatcher;
 }
 
-export function useRoomManager({
-  text,
-  showSenderMessage,
-  showReceiverMessage,
-}: UseRoomManagerProps) {
+export function useRoomManager({ text }: UseRoomManagerProps) {
+  const showSenderMessage = useClipboardAppMessageDispatcher("sender");
+  const showReceiverMessage = useClipboardAppMessageDispatcher("receiver");
   // Get state from store
   const {
     shareRoomId,

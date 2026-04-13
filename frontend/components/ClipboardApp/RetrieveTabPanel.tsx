@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ClipboardSideMessage } from "@/components/ClipboardApp/ClipboardSideMessage";
 import { getReceiverRoomStatusText } from "@/lib/app/roomPresentation";
 import {
   ReadClipboardButton,
@@ -10,13 +11,12 @@ import {
 import CachedIdActionButton from "@/components/ClipboardApp/CachedIdActionButton";
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import type { FileMeta } from "@/types/webrtc";
-import type { SideMessageDispatcher } from "@/hooks/useClipboardAppMessages";
+import { useClipboardAppMessageDispatcher } from "@/hooks/useClipboardAppMessages";
 
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { useClipboardUiStore } from "@/stores/clipboardUiStore";
 
 interface RetrieveTabPanelProps {
-  showReceiverMessage: SideMessageDispatcher; // For onLocationPick
   joinRoom: (isSender: boolean, roomId: string) => void;
   retrieveJoinRoomBtnRef: React.RefObject<HTMLButtonElement>;
   richTextToPlainText: (html: string) => string;
@@ -28,12 +28,10 @@ interface RetrieveTabPanelProps {
     directoryHandle: FileSystemDirectoryHandle
   ) => Promise<void>;
   getReceiverSaveType: () => { [fileId: string]: boolean } | undefined;
-  retrieveMessage: string;
   handleLeaveRoom: () => void;
 }
 
 export function RetrieveTabPanel({
-  showReceiverMessage,
   joinRoom,
   retrieveJoinRoomBtnRef,
   richTextToPlainText,
@@ -42,7 +40,6 @@ export function RetrieveTabPanel({
   requestFolder,
   setReceiverDirectoryHandle,
   getReceiverSaveType,
-  retrieveMessage,
   handleLeaveRoom,
 }: RetrieveTabPanelProps) {
   const tActions = useTranslations("text.clipboard.actions");
@@ -51,6 +48,7 @@ export function RetrieveTabPanel({
   const tSaveLocation = useTranslations("text.clipboard.saveLocation");
   const tCommon = useTranslations("text.common");
   const t = useTranslations("text.clipboard");
+  const showReceiverMessage = useClipboardAppMessageDispatcher("receiver");
   const { retrieveRoomIdInput, setRetrieveRoomIdInput } = useClipboardUiStore();
   // Get the status from the store
   const {
@@ -164,7 +162,7 @@ export function RetrieveTabPanel({
           <div className="bg-card text-card-foreground p-3 rounded border text-sm leading-relaxed">
             <div dangerouslySetInnerHTML={{ __html: retrievedContent }} />
           </div>
-           <div className="flex justify-start">
+          <div className="flex justify-start">
             <WriteClipboardButton
               title={tCommon("buttons.copy")}
               textToCopy={richTextToPlainText(retrievedContent)}
@@ -182,9 +180,7 @@ export function RetrieveTabPanel({
         onLocationPick={onLocationPick} // Use the panel's own handler
         saveType={getReceiverSaveType()}
       />
-      {retrieveMessage && (
-        <p className="mt-3 text-sm text-primary">{retrieveMessage}</p>
-      )}
+      <ClipboardSideMessage side="receiver" />
     </div>
   );
 }

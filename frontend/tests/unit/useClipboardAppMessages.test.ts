@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createClipboardMessageController } from "@/hooks/useClipboardAppMessages";
+import {
+  createClipboardMessageController,
+  selectClipboardSideDispatcher,
+  selectClipboardSideMessage,
+} from "@/hooks/useClipboardAppMessages";
 
 describe("createClipboardMessageController", () => {
   beforeEach(() => {
@@ -85,5 +89,52 @@ describe("createClipboardMessageController", () => {
 
     expect(senderMessage).toBe("");
     expect(receiverMessage).toBe("receiver");
+  });
+});
+
+describe("clipboard message side selectors", () => {
+  it("selects the correct message for each side", () => {
+    expect(
+      selectClipboardSideMessage(
+        {
+          shareMessage: "sender",
+          retrieveMessage: "receiver",
+        },
+        "sender"
+      )
+    ).toBe("sender");
+    expect(
+      selectClipboardSideMessage(
+        {
+          shareMessage: "sender",
+          retrieveMessage: "receiver",
+        },
+        "receiver"
+      )
+    ).toBe("receiver");
+  });
+
+  it("selects the correct dispatcher for each side", () => {
+    const senderDispatcher = vi.fn();
+    const receiverDispatcher = vi.fn();
+
+    expect(
+      selectClipboardSideDispatcher(
+        {
+          showSenderMessage: senderDispatcher,
+          showReceiverMessage: receiverDispatcher,
+        },
+        "sender"
+      )
+    ).toBe(senderDispatcher);
+    expect(
+      selectClipboardSideDispatcher(
+        {
+          showSenderMessage: senderDispatcher,
+          showReceiverMessage: receiverDispatcher,
+        },
+        "receiver"
+      )
+    ).toBe(receiverDispatcher);
   });
 });
