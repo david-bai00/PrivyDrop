@@ -9,9 +9,11 @@ interface SenderRoomStatusOptions {
 interface ReceiverRoomStatusOptions {
   isInRoom: boolean;
   peerCount: number;
+  senderDisconnected: boolean;
   receiverCanAcceptLabel: string;
   onlyOneLabel: string;
   connectedLabel: string;
+  senderDisconnectedLabel: string;
 }
 
 interface SenderShareLinkOptions {
@@ -42,12 +44,18 @@ export function getSenderRoomStatusText({
 export function getReceiverRoomStatusText({
   isInRoom,
   peerCount,
+  senderDisconnected,
   receiverCanAcceptLabel,
   onlyOneLabel,
   connectedLabel,
+  senderDisconnectedLabel,
 }: ReceiverRoomStatusOptions): string {
   if (!isInRoom) {
     return receiverCanAcceptLabel;
+  }
+
+  if (senderDisconnected) {
+    return senderDisconnectedLabel;
   }
 
   if (peerCount === 0) {

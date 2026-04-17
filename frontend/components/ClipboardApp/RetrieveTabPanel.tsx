@@ -58,6 +58,7 @@ export function RetrieveTabPanel({
     isAnyFileTransferring,
     isReceiverInRoom,
     retrievePeerCount,
+    senderDisconnected,
   } = useFileTransferStore();
 
   const onLocationPick = useCallback(async (): Promise<boolean> => {
@@ -99,11 +100,13 @@ export function RetrieveTabPanel({
       getReceiverRoomStatusText({
         isInRoom: isReceiverInRoom,
         peerCount: retrievePeerCount,
+        senderDisconnected,
         receiverCanAcceptLabel: tStatus("receiverCanAccept"),
         onlyOneLabel: tStatus("onlyOne"),
         connectedLabel: tStatus("connected"),
+        senderDisconnectedLabel: tStatus("senderDisconnected"),
       }),
-    [isReceiverInRoom, retrievePeerCount, tStatus]
+    [isReceiverInRoom, retrievePeerCount, senderDisconnected, tStatus]
   );
 
   return (

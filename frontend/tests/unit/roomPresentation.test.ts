@@ -44,9 +44,11 @@ describe("roomPresentation", () => {
       getReceiverRoomStatusText({
         isInRoom: false,
         peerCount: 0,
+        senderDisconnected: false,
         receiverCanAcceptLabel: "can-accept",
         onlyOneLabel: "only-one",
         connectedLabel: "connected",
+        senderDisconnectedLabel: "sender-disconnected",
       })
     ).toBe("can-accept");
 
@@ -54,9 +56,11 @@ describe("roomPresentation", () => {
       getReceiverRoomStatusText({
         isInRoom: true,
         peerCount: 0,
+        senderDisconnected: false,
         receiverCanAcceptLabel: "can-accept",
         onlyOneLabel: "only-one",
         connectedLabel: "connected",
+        senderDisconnectedLabel: "sender-disconnected",
       })
     ).toBe("only-one");
 
@@ -64,11 +68,25 @@ describe("roomPresentation", () => {
       getReceiverRoomStatusText({
         isInRoom: true,
         peerCount: 1,
+        senderDisconnected: false,
         receiverCanAcceptLabel: "can-accept",
         onlyOneLabel: "only-one",
         connectedLabel: "connected",
+        senderDisconnectedLabel: "sender-disconnected",
       })
     ).toBe("connected");
+
+    expect(
+      getReceiverRoomStatusText({
+        isInRoom: true,
+        peerCount: 1,
+        senderDisconnected: true,
+        receiverCanAcceptLabel: "can-accept",
+        onlyOneLabel: "only-one",
+        connectedLabel: "connected",
+        senderDisconnectedLabel: "sender-disconnected",
+      })
+    ).toBe("sender-disconnected");
   });
 
   it("builds sender share links only for an active sender room session", () => {
