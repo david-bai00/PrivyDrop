@@ -413,6 +413,7 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       fileType: file.type,
       fullName: file.fullName,
       folderName: file.folderName,
+      lastModified: file.lastModified,
     };
   }
 

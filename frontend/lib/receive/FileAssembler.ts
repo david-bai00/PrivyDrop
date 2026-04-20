@@ -70,6 +70,7 @@ export class FileAssembler {
     // Create File object
     const file = new File([fileBlob], meta.name, {
       type: meta.fileType,
+      lastModified: meta.lastModified,
     });
 
     // Create CustomFile with additional properties

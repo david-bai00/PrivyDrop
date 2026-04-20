@@ -16,22 +16,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { getFileChosenText } from "@/lib/app/fileSelectionPresentation";
 // Add this declaration at the top of the file to extend existing types and avoid IDE errors
 declare module "@/components/ui/input" {
   interface InputProps {
     webkitdirectory?: string | boolean;
     directory?: string | boolean;
   }
-}
-
-function formatFileChosen(
-  template: string,
-  fileNum: number,
-  folderNum: number
-) {
-  return template
-    .replace("{fileNum}", fileNum.toString())
-    .replace("{folderNum}", folderNum.toString());
 }
 
 interface FileUploadHandlerProps {
@@ -61,11 +52,11 @@ const FileUploadHandler: React.FC<FileUploadHandlerProps> = ({
       const fileNum = newFiles.length;
       const folderNum = newFiles.filter((file) => file.folderName).length;
 
-      const choose_dis = formatFileChosen(
-        t("fileChosen"),
+      const choose_dis = getFileChosenText({
         fileNum,
-        folderNum
-      );
+        folderNum,
+        fileChosenLabel: (values) => t("fileChosen", values),
+      });
 
       setFileText(choose_dis);
       setTimeout(() => setFileText(t("noFileChosen")), 2000);

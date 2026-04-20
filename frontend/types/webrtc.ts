@@ -16,6 +16,7 @@ export interface FileMeta {
   folderName: string;
   fileType: string; // Distinguish from the 'type' in communication
   fileId: string; // For now, folder's fileId is equal to folderName
+  lastModified?: number; // Preserve sender-side timestamps so receiver can reconstruct a stable fileId
   fileCount?: number; // Only for folders
   fileNamesDis?: string; // Display of all file names under the folder
 }

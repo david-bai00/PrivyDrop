@@ -11,6 +11,7 @@ import FileTransferButton from "./FileTransferButton";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { supportsAutoDownload } from "@/lib/browserUtils";
 import { createLogger } from "@/lib/logger";
+import { normalizeDisplayFiles } from "@/lib/app/fileListPresentation";
 const developmentEnv = process.env.NODE_ENV;
 const logger = createLogger({ scope: "Clipboard.FileListDisplay" });
 
@@ -45,15 +46,6 @@ interface FileListDisplayProps {
   onLocationPick?: () => Promise<boolean>;
   saveType?: { [fileId: string]: boolean }; // File stored on disk or in memory
   largeFileThreshold?: number;
-}
-// Add type guard helper function
-function isCustomFile(file: FileMeta | CustomFile): file is CustomFile {
-  return "lastModified" in file; // Use a property specific to File objects to check
-}
-function isFileMetaArray(
-  files: FileMeta[] | CustomFile[]
-): files is FileMeta[] {
-  return files.length === 0 || !isCustomFile(files[0]);
 }
 const FileListDisplay: React.FC<FileListDisplayProps> = ({
   mode,
@@ -116,16 +108,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
     let needPick = false;
 
     // If it's a CustomFile[] type, convert it to FileMeta[] first
-    const processedFiles: FileMeta[] = isFileMetaArray(files)
-      ? files
-      : files.map((file) => ({
-          name: file.name,
-          size: file.size,
-          fullName: file.fullName,
-          folderName: file.folderName,
-          fileType: file.type,
-          fileId: generateFileId(file),
-        }));
+    const processedFiles = normalizeDisplayFiles(files);
     for (let file of processedFiles) {
       if (file.folderName !== "") {
         folders_[file.folderName] = folders_[file.folderName] || {
