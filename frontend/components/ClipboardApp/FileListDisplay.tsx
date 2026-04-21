@@ -15,22 +15,6 @@ import { normalizeDisplayFiles } from "@/lib/app/fileListPresentation";
 const developmentEnv = process.env.NODE_ENV;
 const logger = createLogger({ scope: "Clipboard.FileListDisplay" });
 
-function formatFolderDis(template: string, num: number, size: string) {
-  return template.replace("{num}", num.toString()).replace("{size}", size);
-}
-
-function formatFolderTips(
-  template: string,
-  name: string,
-  num: number,
-  size: string
-) {
-  return template
-    .replace("{name}", name)
-    .replace("{num}", num.toString())
-    .replace("{size}", size);
-}
-
 interface FileListDisplayProps {
   mode: "sender" | "receiver";
   files: FileMeta[] | CustomFile[];
@@ -375,12 +359,11 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
     const filenameDisplayLen = 30;
     const formatSize = formatFileSize(item.size);
     const tooltipContent = isFolder
-      ? `${formatFolderTips(
-          t("folderSummary"),
-          item.name,
-          item.fileCount || 0,
-          formatSize
-        )}\n ${item.fileNamesDis}`
+      ? `${t("folderSummary", {
+          name: item.name,
+          num: item.fileCount || 0,
+          size: formatSize,
+        })}\n ${item.fileNamesDis}`
       : `${item.name} ${formatSize}`;
 
     return (
@@ -398,11 +381,10 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
             </span>
             <span className="text-xs sm:text-sm text-muted-foreground">
               {isFolder
-                ? `${formatFolderDis(
-                    t("folderInline"),
-                    item.fileCount || 0,
-                    formatSize
-                  )}`
+                ? t("folderInline", {
+                    num: item.fileCount || 0,
+                    size: formatSize,
+                  })
                 : ` ${formatSize}`}
             </span>
           </div>
