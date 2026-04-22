@@ -114,6 +114,8 @@ class WebRTCService {
     sender: new Map(),
     receiver: new Map(),
   };
+  private receiverShutdownInProgress = false;
+  private receiverInterruptSuppressionUntil = 0;
 
   private constructor() {
     const apiUrl = (config.API_URL || "").trim();
@@ -391,30 +393,36 @@ class WebRTCService {
   }
 
   public async shutdownReceiver(action: ReceiverShutdownAction): Promise<void> {
-    await this.fileReceiver.shutdown(action, `SERVICE_${action.toUpperCase()}`);
+    this.receiverShutdownInProgress = true;
+    this.receiverInterruptSuppressionUntil = Date.now() + 15000;
+    try {
+      await this.fileReceiver.shutdown(action, `SERVICE_${action.toUpperCase()}`);
 
-    if (action === "cleanup") {
-      await this.receiver.cleanUpBeforeExit();
-    } else if (action === "leave_room") {
-      await this.receiver.leaveRoomAndCleanup();
+      if (action === "cleanup") {
+        await this.receiver.cleanUpBeforeExit();
+      } else if (action === "leave_room") {
+        await this.receiver.leaveRoomAndCleanup();
+      }
+
+      this.emitEvent({
+        type: "room_status_changed",
+        role: "receiver",
+        inRoom: false,
+      });
+      this.clearPeerConnectionStates("receiver");
+      this.emitEvent({
+        type: "peer_count_changed",
+        role: "receiver",
+        count: 0,
+      });
+      this.emitEvent({
+        type: "sender_disconnected_changed",
+        disconnected: false,
+      });
+      this.emitEvent({ type: "transfer_progress_cleared", direction: "receive" });
+    } finally {
+      this.receiverShutdownInProgress = false;
     }
-
-    this.emitEvent({
-      type: "room_status_changed",
-      role: "receiver",
-      inRoom: false,
-    });
-    this.clearPeerConnectionStates("receiver");
-    this.emitEvent({
-      type: "peer_count_changed",
-      role: "receiver",
-      count: 0,
-    });
-    this.emitEvent({
-      type: "sender_disconnected_changed",
-      disconnected: false,
-    });
-    this.emitEvent({ type: "transfer_progress_cleared", direction: "receive" });
   }
 
   public async broadcastDataToAllPeers(
@@ -452,6 +460,22 @@ class WebRTCService {
 
   public requestFile(fileId: string): void {
     void this.fileReceiver.requestFile(fileId).catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      if (
+        !this.receiver.isInRoom ||
+        this.receiverShutdownInProgress ||
+        Date.now() < this.receiverInterruptSuppressionUntil ||
+        this.lifecycleStates.receiver !== "connected" ||
+        message.includes("LEAVE_ROOM") ||
+        message.includes("leaving_room")
+      ) {
+        logger.info({
+          event: "request_file_interrupted",
+          context: { fileId, message },
+        });
+        return;
+      }
+
       logger.error({
         event: "request_file_failed",
         context: { fileId, error },
@@ -461,6 +485,22 @@ class WebRTCService {
 
   public requestFolder(folderName: string): void {
     void this.fileReceiver.requestFolder(folderName).catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      if (
+        !this.receiver.isInRoom ||
+        this.receiverShutdownInProgress ||
+        Date.now() < this.receiverInterruptSuppressionUntil ||
+        this.lifecycleStates.receiver !== "connected" ||
+        message.includes("LEAVE_ROOM") ||
+        message.includes("leaving_room")
+      ) {
+        logger.info({
+          event: "request_folder_interrupted",
+          context: { folderName, message },
+        });
+        return;
+      }
+
       logger.error({
         event: "request_folder_failed",
         context: { folderName, error },
@@ -529,7 +569,11 @@ class WebRTCService {
     this.immediateTransferCleanup(peerId, isSender, reason);
     const role: WebRTCServiceRole = isSender ? "sender" : "receiver";
     this.clearPeerConnectionState(role, peerId);
-    this.syncLifecycleStateAfterDisconnect(role);
+    if (reason === "PEER_DISCONNECTED") {
+      this.syncLifecycleStateFromPeerSnapshot(role);
+    } else {
+      this.syncLifecycleStateAfterDisconnect(role);
+    }
     this.updateConnectionState(isSender);
   }
 

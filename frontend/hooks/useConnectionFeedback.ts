@@ -3,7 +3,10 @@ import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { mapPhase, type Phase } from "@/utils/rtcPhase";
 import { useOneShotSlowHint } from "@/utils/useOneShotSlowHint";
 import type { ConnectionFeedbackText } from "@/types/clipboardText";
-import { useClipboardAppMessageDispatcher } from "@/hooks/useClipboardAppMessages";
+import {
+  useClipboardAppMessageDispatcher,
+  useClipboardAppMessages,
+} from "@/hooks/useClipboardAppMessages";
 
 interface UseConnectionFeedbackProps {
   text: ConnectionFeedbackText;
@@ -12,11 +15,13 @@ interface UseConnectionFeedbackProps {
 export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
   const showSenderMessage = useClipboardAppMessageDispatcher("sender");
   const showReceiverMessage = useClipboardAppMessageDispatcher("receiver");
+  const { clearReceiverMessage } = useClipboardAppMessages();
   const {
     shareConnectionState,
     retrieveConnectionState,
     shareLifecycleState,
     retrieveLifecycleState,
+    senderDisconnected,
   } = useFileTransferStore();
 
   // Track previous phases and connection history via refs
@@ -124,53 +129,59 @@ export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
     }
 
     // Receiver side mapping
-    if (nowRecv === "negotiating" && prevRecv !== "negotiating") {
-      const msg = text.negotiating;
-      if (msg) {
-        showReceiverMessage(msg, 4000);
-      }
-      if (!rtcSlowTriggerSideRef.current) rtcSlowTriggerSideRef.current = "recv";
-      armRtcSlow("rtc-negotiating");
-    }
-    if (nowRecv === "connected") {
-      if (!everRecvRef.current) {
-        const msg = text.connected;
-        if (msg) {
-          showReceiverMessage(msg, 4000);
-        }
-      }
-      if (wasDiscRecvRef.current) {
-        const msg = text.restored;
-        if (msg) {
-          showReceiverMessage(msg, 4000);
-        }
-      }
-      everRecvRef.current = true;
+    if (senderDisconnected) {
+      clearReceiverMessage();
       wasDiscRecvRef.current = false;
       disarmRtcSlow();
-    }
-    if (currentRecvState === "reconnecting") {
-      const isForeground =
-        typeof document !== "undefined" && document.visibilityState === "visible";
-      if (prevRecvLifecycle !== "reconnecting" && isForeground) {
-        const msg = text.reconnecting;
+    } else {
+      if (nowRecv === "negotiating" && prevRecv !== "negotiating") {
+        const msg = text.negotiating;
         if (msg) {
           showReceiverMessage(msg, 4000);
         }
+        if (!rtcSlowTriggerSideRef.current) rtcSlowTriggerSideRef.current = "recv";
+        armRtcSlow("rtc-negotiating");
       }
-      wasDiscRecvRef.current = true;
-      disarmRtcSlow();
-    } else if (nowRecv === "disconnected") {
-      const isForeground =
-        typeof document !== "undefined" && document.visibilityState === "visible";
-      if ((everRecvRef.current || wasDiscRecvRef.current) && isForeground) {
-        const msg = text.reconnecting;
-        if (msg) {
-          showReceiverMessage(msg, 4000);
+      if (nowRecv === "connected") {
+        if (!everRecvRef.current) {
+          const msg = text.connected;
+          if (msg) {
+            showReceiverMessage(msg, 4000);
+          }
+        }
+        if (wasDiscRecvRef.current) {
+          const msg = text.restored;
+          if (msg) {
+            showReceiverMessage(msg, 4000);
+          }
+        }
+        everRecvRef.current = true;
+        wasDiscRecvRef.current = false;
+        disarmRtcSlow();
+      }
+      if (currentRecvState === "reconnecting") {
+        const isForeground =
+          typeof document !== "undefined" && document.visibilityState === "visible";
+        if (prevRecvLifecycle !== "reconnecting" && isForeground) {
+          const msg = text.reconnecting;
+          if (msg) {
+            showReceiverMessage(msg, 4000);
+          }
         }
         wasDiscRecvRef.current = true;
+        disarmRtcSlow();
+      } else if (nowRecv === "disconnected") {
+        const isForeground =
+          typeof document !== "undefined" && document.visibilityState === "visible";
+        if ((everRecvRef.current || wasDiscRecvRef.current) && isForeground) {
+          const msg = text.reconnecting;
+          if (msg) {
+            showReceiverMessage(msg, 4000);
+          }
+          wasDiscRecvRef.current = true;
+        }
+        disarmRtcSlow();
       }
-      disarmRtcSlow();
     }
 
     // If both sides are not negotiating, reset slow hint state for next attempt
@@ -195,6 +206,8 @@ export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
     armRtcSlow,
     disarmRtcSlow,
     resetRtcSlow,
+    clearReceiverMessage,
+    senderDisconnected,
   ]);
 
   // Visibility change: when returning to foreground, if still disconnected, hint "reconnecting"
@@ -218,6 +231,7 @@ export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
         wasDiscShareRef.current = true;
       }
       if (
+        !senderDisconnected &&
         (everRecvRef.current || wasDiscRecvRef.current) &&
         (prevRecvLifecycleRef.current === "reconnecting" ||
           nowRecv === "disconnected")
@@ -237,5 +251,10 @@ export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
       };
     }
     return;
-  }, [text.reconnecting, showSenderMessage, showReceiverMessage]);
+  }, [
+    text.reconnecting,
+    showSenderMessage,
+    showReceiverMessage,
+    senderDisconnected,
+  ]);
 }

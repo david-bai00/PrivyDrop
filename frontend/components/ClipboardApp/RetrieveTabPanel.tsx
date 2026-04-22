@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,10 @@ import {
 import CachedIdActionButton from "@/components/ClipboardApp/CachedIdActionButton";
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import type { FileMeta } from "@/types/webrtc";
-import { useClipboardAppMessageDispatcher } from "@/hooks/useClipboardAppMessages";
+import {
+  useClipboardAppMessageDispatcher,
+  useClipboardAppMessages,
+} from "@/hooks/useClipboardAppMessages";
 
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { useClipboardUiStore } from "@/stores/clipboardUiStore";
@@ -49,6 +52,7 @@ export function RetrieveTabPanel({
   const tCommon = useTranslations("text.common");
   const t = useTranslations("text.clipboard");
   const showReceiverMessage = useClipboardAppMessageDispatcher("receiver");
+  const { clearReceiverMessage } = useClipboardAppMessages();
   const { retrieveRoomIdInput, setRetrieveRoomIdInput } = useClipboardUiStore();
   // Get the status from the store
   const {
@@ -108,6 +112,12 @@ export function RetrieveTabPanel({
       }),
     [isReceiverInRoom, retrievePeerCount, senderDisconnected, tStatus]
   );
+
+  useEffect(() => {
+    if (senderDisconnected) {
+      clearReceiverMessage();
+    }
+  }, [senderDisconnected, clearReceiverMessage]);
 
   return (
     <div id="retrieve-panel" role="tabpanel" aria-labelledby="retrieve-tab">

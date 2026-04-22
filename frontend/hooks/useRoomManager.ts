@@ -181,25 +181,29 @@ export function useRoomManager({ text }: UseRoomManagerProps) {
       if (!confirmed) return;
     }
 
+    const receiverSession = webrtcService.getSessionInfo("receiver");
+
     try {
-      // Call backend API to leave room
-      const receiverSession = webrtcService.getSessionInfo("receiver");
-
-      if (receiverSession.roomId && receiverSession.peerId) {
-        await leaveRoom(
-          receiverSession.roomId,
-          receiverSession.peerId
-        );
-      }
-
       const message = isAnyFileTransferring
         ? text.messages.leaveSuccess
         : text.status.leftRoom;
-      showReceiverMessage(message);
 
-      // Clean up WebRTC connection first to stop incoming events, then reset store.
+      // Enter local shutdown first so in-flight requests are treated as intentional interrupts.
       await webrtcService.shutdownReceiver("leave_room");
       resetReceiverDomainState("leave_room");
+      showReceiverMessage(message);
+
+      // Notify the backend after local shutdown so peer-disconnect fanout still reaches sender.
+      if (receiverSession.roomId && receiverSession.peerId) {
+        const leftRoom = await leaveRoom(
+          receiverSession.roomId,
+          receiverSession.peerId
+        );
+
+        if (!leftRoom) {
+          console.warn("[RoomManager] Receiver leave room API returned no success");
+        }
+      }
     } catch (error) {
       console.error("[RoomManager] Receiver failed to leave room:", error);
       showReceiverMessage(text.messages.leaveRoomError);

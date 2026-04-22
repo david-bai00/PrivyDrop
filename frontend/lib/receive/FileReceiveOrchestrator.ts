@@ -348,6 +348,21 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
 
     const activeReception = this.stateManager.getActiveFileReception();
     if (!activeReception) {
+      const lifecycleState = this.stateManager.getLifecycleState();
+      if (
+        !this.webrtcConnection.isInRoom ||
+        lifecycleState === "idle" ||
+        lifecycleState === "completed" ||
+        lifecycleState === "interrupted" ||
+        lifecycleState === "failed"
+      ) {
+        this.log("info", "stale_binary_chunk_ignored", {
+          lifecycleState,
+          inRoom: this.webrtcConnection.isInRoom,
+        });
+        return;
+      }
+
       if (ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING) {
         logger.error({
           event: "binary_chunk_without_active_reception",

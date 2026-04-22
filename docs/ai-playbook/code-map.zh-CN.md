@@ -30,11 +30,11 @@
   - `useRoomManager.ts`
     - 入房流程：`join_inProgress`（立即）、`join_slow`（3s，复用 `useOneShotSlowHint`）、`join_timeout`（15s）；join 成功/失败均清理定时器。
     - 等效成功信号：在 `joinResponse` 之前若收到 `ready/recipient-ready/offer`，提前判定入房成功并清理 3s/15s 定时器。
-    - 其他：离开房间、输入校验（750ms 防抖）；房间状态文案与分享链接已改为 UI 侧按领域事实派生，不再回写 `fileTransferStore`。
+    - 其他：离开房间、输入校验（750ms 防抖）；房间状态文案与分享链接已改为 UI 侧按领域事实派生，不再回写 `fileTransferStore`。receiver 传输中离房时先本地 shutdown 再通知后端，避免把意图性中断误报成失败。
   - `useConnectionFeedback.ts`
     - 状态归一化：优先读取 Store 中的 lifecycle state；`joining/waiting_for_peer/negotiating`→`negotiating`，`reconnecting`→`disconnected` phase（复用 `utils/rtcPhase.ts`）。
     - 协商慢提示：8s 定时器（`rtc_slow`），单次协商仅提示一次；若在后台到时则挂起，回到前台且仍协商时补发一次（复用 `useOneShotSlowHint`）。
-    - 一次性提示：首次 `connected`（`rtc_connected`）仅提示一次；`reconnecting` 进入时提示前台重连（`rtc_reconnecting`），恢复到 `connected` 时提示 `rtc_restored`。
+    - 一次性提示：首次 `connected`（`rtc_connected`）仅提示一次；`reconnecting` 进入时提示前台重连（`rtc_reconnecting`），恢复到 `connected` 时提示 `rtc_restored`。当 receiver 进入 `senderDisconnected` 时会清空旧 receiver side message，避免断开态残留旧协商提示。
 
 - i18n 文案与类型
   - 文案定义：`frontend/constants/messages/*.{ts}`（已补齐 zh/en/ja/es/de/fr/ko）。
@@ -42,6 +42,7 @@
   - `frontend/components/ClipboardApp/SendTabPanel.tsx` — 发送面板，集成富文本编辑器、文件上传、房间 ID 生成（支持 4 位数字/UUID 两种模式）；顶部房间状态文案改为按 `isSenderInRoom/sharePeerCount` 现算，不再依赖 store 中的展示缓存；sender 侧提示改由 `ClipboardSideMessage` 从消息 context 直接渲染。
     - 体验增强：点击“使用缓存ID”将立即触发加入房间（sender 侧），减少一次手动点击。
   - `frontend/components/ClipboardApp/RetrieveTabPanel.tsx` — 接收面板，处理房间加入、文件接收、目录选择（File System Access API）、富文本内容显示；顶部房间状态文案改为按 `isReceiverInRoom/retrievePeerCount` 现算；receiver 侧提示同样通过 `ClipboardSideMessage` 从消息 context 渲染。
+    - 断开收敛：当 sender 已断开时清空旧 receiver side message，避免页面残留旧协商/重连提示。
   - `frontend/components/ClipboardApp/FileListDisplay.tsx` — 文件列表显示组件，支持文件/文件夹分组显示、进度跟踪、多浏览器下载策略（Chrome 自动下载/其他浏览器手动保存）、下载计数统计。
   - `frontend/components/ClipboardApp/FullScreenDropZone.tsx` — 全屏拖拽提示组件，文件拖拽时的视觉反馈。
   - `frontend/components/ClipboardApp/*` — 其他子组件：FileUploadHandler（文件上传处理）、ShareCard（二维码分享）、TransferProgress（进度条）、CachedIdActionButton（缓存 ID 操作）、FileTransferButton（文件传输按钮）。
@@ -69,12 +70,13 @@
 
   - WebRTC 基础与角色
     - `frontend/lib/webrtc_base.ts` — WebRTC 基础类，提供 Socket.IO 信令、RTCPeerConnection/DataChannel 的 `Map` 管理、ICE 候选者队列、双重断开检测重连机制、唤醒锁管理、异步数据发送结果（`SendResult`/`BroadcastResult`）、带最终结果返回的发送重试、优雅断开跟踪（gracefullyDisconnectedPeers Set）和多格式数据类型兼容性支持（ArrayBuffer/Blob/Uint8Array/TypedArray）。加入房间（joinRoom）采用 15 秒超时，并在 join 未返回时启用“等效成功信号”提前判定成功：Initiator 收到 `ready/recipient-ready`，Recipient 收到 `offer`；触发后立即设置 inRoom 并清理监听/定时器，降低弱网下误报。该层还会发出 `join/reconnect/leave` 生命周期事件，供 service 统一驱动状态机。
+    - `frontend/lib/webrtc_base.ts` — WebRTC 基础类，提供 Socket.IO 信令、RTCPeerConnection/DataChannel 的 `Map` 管理、ICE 候选者队列、双重断开检测重连机制、唤醒锁管理、异步数据发送结果（`SendResult`/`BroadcastResult`）、带最终结果返回的发送重试、优雅断开跟踪（gracefullyDisconnectedPeers Set）和多格式数据类型兼容性支持（ArrayBuffer/Blob/Uint8Array/TypedArray）。加入房间（joinRoom）采用 15 秒超时，并在 join 未返回时启用“等效成功信号”提前判定成功：Initiator 收到 `ready/recipient-ready`，Recipient 收到 `offer`；触发后立即设置 inRoom 并清理监听/定时器，降低弱网下误报。Socket 的 `peer-disconnected` 会先标记优雅断开再清理连接，避免后续重试噪音。该层还会发出 `join/reconnect/leave` 生命周期事件，供 service 统一驱动状态机。
     - `frontend/lib/webrtc_Initiator.ts` — 发起方实现，处理`ready`/`recipient-ready`事件，创建 RTCPeerConnection 和主动式 DataChannel，发送 offer，处理 answer 响应，支持 256KB 缓冲阈值配置。
     - `frontend/lib/webrtc_Recipient.ts` — 接收方实现，处理`offer`事件，创建 RTCPeerConnection 和响应式 DataChannel（ondatachannel），生成并发送 answer，处理`initiator-online`重连信号和现有连接清理。
     - `frontend/lib/webrtcLifecycleMachine.ts` — 纯连接生命周期规则模块，封装 RTC 状态归一化、join/reconnect/leave 生命周期事件到权威 lifecycle state 的映射、peer 状态聚合优先级，以及“断开后是否进入 reconnecting”的约束；作为最小单测护栏的规则来源。
     - `frontend/lib/webrtcConnectionCollection.ts` — 纯 `Map` 遍历规则模块，封装 peer 集合快照、广播映射与 cleanup 遍历，避免遍历过程中因集合突变漏处理 peer。
     - `frontend/lib/webrtcSendMachine.ts` — 纯发送结果规则模块，封装 `SendResult`/`BroadcastResult` 构造、单 peer 重试决策与广播聚合；作为 async send 结果语义的最小单测护栏来源。
-    - `frontend/lib/webrtcService.ts` — WebRTC 服务单例封装（跨路由常驻），管理 sender/receiver 实例，提供统一业务接口，处理连接状态变更、数据广播、文件请求和连接断开清理；现在维护权威连接 lifecycle state（`idle/joining/waiting_for_peer/negotiating/connected/reconnecting/leaving/failed`），并通过单一 `WebRTCServiceEvent` 事件表向上层发出连接/传输事件，不再直接写 Zustand，同时提供 `getSessionInfo()` / `getLifecycleState()` 这类只读查询接口给 hooks 和协调层使用。内部额外维护按 peer 的归一化连接状态快照，避免多 peer 混合态时被单个 `negotiating/disconnected` 事件错误覆盖整体 lifecycle。sender/receiver 离房与 cleanup 进一步收敛为显式 `shutdownSender()` / `shutdownReceiver()` 动作入口。
+    - `frontend/lib/webrtcService.ts` — WebRTC 服务单例封装（跨路由常驻），管理 sender/receiver 实例，提供统一业务接口，处理连接状态变更、数据广播、文件请求和连接断开清理；现在维护权威连接 lifecycle state（`idle/joining/waiting_for_peer/negotiating/connected/reconnecting/leaving/failed`），并通过单一 `WebRTCServiceEvent` 事件表向上层发出连接/传输事件，不再直接写 Zustand，同时提供 `getSessionInfo()` / `getLifecycleState()` 这类只读查询接口给 hooks 和协调层使用。内部额外维护按 peer 的归一化连接状态快照，避免多 peer 混合态时被单个 `negotiating/disconnected` 事件错误覆盖整体 lifecycle。sender/receiver 离房与 cleanup 进一步收敛为显式 `shutdownSender()` / `shutdownReceiver()` 动作入口；receiver 侧在 leave_room 期间会先本地 shutdown，再通过短窗抑制把 in-flight 请求误记为真实失败。
     - `frontend/lib/app/WebRTCStoreCoordinator.ts` — 薄应用编排层，订阅 `webrtcService` 的显式事件表并统一写入 `fileTransferStore`；负责把权威 lifecycle state 派生为兼容的 badge state，同时处理 sender DataChannel 打开后的自动广播与按 peer 清理进度。当前还承接 sender room 选择、sender/receiver domain reset、receiver 已接收结果清空，以及 sender payload 的 draft/published 更新、发布与广播等显式 command，作为 hooks/components 的领域状态写入口边界。
     - `frontend/lib/app/roomPresentation.ts` — 房间展示层派生 helper，负责根据 sender/receiver 的领域事实计算顶部状态文案，并在 sender 已入房时生成分享链接；用于避免把本地化展示文案和链接缓存写回领域 store。
     - `frontend/lib/logger.ts` — 统一运行时日志入口，封装结构化 `debug/info/warn/error` 日志；`createLogger({ scope })` 只接受 PascalCase 点分层 scope，调用方统一传 `{ event, context, sample? }`。开发/测试环境允许 console + backend，生产环境禁止后端日志上报；backend 对 `debug/info` 默认采样，`warn/error` 不采样。
@@ -90,7 +92,7 @@
     - `frontend/lib/transfer/TransferConfig.ts` — 传输配置管理，定义文件读取 4MB 分片、32MB 批次、64KB 网络发送块。
   - 接收（receiver）
     - `frontend/lib/fileReceiver.ts` — 接收端向后兼容包装层，内部使用 FileReceiveOrchestrator 提供统一服务；关闭相关 API 已统一为 async，并新增显式动作化关闭入口（`peer_disconnect/leave_room/force_reset/cleanup`），调用方可以等待关闭完成。
-    - `frontend/lib/receive/FileReceiveOrchestrator.ts` — 接收端主编排器，集成所有组件管理文件接收生命周期，支持断点续传和磁盘流式写入；控制消息（`fileRequest`、完成确认）会等待 async send 的最终结果后再推进状态；关闭路径已统一为单一 `shutdown(action, reason)`，由策略表决定是否保留 metadata/saveType/saveDirectory 和是否释放内部处理器。
+    - `frontend/lib/receive/FileReceiveOrchestrator.ts` — 接收端主编排器，集成所有组件管理文件接收生命周期，支持断点续传和磁盘流式写入；控制消息（`fileRequest`、完成确认）会等待 async send 的最终结果后再推进状态；关闭路径已统一为单一 `shutdown(action, reason)`，由策略表决定是否保留 metadata/saveType/saveDirectory 和是否释放内部处理器。对已经不在 room 且生命周期已结束的旧 binary chunk，会按 stale chunk 直接忽略，避免把优雅中断当成异常错误。
     - `frontend/lib/receive/ReceptionStateManager.ts` — 状态管理中心，管理文件元数据、活跃接收状态、文件夹进度、保存类型配置；接收 lifecycle 已细分为 ready/active/shutdown 三组状态：`idle/completed/interrupted/failed`、`preparing/requesting/receiving/finalizing`、`disconnecting/leaving_room/resetting/cleaning_up`；通过显式阶段方法与 `resetState()` 收敛状态，不再由编排层直接手写中间态。
     - `frontend/lib/receive/receptionStateMachine.ts` — 纯接收生命周期规则模块，封装接收准备、请求发出、首块到达、finalize、失败/中断以及 reset 后目标状态的迁移规则，作为接收状态机最小单测护栏来源。
     - `frontend/lib/receive/receiverShutdown.ts` — 接收侧关闭动作策略表，定义 `peer_disconnect/leave_room/force_reset/cleanup` 的保留项、生命周期状态与进度/处理器清理策略。

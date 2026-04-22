@@ -244,11 +244,11 @@ export default class BaseWebRTC {
       this.attemptReconnection();
     });
 
-    this.socket.on("peer-disconnected", ({ peerId }) => {
+    this.socket.on("peer-disconnected", async ({ peerId }) => {
       this.log("info", "peer_disconnected", { peerId });
+      this.markPeerGracefullyDisconnected(peerId);
+      await this.cleanupExistingConnection(peerId);
       this.onPeerDisconnected?.(peerId);
-      // We can also clean up the connection here if needed
-      this.cleanupExistingConnection(peerId);
     });
   }
   protected async attemptReconnection(): Promise<void> {

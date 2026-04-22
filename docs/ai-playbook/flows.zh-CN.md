@@ -252,6 +252,7 @@ Stores (clipboardUiStore + fileTransferStore)
 - 分享广播：统一走 `WebRTCStoreCoordinator.publishAndBroadcastSenderDraft()`，hook 不再直接拼装 sender payload；`Sync` 仍是原入口，但内部改为“先 publish draft，再广播 published”
 - 发送/接收标签页等纯 UI 判断改读 `clipboardUiStore`，不再混在传输领域 store
 - 离房前的 roomId/peerId 读取改为走 `webrtcService.getSessionInfo()`，不再直接访问 `sender/receiver` 实例字段
+- receiver 侧传输中离房时先做本地 `shutdownReceiver("leave_room")`，再通知后端，避免把意图性中断误记成真实失败
 
 **WebRTCStoreCoordinator**（薄应用编排层）：
 
@@ -274,6 +275,7 @@ Stores (clipboardUiStore + fileTransferStore)
 - 统一消息显示接口：`showSenderMessage(message, displayTimeMs)` / `showReceiverMessage(message, displayTimeMs)`
 - 自动清理机制：sender/receiver 各自独立计时；新消息会先取消同侧旧 timer，再启动新的自动清理
 - 展示边界：通过 `ClipboardAppMessagesProvider`、`useClipboardAppMessageDispatcher(side)`、`useClipboardAppSideMessage(side)` 和 `ClipboardSideMessage` 把消息控制器与展示容器解耦，hooks/面板不再经由 `ClipboardApp` 手动透传消息 props
+- 对端断开收敛：receiver 进入 `senderDisconnected` 时清空旧 side message，并抑制旧的协商/重连提示回刷，避免断开态与提示文案不一致
 
 ### 面板组件特化设计
 
@@ -290,6 +292,7 @@ Stores (clipboardUiStore + fileTransferStore)
 - 富文本内容渲染（dangerouslySetInnerHTML）
 - 文件请求和下载状态管理
 - 保存位置选择和大文件/文件夹提示
+- senderDisconnected 场景会清理旧的 receiver side message，避免残留协商提示
 
 **FileListDisplay 文件列表**：
 
@@ -302,7 +305,7 @@ Stores (clipboardUiStore + fileTransferStore)
 
 1. **下载状态闭包修复**：`useFileTransferHandler.ts:110` 使用 `useFileTransferStore.getState()` 获取最新状态
 2. **房间 ID 输入防抖**：`useRoomManager.ts:247` 使用 lodash debounce 750ms 延迟验证
-3. **传输中离开保护**：`useRoomManager.ts:164,218` 检查 `isAnyFileTransferring` 状态并显示确认对话框
+3. **传输中离开保护**：`useRoomManager.ts:164,218` 检查 `isAnyFileTransferring` 状态并显示确认对话框；receiver 离房会先本地 shutdown 再通知后端，降低 in-flight 请求误报
 4. **缓存 ID 重连**：`useRoomManager.ts:91` 检测长 ID（≥8 字符）自动发送 `initiator-online`
 5. **文件夹压缩下载**：`useFileTransferHandler.ts:89` 使用 JSZip 动态创建 ZIP 文件
 6. **全局拖拽优化**：ClipboardApp 使用 dragCounter 防止拖拽状态误判，支持 webkitGetAsEntry 文件树遍历
