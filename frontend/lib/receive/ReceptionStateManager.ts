@@ -119,6 +119,69 @@ export class ReceptionStateManager {
     this.pendingFilesMeta.delete(fileId);
   }
 
+  /**
+   * Reconcile receiver-side metadata against the sender's latest published payload snapshot.
+   */
+  public reconcilePayloadSnapshot(fileIds: string[]): void {
+    const allowedFileIds = new Set(fileIds);
+    const nextPendingFilesMeta = new Map<string, fileMetadata>();
+
+    for (const [fileId, metadata] of Array.from(this.pendingFilesMeta.entries())) {
+      if (allowedFileIds.has(fileId)) {
+        nextPendingFilesMeta.set(fileId, metadata);
+      }
+    }
+
+    this.pendingFilesMeta = nextPendingFilesMeta;
+
+    const previousFolderProgresses = this.folderProgresses;
+    const nextFolderProgresses: Record<string, FolderProgress> = {};
+
+    for (const metadata of Array.from(this.pendingFilesMeta.values())) {
+      if (!metadata.folderName) {
+        continue;
+      }
+
+      if (!nextFolderProgresses[metadata.folderName]) {
+        nextFolderProgresses[metadata.folderName] = {
+          totalSize: 0,
+          receivedSize: 0,
+          fileIds: [],
+        };
+      }
+
+      const folderProgress = nextFolderProgresses[metadata.folderName];
+      folderProgress.totalSize += metadata.size;
+      folderProgress.fileIds.push(metadata.fileId);
+    }
+
+    Object.entries(nextFolderProgresses).forEach(([folderName, progress]) => {
+      const previousProgress = previousFolderProgresses[folderName];
+      if (previousProgress) {
+        progress.receivedSize = Math.min(
+          previousProgress.receivedSize,
+          progress.totalSize
+        );
+      }
+    });
+
+    this.folderProgresses = nextFolderProgresses;
+
+    const remainingFolderNames = new Set(Object.keys(nextFolderProgresses));
+    this.saveType = Object.fromEntries(
+      Object.entries(this.saveType).filter(
+        ([key]) => allowedFileIds.has(key) || remainingFolderNames.has(key)
+      )
+    );
+
+    if (
+      this.currentFolderName &&
+      !remainingFolderNames.has(this.currentFolderName)
+    ) {
+      this.currentFolderName = null;
+    }
+  }
+
   // ===== Folder Progress Management =====
 
   /**

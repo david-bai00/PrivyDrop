@@ -2,7 +2,7 @@
 // This file now serves as a compatibility layer for the new modular receive system
 
 import WebRTC_Recipient from "./webrtc_Recipient";
-import { CustomFile, fileMetadata } from "@/types/webrtc";
+import { CustomFile, fileMetadata, PayloadSnapshot } from "@/types/webrtc";
 import { createFileReceiveService, FileReceiveOrchestrator } from "./receive";
 import { ReceiverShutdownAction } from "./receive/receiverShutdown";
 
@@ -22,6 +22,9 @@ class FileReceiver {
   public onFileMetaReceived: ((meta: fileMetadata) => void) | undefined =
     undefined;
   public onStringReceived: ((str: string) => void) | undefined = undefined;
+  public onPayloadSnapshotReceived:
+    | ((snapshot: PayloadSnapshot) => void)
+    | undefined = undefined;
   public onFileReceived: ((file: CustomFile) => Promise<void>) | undefined =
     undefined;
 
@@ -53,6 +56,12 @@ class FileReceiver {
     this.orchestrator.onStringReceived = (str: string) => {
       if (this.onStringReceived) {
         this.onStringReceived(str);
+      }
+    };
+
+    this.orchestrator.onPayloadSnapshotReceived = (snapshot: PayloadSnapshot) => {
+      if (this.onPayloadSnapshotReceived) {
+        this.onPayloadSnapshotReceived(snapshot);
       }
     };
 

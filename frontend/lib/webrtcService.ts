@@ -2,7 +2,7 @@ import WebRTC_Initiator from "@/lib/webrtc_Initiator";
 import WebRTC_Recipient from "@/lib/webrtc_Recipient";
 import FileSender from "@/lib/fileSender";
 import FileReceiver from "@/lib/fileReceiver";
-import { CustomFile, fileMetadata } from "@/types/webrtc";
+import { CustomFile, fileMetadata, PayloadSnapshot } from "@/types/webrtc";
 import type { BaseWebRTCLifecycleEvent } from "@/lib/webrtc_base";
 import {
   WebRTCLifecycleState,
@@ -73,6 +73,10 @@ export type WebRTCServiceEvent =
   | {
       type: "retrieved_content";
       content: string;
+    }
+  | {
+      type: "retrieved_payload_snapshot";
+      snapshot: PayloadSnapshot;
     }
   | {
       type: "retrieved_file_meta";
@@ -332,6 +336,10 @@ class WebRTCService {
       this.emitEvent({ type: "retrieved_content", content: data });
     };
 
+    this.fileReceiver.onPayloadSnapshotReceived = (snapshot) => {
+      this.emitEvent({ type: "retrieved_payload_snapshot", snapshot });
+    };
+
     this.fileReceiver.onFileMetaReceived = (meta) => {
       this.emitEvent({ type: "retrieved_file_meta", meta });
     };
@@ -440,6 +448,12 @@ class WebRTCService {
     try {
       await Promise.all(
         peerIds.map(async (peerId) => {
+          await this.fileSender.sendPayloadSnapshot(
+            shareContent,
+            sendFiles,
+            peerId
+          );
+
           if (shareContent) {
             await this.fileSender.sendString(shareContent, peerId);
           }

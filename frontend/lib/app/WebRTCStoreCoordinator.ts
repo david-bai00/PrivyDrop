@@ -55,6 +55,9 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
       case "retrieved_content":
         this.setRetrievedContent(event.content);
         return;
+      case "retrieved_payload_snapshot":
+        this.handleRetrievedPayloadSnapshot(event.snapshot);
+        return;
       case "retrieved_file_meta":
         this.handleRetrievedFileMeta(event.meta);
         return;
@@ -216,6 +219,27 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
     );
 
     store.setRetrievedFileMetas([...filteredMetas, metaWithoutType]);
+  }
+
+  private handleRetrievedPayloadSnapshot(snapshot: {
+    hasContent: boolean;
+    fileIds: string[];
+  }): void {
+    const store = useFileTransferStore.getState();
+    const allowedFileIds = new Set(snapshot.fileIds);
+
+    if (!snapshot.hasContent) {
+      store.setRetrievedContent("");
+    }
+
+    store.setRetrievedFileMetas(
+      store.retrievedFileMetas.filter((meta) => allowedFileIds.has(meta.fileId))
+    );
+    store.setRetrievedFiles(
+      store.retrievedFiles.filter((file) =>
+        allowedFileIds.has(generateFileId(file))
+      )
+    );
   }
 
   private setRetrievedContent(content: string): void {

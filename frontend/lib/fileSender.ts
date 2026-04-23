@@ -33,6 +33,14 @@ class FileSender {
     return this.orchestrator.sendFileMeta(files, peerId);
   }
 
+  public async sendPayloadSnapshot(
+    content: string,
+    files: CustomFile[],
+    peerId: string
+  ): Promise<void> {
+    return this.orchestrator.sendPayloadSnapshot(content, files, peerId);
+  }
+
   public async sendString(content: string, peerId: string): Promise<void> {
     return this.orchestrator.sendString(content, peerId);
   }

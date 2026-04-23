@@ -42,6 +42,12 @@ export interface StringChunk {
   total: number;
 }
 
+export interface PayloadSnapshot {
+  type: "payloadSnapshot";
+  hasContent: boolean;
+  fileIds: string[];
+}
+
 // Receiver-initiated completion confirmation message
 export interface FileReceiveComplete {
   type: "fileReceiveComplete";
@@ -91,6 +97,7 @@ export type WebRTCMessage =
   | FileRequest
   | StringMetadata
   | StringChunk
+  | PayloadSnapshot
   | FileReceiveComplete
   | FolderReceiveComplete;
 
@@ -125,4 +132,5 @@ export interface FileHandlers {
   string: (data: any, peerId: string) => void;
   stringMetadata: (data: any, peerId: string) => void;
   fileMeta: (data: any, peerId: string) => void;
+  payloadSnapshot: (data: any, peerId: string) => void;
 }

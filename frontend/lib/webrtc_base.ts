@@ -293,12 +293,27 @@ export default class BaseWebRTC {
           isInitiator: this.isInitiator,
         });
       } catch (error) {
+        const browserOffline =
+          typeof navigator !== "undefined" && navigator.onLine === false;
+        const reconnectErrorMessage =
+          error instanceof Error ? error.message : String(error);
+
         this.onLifecycleEvent?.({
           type: "reconnect_failed",
           roomId: this.roomId,
           isInitiator: this.isInitiator,
-          error: error instanceof Error ? error.message : String(error),
+          error: reconnectErrorMessage,
         });
+
+        if (browserOffline || this.isSocketDisconnected) {
+          this.log("info", "reconnect_attempt_failed_while_offline", {
+            error: reconnectErrorMessage,
+            browserOffline,
+            socketDisconnected: this.isSocketDisconnected,
+          });
+          return;
+        }
+
         this.fireError("Reconnection failed", { error });
       } finally {
         this.reconnectionInProgress = false;
@@ -696,7 +711,6 @@ export default class BaseWebRTC {
               error: response.message,
             });
           }
-          this.fireError("Failed to join room", { message: response.message });
           reject(new Error(response.message));
         }
       };

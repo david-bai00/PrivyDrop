@@ -1,5 +1,5 @@
 import WebRTC_Recipient from "../webrtc_Recipient";
-import { CustomFile, fileMetadata } from "@/types/webrtc";
+import { CustomFile, fileMetadata, PayloadSnapshot } from "@/types/webrtc";
 import {
   ActiveFileReception,
   ReceptionStateManager,
@@ -46,6 +46,9 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
   public onFileMetaReceived: ((meta: fileMetadata) => void) | undefined =
     undefined;
   public onStringReceived: ((str: string) => void) | undefined = undefined;
+  public onPayloadSnapshotReceived:
+    | ((snapshot: PayloadSnapshot) => void)
+    | undefined = undefined;
   public onFileReceived: ((file: CustomFile) => Promise<void>) | undefined =
     undefined;
 
@@ -68,6 +71,11 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
         onStringReceived: (str: string) => {
           if (this.onStringReceived) {
             this.onStringReceived(str);
+          }
+        },
+        onPayloadSnapshotReceived: (snapshot: PayloadSnapshot) => {
+          if (this.onPayloadSnapshotReceived) {
+            this.onPayloadSnapshotReceived(snapshot);
           }
         },
         log: this.log.bind(this),

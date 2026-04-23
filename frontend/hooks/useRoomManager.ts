@@ -125,8 +125,16 @@ export function useRoomManager({ text }: UseRoomManagerProps) {
           }
         }
       } catch (error) {
-        console.error("[RoomManager] Failed to join room:", error);
         let errorMsg = text.join.failure;
+        const rawMessage = error instanceof Error ? error.message : String(error);
+        const isExpectedJoinFailure =
+          rawMessage === "Room does not exist" ||
+          rawMessage === "Join room timeout";
+
+        if (!isExpectedJoinFailure) {
+          console.error("[RoomManager] Failed to join room:", error);
+        }
+
         if (error instanceof Error) {
           errorMsg =
             error.message === "Room does not exist"

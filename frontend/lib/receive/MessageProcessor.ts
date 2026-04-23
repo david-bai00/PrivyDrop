@@ -8,6 +8,7 @@ import {
   FolderReceiveComplete,
   FileHandlers,
   SendResult,
+  PayloadSnapshot,
 } from "@/types/webrtc";
 import { ReceptionStateManager } from "./ReceptionStateManager";
 import { ReceptionConfig } from "./ReceptionConfig";
@@ -22,6 +23,7 @@ const logger = createLogger({ scope: "Receive.MessageProcessor" });
 export interface MessageProcessorDelegate {
   onFileMetaReceived?: (meta: fileMetadata) => void;
   onStringReceived?: (str: string) => void;
+  onPayloadSnapshotReceived?: (snapshot: PayloadSnapshot) => void;
   log(level: RuntimeLogLevel, event: string, context?: Record<string, any>): void;
 }
 
@@ -41,6 +43,7 @@ export class MessageProcessor {
       string: this.handleReceivedStringChunk.bind(this),
       stringMetadata: this.handleStringMetadata.bind(this),
       fileMeta: this.handleFileMetadata.bind(this),
+      payloadSnapshot: this.handlePayloadSnapshot.bind(this),
     };
   }
 
@@ -96,6 +99,17 @@ export class MessageProcessor {
         "file_meta_callback_missing",
         { fileId: metadata.fileId }
       );
+    }
+  }
+
+  /**
+   * Handle sender payload snapshot reconciliation messages.
+   */
+  private handlePayloadSnapshot(snapshot: PayloadSnapshot): void {
+    this.stateManager.reconcilePayloadSnapshot(snapshot.fileIds);
+
+    if (this.delegate.onPayloadSnapshotReceived) {
+      this.delegate.onPayloadSnapshotReceived(snapshot);
     }
   }
 

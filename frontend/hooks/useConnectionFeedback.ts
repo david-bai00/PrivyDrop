@@ -15,7 +15,8 @@ interface UseConnectionFeedbackProps {
 export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
   const showSenderMessage = useClipboardAppMessageDispatcher("sender");
   const showReceiverMessage = useClipboardAppMessageDispatcher("receiver");
-  const { clearReceiverMessage } = useClipboardAppMessages();
+  const { clearSenderMessage, clearReceiverMessage } =
+    useClipboardAppMessages();
   const {
     shareConnectionState,
     retrieveConnectionState,
@@ -88,6 +89,9 @@ export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
       armRtcSlow("rtc-negotiating");
     }
     if (nowShare === "connected") {
+      if (prevShareLifecycle === "reconnecting" || wasDiscShareRef.current) {
+        clearSenderMessage();
+      }
       if (!everShareRef.current) {
         const msg = text.connected;
         if (msg) {
@@ -143,6 +147,9 @@ export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
         armRtcSlow("rtc-negotiating");
       }
       if (nowRecv === "connected") {
+        if (prevRecvLifecycle === "reconnecting" || wasDiscRecvRef.current) {
+          clearReceiverMessage();
+        }
         if (!everRecvRef.current) {
           const msg = text.connected;
           if (msg) {
@@ -206,6 +213,7 @@ export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
     armRtcSlow,
     disarmRtcSlow,
     resetRtcSlow,
+    clearSenderMessage,
     clearReceiverMessage,
     senderDisconnected,
   ]);

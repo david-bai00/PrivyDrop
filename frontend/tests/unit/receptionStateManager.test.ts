@@ -184,6 +184,82 @@ describe("ReceptionStateManager.resetState", () => {
   });
 });
 
+describe("ReceptionStateManager.reconcilePayloadSnapshot", () => {
+  it("prunes removed file metadata, folder progress, and saveType entries", () => {
+    const manager = new ReceptionStateManager();
+    manager.addFileMetadata(
+      buildFileMeta({
+        fileId: "keep-folder-a",
+        size: 3,
+        folderName: "folder-a",
+        fullName: "folder-a/a.txt",
+      })
+    );
+    manager.addFileMetadata(
+      buildFileMeta({
+        fileId: "drop-folder-a",
+        size: 5,
+        folderName: "folder-a",
+        fullName: "folder-a/b.txt",
+      })
+    );
+    manager.addFileMetadata(
+      buildFileMeta({
+        fileId: "drop-single",
+        size: 7,
+        fullName: "c.txt",
+      })
+    );
+    manager.setFolderReceivedSize("folder-a", 6);
+    manager.setSaveType("keep-folder-a", true);
+    manager.setSaveType("drop-folder-a", true);
+    manager.setSaveType("drop-single", true);
+    manager.setSaveType("folder-a", true);
+    manager.setCurrentFolderName("folder-a");
+
+    manager.reconcilePayloadSnapshot(["keep-folder-a"]);
+
+    expect(Array.from(manager.getAllFileMetadata().keys())).toEqual([
+      "keep-folder-a",
+    ]);
+    expect(manager.getAllFolderProgresses()).toEqual({
+      "folder-a": {
+        totalSize: 3,
+        receivedSize: 3,
+        fileIds: ["keep-folder-a"],
+      },
+    });
+    expect(manager.getSaveType("keep-folder-a")).toBe(true);
+    expect(manager.getSaveType("drop-folder-a")).toBe(false);
+    expect(manager.getSaveType("drop-single")).toBe(false);
+    expect(manager.getSaveType("folder-a")).toBe(true);
+    expect(manager.getCurrentFolderName()).toBe("folder-a");
+  });
+
+  it("clears current folder context when the snapshot removes that folder", () => {
+    const manager = new ReceptionStateManager();
+    manager.addFileMetadata(
+      buildFileMeta({
+        fileId: "folder-file",
+        size: 2,
+        folderName: "folder-a",
+        fullName: "folder-a/a.txt",
+      })
+    );
+    manager.setSaveType("folder-file", true);
+    manager.setSaveType("folder-a", true);
+    manager.setCurrentFolderName("folder-a");
+
+    manager.reconcilePayloadSnapshot([]);
+
+    expect(manager.getAllFileMetadata().size).toBe(0);
+    expect(manager.getAllFolderProgresses()).toEqual({});
+    expect(manager.getSaveType("folder-file")).toBe(false);
+    expect(manager.getSaveType("folder-a")).toBe(false);
+    expect(manager.getCurrentFolderName()).toBeNull();
+  });
+});
+
 describe("ReceptionStateManager.getStateStats", () => {
   it("returns counts consistent with internal state", () => {
     const manager = new ReceptionStateManager();

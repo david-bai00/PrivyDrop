@@ -5,6 +5,7 @@ import {
   WebRTCMessage,
   FileRequest,
   EmbeddedChunkMeta,
+  PayloadSnapshot,
 } from "@/types/webrtc";
 import { StateManager } from "./StateManager";
 import { MessageHandler, MessageHandlerDelegate } from "./MessageHandler";
@@ -41,6 +42,34 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
 
     this.log("info", "transfer_orchestrator_initialized");
   }
+  /**
+   * 🎯 Send a payload snapshot so receivers can reconcile clears/removals
+   */
+  public async sendPayloadSnapshot(
+    content: string,
+    files: CustomFile[],
+    peerId: string
+  ): Promise<void> {
+    const payloadSnapshot: PayloadSnapshot = {
+      type: "payloadSnapshot",
+      hasContent: content.trim().length > 0,
+      fileIds: files.map((file) => generateFileId(file)),
+    };
+
+    const sendResult = await this.webrtcConnection.sendData(
+      JSON.stringify(payloadSnapshot),
+      peerId
+    );
+
+    if (!sendResult.ok) {
+      this.fireError("Failed to send payload snapshot", {
+        payloadSnapshot,
+        peerId,
+        sendResult,
+      });
+    }
+  }
+
   /**
    * 🎯 Send file metadata
    */

@@ -66,6 +66,7 @@ export function SendTabPanel({
   const {
     senderDraftContent: shareContent,
     senderDraftFiles: sendFiles,
+    isSenderPayloadDirty,
     sendProgress,
     isAnyFileTransferring,
     isSenderInRoom,
@@ -141,6 +142,10 @@ export function SendTabPanel({
       }),
     [isSenderInRoom, sharePeerCount, tStatus]
   );
+  const hasSenderDraftPayload =
+    sendFiles.length > 0 || shareContent.trim() !== "";
+  const canSyncClearedPayload =
+    !hasSenderDraftPayload && isSenderPayloadDirty;
 
   return (
     <div id="send-panel" role="tabpanel" aria-labelledby="send-tab">
@@ -222,7 +227,7 @@ export function SendTabPanel({
             loadingText={tActions("syncLoading")}
             disabled={
               !isSenderInRoom ||
-              (sendFiles.length === 0 && shareContent.trim() === "") ||
+              (!hasSenderDraftPayload && !canSyncClearedPayload) ||
               !currentValidatedShareRoomId.trim() ||
               isAnyFileTransferring
             }
