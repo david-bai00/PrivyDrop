@@ -267,6 +267,10 @@ class WebRTCService {
           role: "receiver",
           count: this.receiver.peerConnections.size,
         });
+        this.emitEvent({
+          type: "sender_disconnected_changed",
+          disconnected: false,
+        });
         logger.info({
           event: "receiver_connected",
           context: {
@@ -699,7 +703,7 @@ class WebRTCService {
     });
     this.emitEvent({
       type: "sender_disconnected_changed",
-      disconnected: true,
+      disconnected: this.receiver.peerConnections.size === 0,
     });
     logger.info({
       event: "receiver_peer_count_updated",
