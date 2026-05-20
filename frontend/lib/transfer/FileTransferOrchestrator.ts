@@ -26,6 +26,11 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
   private messageHandler: MessageHandler;
   private networkTransmitter: NetworkTransmitter;
   private progressTracker: ProgressTracker;
+  private activeFileSendPeers = new Map<string, Set<string>>();
+  private deferredResumeRequests = new Map<
+    string,
+    Array<{ peerId: string; resolve: () => void }>
+  >();
 
   constructor(private webrtcConnection: WebRTC_Initiator) {
     // Initialize all components
@@ -179,7 +184,14 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
       return;
     }
 
-    await this.sendSingleFile(file, peerId, offset);
+    await this.waitForResumeWindowIfNeeded(request.fileId, peerId, offset);
+    this.registerActiveFileSend(request.fileId, peerId);
+
+    try {
+      await this.sendSingleFile(file, peerId, offset);
+    } finally {
+      this.unregisterActiveFileSend(request.fileId, peerId);
+    }
   }
 
   /**
@@ -531,10 +543,98 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
    * 🧹 Clean up all resources
    */
   public cleanup(): void {
+    this.releaseAllDeferredResumeRequests();
+    this.activeFileSendPeers.clear();
     this.stateManager.cleanup();
     this.networkTransmitter.cleanup();
     this.progressTracker.cleanup();
     this.messageHandler.cleanup();
     this.log("info", "transfer_orchestrator_cleaned_up");
+  }
+
+  private async waitForResumeWindowIfNeeded(
+    fileId: string,
+    peerId: string,
+    offset: number
+  ): Promise<void> {
+    if (offset <= 0 || !this.hasOtherActiveFileSend(fileId, peerId)) {
+      return;
+    }
+
+    this.log("info", "resume_request_deferred_until_active_peers_finish", {
+      fileId,
+      peerId,
+      offset,
+      activePeers: Array.from(this.activeFileSendPeers.get(fileId) ?? []).filter(
+        (activePeerId) => activePeerId !== peerId
+      ),
+    });
+
+    await new Promise<void>((resolve) => {
+      const queue = this.deferredResumeRequests.get(fileId) ?? [];
+      queue.push({ peerId, resolve });
+      this.deferredResumeRequests.set(fileId, queue);
+    });
+  }
+
+  private registerActiveFileSend(fileId: string, peerId: string): void {
+    const peers = this.activeFileSendPeers.get(fileId) ?? new Set<string>();
+    peers.add(peerId);
+    this.activeFileSendPeers.set(fileId, peers);
+  }
+
+  private unregisterActiveFileSend(fileId: string, peerId: string): void {
+    const peers = this.activeFileSendPeers.get(fileId);
+    if (peers) {
+      peers.delete(peerId);
+      if (peers.size === 0) {
+        this.activeFileSendPeers.delete(fileId);
+      }
+    }
+
+    this.releaseNextDeferredResumeRequest(fileId);
+  }
+
+  private hasOtherActiveFileSend(fileId: string, peerId: string): boolean {
+    const peers = this.activeFileSendPeers.get(fileId);
+    if (!peers) {
+      return false;
+    }
+
+    return Array.from(peers).some((activePeerId) => activePeerId !== peerId);
+  }
+
+  private releaseNextDeferredResumeRequest(fileId: string): void {
+    if (this.activeFileSendPeers.has(fileId)) {
+      return;
+    }
+
+    const queue = this.deferredResumeRequests.get(fileId);
+    if (!queue || queue.length === 0) {
+      return;
+    }
+
+    const next = queue.shift();
+    if (!next) {
+      return;
+    }
+
+    if (queue.length === 0) {
+      this.deferredResumeRequests.delete(fileId);
+    } else {
+      this.deferredResumeRequests.set(fileId, queue);
+    }
+
+    next.resolve();
+  }
+
+  private releaseAllDeferredResumeRequests(): void {
+    for (const queue of Array.from(this.deferredResumeRequests.values())) {
+      for (const entry of queue) {
+        entry.resolve();
+      }
+    }
+
+    this.deferredResumeRequests.clear();
   }
 }
