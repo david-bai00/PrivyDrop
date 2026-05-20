@@ -227,6 +227,10 @@ class WebRTCService {
       this.emitEvent({ type: "sender_data_channel_opened" });
     };
 
+    this.sender.onConnectionEstablished = (peerId) => {
+      this.fileSender.handlePeerReconnection(peerId);
+    };
+
     this.sender.onPeerDisconnected = (peerId) => {
       logger.info({
         event: "sender_peer_disconnected",
@@ -262,6 +266,7 @@ class WebRTCService {
       if (normalizedState === "connected") {
         this.setPeerConnectionState("receiver", peerId, normalizedState);
         this.syncLifecycleStateFromPeerSnapshot("receiver");
+        this.fileReceiver.setCurrentPeerId(peerId);
         this.emitEvent({
           type: "peer_count_changed",
           role: "receiver",
@@ -307,6 +312,7 @@ class WebRTCService {
       this.fileSender.handlePeerReconnection(peerId);
       this.setPeerConnectionState("receiver", peerId, "connected");
       this.syncLifecycleStateFromPeerSnapshot("receiver");
+      this.fileReceiver.setCurrentPeerId(peerId);
       this.emitEvent({
         type: "sender_disconnected_changed",
         disconnected: false,

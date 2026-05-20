@@ -776,6 +776,10 @@ export class FileReceiveOrchestrator implements MessageProcessorDelegate {
     };
   }
 
+  public setCurrentPeerId(peerId: string): void {
+    this.stateManager.setCurrentPeerId(peerId);
+  }
+
   /**
    * Get save type information (for backward compatibility)
    */

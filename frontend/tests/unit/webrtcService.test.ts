@@ -37,6 +37,7 @@ class MockFileReceiver {
   public onFileMetaReceived?: (meta: any) => void;
   public onFileReceived?: (file: any) => Promise<void>;
   public setProgressCallback = vi.fn();
+  public setCurrentPeerId = vi.fn();
   public shutdown = vi.fn(async () => undefined);
   public handlePeerDisconnect = vi.fn(async () => undefined);
   public hasActiveFileReception = vi.fn(() => false);
@@ -190,5 +191,53 @@ describe("webrtcService", () => {
       type: "sender_disconnected_changed",
       disconnected: true,
     });
+  });
+
+  it("restores the receiver current peer id when the connection comes back", async () => {
+    const receiver = new MockPeer();
+    const sender = new MockPeer();
+    const fileReceiver = new MockFileReceiver();
+    const fileSender = new MockFileSender();
+
+    vi.doMock("@/lib/webrtc_Initiator", () => ({
+      default: vi.fn(function MockInitiator() {
+        return sender;
+      }),
+    }));
+    vi.doMock("@/lib/webrtc_Recipient", () => ({
+      default: vi.fn(function MockRecipient() {
+        return receiver;
+      }),
+    }));
+    vi.doMock("@/lib/fileSender", () => ({
+      default: vi.fn(function MockFileSender() {
+        return fileSender;
+      }),
+    }));
+    vi.doMock("@/lib/fileReceiver", () => ({
+      default: vi.fn(function MockFileReceiver() {
+        return fileReceiver;
+      }),
+    }));
+    vi.doMock("@/app/config/environment", () => ({
+      config: { API_URL: "" },
+      getIceServers: () => [],
+      getSocketOptions: () => ({}),
+      getLoggingConfig: () => ({
+        enableBackendLogs: false,
+        enableDebugConsoleLogs: false,
+        enableInfoConsoleLogs: false,
+        backendSampleRates: { debug: 0, info: 0, warn: 1, error: 1 },
+      }),
+    }));
+    vi.doMock("@/app/config/api", () => ({
+      postLogToBackend: vi.fn(async () => undefined),
+    }));
+
+    await import("@/lib/webrtcService");
+
+    receiver.onConnectionEstablished?.("peer-reconnected");
+
+    expect(fileReceiver.setCurrentPeerId).toHaveBeenCalledWith("peer-reconnected");
   });
 });

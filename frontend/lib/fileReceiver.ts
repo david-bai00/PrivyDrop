@@ -206,6 +206,10 @@ class FileReceiver {
     const stats = this.orchestrator.getTransferStats();
     return stats.stateManager.currentPeerId;
   }
+
+  public setCurrentPeerId(peerId: string): void {
+    this.orchestrator.setCurrentPeerId(peerId);
+  }
 }
 
 export default FileReceiver;
