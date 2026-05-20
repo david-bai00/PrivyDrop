@@ -20,19 +20,34 @@ export function setupSocketHandlers(io: Server): void {
     socket.on("join", async (data: JoinData) => {
       const { roomId: targetRoomId } = data; // Renamed for clarity
       try {
+        const existingRoomId = await roomService.getRoomBySocketId(socket.id);
+        const isRejoinForSameRoom =
+          existingRoomId !== null && existingRoomId === targetRoomId;
+
+        if (existingRoomId && existingRoomId !== targetRoomId) {
+          socket.emit("joinResponse", {
+            success: false,
+            message: "Socket is already bound to another room",
+            roomId: targetRoomId,
+          });
+          return;
+        }
+
         // Get client IP
         const clientIp =
           socket.handshake.headers["x-forwarded-for"] ||
           socket.handshake.address;
-        // Check rate limit
-        const rateLimitCheck = await checkRateLimit(clientIp as string);
-        if (!rateLimitCheck.allowed) {
-          socket.emit("joinResponse", {
-            success: false,
-            message: `Rate limit exceeded. Try again in ${rateLimitCheck.resetAfter}s. Attempts left: ${rateLimitCheck.remaining}.`,
-            roomId: targetRoomId,
-          });
-          return;
+        // Allow in-room rejoin attempts to bypass the public join rate limit.
+        if (!isRejoinForSameRoom) {
+          const rateLimitCheck = await checkRateLimit(clientIp as string);
+          if (!rateLimitCheck.allowed) {
+            socket.emit("joinResponse", {
+              success: false,
+              message: `Rate limit exceeded. Try again in ${rateLimitCheck.resetAfter}s. Attempts left: ${rateLimitCheck.remaining}.`,
+              roomId: targetRoomId,
+            });
+            return;
+          }
         }
         const targetRoomExists = await roomService.isRoomExist(targetRoomId);
         if (!targetRoomExists) {
@@ -44,7 +59,6 @@ export function setupSocketHandlers(io: Server): void {
           return;
         }
 
-        const existingRoomId = await roomService.getRoomBySocketId(socket.id);
         if (!existingRoomId) {
           // Only allow new connection to join if the socket.id is not already in a room
           socket.join(targetRoomId);
