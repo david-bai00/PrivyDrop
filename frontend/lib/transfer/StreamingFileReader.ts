@@ -181,15 +181,9 @@ export class StreamingFileReader {
       const batchStartOffset = this.totalFileOffset;
       this.currentBatchStartOffset = batchStartOffset;
 
-      // 🔧 Fix: Simplify index calculation logic within batch
-      // Since calculateGlobalChunkIndex now directly calculates based on totalFileOffset
-      // Indexing within a batch only needs to be calculated based on the starting position of the current batch
-      const chunkOffsetInBatch =
-        batchStartOffset -
-        Math.floor(batchStartOffset / this.BATCH_SIZE) * this.BATCH_SIZE;
-      this.currentChunkIndexInBatch = Math.floor(
-        chunkOffsetInBatch / this.NETWORK_CHUNK_SIZE
-      );
+      // The in-memory batch always starts at the current file offset, so the
+      // next readable network chunk inside that batch is index 0.
+      this.currentChunkIndexInBatch = 0;
 
       // Only output essential batch reading logs in development environment
       if (developmentEnv === "development" && batchSize > this.BATCH_SIZE / 2) {

@@ -10,7 +10,7 @@ function textToBuffer(text: string): ArrayBuffer {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 }
 
-function createMockWritableStream() {
+function createMockWritableStream(options: { writeDelayMs?: number } = {}) {
   const bytes: number[] = [];
   const operations: Array<{ type: string; value?: number }> = [];
   let position = 0;
@@ -28,6 +28,9 @@ function createMockWritableStream() {
     },
     async write(payload: ArrayBuffer | { type: "write"; data: ArrayBuffer }) {
       operations.push({ type: "write" });
+      if (options.writeDelayMs) {
+        await new Promise((resolve) => setTimeout(resolve, options.writeDelayMs));
+      }
       const data =
         payload instanceof ArrayBuffer ? payload : payload.data;
       const chunk = new Uint8Array(data);
@@ -153,6 +156,65 @@ describe("SequencedDiskWriter", () => {
     expect(new TextDecoder().decode(Uint8Array.from(stream.bytes))).toContain("B");
     expect(new TextDecoder().decode(Uint8Array.from(stream.bytes))).toContain("C");
     expect(writer.getBufferStatus().queueSize).toBe(0);
+  });
+
+  it("serializes concurrent resume writes so late-buffered chunks still flush", async () => {
+    const stream = createMockWritableStream({ writeDelayMs: 5 });
+    const writer = new SequencedDiskWriter(stream as any, 21);
+
+    await Promise.all([
+      writer.writeChunk(21, textToBuffer("A")),
+      writer.writeChunk(22, textToBuffer("B")),
+      writer.writeChunk(23, textToBuffer("C")),
+    ]);
+
+    expect(new TextDecoder().decode(Uint8Array.from(stream.bytes))).toBe("ABC");
+    expect(writer.getBufferStatus()).toMatchObject({
+      queueSize: 0,
+      nextIndex: 24,
+      totalWritten: 3,
+    });
+  });
+
+  it("handles a large burst of concurrent chunk writes without re-flushing the same oldest chunk", async () => {
+    const stream = createMockWritableStream({ writeDelayMs: 1 });
+    const writer = new SequencedDiskWriter(stream as any);
+    const writes: Promise<void>[] = [];
+
+    for (let chunkIndex = 0; chunkIndex < 128; chunkIndex += 1) {
+      writes.push(
+        writer.writeChunk(chunkIndex, textToBuffer(String(chunkIndex).padStart(3, "0")))
+      );
+    }
+
+    await Promise.all(writes);
+
+    expect(writer.getBufferStatus()).toMatchObject({
+      queueSize: 0,
+      nextIndex: 128,
+    });
+    expect(stream.operations.filter((item) => item.type === "seek")).toHaveLength(0);
+  });
+
+  it("waits for queued writes before final close flushing", async () => {
+    const stream = createMockWritableStream({ writeDelayMs: 1 });
+    const writer = new SequencedDiskWriter(stream as any);
+    const writes: Promise<void>[] = [];
+
+    for (let chunkIndex = 0; chunkIndex < 32; chunkIndex += 1) {
+      writes.push(
+        writer.writeChunk(chunkIndex, textToBuffer(String(chunkIndex).padStart(2, "0")))
+      );
+    }
+
+    await writer.close();
+    await Promise.all(writes);
+
+    expect(writer.getBufferStatus()).toMatchObject({
+      queueSize: 0,
+      nextIndex: 32,
+    });
+    expect(stream.operations.filter((item) => item.type === "seek")).toHaveLength(0);
   });
 });
 

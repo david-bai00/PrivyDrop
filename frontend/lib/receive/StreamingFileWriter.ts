@@ -12,6 +12,8 @@ export class SequencedDiskWriter {
   private readonly maxBufferSize: number;
   private readonly stream: FileSystemWritableFileStream;
   private totalWritten = 0;
+  private writeChain: Promise<void> = Promise.resolve();
+  private lastWriteTask: Promise<void> = Promise.resolve();
 
   constructor(stream: FileSystemWritableFileStream, startIndex: number = 0) {
     this.stream = stream;
@@ -23,6 +25,22 @@ export class SequencedDiskWriter {
    * Write a chunk, automatically managing order and buffering
    */
   async writeChunk(chunkIndex: number, chunk: ArrayBuffer): Promise<void> {
+    const writeTask = this.writeChain.then(() =>
+      this.writeChunkInternal(chunkIndex, chunk)
+    );
+    this.lastWriteTask = writeTask;
+    this.writeChain = writeTask.catch(() => {});
+    return writeTask;
+  }
+
+  async waitForIdle(): Promise<void> {
+    await this.lastWriteTask;
+  }
+
+  private async writeChunkInternal(
+    chunkIndex: number,
+    chunk: ArrayBuffer
+  ): Promise<void> {
     // Debug writeChunk calls
     if (
       ReceptionConfig.DEBUG_CONFIG.ENABLE_CHUNK_LOGGING &&
@@ -194,6 +212,8 @@ export class SequencedDiskWriter {
    * Close and clean up resources
    */
   async close(): Promise<void> {
+    await this.waitForIdle();
+
     try {
       // 🔧 修复：确保以正确的WriteParams格式写入剩余chunks
       const remainingIndexes = Array.from(this.writeQueue.keys()).sort(

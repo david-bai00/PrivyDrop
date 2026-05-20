@@ -130,4 +130,27 @@ describe("StreamingFileReader", () => {
     expect(third.chunk?.byteLength).toBe(chunkSize);
     expect(debugInfo.batchOffset).toBe(chunkSize * 2);
   });
+
+  it("keeps resumed chunks sequential when a resumed transfer crosses batch boundaries", async () => {
+    const chunkSize = TransferConfig.FILE_CONFIG.NETWORK_CHUNK_SIZE;
+    const file = createTestFile(chunkSize * 8) as any;
+    const reader = new StreamingFileReader(file, chunkSize);
+
+    (reader as any).BATCH_SIZE = chunkSize * 4;
+    (reader as any).CHUNKS_PER_BATCH = 4;
+
+    const seenIndexes: number[] = [];
+
+    for (let index = 0; index < 7; index += 1) {
+      const nextChunk = await reader.getNextNetworkChunk();
+      seenIndexes.push(nextChunk.chunkIndex);
+      expect(nextChunk.chunk?.byteLength).toBe(chunkSize);
+    }
+
+    expect(seenIndexes).toEqual([1, 2, 3, 4, 5, 6, 7]);
+
+    const eof = await reader.getNextNetworkChunk();
+    expect(eof.chunk).toBeNull();
+    expect(eof.fileOffset).toBe(chunkSize * 8);
+  });
 });
