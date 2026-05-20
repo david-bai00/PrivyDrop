@@ -87,6 +87,54 @@ import BaseWebRTC from "@/lib/webrtc_base";
 
 class TestWebRTC extends BaseWebRTC {
   protected createDataChannel(): void {}
+
+  public async triggerReconnection(): Promise<void> {
+    await this.attemptReconnection();
+  }
+
+  public setInRoomState(roomId: string, isInitiator: boolean): void {
+    this.roomId = roomId;
+    this.isInRoom = true;
+    this.isInitiator = isInitiator;
+  }
+
+  public setPeerDisconnectedState(value: boolean): void {
+    this.isPeerDisconnected = value;
+  }
+
+  public setReconnectionInProgressState(value: boolean): void {
+    this.reconnectionInProgress = value;
+  }
+
+  public attachDataChannelForTest(
+    peerId: string,
+    dataChannel: RTCDataChannel,
+    peerConnection?: RTCPeerConnection
+  ): void {
+    this.dataChannels.set(peerId, dataChannel);
+    if (peerConnection) {
+      this.peerConnections.set(peerId, peerConnection);
+    }
+    this.setupDataChannel(dataChannel, peerId);
+  }
+}
+
+function createFakeDataChannel(readyState: RTCDataChannelState = "open") {
+  return {
+    readyState,
+    send: vi.fn(),
+    close: vi.fn(),
+  } as unknown as RTCDataChannel & {
+    close: ReturnType<typeof vi.fn>;
+  };
+}
+
+function createFakePeerConnection() {
+  return {
+    close: vi.fn(),
+  } as unknown as RTCPeerConnection & {
+    close: ReturnType<typeof vi.fn>;
+  };
 }
 
 describe("BaseWebRTC.joinRoom", () => {
@@ -185,5 +233,84 @@ describe("BaseWebRTC.joinRoom", () => {
     expect(fakeSocket.listenerCount("joinResponse")).toBe(0);
     expect(fakeSocket.listenerCount("ready")).toBe(0);
     expect(fakeSocket.listenerCount("recipient-ready")).toBe(0);
+  });
+
+  it("forces a rejoin during reconnect even when the room flag is still true", async () => {
+    const peer = new TestWebRTC({
+      iceServers: [],
+      socketOptions: {},
+      signalingServer: "",
+    });
+    const lifecycleEvents: any[] = [];
+    peer.onLifecycleEvent = (event) => {
+      lifecycleEvents.push(event);
+    };
+    peer.setInRoomState("room-reconnect", true);
+    peer.setPeerDisconnectedState(true);
+
+    const reconnectTask = peer.triggerReconnection();
+
+    expect(fakeSocket.emitted.some((item) => item.event === "join")).toBe(true);
+
+    fakeSocket.emit("joinResponse", {
+      success: true,
+      message: "ok",
+      roomId: "room-reconnect",
+    });
+    await reconnectTask;
+
+    expect(lifecycleEvents).toEqual([
+      { type: "reconnect_started", roomId: "room-reconnect", isInitiator: true },
+      { type: "reconnect_succeeded", roomId: "room-reconnect", isInitiator: true },
+    ]);
+    expect(
+      fakeSocket.emitted.some((item) => item.event === "initiator-online")
+    ).toBe(true);
+  });
+
+  it("does not escalate recoverable send failures while reconnecting", async () => {
+    const peer = new TestWebRTC({
+      iceServers: [],
+      socketOptions: {},
+      signalingServer: "",
+    });
+    const onError = vi.fn();
+    peer.onError = onError;
+    peer.setReconnectionInProgressState(true);
+    peer.dataChannels.set("peer-a", createFakeDataChannel("closing"));
+
+    const sendTask = peer.sendToPeer("hello", "peer-a");
+    await vi.advanceTimersByTimeAsync(5100);
+    const result = await sendTask;
+
+    expect(result.ok).toBe(false);
+    expect(result.finalState).toBe("closing");
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("treats data channel close as a disconnect signal and cleans up the peer", async () => {
+    const peer = new TestWebRTC({
+      iceServers: [],
+      socketOptions: {},
+      signalingServer: "",
+    });
+    const connectionStates: Array<{ state: RTCPeerConnectionState; peerId: string }> =
+      [];
+    peer.onConnectionStateChange = (state, peerId) => {
+      connectionStates.push({ state, peerId });
+    };
+
+    const dataChannel = createFakeDataChannel("open");
+    const peerConnection = createFakePeerConnection();
+    peer.attachDataChannelForTest("peer-a", dataChannel, peerConnection);
+
+    dataChannel.onclose?.(new Event("close"));
+    await Promise.resolve();
+
+    expect(connectionStates).toContainEqual({ state: "closed", peerId: "peer-a" });
+    expect(dataChannel.close).toHaveBeenCalledTimes(1);
+    expect(peerConnection.close).toHaveBeenCalledTimes(1);
+    expect(peer.peerConnections.has("peer-a")).toBe(false);
+    expect(peer.dataChannels.has("peer-a")).toBe(false);
   });
 });

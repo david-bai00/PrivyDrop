@@ -33,7 +33,7 @@ function createFakeDataChannel(initialBufferedAmount = 0) {
       listeners.get(event)?.delete(listener);
     },
     emit(event: string) {
-      for (const listener of listeners.get(event) ?? []) {
+      for (const listener of Array.from(listeners.get(event) ?? new Set<Listener>())) {
         listener();
       }
     },

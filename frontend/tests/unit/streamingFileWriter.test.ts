@@ -50,9 +50,33 @@ function createMockWritableStream() {
   };
 }
 
-function createMockDirectoryHandle(name = "root") {
+interface MockFileNode {
+  bytes: number[];
+}
+
+interface MockDirectoryHandle {
+  kind: "directory";
+  name: string;
+  files: Map<string, MockFileNode>;
+  directories: Map<string, MockDirectoryHandle>;
+  getDirectoryHandle(
+    childName: string,
+    options?: { create?: boolean }
+  ): Promise<MockDirectoryHandle>;
+  getFileHandle(
+    fileName: string,
+    options?: { create?: boolean }
+  ): Promise<{
+    kind: "file";
+    name: string;
+    createWritable: () => Promise<ReturnType<typeof createMockWritableStream>>;
+    getFile: () => Promise<File>;
+  }>;
+}
+
+function createMockDirectoryHandle(name = "root"): MockDirectoryHandle {
   const files = new Map<string, { bytes: number[] }>();
-  const directories = new Map<string, ReturnType<typeof createMockDirectoryHandle>>();
+  const directories = new Map<string, MockDirectoryHandle>();
 
   return {
     kind: "directory" as const,

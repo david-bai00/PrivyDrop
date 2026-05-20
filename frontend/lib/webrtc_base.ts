@@ -123,6 +123,7 @@ export default class BaseWebRTC {
   protected wakeLockManager: WakeLockManager;
   // Graceful disconnect tracking
   protected gracefullyDisconnectedPeers: Set<string>;
+  protected disconnectingPeers: Set<string>;
   // Track last socket.id used to successfully join a room
   protected lastJoinedSocketId: string | null;
 
@@ -146,6 +147,7 @@ export default class BaseWebRTC {
     this.peerId = null; // Own ID
     this.isInRoom = false; // Whether the user has already joined a room
     this.gracefullyDisconnectedPeers = new Set(); // Track peers that disconnected gracefully
+    this.disconnectingPeers = new Set();
     this.setupCommonSocketListeners();
 
     this.isInitiator = false;
@@ -204,7 +206,8 @@ export default class BaseWebRTC {
             await this.joinRoom(
               this.roomId as string,
               this.isInitiator,
-              sendInitiatorOnline
+              sendInitiatorOnline,
+              true
             );
             // Reset flags after successful auto rejoin
             this.isSocketDisconnected = false;
@@ -282,7 +285,12 @@ export default class BaseWebRTC {
         // Ensure joinRoom does not early-return
         if (socketIdChanged) this.isInRoom = false;
         const sendInitiatorOnline = this.isInitiator;
-        await this.joinRoom(this.roomId, this.isInitiator, sendInitiatorOnline);
+        await this.joinRoom(
+          this.roomId,
+          this.isInitiator,
+          sendInitiatorOnline,
+          true
+        );
 
         // Reset states
         this.isSocketDisconnected = false;
@@ -450,6 +458,7 @@ export default class BaseWebRTC {
 
     const stateHandlers = {
       connected: async () => {
+        this.disconnectingPeers.delete(peerId);
         this.isPeerDisconnected = false;
         const dataChannel = this.dataChannels.get(peerId);
         if (!dataChannel) {
@@ -460,32 +469,13 @@ export default class BaseWebRTC {
         await this.wakeLockManager.requestWakeLock();
       },
       disconnected: async () => {
-        await this.cleanupExistingConnection(peerId);
-        this.isPeerDisconnected = true;
-        logger.debug({
-          event: "peer_connection_disconnected",
-          context: {
-            peerId,
-            isInitiator: this.isInitiator,
-          },
-        });
-        // Attempt to reconnect
-        this.attemptReconnection();
-        await this.wakeLockManager.releaseWakeLock();
+        await this.handlePeerTransportInterrupted(peerId, "disconnected");
       },
       failed: async () => {
-        this.cleanupExistingConnection(peerId);
-        this.isPeerDisconnected = true;
-        // Attempt to reconnect as well when failed
-        this.attemptReconnection();
-        await this.wakeLockManager.releaseWakeLock();
+        await this.handlePeerTransportInterrupted(peerId, "failed");
       },
       closed: async () => {
-        this.cleanupExistingConnection(peerId);
-        this.isPeerDisconnected = true;
-        // Attempt to reconnect when closed
-        this.attemptReconnection();
-        await this.wakeLockManager.releaseWakeLock();
+        await this.handlePeerTransportInterrupted(peerId, "closed");
       },
       // The following must be added to prevent errors
       connecting: () => {
@@ -567,16 +557,19 @@ export default class BaseWebRTC {
         context: { peerId },
       });
       this.log("info", "data_channel_close_observed", { peerId });
+      void this.handlePeerTransportInterrupted(peerId, "data_channel_closed");
+      this.onConnectionStateChange?.("closed", peerId);
     };
   }
   // Join a room. sendInitiatorOnline indicates whether to send "initiator online" message after joining.
   public async joinRoom(
     roomId: string,
     isInitiator: boolean,
-    sendInitiatorOnline: boolean = false
+    sendInitiatorOnline: boolean = false,
+    forceRejoin: boolean = false
   ): Promise<void> {
     // If already in the room, return directly
-    if (this.isInRoom) {
+    if (this.isInRoom && !forceRejoin) {
       return;
     }
     this.isInitiator = isInitiator;
@@ -790,6 +783,15 @@ export default class BaseWebRTC {
         );
       },
       onFailure: (failureResult) => {
+        if (this.isRecoverableSendFailure(failureResult)) {
+          this.log("info", "send_to_peer_recoverable_failure", {
+            peerId,
+            attempts: failureResult.attempts,
+            finalState: failureResult.finalState,
+            reason: failureResult.reason,
+          });
+          return;
+        }
         this.fireError(
           `Failed to send data to peer ${peerId} after maximum retries`,
           {
@@ -819,7 +821,7 @@ export default class BaseWebRTC {
   }
 
   protected async cleanupExistingConnection(peerId: string): Promise<void> {
-    this.closeDataChannel(peerId);
+    await this.closeDataChannel(peerId);
 
     const peerConnection = this.peerConnections.get(peerId);
     if (peerConnection) {
@@ -861,6 +863,7 @@ export default class BaseWebRTC {
     this.isSocketDisconnected = false;
     this.reconnectionInProgress = false;
     this.gracefullyDisconnectedPeers.clear(); // Clear graceful disconnect tracking
+    this.disconnectingPeers.clear();
 
     this.log(
       "info",
@@ -906,10 +909,61 @@ export default class BaseWebRTC {
     }
   }
 
-  private getDataChannelState(
+  public getDataChannelState(
     peerId: string
   ): RTCDataChannelState | "missing" {
     return this.dataChannels.get(peerId)?.readyState ?? "missing";
+  }
+
+  protected async handlePeerTransportInterrupted(
+    peerId: string,
+    trigger:
+      | "disconnected"
+      | "failed"
+      | "closed"
+      | "data_channel_closed"
+  ): Promise<void> {
+    if (this.disconnectingPeers.has(peerId)) {
+      return;
+    }
+
+    if (
+      !this.peerConnections.has(peerId) &&
+      !this.dataChannels.has(peerId) &&
+      this.isPeerDisconnected
+    ) {
+      return;
+    }
+
+    this.disconnectingPeers.add(peerId);
+
+    try {
+      await this.cleanupExistingConnection(peerId);
+      this.isPeerDisconnected = true;
+      logger.debug({
+        event: "peer_transport_interrupted",
+        context: {
+          peerId,
+          trigger,
+          isInitiator: this.isInitiator,
+        },
+      });
+      this.attemptReconnection();
+      await this.wakeLockManager.releaseWakeLock();
+    } finally {
+      this.disconnectingPeers.delete(peerId);
+    }
+  }
+
+  private isRecoverableSendFailure(failureResult: SendResult): boolean {
+    return (
+      this.reconnectionInProgress ||
+      this.isPeerDisconnected ||
+      failureResult.finalState === "missing" ||
+      failureResult.finalState === "closed" ||
+      failureResult.finalState === "closing" ||
+      failureResult.finalState === "connecting"
+    );
   }
 
   private delay(ms: number): Promise<void> {

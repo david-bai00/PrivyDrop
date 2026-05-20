@@ -338,6 +338,25 @@ export class FileTransferOrchestrator implements MessageHandlerDelegate {
           );
           const progressTime = performance.now() - progressStartTime;
           totalProgressTime += progressTime;
+        } else {
+          const channelState = this.webrtcConnection.getDataChannelState(peerId);
+          const peerStillConnected = this.webrtcConnection.peerConnections.has(peerId);
+
+          if (!peerStillConnected || channelState !== "open") {
+            this.log("info", "file_send_interrupted_by_disconnect", {
+              fileId,
+              peerId,
+              chunkIndex: chunkInfo.chunkIndex,
+              channelState,
+              peerStillConnected,
+            });
+            this.stateManager.updatePeerState(peerId, { isSending: false });
+            break;
+          }
+
+          throw new Error(
+            `Chunk send failed while peer ${peerId} remained ${channelState}`
+          );
         }
 
         networkChunkIndex++;
