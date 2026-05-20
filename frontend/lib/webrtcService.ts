@@ -93,6 +93,7 @@ export type WebRTCServiceEvent =
     }
   | {
       type: "sender_data_channel_opened";
+      peerId: string;
     };
 
 export interface WebRTCServiceObserver {
@@ -223,8 +224,8 @@ class WebRTCService {
       }
     };
 
-    this.sender.onDataChannelOpen = () => {
-      this.emitEvent({ type: "sender_data_channel_opened" });
+    this.sender.onDataChannelOpen = (peerId) => {
+      this.emitEvent({ type: "sender_data_channel_opened", peerId });
     };
 
     this.sender.onConnectionEstablished = (peerId) => {
@@ -477,6 +478,39 @@ class WebRTCService {
       logger.error({
         event: "broadcast_failed",
         context: { error },
+      });
+      return false;
+    }
+  }
+
+  public async broadcastDataToPeer(
+    peerId: string,
+    shareContent: string,
+    sendFiles: CustomFile[]
+  ): Promise<boolean> {
+    if (!this.sender.peerConnections.has(peerId)) {
+      logger.warn({
+        event: "broadcast_to_peer_skipped_missing_peer",
+        context: { peerId },
+      });
+      return false;
+    }
+
+    try {
+      await this.fileSender.sendPayloadSnapshot(shareContent, sendFiles, peerId);
+
+      if (shareContent) {
+        await this.fileSender.sendString(shareContent, peerId);
+      }
+      if (sendFiles.length > 0) {
+        await this.fileSender.sendFileMeta(sendFiles, peerId);
+      }
+
+      return true;
+    } catch (error) {
+      logger.error({
+        event: "broadcast_to_peer_failed",
+        context: { error, peerId },
       });
       return false;
     }

@@ -68,7 +68,7 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
         this.handleTransferProgressCleared(event.direction, event.peerId);
         return;
       case "sender_data_channel_opened":
-        this.handleSenderDataChannelOpened();
+        this.handleSenderDataChannelOpened(event.peerId);
         return;
       default:
         return;
@@ -287,8 +287,13 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
     this.syncTransferActivityFlag();
   }
 
-  private handleSenderDataChannelOpened(): void {
-    void this.broadcastPublishedSenderPayload().catch((error) => {
+  private handleSenderDataChannelOpened(peerId: string): void {
+    const { senderPublishedContent, senderPublishedFiles } =
+      useFileTransferStore.getState();
+
+    void webrtcService
+      .broadcastDataToPeer(peerId, senderPublishedContent, senderPublishedFiles)
+      .catch((error) => {
       console.error("[WebRTCStoreCoordinator] Auto broadcast failed:", error);
     });
   }

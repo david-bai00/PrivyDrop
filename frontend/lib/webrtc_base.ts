@@ -948,7 +948,14 @@ export default class BaseWebRTC {
           isInitiator: this.isInitiator,
         },
       });
-      this.attemptReconnection();
+      if (this.isInitiator && !this.isSocketDisconnected) {
+        this.log("info", "peer_interrupt_awaiting_remote_rejoin", {
+          peerId,
+          trigger,
+        });
+      } else {
+        this.attemptReconnection();
+      }
       await this.wakeLockManager.releaseWakeLock();
     } finally {
       this.disconnectingPeers.delete(peerId);

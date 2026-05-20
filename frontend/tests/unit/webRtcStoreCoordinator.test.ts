@@ -4,6 +4,7 @@ import {
   addSenderDraftFiles,
   broadcastPublishedSenderPayload,
   clearReceiverRetrievedArtifacts,
+  ensureWebRTCStoreCoordinator,
   publishAndBroadcastSenderDraft,
   publishSenderDraftPayload,
   removeSenderDraftFile,
@@ -271,5 +272,38 @@ describe("WebRTCStoreCoordinator commands", () => {
       draftFile,
     ]);
     expect(useFileTransferStore.getState().isSenderPayloadDirty).toBe(false);
+  });
+
+  it("re-broadcasts published payload only to the reopened peer", async () => {
+    useFileTransferStore.setState({
+      senderPublishedContent: "published-payload",
+      senderPublishedFiles: [
+        {
+          name: "published.txt",
+          fullName: "published.txt",
+          folderName: "",
+          size: 9,
+          type: "text/plain",
+          lastModified: 9,
+        } as any,
+      ],
+    });
+
+    const broadcastSpy = vi
+      .spyOn(webrtcService, "broadcastDataToPeer")
+      .mockResolvedValue(true);
+
+    ensureWebRTCStoreCoordinator();
+    (webrtcService as any).observer?.onEvent({
+      type: "sender_data_channel_opened",
+      peerId: "peer-reconnected",
+    });
+    await Promise.resolve();
+
+    expect(broadcastSpy).toHaveBeenCalledWith(
+      "peer-reconnected",
+      "published-payload",
+      useFileTransferStore.getState().senderPublishedFiles
+    );
   });
 });

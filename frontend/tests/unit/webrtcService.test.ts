@@ -240,4 +240,54 @@ describe("webrtcService", () => {
 
     expect(fileReceiver.setCurrentPeerId).toHaveBeenCalledWith("peer-reconnected");
   });
+
+  it("resets sender transfer state when the sender peer reconnects", async () => {
+    const receiver = new MockPeer();
+    const sender = new MockPeer();
+    const fileReceiver = new MockFileReceiver();
+    const fileSender = new MockFileSender();
+
+    vi.doMock("@/lib/webrtc_Initiator", () => ({
+      default: vi.fn(function MockInitiator() {
+        return sender;
+      }),
+    }));
+    vi.doMock("@/lib/webrtc_Recipient", () => ({
+      default: vi.fn(function MockRecipient() {
+        return receiver;
+      }),
+    }));
+    vi.doMock("@/lib/fileSender", () => ({
+      default: vi.fn(function MockFileSender() {
+        return fileSender;
+      }),
+    }));
+    vi.doMock("@/lib/fileReceiver", () => ({
+      default: vi.fn(function MockFileReceiver() {
+        return fileReceiver;
+      }),
+    }));
+    vi.doMock("@/app/config/environment", () => ({
+      config: { API_URL: "" },
+      getIceServers: () => [],
+      getSocketOptions: () => ({}),
+      getLoggingConfig: () => ({
+        enableBackendLogs: false,
+        enableDebugConsoleLogs: false,
+        enableInfoConsoleLogs: false,
+        backendSampleRates: { debug: 0, info: 0, warn: 1, error: 1 },
+      }),
+    }));
+    vi.doMock("@/app/config/api", () => ({
+      postLogToBackend: vi.fn(async () => undefined),
+    }));
+
+    await import("@/lib/webrtcService");
+
+    sender.onConnectionEstablished?.("peer-reconnected");
+
+    expect(fileSender.handlePeerReconnection).toHaveBeenCalledWith(
+      "peer-reconnected"
+    );
+  });
 });

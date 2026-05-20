@@ -313,4 +313,27 @@ describe("BaseWebRTC.joinRoom", () => {
     expect(peer.peerConnections.has("peer-a")).toBe(false);
     expect(peer.dataChannels.has("peer-a")).toBe(false);
   });
+
+  it("does not force a room rejoin for initiator-side peer interrupts", async () => {
+    const peer = new TestWebRTC({
+      iceServers: [],
+      socketOptions: {},
+      signalingServer: "",
+    });
+    peer.setInRoomState("room-multi", true);
+
+    const dataChannel = createFakeDataChannel("open");
+    const peerConnection = createFakePeerConnection();
+    peer.attachDataChannelForTest("peer-a", dataChannel, peerConnection);
+
+    dataChannel.onclose?.(new Event("close"));
+    await Promise.resolve();
+
+    expect(
+      fakeSocket.emitted.some(
+        (item) => item.event === "join" && item.payload?.roomId === "room-multi"
+      )
+    ).toBe(false);
+  });
+
 });
