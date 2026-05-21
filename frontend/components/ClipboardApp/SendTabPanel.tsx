@@ -148,8 +148,16 @@ export function SendTabPanel({
     !hasSenderDraftPayload && isSenderPayloadDirty;
 
   return (
-    <div id="send-panel" role="tabpanel" aria-labelledby="send-tab">
-      <div className="mb-3 text-sm text-muted-foreground">
+    <div
+      id="send-panel"
+      role="tabpanel"
+      aria-labelledby="send-tab"
+      data-testid="send-panel"
+    >
+      <div
+        className="mb-3 text-sm text-muted-foreground"
+        data-testid="sender-room-status"
+      >
         {shareRoomStatusText}
       </div>
       <RichTextEditor value={shareContent} onChange={updateShareContent} />
@@ -182,6 +190,7 @@ export function SendTabPanel({
           <div className="flex flex-col sm:flex-row gap-2">
             <Input
               aria-label="Share Room ID"
+              data-testid="sender-room-id-input"
               value={inputFieldValue}
               onChange={handleInputChange}
               onPaste={handlePaste}
@@ -213,6 +222,7 @@ export function SendTabPanel({
               className="w-full sm:w-auto px-4"
               onClick={() => joinRoom(true, inputFieldValue.trim())}
               disabled={isSenderInRoom || !inputFieldValue.trim()}
+              data-testid="sender-join-room-button"
             >
               {tCommon("buttons.joinRoom")}
             </Button>
@@ -225,6 +235,7 @@ export function SendTabPanel({
             className="flex-1 order-1"
             onClick={generateShareLinkAndBroadcast}
             loadingText={tActions("syncLoading")}
+            data-testid="sender-sync-button"
             disabled={
               !isSenderInRoom ||
               (!hasSenderDraftPayload && !canSyncClearedPayload) ||
@@ -239,6 +250,7 @@ export function SendTabPanel({
             onClick={handleLeaveSenderRoom}
             disabled={!isSenderInRoom}
             className="w-full sm:w-auto px-4 order-2"
+            data-testid="sender-leave-room-button"
           >
             {isAnyFileTransferring
               ? tCommon("buttons.leaveRoom") + " ⚠️"

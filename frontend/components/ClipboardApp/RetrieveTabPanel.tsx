@@ -120,8 +120,16 @@ export function RetrieveTabPanel({
   }, [senderDisconnected, clearReceiverMessage]);
 
   return (
-    <div id="retrieve-panel" role="tabpanel" aria-labelledby="retrieve-tab">
-      <div className="mb-3 text-sm text-muted-foreground">
+    <div
+      id="retrieve-panel"
+      role="tabpanel"
+      aria-labelledby="retrieve-tab"
+      data-testid="retrieve-panel"
+    >
+      <div
+        className="mb-3 text-sm text-muted-foreground"
+        data-testid="receiver-room-status"
+      >
         {retrieveRoomStatusText}
       </div>
       <div className="space-y-3 mb-4">
@@ -140,6 +148,7 @@ export function RetrieveTabPanel({
             />
             <Input
               aria-label="Retrieve Room ID"
+              data-testid="receiver-room-id-input"
               value={retrieveRoomIdInput}
               onChange={(e) => setRetrieveRoomIdInput(e.target.value)}
               placeholder={tPlaceholders("roomId")}
@@ -155,6 +164,7 @@ export function RetrieveTabPanel({
             onClick={() => joinRoom(false, retrieveRoomIdInput)}
             ref={retrieveJoinRoomBtnRef}
             disabled={isReceiverInRoom || !retrieveRoomIdInput.trim()}
+            data-testid="receiver-join-room-button"
           >
             {tCommon("buttons.joinRoom")}
           </Button>
@@ -163,6 +173,7 @@ export function RetrieveTabPanel({
             onClick={handleLeaveRoom}
             disabled={!isReceiverInRoom}
             className="w-full sm:w-auto px-4 order-2"
+            data-testid="receiver-leave-room-button"
           >
             {isAnyFileTransferring
               ? tCommon("buttons.leaveRoom") + " ⚠️"

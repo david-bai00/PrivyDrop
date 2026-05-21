@@ -370,6 +370,9 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
       <div
         key={item.name}
         className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2 p-2 sm:p-3 border border-border rounded-lg"
+        data-testid="clipboard-file-row"
+        data-file-id={item.fileId}
+        data-file-name={item.name}
       >
         <Tooltip content={tooltipContent}>
           <div className="flex-1 min-w-0">
@@ -420,6 +423,7 @@ const FileListDisplay: React.FC<FileListDisplayProps> = ({
                     variant="outline"
                     size="sm"
                     className="mr-2 text-red-500"
+                    data-testid="choose-save-location-button"
                   >
                     {t("saveDialog.button")}
                   </Button>

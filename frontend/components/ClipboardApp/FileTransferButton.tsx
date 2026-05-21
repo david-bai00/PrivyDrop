@@ -86,6 +86,7 @@ const FileTransferButton = ({
               size="sm"
               className={buttonStyles.className}
               disabled={isDisabled}
+              data-testid="receiver-file-transfer-button"
             >
               <Download
                 className={`mr-2 h-4 w-4 ${

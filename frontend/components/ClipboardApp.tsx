@@ -231,6 +231,7 @@ const ClipboardAppContent = () => {
           className="flex-1"
           aria-controls="send-panel"
           id="send-tab"
+          data-testid="send-tab-button"
           aria-selected={activeTab === "send"}
         >
           {tTabs("send")}
@@ -241,6 +242,7 @@ const ClipboardAppContent = () => {
           className="flex-1"
           aria-controls="retrieve-panel"
           id="retrieve-tab"
+          data-testid="retrieve-tab-button"
           aria-selected={activeTab === "retrieve"}
         >
           {tTabs("retrieve")}
