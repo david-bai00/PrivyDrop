@@ -10,6 +10,9 @@ node_modules/
 # testing
 # Ignore coverage directories in all subdirectories
 coverage/
+frontend/.playwright/
+frontend/test-results/
+frontend/playwright-report/
 
 # next.js
 # Ignore .next/ directories in all subdirectories
