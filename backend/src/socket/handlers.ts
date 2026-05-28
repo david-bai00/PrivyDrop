@@ -1,4 +1,5 @@
 import { Server, Socket } from "socket.io";
+import { CONFIG } from "../config/env";
 import * as roomService from "../services/room";
 import {
   JoinData,
@@ -38,7 +39,7 @@ export function setupSocketHandlers(io: Server): void {
           socket.handshake.headers["x-forwarded-for"] ||
           socket.handshake.address;
         // Allow in-room rejoin attempts to bypass the public join rate limit.
-        if (!isRejoinForSameRoom) {
+        if (!isRejoinForSameRoom && !CONFIG.DISABLE_JOIN_RATE_LIMIT) {
           const rateLimitCheck = await checkRateLimit(clientIp as string);
           if (!rateLimitCheck.allowed) {
             socket.emit("joinResponse", {

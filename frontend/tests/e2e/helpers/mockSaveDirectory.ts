@@ -13,6 +13,7 @@ export async function installMockSaveDirectory(
 ) {
   await context.addInitScript(
     ({ mode, namespace }) => {
+      const NativeRTCPeerConnection = window.RTCPeerConnection;
       const storageMode = mode;
       const dbName = `__privydrop_e2e_mock_fs__${namespace ?? ""}`;
       const storeName = "files";
@@ -20,6 +21,16 @@ export async function installMockSaveDirectory(
       const textEncoder = new TextEncoder();
       const textDecoder = new TextDecoder();
       const testWindow = window as any;
+
+      class TrackingRTCPeerConnection extends NativeRTCPeerConnection {
+        constructor(...args: ConstructorParameters<typeof RTCPeerConnection>) {
+          super(...args);
+          testWindow.__rtcPeerConnections.push(this);
+        }
+      }
+
+      testWindow.__rtcPeerConnections = [];
+      window.RTCPeerConnection = TrackingRTCPeerConnection;
 
       const normalizeData = async (payload: unknown): Promise<Uint8Array> => {
         if (payload instanceof ArrayBuffer) {
@@ -275,6 +286,14 @@ export async function installMockSaveDirectory(
         const bytes = await loadFileBytes(targetPath);
         return bytes.length > 0 ? digestHex(bytes) : null;
       };
+      testWindow.__mockFsFileText = async (targetPath: string) => {
+        const bytes = await loadFileBytes(targetPath);
+        return bytes.length > 0 ? textDecoder.decode(bytes) : null;
+      };
+      testWindow.__mockFsFileCount = async () => {
+        const filePaths = await listFilePaths();
+        return filePaths.length;
+      };
       testWindow.__mockFsSnapshot = async () => {
         const snapshot: Record<string, string> = {};
         const filePaths = await listFilePaths();
@@ -284,6 +303,13 @@ export async function installMockSaveDirectory(
         }
 
         return snapshot;
+      };
+      testWindow.__closeRtcPeerConnections = async () => {
+        for (const connection of testWindow.__rtcPeerConnections) {
+          if (connection && connection.connectionState !== "closed") {
+            connection.close();
+          }
+        }
       };
 
       testWindow.showDirectoryPicker = async () => new MockDirectoryHandle("");
@@ -331,5 +357,29 @@ export async function getCapturedFileRequests(page: Page) {
       fileId?: string;
       offset?: number;
     }>;
+  });
+}
+
+export async function getMockFileText(page: Page, targetPath: string) {
+  return page.evaluate(async (filePath) => {
+    return await (window as any).__mockFsFileText(filePath);
+  }, targetPath);
+}
+
+export async function getMockFileCount(page: Page) {
+  return page.evaluate(async () => {
+    return await (window as any).__mockFsFileCount();
+  });
+}
+
+export async function getMockSnapshot(page: Page) {
+  return page.evaluate(async () => {
+    return (await (window as any).__mockFsSnapshot()) as Record<string, string>;
+  });
+}
+
+export async function closeTrackedPeerConnections(page: Page) {
+  await page.evaluate(async () => {
+    await (window as any).__closeRtcPeerConnections();
   });
 }

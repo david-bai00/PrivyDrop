@@ -2,7 +2,23 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { E2E_SERVER, E2E_TIMEOUT } from "./e2eConfig";
 
 export async function openClipboardApp(page: Page) {
-  await page.goto(E2E_SERVER.localePath, { waitUntil: "networkidle" });
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await page.goto(E2E_SERVER.localePath, { waitUntil: "networkidle" });
+      lastError = undefined;
+      break;
+    } catch (error) {
+      lastError = error;
+      await page.waitForTimeout(500);
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
   await page.evaluate(() => {
     window.localStorage.setItem("Choose-location-popup-shown", "true");
   });
@@ -23,6 +39,10 @@ export function fileRow(page: Page, fileName: string) {
     .first();
 }
 
+export function folderRow(page: Page, folderName: string) {
+  return fileRow(page, folderName);
+}
+
 export async function waitForText(locator: Locator, text: string, timeout = E2E_TIMEOUT.medium) {
   await expect
     .poll(async () => (await locator.textContent()) ?? "", { timeout })
@@ -41,12 +61,28 @@ export async function joinReceiverWithRetry(
 ) {
   const startedAt = Date.now();
   const panel = page.getByTestId("retrieve-panel");
+  const roomIdInput = page.getByTestId("receiver-room-id-input");
+  const joinButton = page.getByTestId("receiver-join-room-button");
+  const RATE_LIMIT_BACKOFF_MS = 5_500;
 
   await page.getByTestId("retrieve-tab-button").click();
-  await page.getByTestId("receiver-room-id-input").fill(roomId);
 
   while (Date.now() - startedAt < timeout) {
-    await page.getByTestId("receiver-join-room-button").click();
+    await roomIdInput.fill(roomId);
+
+    const statusText = (await receiverStatus(page).textContent()) ?? "";
+    if (statusText.includes("Connected")) {
+      return;
+    }
+
+    if (!(await joinButton.isEnabled())) {
+      await page.waitForTimeout(250);
+      continue;
+    }
+
+    await joinButton.click();
+
+    let rateLimitWaitMs = 0;
 
     for (let poll = 0; poll < 20; poll += 1) {
       const statusText = (await receiverStatus(page).textContent()) ?? "";
@@ -57,13 +93,19 @@ export async function joinReceiverWithRetry(
       }
 
       if (panelText.includes("Rate limit exceeded")) {
+        const resetMatch = panelText.match(/Try again in (\d+)s/i);
+        const resetAfterSeconds = resetMatch ? Number(resetMatch[1]) : 0;
+        rateLimitWaitMs = Math.max(
+          RATE_LIMIT_BACKOFF_MS,
+          (resetAfterSeconds + 1) * 1_000
+        );
         break;
       }
 
       await page.waitForTimeout(250);
     }
 
-    await page.waitForTimeout(3_000);
+    await page.waitForTimeout(rateLimitWaitMs || 3_000);
   }
 
   throw new Error("Timed out joining receiver after retrying rate limit failures");
@@ -79,12 +121,28 @@ export async function syncFileFromSender(
   await page.getByTestId("sender-sync-button").click();
 }
 
+export async function syncFolderFromSender(
+  page: Page,
+  folderPath: string,
+  folderName: string
+) {
+  await page.locator("#folder-upload").setInputFiles(folderPath);
+  await waitForText(page.getByTestId("send-panel"), folderName, E2E_TIMEOUT.long);
+  await page.getByTestId("sender-sync-button").click();
+}
+
 export async function chooseSaveLocation(page: Page) {
   await page.getByTestId("choose-save-location-button").click();
 }
 
 export async function requestFileFromReceiver(page: Page, fileName: string) {
   const row = fileRow(page, fileName);
+  await expect(row).toBeVisible({ timeout: E2E_TIMEOUT.long });
+  await row.getByTestId("receiver-file-transfer-button").click();
+}
+
+export async function requestFolderFromReceiver(page: Page, folderName: string) {
+  const row = folderRow(page, folderName);
   await expect(row).toBeVisible({ timeout: E2E_TIMEOUT.long });
   await row.getByTestId("receiver-file-transfer-button").click();
 }

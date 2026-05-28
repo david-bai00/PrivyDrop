@@ -6,6 +6,7 @@ interface AppConfig {
   BACKEND_PORT: number;
   CORS_ORIGIN: string;
   NODE_ENV: "development" | "production";
+  DISABLE_JOIN_RATE_LIMIT: boolean;
   REDIS: {
     HOST: string;
     PORT: number;
@@ -34,6 +35,7 @@ export const CONFIG: AppConfig = {
   CORS_ORIGIN: process.env.CORS_ORIGIN!,
   NODE_ENV:
     (process.env.NODE_ENV as "development" | "production") || "development",
+  DISABLE_JOIN_RATE_LIMIT: process.env.DISABLE_JOIN_RATE_LIMIT === "1",
   REDIS: {
     HOST: process.env.REDIS_HOST,
     PORT: parseInt(process.env.REDIS_PORT, 10),
