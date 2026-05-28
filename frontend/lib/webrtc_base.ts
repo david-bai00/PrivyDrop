@@ -196,28 +196,7 @@ export default class BaseWebRTC {
         this.lastJoinedSocketId !== currentSocketId;
 
       if (hasRoom && (socketIdChanged || !this.isInRoom)) {
-        // Ensure joinRoom does not early-return
-        if (socketIdChanged) this.isInRoom = false;
-
-        if (!this.reconnectionInProgress) {
-          this.reconnectionInProgress = true;
-          try {
-            const sendInitiatorOnline = this.isInitiator;
-            await this.joinRoom(
-              this.roomId as string,
-              this.isInitiator,
-              sendInitiatorOnline,
-              true
-            );
-            // Reset flags after successful auto rejoin
-            this.isSocketDisconnected = false;
-            this.isPeerDisconnected = false;
-          } catch (error) {
-            this.fireError("Auto rejoin on socket connect failed", { error });
-          } finally {
-            this.reconnectionInProgress = false;
-          }
-        }
+        await this.startReconnectJoin();
       }
     });
 
@@ -258,6 +237,20 @@ export default class BaseWebRTC {
     if (this.reconnectionInProgress) return;
     if (!this.roomId) return;
 
+    const browserOffline =
+      typeof navigator !== "undefined" && navigator.onLine === false;
+
+    if (this.isSocketDisconnected || !this.socket.connected || browserOffline) {
+      this.log("info", "reconnect_deferred_until_socket_ready", {
+        browserOffline,
+        socketDisconnected: this.isSocketDisconnected,
+        socketConnected: this.socket.connected,
+        roomId: this.roomId,
+        isInitiator: this.isInitiator,
+      });
+      return;
+    }
+
     const currentSocketId = this.socket.id ?? null;
     const socketIdChanged =
       this.lastJoinedSocketId !== null &&
@@ -265,67 +258,73 @@ export default class BaseWebRTC {
 
     // Widen condition: if either side disconnected or socketId changed, try to rejoin
     if (this.isPeerDisconnected || this.isSocketDisconnected || socketIdChanged) {
-      this.reconnectionInProgress = true;
+      await this.startReconnectJoin();
+    }
+  }
+
+  private async startReconnectJoin(): Promise<void> {
+    if (this.reconnectionInProgress || !this.roomId) {
+      return;
+    }
+
+    this.reconnectionInProgress = true;
+    this.onLifecycleEvent?.({
+      type: "reconnect_started",
+      roomId: this.roomId,
+      isInitiator: this.isInitiator,
+    });
+    logger.debug({
+      event: "reconnect_started",
+      context: {
+        socketDisconnected: this.isSocketDisconnected,
+        peerDisconnected: this.isPeerDisconnected,
+        socketConnected: this.socket.connected,
+        isInitiator: this.isInitiator,
+      },
+    });
+
+    try {
+      const sendInitiatorOnline = this.isInitiator;
+      await this.joinRoom(
+        this.roomId,
+        this.isInitiator,
+        sendInitiatorOnline,
+        true
+      );
+
+      this.isSocketDisconnected = false;
+      this.isPeerDisconnected = false;
       this.onLifecycleEvent?.({
-        type: "reconnect_started",
+        type: "reconnect_succeeded",
         roomId: this.roomId,
         isInitiator: this.isInitiator,
       });
-      logger.debug({
-        event: "reconnect_started",
-        context: {
-          socketDisconnected: this.isSocketDisconnected,
-          peerDisconnected: this.isPeerDisconnected,
-          socketIdChanged,
-          isInitiator: this.isInitiator,
-        },
+    } catch (error) {
+      const browserOffline =
+        typeof navigator !== "undefined" && navigator.onLine === false;
+      const reconnectErrorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      this.onLifecycleEvent?.({
+        type: "reconnect_failed",
+        roomId: this.roomId,
+        isInitiator: this.isInitiator,
+        error: reconnectErrorMessage,
       });
 
-      try {
-        // Ensure joinRoom does not early-return
-        if (socketIdChanged) this.isInRoom = false;
-        const sendInitiatorOnline = this.isInitiator;
-        await this.joinRoom(
-          this.roomId,
-          this.isInitiator,
-          sendInitiatorOnline,
-          true
-        );
-
-        // Reset states
-        this.isSocketDisconnected = false;
-        this.isPeerDisconnected = false;
-        this.onLifecycleEvent?.({
-          type: "reconnect_succeeded",
-          roomId: this.roomId,
-          isInitiator: this.isInitiator,
-        });
-      } catch (error) {
-        const browserOffline =
-          typeof navigator !== "undefined" && navigator.onLine === false;
-        const reconnectErrorMessage =
-          error instanceof Error ? error.message : String(error);
-
-        this.onLifecycleEvent?.({
-          type: "reconnect_failed",
-          roomId: this.roomId,
-          isInitiator: this.isInitiator,
+      if (browserOffline || this.isSocketDisconnected || !this.socket.connected) {
+        this.log("info", "reconnect_attempt_failed_while_offline", {
           error: reconnectErrorMessage,
+          browserOffline,
+          socketDisconnected: this.isSocketDisconnected,
+          socketConnected: this.socket.connected,
         });
-
-        if (browserOffline || this.isSocketDisconnected) {
-          this.log("info", "reconnect_attempt_failed_while_offline", {
-            error: reconnectErrorMessage,
-            browserOffline,
-            socketDisconnected: this.isSocketDisconnected,
-          });
-          return;
-        }
-
-        this.fireError("Reconnection failed", { error });
-      } finally {
-        this.reconnectionInProgress = false;
+        return;
       }
+
+      this.fireError("Reconnection failed", { error });
+    } finally {
+      this.reconnectionInProgress = false;
     }
   }
   protected async handleIceCandidate({

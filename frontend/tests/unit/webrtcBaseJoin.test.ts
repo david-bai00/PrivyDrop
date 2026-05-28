@@ -4,6 +4,7 @@ type Listener = (...args: any[]) => void;
 
 class FakeSocket {
   public id = "socket-1";
+  public connected = true;
   public emitted: Array<{ event: string; payload: any }> = [];
   private listeners = new Map<string, Set<Listener>>();
   private onceWrappers = new Map<string, Map<Listener, Listener>>();
@@ -42,6 +43,11 @@ class FakeSocket {
   }
 
   emit(event: string, payload?: any) {
+    if (event === "connect") {
+      this.connected = true;
+    } else if (event === "disconnect") {
+      this.connected = false;
+    }
     this.emitted.push({ event, payload });
     const current = Array.from(this.listeners.get(event) ?? []);
     for (const listener of current) {
@@ -141,6 +147,7 @@ describe("BaseWebRTC.joinRoom", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     fakeSocket.id = "socket-1";
+    fakeSocket.connected = true;
     fakeSocket.emitted = [];
     fakeSocket.off("joinResponse");
     fakeSocket.off("ready");
@@ -266,6 +273,59 @@ describe("BaseWebRTC.joinRoom", () => {
     expect(
       fakeSocket.emitted.some((item) => item.event === "initiator-online")
     ).toBe(true);
+  });
+
+  it("defers reconnect join attempts until the socket reconnects", async () => {
+    const peer = new TestWebRTC({
+      iceServers: [],
+      socketOptions: {},
+      signalingServer: "",
+    });
+    const lifecycleEvents: any[] = [];
+    peer.onLifecycleEvent = (event) => {
+      lifecycleEvents.push(event);
+    };
+
+    peer.setInRoomState("room-offline", false);
+
+    fakeSocket.connected = false;
+    fakeSocket.emit("disconnect");
+    await Promise.resolve();
+
+    expect(
+      fakeSocket.emitted.some(
+        (item) => item.event === "join" && item.payload?.roomId === "room-offline"
+      )
+    ).toBe(false);
+
+    fakeSocket.id = "socket-2";
+    fakeSocket.emit("connect");
+    await Promise.resolve();
+
+    expect(
+      fakeSocket.emitted.some(
+        (item) => item.event === "join" && item.payload?.roomId === "room-offline"
+      )
+    ).toBe(true);
+
+    fakeSocket.emit("joinResponse", {
+      success: true,
+      message: "ok",
+      roomId: "room-offline",
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(lifecycleEvents).toEqual([
+      { type: "reconnect_started", roomId: "room-offline", isInitiator: false },
+      {
+        type: "reconnect_succeeded",
+        roomId: "room-offline",
+        isInitiator: false,
+      },
+    ]);
+    expect(peer.isInRoom).toBe(true);
+    expect(peer.roomId).toBe("room-offline");
   });
 
   it("does not escalate recoverable send failures while reconnecting", async () => {
