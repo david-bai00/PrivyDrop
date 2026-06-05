@@ -496,6 +496,14 @@ export default class BaseWebRTC {
     dataChannel.onopen = () => {
       // this.log('log',`Data channel opened for peer ${peerId}`);
       setTimeout(() => {
+        const currentChannel = this.dataChannels.get(peerId);
+        if (
+          this.gracefullyDisconnectedPeers.has(peerId) ||
+          currentChannel !== dataChannel ||
+          dataChannel.readyState !== "open"
+        ) {
+          return;
+        }
         this.onDataChannelOpen?.(peerId);
       }, 50);
     };

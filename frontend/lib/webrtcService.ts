@@ -741,9 +741,11 @@ class WebRTCService {
       role: "receiver",
       count: this.receiver.peerConnections.size,
     });
+    const senderDisconnected =
+      this.receiver.isInRoom && this.receiver.peerConnections.size === 0;
     this.emitEvent({
       type: "sender_disconnected_changed",
-      disconnected: this.receiver.peerConnections.size === 0,
+      disconnected: senderDisconnected,
     });
     logger.info({
       event: "receiver_peer_count_updated",

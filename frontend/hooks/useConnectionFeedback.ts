@@ -23,6 +23,7 @@ export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
     shareLifecycleState,
     retrieveLifecycleState,
     senderDisconnected,
+    isReceiverInRoom,
   } = useFileTransferStore();
 
   // Track previous phases and connection history via refs
@@ -133,7 +134,10 @@ export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
     }
 
     // Receiver side mapping
-    if (senderDisconnected) {
+    if (!isReceiverInRoom && (currentRecvState === "reconnecting" || nowRecv === "disconnected")) {
+      wasDiscRecvRef.current = false;
+      disarmRtcSlow();
+    } else if (senderDisconnected) {
       clearReceiverMessage();
       wasDiscRecvRef.current = false;
       disarmRtcSlow();
@@ -216,6 +220,7 @@ export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
     clearSenderMessage,
     clearReceiverMessage,
     senderDisconnected,
+    isReceiverInRoom,
   ]);
 
   // Visibility change: when returning to foreground, if still disconnected, hint "reconnecting"
@@ -239,6 +244,7 @@ export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
         wasDiscShareRef.current = true;
       }
       if (
+        isReceiverInRoom &&
         !senderDisconnected &&
         (everRecvRef.current || wasDiscRecvRef.current) &&
         (prevRecvLifecycleRef.current === "reconnecting" ||
@@ -263,6 +269,7 @@ export function useConnectionFeedback({ text }: UseConnectionFeedbackProps) {
     text.reconnecting,
     showSenderMessage,
     showReceiverMessage,
+    isReceiverInRoom,
     senderDisconnected,
   ]);
 }

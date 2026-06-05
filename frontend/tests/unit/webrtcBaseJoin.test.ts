@@ -396,4 +396,24 @@ describe("BaseWebRTC.joinRoom", () => {
     ).toBe(false);
   });
 
+  it("ignores delayed data-channel open callbacks for gracefully disconnected peers", async () => {
+    const peer = new TestWebRTC({
+      iceServers: [],
+      socketOptions: {},
+      signalingServer: "",
+    });
+    const onDataChannelOpen = vi.fn();
+    peer.onDataChannelOpen = onDataChannelOpen;
+
+    const dataChannel = createFakeDataChannel("open");
+    peer.attachDataChannelForTest("peer-a", dataChannel);
+
+    dataChannel.onopen?.(new Event("open"));
+    peer.markPeerGracefullyDisconnected("peer-a");
+
+    await vi.advanceTimersByTimeAsync(60);
+
+    expect(onDataChannelOpen).not.toHaveBeenCalled();
+  });
+
 });

@@ -193,6 +193,67 @@ describe("webrtcService", () => {
     });
   });
 
+  it("does not mark sender disconnected after the receiver has already left the room", async () => {
+    const receiver = new MockPeer();
+    const sender = new MockPeer();
+    const fileReceiver = new MockFileReceiver();
+    const fileSender = new MockFileSender();
+
+    vi.doMock("@/lib/webrtc_Initiator", () => ({
+      default: vi.fn(function MockInitiator() {
+        return sender;
+      }),
+    }));
+    vi.doMock("@/lib/webrtc_Recipient", () => ({
+      default: vi.fn(function MockRecipient() {
+        return receiver;
+      }),
+    }));
+    vi.doMock("@/lib/fileSender", () => ({
+      default: vi.fn(function MockFileSender() {
+        return fileSender;
+      }),
+    }));
+    vi.doMock("@/lib/fileReceiver", () => ({
+      default: vi.fn(function MockFileReceiver() {
+        return fileReceiver;
+      }),
+    }));
+    vi.doMock("@/app/config/environment", () => ({
+      config: { API_URL: "" },
+      getIceServers: () => [],
+      getSocketOptions: () => ({}),
+      getLoggingConfig: () => ({
+        enableBackendLogs: false,
+        enableDebugConsoleLogs: false,
+        enableInfoConsoleLogs: false,
+        backendSampleRates: { debug: 0, info: 0, warn: 1, error: 1 },
+      }),
+    }));
+    vi.doMock("@/app/config/api", () => ({
+      postLogToBackend: vi.fn(async () => undefined),
+    }));
+
+    const { webrtcService } = await import("@/lib/webrtcService");
+    const events: any[] = [];
+    webrtcService.setObserver({
+      onEvent(event) {
+        events.push(event);
+      },
+    });
+
+    receiver.isInRoom = false;
+    receiver.peerConnections.clear();
+
+    receiver.onPeerDisconnected?.("peer-1");
+    await Promise.resolve();
+
+    expect(events).not.toContainEqual({
+      type: "sender_disconnected_changed",
+      disconnected: true,
+    });
+  });
+
   it("restores the receiver current peer id when the connection comes back", async () => {
     const receiver = new MockPeer();
     const sender = new MockPeer();
