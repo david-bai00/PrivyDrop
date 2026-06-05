@@ -123,6 +123,12 @@ class TestWebRTC extends BaseWebRTC {
     }
     this.setupDataChannel(dataChannel, peerId);
   }
+
+  public async createPeerConnectionForTest(
+    peerId: string
+  ): Promise<RTCPeerConnection> {
+    return this.createPeerConnection(peerId);
+  }
 }
 
 function createFakeDataChannel(readyState: RTCDataChannelState = "open") {
@@ -414,6 +420,30 @@ describe("BaseWebRTC.joinRoom", () => {
     await vi.advanceTimersByTimeAsync(60);
 
     expect(onDataChannelOpen).not.toHaveBeenCalled();
+  });
+
+  it("allows a fresh data-channel open when the same peer id reconnects", async () => {
+    const peer = new TestWebRTC({
+      iceServers: [],
+      socketOptions: {},
+      signalingServer: "",
+    });
+    const onDataChannelOpen = vi.fn();
+    peer.onDataChannelOpen = onDataChannelOpen;
+
+    const oldDataChannel = createFakeDataChannel("open");
+    const oldPeerConnection = createFakePeerConnection();
+    peer.attachDataChannelForTest("peer-a", oldDataChannel, oldPeerConnection);
+    peer.markPeerGracefullyDisconnected("peer-a");
+
+    const newPeerConnection = await peer.createPeerConnectionForTest("peer-a");
+    const newDataChannel = createFakeDataChannel("open");
+    peer.attachDataChannelForTest("peer-a", newDataChannel, newPeerConnection);
+
+    newDataChannel.onopen?.(new Event("open"));
+    await vi.advanceTimersByTimeAsync(60);
+
+    expect(onDataChannelOpen).toHaveBeenCalledWith("peer-a");
   });
 
 });

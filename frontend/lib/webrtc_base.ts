@@ -416,6 +416,8 @@ export default class BaseWebRTC {
     peerId: string
   ): Promise<RTCPeerConnection> {
     // this.log('log','Creating peer connection for:', peerId);
+    this.gracefullyDisconnectedPeers.delete(peerId);
+    this.disconnectingPeers.delete(peerId);
     const peerConnection = this.peerConnections.get(peerId);
     if (peerConnection) {
       // this.log('log','Reusing existing peer connection for:', peerId);
