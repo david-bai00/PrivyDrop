@@ -298,8 +298,22 @@ provision_letsencrypt_cert() {
 
     mkdir -p docker/letsencrypt-www docker/ssl
 
+    local cert_domains=("$DOMAIN_NAME")
+    local lineage_name="$DOMAIN_NAME"
+    local turn_domain=""
+    if [[ "$DOMAIN_NAME" == www.* ]]; then
+        local bare_domain="${DOMAIN_NAME#www.}"
+        cert_domains+=("$bare_domain")
+        lineage_name="$DOMAIN_NAME"
+        turn_domain="turn.$bare_domain"
+    else
+        cert_domains+=("www.$DOMAIN_NAME")
+        turn_domain="turn.$DOMAIN_NAME"
+    fi
+    cert_domains+=("$turn_domain")
+
     # If certificates already exist (including -0001 lineage), skip issuance
-    if [[ -f "/etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem" ]] || ls -1d /etc/letsencrypt/live/${DOMAIN_NAME}* >/dev/null 2>&1; then
+    if [[ -f "/etc/letsencrypt/live/$lineage_name/fullchain.pem" ]] || ls -1d /etc/letsencrypt/live/${lineage_name}* >/dev/null 2>&1; then
         log_info "Detected existing certificates/lineage; skipping initial issuance"
     else
         log_info "Issuing Let's Encrypt certificate via webroot..."
@@ -307,9 +321,14 @@ provision_letsencrypt_cert() {
         if [[ -z "$LE_EMAIL" ]]; then
             email_args="--register-unsafely-without-email"
         fi
+        local domain_args=()
+        local domain
+        for domain in "${cert_domains[@]}"; do
+            domain_args+=(-d "$domain")
+        done
         # Requires port 80 reachable and nginx running
         sudo certbot certonly --webroot -w "$(pwd)/docker/letsencrypt-www" \
-            -d "$DOMAIN_NAME" -d "turn.$DOMAIN_NAME" \
+            "${domain_args[@]}" \
             $email_args --agree-tos --non-interactive || {
               log_error "Certificate issuance failed; please check certbot output"
               return 1
@@ -318,12 +337,12 @@ provision_letsencrypt_cert() {
 
     # Resolve lineage directory (supports -0001/-0002 suffixes) and copy to docker/ssl
     local lineage_dir
-    lineage_dir=$(readlink -f "/etc/letsencrypt/live/$DOMAIN_NAME" 2>/dev/null || true)
+    lineage_dir=$(readlink -f "/etc/letsencrypt/live/$lineage_name" 2>/dev/null || true)
     if [[ -z "$lineage_dir" || ! -d "$lineage_dir" ]]; then
-        lineage_dir=$(ls -1d /etc/letsencrypt/live/${DOMAIN_NAME}* 2>/dev/null | sort | tail -1)
+        lineage_dir=$(ls -1d /etc/letsencrypt/live/${lineage_name}* 2>/dev/null | sort | tail -1)
     fi
     if [[ -z "$lineage_dir" || ! -f "$lineage_dir/fullchain.pem" ]]; then
-        log_error "No valid certificate lineage directory found. Check /etc/letsencrypt/live/${DOMAIN_NAME}*"
+        log_error "No valid certificate lineage directory found. Check /etc/letsencrypt/live/${lineage_name}*"
         return 1
     fi
 

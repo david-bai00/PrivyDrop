@@ -387,7 +387,15 @@ generate_nginx_config() {
     
     mkdir -p docker/nginx/conf.d
     
-    local server_name="${DOMAIN_NAME:-${LOCAL_IP} localhost}"
+    local server_name="${LOCAL_IP} localhost"
+    if [[ -n "$DOMAIN_NAME" ]]; then
+        if [[ "$DOMAIN_NAME" == www.* ]]; then
+            local bare_domain="${DOMAIN_NAME#www.}"
+            server_name="${DOMAIN_NAME} ${bare_domain}"
+        else
+            server_name="${DOMAIN_NAME} www.${DOMAIN_NAME}"
+        fi
+    fi
     local upstream_backend="backend:3001"
     local upstream_frontend="frontend:3002"
     
@@ -625,6 +633,15 @@ EOF
 generate_https_nginx_config() {
     log_info "Generating HTTPS Nginx config..."
     local https_port="443"
+    local server_name="${LOCAL_IP}"
+    if [[ -n "$DOMAIN_NAME" ]]; then
+        if [[ "$DOMAIN_NAME" == www.* ]]; then
+            local bare_domain="${DOMAIN_NAME#www.}"
+            server_name="${DOMAIN_NAME} ${bare_domain}"
+        else
+            server_name="${DOMAIN_NAME} www.${DOMAIN_NAME}"
+        fi
+    fi
     if [[ -n "$HTTPS_LISTEN_PORT" ]]; then
         https_port="$HTTPS_LISTEN_PORT"
     elif [[ "$ENABLE_SNI443" == "true" ]]; then
@@ -644,7 +661,7 @@ HSTSEOF
 # HTTPS server config
 server {
     listen ${https_port} ssl http2;
-    server_name ${DOMAIN_NAME:-${LOCAL_IP}};
+    server_name ${server_name};
     
     # SSL settings
     ssl_certificate /etc/nginx/ssl/server-cert.pem;
