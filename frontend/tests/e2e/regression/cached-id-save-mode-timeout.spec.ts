@@ -39,6 +39,9 @@ test("keeps the current sender input unchanged when cached-id save mode times ou
       .toBe(cachedRoomId);
 
     await page.reload({ waitUntil: "networkidle" });
+    await expect(senderInput).not.toHaveValue("", {
+      timeout: E2E_TIMEOUT.long,
+    });
 
     const reloadedInputValue = (await senderInput.inputValue()).trim();
 

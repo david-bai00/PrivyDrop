@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 import { writeJsonArtifact } from "../helpers/artifacts";
 import {
   chooseSaveLocation,
-  fileRow,
   joinReceiverWithRetry,
   joinSender,
   openClipboardApp,
@@ -24,7 +23,6 @@ import {
 import {
   waitForReconnectRecovered,
   waitForResumeRequestAfter,
-  waitForTransferStart,
 } from "../helpers/reconnect";
 
 test("resumes a file transfer after peer reconnection", async ({
@@ -67,16 +65,14 @@ test("resumes a file transfer after peer reconnection", async ({
     await chooseSaveLocation(receiverPage);
     await requestFileFromReceiver(receiverPage, fixture.fileName);
 
-    const receiverFileRow = fileRow(receiverPage, fixture.fileName);
-    await waitForTransferStart(receiverFileRow);
-
-    await closeTrackedPeerConnections(receiverPage);
     await expect
       .poll(
         async () => await getMockFileSize(receiverPage, fixture.fileName),
         { timeout: E2E_TIMEOUT.long }
       )
       .toBeGreaterThan(0);
+
+    await closeTrackedPeerConnections(receiverPage);
 
     const partialSizeAfterInterrupt =
       (await getMockFileSize(receiverPage, fixture.fileName)) ?? 0;

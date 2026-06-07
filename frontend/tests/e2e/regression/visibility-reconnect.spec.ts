@@ -51,7 +51,7 @@ test("recovers when the receiver returns to a visible tab after going offline", 
   const receiverConsoleErrors: string[] = [];
   let visibleWhileOfflineSnapshot:
     | (Awaited<ReturnType<typeof captureStatusSnapshot>> & { afterVisible: true })
-    | null = null;
+    | undefined;
   const hiddenOfflineSnapshots: Array<
     Awaited<ReturnType<typeof captureStatusSnapshot>> & { step: number }
   > = [];
@@ -159,13 +159,14 @@ test("recovers when the receiver returns to a visible tab after going offline", 
       )),
     };
 
-    expect(visibleWhileOfflineSnapshot.senderStatus).toContain("You're the only one here");
+    expect(visibleWhileOfflineSnapshot).toBeDefined();
+    expect(visibleWhileOfflineSnapshot!.senderStatus).toContain("You're the only one here");
     expect(
       ["Connected", "Sender disconnected"].some((statusText) =>
-        visibleWhileOfflineSnapshot.receiverStatus.includes(statusText)
+        visibleWhileOfflineSnapshot!.receiverStatus.includes(statusText)
       )
     ).toBe(true);
-    expect(visibleWhileOfflineSnapshot.receiverPanel).not.toContain("Connection restored");
+    expect(visibleWhileOfflineSnapshot!.receiverPanel).not.toContain("Connection restored");
 
     await receiverContext.setOffline(false);
 

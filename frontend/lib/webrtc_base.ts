@@ -188,14 +188,7 @@ export default class BaseWebRTC {
         peerId: this.peerId,
       });
 
-      // Auto re-join if we previously joined a room but socket.id changed
-      const hasRoom = !!this.roomId;
-      const currentSocketId = this.socket.id ?? null;
-      const socketIdChanged =
-        this.lastJoinedSocketId !== null &&
-        this.lastJoinedSocketId !== currentSocketId;
-
-      if (hasRoom && (socketIdChanged || !this.isInRoom)) {
+      if (this.shouldReconnectJoinOnSocketConnect()) {
         await this.startReconnectJoin();
       }
     });
@@ -211,7 +204,10 @@ export default class BaseWebRTC {
     });
     // Add listener for socket disconnection
     this.socket.on("disconnect", () => {
-      this.isInRoom = false;
+      const hasActivePeerTransport = this.hasActivePeerTransport();
+      if (!hasActivePeerTransport) {
+        this.isInRoom = false;
+      }
       this.isSocketDisconnected = true;
       logger.debug({
         event: "socket_disconnected",
@@ -219,11 +215,21 @@ export default class BaseWebRTC {
           peerId: this.peerId,
           isInitiator: this.isInitiator,
           isInRoom: this.isInRoom,
+          hasActivePeerTransport,
         },
       });
-      // Attempt to reconnect. On mobile, switching to the background disconnects both P2P and socket connections.
-      // The disconnect code executes upon returning, so reconnect directly here; send a new signal to start reconnection.
-      this.attemptReconnection();
+      // If the peer transport is still healthy, keep the current session alive and
+      // defer any room re-join until the peer path actually breaks.
+      if (!hasActivePeerTransport) {
+        // Attempt to reconnect. On mobile, switching to the background disconnects both P2P and socket connections.
+        // The disconnect code executes upon returning, so reconnect directly here; send a new signal to start reconnection.
+        this.attemptReconnection();
+      } else {
+        this.log("info", "socket_disconnect_ignored_while_peer_transport_active", {
+          peerId: this.peerId,
+          roomId: this.roomId,
+        });
+      }
     });
 
     this.socket.on("peer-disconnected", async ({ peerId }) => {
@@ -326,6 +332,49 @@ export default class BaseWebRTC {
     } finally {
       this.reconnectionInProgress = false;
     }
+  }
+
+  protected hasActivePeerTransport(): boolean {
+    for (const dataChannel of Array.from(this.dataChannels.values())) {
+      if (dataChannel.readyState === "open" || dataChannel.readyState === "connecting") {
+        return true;
+      }
+    }
+
+    for (const peerConnection of Array.from(this.peerConnections.values())) {
+      if (
+        peerConnection.connectionState === "connected" ||
+        peerConnection.connectionState === "connecting"
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  protected shouldReconnectJoinOnSocketConnect(): boolean {
+    if (!this.roomId) {
+      return false;
+    }
+
+    const currentSocketId = this.socket.id ?? null;
+    const socketIdChanged =
+      this.lastJoinedSocketId !== null &&
+      this.lastJoinedSocketId !== currentSocketId;
+    const hasActivePeerTransport = this.hasActivePeerTransport();
+
+    if (hasActivePeerTransport && !this.isPeerDisconnected) {
+      this.log("info", "reconnect_join_skipped_active_peer_transport", {
+        roomId: this.roomId,
+        currentSocketId,
+        lastJoinedSocketId: this.lastJoinedSocketId,
+        socketIdChanged,
+      });
+      return false;
+    }
+
+    return this.isPeerDisconnected || socketIdChanged || !this.isInRoom;
   }
   protected async handleIceCandidate({
     candidate,
