@@ -69,14 +69,18 @@ async function stopServer() {
 }
 
 async function createRoom(roomId) {
-  const response = await fetch(`${baseUrl}/api/create_room`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ roomId }),
-  });
+  const response = await postJson("/api/create_room", { roomId });
   assert.equal(response.status, 200);
   const payload = await response.json();
   assert.equal(payload.success, true);
+}
+
+async function postJson(path, body) {
+  return await fetch(`${baseUrl}${path}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
 }
 
 function waitForSocketEvent(socket, eventName) {
@@ -255,6 +259,94 @@ test("disconnect emits peer-disconnected and refreshes an empty room TTL", async
 
   second.disconnect();
   activeSockets.delete(second);
+
+  const roomTtl = await waitForTtlAtMost(`room:${roomId}`, 900);
+  const socketsTtl = await redis.ttl(`room:${roomId}:sockets`);
+
+  assert.ok(roomTtl > 0);
+  assert.equal(socketsTtl, -2);
+});
+
+test("create_room and check_room enforce short-id uniqueness but allow long-id re-create", async () => {
+  const shortRoomId = "1234";
+  const longRoomId = randomRoomId("long-room");
+
+  const availableBeforeCreate = await postJson("/api/check_room", {
+    roomId: shortRoomId,
+  });
+  assert.equal(availableBeforeCreate.status, 200);
+  assert.deepEqual(await availableBeforeCreate.json(), { available: true });
+
+  const createShort = await postJson("/api/create_room", { roomId: shortRoomId });
+  assert.equal(createShort.status, 200);
+  assert.deepEqual(await createShort.json(), {
+    success: true,
+    message: "create room success",
+  });
+
+  const duplicateShort = await postJson("/api/create_room", { roomId: shortRoomId });
+  assert.equal(duplicateShort.status, 200);
+  assert.deepEqual(await duplicateShort.json(), {
+    success: false,
+    message: "roomId is already exists",
+  });
+
+  const unavailableAfterCreate = await postJson("/api/check_room", {
+    roomId: shortRoomId,
+  });
+  assert.equal(unavailableAfterCreate.status, 200);
+  assert.deepEqual(await unavailableAfterCreate.json(), { available: false });
+
+  const createLong = await postJson("/api/create_room", { roomId: longRoomId });
+  assert.equal(createLong.status, 200);
+  assert.deepEqual(await createLong.json(), {
+    success: true,
+    message: "create room success",
+  });
+
+  const recreateLong = await postJson("/api/create_room", { roomId: longRoomId });
+  assert.equal(recreateLong.status, 200);
+  assert.deepEqual(await recreateLong.json(), {
+    success: true,
+    message: "room exists (rejoin allowed)",
+  });
+});
+
+test("leave_room notifies peers, unbinds sockets, and refreshes the room ttl when empty", async () => {
+  const roomId = randomRoomId("leave-room");
+  await createRoom(roomId);
+
+  const first = await connectClient("10.0.0.40");
+  const second = await connectClient("10.0.0.41");
+
+  await joinRoom(first, roomId);
+  await joinRoom(second, roomId);
+
+  const firstPeerId = first.id;
+  const peerLeftPromise = waitForSocketEvent(second, "peer-disconnected");
+  const firstLeave = await postJson("/api/leave_room", {
+    roomId,
+    socketId: firstPeerId,
+  });
+
+  assert.equal(firstLeave.status, 200);
+  assert.deepEqual(await firstLeave.json(), {
+    success: true,
+    message: "Successfully left the room",
+  });
+  assert.deepEqual(await peerLeftPromise, { peerId: firstPeerId });
+  assert.equal(await redis.get(`socket:${firstPeerId}`), null);
+  assert.equal(await redis.scard(`room:${roomId}:sockets`), 1);
+
+  const secondLeave = await postJson("/api/leave_room", {
+    roomId,
+    socketId: second.id,
+  });
+  assert.equal(secondLeave.status, 200);
+  assert.deepEqual(await secondLeave.json(), {
+    success: true,
+    message: "Successfully left the room",
+  });
 
   const roomTtl = await waitForTtlAtMost(`room:${roomId}`, 900);
   const socketsTtl = await redis.ttl(`room:${roomId}:sockets`);
