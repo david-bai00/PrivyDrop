@@ -2,7 +2,8 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx watch src/server.ts",
     "build": "rimraf dist && tsc",
-    "start": "cross-env NODE_ENV=production node dist/server.js"
+    "start": "cross-env NODE_ENV=production node dist/server.js",
+    "test:unit": "rimraf .unit-dist && tsc -p tsconfig.unit.json && node --test tests/*.test.mjs"
   },
   "dependencies": {
     "cors": "^2.8.5",

@@ -13,6 +13,7 @@ coverage/
 frontend/.playwright/
 frontend/test-results/
 frontend/playwright-report/
+backend/.unit-dist/
 
 # next.js
 # Ignore .next/ directories in all subdirectories

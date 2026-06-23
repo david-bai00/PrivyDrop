@@ -49,6 +49,10 @@ jobs:
         working-directory: backend
         run: pnpm build
 
+      - name: Run backend unit tests
+        working-directory: backend
+        run: pnpm test:unit
+
       - name: Type-check frontend
         working-directory: frontend
         run: pnpm exec tsc -p tsconfig.json --noEmit
