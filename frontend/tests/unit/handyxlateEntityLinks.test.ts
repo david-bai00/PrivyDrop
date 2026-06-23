@@ -25,6 +25,7 @@ const localeMessages = {
 
 const blogSlug = "browser-sharing-vs-screen-translation";
 const expectedHandyxlateUrl = "https://www.handyxlate.app";
+const expectedCoverPath = "/blog-assets/browser-sharing-vs-screen-translation-cover.webp";
 
 describe("HandyXlate entity links", () => {
   it("provides About-page entity relationship copy for every supported locale", () => {
@@ -78,6 +79,32 @@ describe("HandyXlate entity links", () => {
         content.includes("[<u>**HandyXlate"),
         `${locale} blog post should use emphasized HandyXlate links`
       ).toBe(true);
+    }
+  });
+
+  it("uses a dedicated cover asset for the new blog post", () => {
+    const publicCoverPath = path.join(
+      process.cwd(),
+      "public",
+      expectedCoverPath.replace(/^\//, "")
+    );
+
+    expect(
+      fs.existsSync(publicCoverPath),
+      "blog cover asset should exist in public/blog-assets"
+    ).toBe(true);
+
+    const postsPath = path.join(process.cwd(), "content/blog", blogSlug);
+
+    for (const locale of supportedLocales) {
+      const filePath = path.join(postsPath, `${locale}.mdx`);
+      const source = fs.readFileSync(filePath, "utf8");
+      const { data, content } = matter(source);
+
+      expect(data.cover, `${locale} blog post should use the dedicated cover`).toBe(
+        expectedCoverPath
+      );
+      expect(content.includes(`![](${expectedCoverPath})`)).toBe(true);
     }
   });
 });
