@@ -2,16 +2,14 @@ import { expect, test } from "@playwright/test";
 import { writeJsonArtifact } from "../helpers/artifacts";
 import { openClipboardApp, senderStatus, waitForText } from "../helpers/clipboardApp";
 import { E2E_TIMEOUT } from "../helpers/e2eConfig";
+import { findAvailableShortRoomId } from "../helpers/roomIds";
 
 const ROOM_AVAILABLE_TEXT = "Room is available";
 const ROOM_NOT_AVAILABLE_TEXT = "Room is not available, please try another";
 
-function randomShortRoomId() {
-  return String(1000 + Math.floor(Math.random() * 9000));
-}
-
 test("shows roomcheck feedback for both available and occupied sender room ids", async ({
   browser,
+  request,
 }, testInfo) => {
   const ownerConsoleErrors: string[] = [];
   const checkerConsoleErrors: string[] = [];
@@ -51,20 +49,11 @@ test("shows roomcheck feedback for both available and occupied sender room ids",
     const checkerJoinButton = checkerPage.getByTestId("sender-join-room-button");
     const checkerLeaveButton = checkerPage.getByTestId("sender-leave-room-button");
 
-    let availableRoomId = "";
-    for (let attempt = 0; attempt < 20; attempt += 1) {
-      const candidate = randomShortRoomId();
-      await checkerRoomInput.fill(candidate);
-      await expect(checkerPanel).toContainText(ROOM_AVAILABLE_TEXT, {
-        timeout: E2E_TIMEOUT.medium,
-      });
-      if ((await checkerRoomInput.inputValue()).trim() === candidate) {
-        availableRoomId = candidate;
-        break;
-      }
-    }
-
-    expect(availableRoomId).not.toBe("");
+    const availableRoomId = await findAvailableShortRoomId(request);
+    await checkerRoomInput.fill(availableRoomId);
+    await expect(checkerPanel).toContainText(ROOM_AVAILABLE_TEXT, {
+      timeout: E2E_TIMEOUT.medium,
+    });
     await expect(senderStatus(checkerPage)).toContainText("Room is empty");
     await expect(checkerJoinButton).toBeEnabled();
 

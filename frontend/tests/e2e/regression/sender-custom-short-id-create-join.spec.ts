@@ -2,15 +2,15 @@ import { expect, test } from "@playwright/test";
 import { writeJsonArtifact } from "../helpers/artifacts";
 import { openClipboardApp, senderStatus, waitForText } from "../helpers/clipboardApp";
 import { E2E_TIMEOUT } from "../helpers/e2eConfig";
+import { findAvailableShortRoomId } from "../helpers/roomIds";
 
 const ROOM_AVAILABLE_TEXT = "Room is available";
 const DUPLICATE_TEXT = "This room ID is already in use. Please choose another ID.";
 
-function randomShortRoomId() {
-  return String(1000 + Math.floor(Math.random() * 9000));
-}
-
-test("creates and joins a custom short sender room id", async ({ browser }, testInfo) => {
+test("creates and joins a custom short sender room id", async ({
+  browser,
+  request,
+}, testInfo) => {
   const consoleErrors: string[] = [];
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -30,21 +30,11 @@ test("creates and joins a custom short sender room id", async ({ browser }, test
     const senderLeaveButton = page.getByTestId("sender-leave-room-button");
     const senderSyncButton = page.getByTestId("sender-sync-button");
 
-    let customRoomId = "";
-    for (let attempt = 0; attempt < 20; attempt += 1) {
-      const candidate = randomShortRoomId();
-      await senderRoomInput.fill(candidate);
-      await expect(senderPanel).toContainText(ROOM_AVAILABLE_TEXT, {
-        timeout: E2E_TIMEOUT.medium,
-      });
-
-      if ((await senderRoomInput.inputValue()).trim() === candidate) {
-        customRoomId = candidate;
-        break;
-      }
-    }
-
-    expect(customRoomId).not.toBe("");
+    const customRoomId = await findAvailableShortRoomId(request);
+    await senderRoomInput.fill(customRoomId);
+    await expect(senderPanel).toContainText(ROOM_AVAILABLE_TEXT, {
+      timeout: E2E_TIMEOUT.medium,
+    });
 
     await senderJoinButton.click();
 
