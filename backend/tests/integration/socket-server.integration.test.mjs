@@ -83,6 +83,10 @@ async function postJson(path, body) {
   });
 }
 
+async function getJson(path) {
+  return await fetch(`${baseUrl}${path}`);
+}
+
 function waitForSocketEvent(socket, eventName) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -353,4 +357,69 @@ test("leave_room notifies peers, unbinds sockets, and refreshes the room ttl whe
 
   assert.ok(roomTtl > 0);
   assert.equal(socketsTtl, -2);
+});
+
+test("health endpoints report healthy status, connected redis, and socket connection counts", async () => {
+  const health = await getJson("/health");
+  assert.equal(health.status, 200);
+  const healthPayload = await health.json();
+  assert.equal(healthPayload.status, "healthy");
+  assert.equal(healthPayload.service, "privydrop-backend");
+  assert.equal(healthPayload.environment, "development");
+
+  const apiHealth = await getJson("/api/health");
+  assert.equal(apiHealth.status, 200);
+  const apiHealthPayload = await apiHealth.json();
+  assert.equal(apiHealthPayload.status, "healthy");
+  assert.equal(apiHealthPayload.service, "privydrop-backend");
+
+  const beforeConnection = await getJson("/health/detailed");
+  assert.equal(beforeConnection.status, 200);
+  const beforePayload = await beforeConnection.json();
+  assert.equal(beforePayload.status, "healthy");
+  assert.equal(beforePayload.dependencies.redis.status, "connected");
+  assert.equal(beforePayload.dependencies.socketio.status, "running");
+  assert.equal(beforePayload.dependencies.socketio.connections, 0);
+
+  const socket = await connectClient("10.0.0.50");
+
+  const afterConnection = await getJson("/health/detailed");
+  assert.equal(afterConnection.status, 200);
+  const afterPayload = await afterConnection.json();
+  assert.equal(afterPayload.status, "healthy");
+  assert.equal(afterPayload.dependencies.redis.status, "connected");
+  assert.equal(afterPayload.dependencies.socketio.connections, 1);
+
+  socket.disconnect();
+  activeSockets.delete(socket);
+});
+
+test("room APIs return the expected 400 and not-found responses", async () => {
+  const createWithoutRoomId = await postJson("/api/create_room", {});
+  assert.equal(createWithoutRoomId.status, 400);
+  assert.deepEqual(await createWithoutRoomId.json(), {
+    error: "Room ID is required",
+  });
+
+  const checkWithoutRoomId = await postJson("/api/check_room", {});
+  assert.equal(checkWithoutRoomId.status, 400);
+  assert.deepEqual(await checkWithoutRoomId.json(), {
+    error: "Room ID is required",
+  });
+
+  const leaveWithoutFields = await postJson("/api/leave_room", {});
+  assert.equal(leaveWithoutFields.status, 400);
+  assert.deepEqual(await leaveWithoutFields.json(), {
+    error: "Room ID and Socket ID are required",
+  });
+
+  const leaveMissingRoom = await postJson("/api/leave_room", {
+    roomId: randomRoomId("missing-room"),
+    socketId: "missing-socket",
+  });
+  assert.equal(leaveMissingRoom.status, 200);
+  assert.deepEqual(await leaveMissingRoom.json(), {
+    success: true,
+    message: "Room does not exist.",
+  });
 });
