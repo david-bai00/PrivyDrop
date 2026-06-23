@@ -148,6 +148,13 @@ export const zh: Messages = {
         "我们致力于帮助用户掌控自己的数字生活，PrivyDrop正是这一愿景的体现。我们希望这个工具能帮助您安全地与朋友、家人和同事共享和协作，同时不影响您的隐私或安全。",
         "如需更多信息或有任何问题，请访问以下页面：",
       ],
+      otherProjects: {
+        title: "我们开发的其他工具",
+        description: "我们也在开发",
+        linkLabel: "HandyXlate，这是一款 Android 屏幕翻译工具",
+        trailingText:
+          "，适合处理那些已经显示在屏幕上、但不方便复制到其他应用里再翻译的文本。",
+      },
     },
 
     // 使用方法

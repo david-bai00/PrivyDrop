@@ -136,6 +136,13 @@ export const fr: Messages = {
         "Nous croyons en l'autonomisation des utilisateurs pour qu'ils prennent le contrôle de leur vie numérique, et PrivyDrop est notre contribution à cette vision. Nous espérons que notre outil vous aidera à partager et à collaborer en toute sécurité avec vos amis, votre famille et vos collègues, sans compromettre votre vie privée ou votre sécurité.",
         "Pour plus d'informations ou pour toute question, veuillez consulter les pages suivantes :",
       ],
+      otherProjects: {
+        title: "Autres outils que nous développons",
+        description: "Nous développons aussi",
+        linkLabel: "HandyXlate, un outil Android de traduction d'écran",
+        trailingText:
+          " pour le texte déjà visible à l'écran mais peu pratique à copier dans une autre application.",
+      },
     },
     howItWorks: {
       title: "Comment ça marche",

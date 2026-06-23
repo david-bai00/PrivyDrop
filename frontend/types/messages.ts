@@ -96,6 +96,12 @@ export type Help = {
 export type About = {
   h1: string;
   paragraphs: string[];
+  otherProjects: {
+    title: string;
+    description: string;
+    linkLabel: string;
+    trailingText: string;
+  };
 };
 
 // How It Works
