@@ -692,10 +692,17 @@ class WebRTCService {
       return;
     }
 
-    if (this.fileReceiver.hasActiveFileReception()) {
+    const activeReceptionPeerId = this.fileReceiver.getCurrentPeerId();
+    const disconnectTargetsActiveReception =
+      activeReceptionPeerId === "" || activeReceptionPeerId === peerId;
+
+    if (
+      this.fileReceiver.hasActiveFileReception() &&
+      disconnectTargetsActiveReception
+    ) {
       logger.info({
         event: "receiver_force_cleanup_after_disconnect",
-        context: { reason },
+        context: { reason, peerId, activeReceptionPeerId },
       });
 
       try {
@@ -715,6 +722,11 @@ class WebRTCService {
           },
         });
       }
+    } else if (this.fileReceiver.hasActiveFileReception()) {
+      logger.info({
+        event: "receiver_disconnect_ignored_for_non_active_peer",
+        context: { peerId, activeReceptionPeerId, reason },
+      });
     }
 
     this.clearPeerTransferProgress(peerId, "receive");

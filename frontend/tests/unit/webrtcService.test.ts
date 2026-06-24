@@ -38,6 +38,7 @@ class MockFileReceiver {
   public onFileReceived?: (file: any) => Promise<void>;
   public setProgressCallback = vi.fn();
   public setCurrentPeerId = vi.fn();
+  public getCurrentPeerId = vi.fn(() => "peer-1");
   public shutdown = vi.fn(async () => undefined);
   public handlePeerDisconnect = vi.fn(async () => undefined);
   public hasActiveFileReception = vi.fn(() => false);
@@ -248,6 +249,68 @@ describe("webrtcService", () => {
     receiver.onPeerDisconnected?.("peer-1");
     await Promise.resolve();
 
+    expect(events).not.toContainEqual({
+      type: "sender_disconnected_changed",
+      disconnected: true,
+    });
+  });
+
+  it("keeps an active receiver transfer running when another receiver disconnects", async () => {
+    const receiver = new MockPeer();
+    const sender = new MockPeer();
+    const fileReceiver = new MockFileReceiver();
+    const fileSender = new MockFileSender();
+    fileReceiver.hasActiveFileReception.mockReturnValue(true);
+    fileReceiver.getCurrentPeerId.mockReturnValue("sender-peer");
+
+    vi.doMock("@/lib/webrtc_Initiator", () => ({
+      default: vi.fn(function MockInitiator() {
+        return sender;
+      }),
+    }));
+    vi.doMock("@/lib/webrtc_Recipient", () => ({
+      default: vi.fn(function MockRecipient() {
+        return receiver;
+      }),
+    }));
+    vi.doMock("@/lib/fileSender", () => ({
+      default: vi.fn(function MockFileSender() {
+        return fileSender;
+      }),
+    }));
+    vi.doMock("@/lib/fileReceiver", () => ({
+      default: vi.fn(function MockFileReceiver() {
+        return fileReceiver;
+      }),
+    }));
+    vi.doMock("@/app/config/environment", () => ({
+      config: { API_URL: "" },
+      getIceServers: () => [],
+      getSocketOptions: () => ({}),
+      getLoggingConfig: () => ({
+        enableBackendLogs: false,
+        enableDebugConsoleLogs: false,
+        enableInfoConsoleLogs: false,
+        backendSampleRates: { debug: 0, info: 0, warn: 1, error: 1 },
+      }),
+    }));
+    vi.doMock("@/app/config/api", () => ({
+      postLogToBackend: vi.fn(async () => undefined),
+    }));
+
+    const { webrtcService } = await import("@/lib/webrtcService");
+    const events: any[] = [];
+    webrtcService.setObserver({
+      onEvent(event) {
+        events.push(event);
+      },
+    });
+
+    receiver.onConnectionStateChange?.("connected", "sender-peer");
+    receiver.onPeerDisconnected?.("other-receiver-peer");
+    await Promise.resolve();
+
+    expect(fileReceiver.handlePeerDisconnect).not.toHaveBeenCalled();
     expect(events).not.toContainEqual({
       type: "sender_disconnected_changed",
       disconnected: true,
