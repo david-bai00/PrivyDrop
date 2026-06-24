@@ -34,8 +34,6 @@ class FileReceiver {
 
     // Set up callback forwarding
     this.setupCallbackForwarding();
-
-    this.log("log", "FileReceiver initialized with modular architecture");
   }
 
   /**
@@ -159,20 +157,6 @@ class FileReceiver {
   ): Promise<void> {
     await this.orchestrator.shutdown(action, reason);
     this.saveType = {};
-  }
-
-  // ===== Private Methods =====
-
-  /**
-   * Logging utility
-   */
-  private log(
-    level: "log" | "warn" | "error",
-    message: string,
-    context?: Record<string, any>
-  ) {
-    const prefix = `[FileReceiver]`;
-    console[level](prefix, message, context || "");
   }
 
   // ===== Backward Compatibility Getters =====

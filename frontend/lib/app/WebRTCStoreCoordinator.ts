@@ -8,9 +8,11 @@ import {
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { mapLifecycleToConnectionBadgeState } from "@/types/webrtcLifecycle";
 import { CustomFile, FileMeta, fileMetadata } from "@/types/webrtc";
+import { createLogger } from "@/lib/logger";
 
 type PeerProgress = { progress: number; speed: number };
 type ProgressState = Record<string, Record<string, PeerProgress>>;
+const logger = createLogger({ scope: "App.WebRTCStoreCoordinator" });
 
 class WebRTCStoreCoordinator implements WebRTCServiceObserver {
   private attached = false;
@@ -294,8 +296,11 @@ class WebRTCStoreCoordinator implements WebRTCServiceObserver {
     void webrtcService
       .broadcastDataToPeer(peerId, senderPublishedContent, senderPublishedFiles)
       .catch((error) => {
-      console.error("[WebRTCStoreCoordinator] Auto broadcast failed:", error);
-    });
+        logger.error({
+          event: "auto_broadcast_failed",
+          context: { error, peerId },
+        });
+      });
   }
 
   private removePeerFromProgress(

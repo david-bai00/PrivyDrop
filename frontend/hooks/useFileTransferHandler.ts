@@ -150,7 +150,15 @@ export function useFileTransferHandler({ text }: UseFileTransferHandlerProps) {
           };
 
           // Execute retry asynchronously without blocking the main thread
-          retryWithDelay().catch(console.error);
+          retryWithDelay().catch((error) => {
+            logger.error({
+              event: "download_retry_failed",
+              context: {
+                fileId: meta.fileId,
+                error,
+              },
+            });
+          });
         }
       }
     },

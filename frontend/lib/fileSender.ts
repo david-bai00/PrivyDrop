@@ -23,7 +23,6 @@ class FileSender {
 
   constructor(webrtcConnection: WebRTC_Initiator) {
     this.orchestrator = new FileTransferOrchestrator(webrtcConnection);
-    console.log("[FileSender] ✅ Initialized with modular architecture");
   }
 
   public async sendFileMeta(
@@ -58,7 +57,6 @@ class FileSender {
 
   public handlePeerReconnection(peerId: string): void {
     this.orchestrator.handlePeerReconnection(peerId);
-    console.log(`[FileSender] Handled peer reconnection for ${peerId}`);
   }
 
   public shutdown(action: SenderShutdownAction): void {
@@ -67,8 +65,6 @@ class FileSender {
     if (policy.clearTransferState) {
       this.orchestrator.cleanup();
     }
-
-    console.log(`[FileSender] Shutdown completed with action ${action}`);
   }
 
   public cleanup(): void {

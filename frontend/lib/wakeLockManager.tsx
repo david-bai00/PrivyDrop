@@ -1,5 +1,9 @@
 // When an Android device switches to another app, the screen remains awake, and the WebRTC connection will not be disconnected.
 // Note that this will increase the device's power consumption, so it is important to release the wake lock in time when the connection is disconnected.
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger({ scope: "Lib.WakeLockManager" });
+
 export class WakeLockManager {
   private wakeLock: WakeLockSentinel | null = null;
   private isSupported: boolean = false;
@@ -14,12 +18,16 @@ export class WakeLockManager {
 
   async requestWakeLock(): Promise<void> {
     if (!this.isSupported) {
-      console.warn("Wake Lock API is not supported in this browser");
+      logger.info({
+        event: "wake_lock_unsupported",
+      });
       return;
     }
     if (document.visibilityState !== "visible") {
       // Only request when the page is visible
-      console.warn("Wake Lock API should request in visible state");
+      logger.info({
+        event: "wake_lock_request_skipped_hidden",
+      });
       return;
     }
     try {
@@ -31,10 +39,11 @@ export class WakeLockManager {
         "visibilitychange",
         this.handleVisibilityChange
       );
-
-      console.log("Wake Lock is active");
     } catch (err) {
-      console.error("Error requesting wake lock:", err);
+      logger.error({
+        event: "wake_lock_request_failed",
+        context: { err },
+      });
     }
   }
 
@@ -55,9 +64,11 @@ export class WakeLockManager {
         "visibilitychange",
         this.handleVisibilityChange
       );
-      console.log("Wake Lock is released");
     } catch (err) {
-      console.error("Error releasing wake lock:", err);
+      logger.error({
+        event: "wake_lock_release_failed",
+        context: { err },
+      });
     }
   }
 }
