@@ -4,9 +4,14 @@ import { E2E_SERVER, E2E_TIMEOUT } from "./e2eConfig";
 export async function openClipboardApp(page: Page) {
   let lastError: unknown;
 
+  await page.addInitScript(() => {
+    window.localStorage.setItem("Choose-location-popup-shown", "true");
+  });
+
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       await page.goto(E2E_SERVER.localePath, { waitUntil: "networkidle" });
+      await waitForClipboardAppReady(page);
       lastError = undefined;
       break;
     } catch (error) {
@@ -18,10 +23,29 @@ export async function openClipboardApp(page: Page) {
   if (lastError) {
     throw lastError;
   }
+}
 
-  await page.evaluate(() => {
-    window.localStorage.setItem("Choose-location-popup-shown", "true");
+async function waitForClipboardAppReady(page: Page) {
+  const senderRoomInput = page.getByTestId("sender-room-id-input");
+  const runtimeErrorHeading = page.getByRole("heading", {
+    name: "Unhandled Runtime Error",
   });
+
+  for (let poll = 0; poll < 40; poll += 1) {
+    if (await senderRoomInput.isVisible().catch(() => false)) {
+      return;
+    }
+
+    if (await runtimeErrorHeading.isVisible().catch(() => false)) {
+      const dialogText =
+        (await page.locator('body').textContent().catch(() => "")) ?? "";
+      throw new Error(`Clipboard app runtime error: ${dialogText.trim()}`);
+    }
+
+    await page.waitForTimeout(250);
+  }
+
+  throw new Error("Clipboard app did not become ready");
 }
 
 export function senderStatus(page: Page) {
