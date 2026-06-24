@@ -13,7 +13,7 @@ const RUNTIME_ONLY_FILES = [
   "lib/app/WebRTCStoreCoordinator.ts",
   "lib/wakeLockManager.tsx",
 ] as const;
-const MIXED_SCOPE_ALLOWED_CONSOLE_LINES = new Map<string, string[]>([
+const MIXED_SCOPE_ALLOWED_CONSOLE_LINES: Array<[string, string[]]> = [
   [
     "components/ClipboardApp/RetrieveTabPanel.tsx",
     ['console.error("Failed to set up folder receive:", err);'],
@@ -34,7 +34,7 @@ const MIXED_SCOPE_ALLOWED_CONSOLE_LINES = new Map<string, string[]>([
       'console.error("[RoomManager] Failed to fetch initial room:", err);',
     ],
   ],
-]);
+];
 
 function listSourceFiles(root: string): string[] {
   const entries = fs.readdirSync(root, { withFileTypes: true });
@@ -124,10 +124,10 @@ describe("logger source boundaries", () => {
     for (const [relativePath, allowedLines] of MIXED_SCOPE_ALLOWED_CONSOLE_LINES) {
       const consoleLines = findConsoleLines(readRelativeSource(relativePath));
       const disallowedLines = consoleLines.filter(
-        (line) => !allowedLines.includes(line)
+        (line: string) => !allowedLines.includes(line)
       );
       const missingAllowedLines = allowedLines.filter(
-        (line) => !consoleLines.includes(line)
+        (line: string) => !consoleLines.includes(line)
       );
 
       if (disallowedLines.length > 0 || missingAllowedLines.length > 0) {
