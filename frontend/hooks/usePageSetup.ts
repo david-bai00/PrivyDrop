@@ -1,17 +1,26 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { trackReferrer } from "@/lib/tracking";
 
 interface UsePageSetupProps {
   setRetrieveRoomId: (roomId: string) => void;
   setActiveTab: (tab: "send" | "retrieve") => void;
-  retrieveJoinRoomBtnRef: React.RefObject<HTMLButtonElement>;
+  autoJoinReceiverRoom: (
+    source: "auto:url" | "auto:cached",
+    roomId: string
+  ) => Promise<unknown> | void;
 }
 
 export function usePageSetup({
   setRetrieveRoomId,
   setActiveTab,
-  retrieveJoinRoomBtnRef,
+  autoJoinReceiverRoom,
 }: UsePageSetupProps) {
+  const autoJoinReceiverRoomRef = useRef(autoJoinReceiverRoom);
+
+  useEffect(() => {
+    autoJoinReceiverRoomRef.current = autoJoinReceiverRoom;
+  }, [autoJoinReceiverRoom]);
+
   // Track referrer and handle URL 'roomId' parameter
   useEffect(() => {
     // Guard in SSR
@@ -24,12 +33,11 @@ export function usePageSetup({
     if (roomIdParam) {
       setRetrieveRoomId(roomIdParam);
       setActiveTab("retrieve");
-      // Ensure DOM is updated and ref is available before clicking
       const timeoutId = setTimeout(() => {
-        retrieveJoinRoomBtnRef.current?.click();
-      }, 200);
+        void autoJoinReceiverRoomRef.current("auto:url", roomIdParam);
+      }, 0);
       return () => clearTimeout(timeoutId); // Cleanup timeout
     }
-  }, [setRetrieveRoomId, setActiveTab, retrieveJoinRoomBtnRef]); // Dependencies are stable setters and a ref
+  }, [setRetrieveRoomId, setActiveTab]);
 
 }

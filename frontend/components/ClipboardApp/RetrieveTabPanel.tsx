@@ -15,13 +15,14 @@ import {
   useClipboardAppMessageDispatcher,
   useClipboardAppMessages,
 } from "@/hooks/useClipboardAppMessages";
-
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { useClipboardUiStore } from "@/stores/clipboardUiStore";
+import { createLogger } from "@/lib/logger";
+
+const logger = createLogger({ scope: "UI.RetrieveTabPanel" });
 
 interface RetrieveTabPanelProps {
   joinRoom: (isSender: boolean, roomId: string) => void;
-  retrieveJoinRoomBtnRef: React.RefObject<HTMLButtonElement>;
   richTextToPlainText: (html: string) => string;
   handleDownloadFile: (meta: FileMeta) => void;
   // Functions for WebRTC interaction, passed from parent via useWebRTCConnection
@@ -36,7 +37,6 @@ interface RetrieveTabPanelProps {
 
 export function RetrieveTabPanel({
   joinRoom,
-  retrieveJoinRoomBtnRef,
   richTextToPlainText,
   handleDownloadFile,
   requestFile,
@@ -92,7 +92,10 @@ export function RetrieveTabPanel({
       } else if (meta.fileId) {
         requestFile(meta.fileId);
       } else {
-        console.warn("Cannot request file from panel: missing fileId", meta);
+        logger.warn({
+          event: "file_request_missing_file_id",
+          context: { meta },
+        });
         // Optionally use the receiver message dispatcher to inform the user
       }
     },
@@ -162,7 +165,6 @@ export function RetrieveTabPanel({
           <Button
             className="flex-1 order-1"
             onClick={() => joinRoom(false, retrieveRoomIdInput)}
-            ref={retrieveJoinRoomBtnRef}
             disabled={isReceiverInRoom || !retrieveRoomIdInput.trim()}
             data-testid="receiver-join-room-button"
           >

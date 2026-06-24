@@ -30,13 +30,6 @@ const ClipboardAppContent = () => {
   const connectionText = messages.text.clipboard.rtc;
 
   const dragCounter = useRef(0);
-  const retrieveJoinRoomBtnRef = useRef<HTMLButtonElement>(null);
-
-  usePageSetup({
-    setRetrieveRoomId: useClipboardUiStore.getState().setRetrieveRoomIdInput,
-    setActiveTab: useClipboardUiStore.getState().setActiveTab,
-    retrieveJoinRoomBtnRef,
-  });
 
   // Get state from store
   const {
@@ -90,6 +83,7 @@ const ClipboardAppContent = () => {
   const {
     processRoomIdInput,
     joinRoom,
+    autoJoinReceiverRoom,
     generateShareLinkAndBroadcast,
     handleLeaveReceiverRoom,
     handleLeaveSenderRoom,
@@ -116,6 +110,12 @@ const ClipboardAppContent = () => {
         leftRoom: roomText.status.leftRoom,
       },
     },
+  });
+
+  usePageSetup({
+    setRetrieveRoomId: useClipboardUiStore.getState().setRetrieveRoomIdInput,
+    setActiveTab: useClipboardUiStore.getState().setActiveTab,
+    autoJoinReceiverRoom,
   });
 
   const handleFileDrop = useCallback(
@@ -207,13 +207,13 @@ const ClipboardAppContent = () => {
 
     // Fill input then join directly to improve UX
     setRetrieveRoomIdInput(cached);
-    joinRoom(false, cached);
+    void autoJoinReceiverRoom("auto:cached", cached);
   }, [
     activeTab,
     isReceiverInRoom,
     retrieveRoomIdInput,
     setRetrieveRoomIdInput,
-    joinRoom,
+    autoJoinReceiverRoom,
   ]);
 
   // Connection feedback observer (Hook)
@@ -272,7 +272,6 @@ const ClipboardAppContent = () => {
           ) : (
             <RetrieveTabPanel
               joinRoom={joinRoom}
-              retrieveJoinRoomBtnRef={retrieveJoinRoomBtnRef}
               richTextToPlainText={richTextToPlainText}
               handleDownloadFile={handleDownloadFile}
               requestFile={requestFile}

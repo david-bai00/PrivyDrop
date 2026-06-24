@@ -17,12 +17,28 @@ import {
   useClipboardAppMessageDispatcher,
   type SideMessageDispatcher,
 } from "@/hooks/useClipboardAppMessages";
+import { createLogger } from "@/lib/logger";
+import {
+  classifyJoinRoomFailureReason,
+  runReceiverAutoJoinWithRetry,
+  type JoinRoomFailureReason,
+  type JoinRoomResult,
+  type ReceiverAutoJoinSource,
+} from "@/lib/app/receiverAutoJoinRetry";
+
+const logger = createLogger({ scope: "Hooks.RoomManager" });
 
 ensureWebRTCStoreCoordinator();
 
 // Remove all WebRTC related props dependencies
 interface UseRoomManagerProps {
   text: RoomManagerText;
+}
+
+interface JoinRoomOptions {
+  source?: ReceiverAutoJoinSource;
+  suppressProgressMessage?: boolean;
+  suppressFailureMessage?: boolean;
 }
 
 export function useRoomManager({ text }: UseRoomManagerProps) {
@@ -43,6 +59,7 @@ export function useRoomManager({ text }: UseRoomManagerProps) {
 
   // Track the active join-side dispatcher for one-shot slow hints.
   const joinMessageRef = useRef<SideMessageDispatcher>(showSenderMessage);
+  const receiverAutoJoinTokenRef = useRef(0);
 
   // One-shot join slow hint (3s), per join attempt
   const { arm: armJoinSlow, disarm: disarmJoinSlow, reset: resetJoinSlow } =
@@ -57,10 +74,23 @@ export function useRoomManager({ text }: UseRoomManagerProps) {
 
   // Join room method - directly use webrtcService
   const joinRoom = useCallback(
-    async (isSenderSide: boolean, roomId: string) => {
+    async (
+      isSenderSide: boolean,
+      roomId: string,
+      options: JoinRoomOptions = {}
+    ): Promise<JoinRoomResult> => {
       const showJoinMessage = isSenderSide
         ? showSenderMessage
         : showReceiverMessage;
+      const {
+        source = "manual",
+        suppressProgressMessage = false,
+        suppressFailureMessage = false,
+      } = options;
+
+      if (!isSenderSide && source === "manual") {
+        receiverAutoJoinTokenRef.current += 1;
+      }
 
       // UI: Joining feedback and slow network hint (one-shot)
       joinMessageRef.current = showJoinMessage;
@@ -68,7 +98,9 @@ export function useRoomManager({ text }: UseRoomManagerProps) {
 
       try {
         // Immediate feedback on click
-        showJoinMessage(text.join.inProgress, 6000);
+        if (!suppressProgressMessage) {
+          showJoinMessage(text.join.inProgress, 6000);
+        }
 
         // 3s slow-network hint
         armJoinSlow("join");
@@ -84,13 +116,13 @@ export function useRoomManager({ text }: UseRoomManagerProps) {
             if (!success) {
               showJoinMessage(text.join.duplicate);
               disarmJoinSlow();
-              return;
+              return { ok: false, reason: "duplicate" };
             }
             setSenderRoomSelection(roomId);
           } catch (error) {
             showJoinMessage(`${text.join.failure} (Create room error)`);
             disarmJoinSlow();
-            return;
+            return { ok: false, reason: "create_room_error" };
           }
         }
 
@@ -124,12 +156,16 @@ export function useRoomManager({ text }: UseRoomManagerProps) {
             setSenderRoomSelection(actualRoomId);
           }
         }
+        return { ok: true };
       } catch (error) {
         let errorMsg = text.join.failure;
         const rawMessage = error instanceof Error ? error.message : String(error);
+        const failureReason: JoinRoomFailureReason =
+          classifyJoinRoomFailureReason(rawMessage);
         const isExpectedJoinFailure =
-          rawMessage === "Room does not exist" ||
-          rawMessage === "Join room timeout";
+          failureReason === "not_found" ||
+          failureReason === "timeout" ||
+          failureReason === "rate_limit";
 
         if (!isExpectedJoinFailure) {
           console.error("[RoomManager] Failed to join room:", error);
@@ -145,7 +181,10 @@ export function useRoomManager({ text }: UseRoomManagerProps) {
         }
         // Clear joining slow-hint on failure
         disarmJoinSlow();
-        showJoinMessage(errorMsg);
+        if (!suppressFailureMessage) {
+          showJoinMessage(errorMsg);
+        }
+        return { ok: false, reason: failureReason };
       }
     },
     [
@@ -159,6 +198,59 @@ export function useRoomManager({ text }: UseRoomManagerProps) {
       disarmJoinSlow,
       resetJoinSlow,
     ]
+  );
+
+  const autoJoinReceiverRoom = useCallback(
+    async (
+      source: Extract<ReceiverAutoJoinSource, "auto:url" | "auto:cached">,
+      roomId: string
+    ): Promise<JoinRoomResult> => {
+      const normalizedRoomId = roomId.trim();
+
+      if (!normalizedRoomId) {
+        return { ok: false, reason: "other" };
+      }
+
+      const token = receiverAutoJoinTokenRef.current + 1;
+      receiverAutoJoinTokenRef.current = token;
+
+      return runReceiverAutoJoinWithRetry({
+        source,
+        roomId: normalizedRoomId,
+        token,
+        getSnapshot: () => {
+          const uiState = useClipboardUiStore.getState();
+          const transferState = useFileTransferStore.getState();
+
+          return {
+            activeTab: uiState.activeTab,
+            isReceiverInRoom: transferState.isReceiverInRoom,
+            retrieveRoomIdInput: uiState.retrieveRoomIdInput,
+            token: receiverAutoJoinTokenRef.current,
+          };
+        },
+        attemptJoin: (attempt, isFinalAttempt) =>
+          joinRoom(false, normalizedRoomId, {
+            source,
+            suppressProgressMessage: attempt > 0,
+            suppressFailureMessage: !isFinalAttempt,
+          }),
+      });
+    },
+    [joinRoom]
+  );
+
+  useEffect(() => {
+    if (activeTab !== "retrieve" || isReceiverInRoom) {
+      receiverAutoJoinTokenRef.current += 1;
+    }
+  }, [activeTab, isReceiverInRoom]);
+
+  useEffect(
+    () => () => {
+      receiverAutoJoinTokenRef.current += 1;
+    },
+    []
   );
 
   // Generate share link and broadcast
@@ -184,6 +276,8 @@ export function useRoomManager({ text }: UseRoomManagerProps) {
   ]);
 
   const handleLeaveReceiverRoom = useCallback(async () => {
+    receiverAutoJoinTokenRef.current += 1;
+
     if (isAnyFileTransferring) {
       const confirmed = window.confirm(text.messages.confirmLeave);
       if (!confirmed) return;
@@ -209,7 +303,13 @@ export function useRoomManager({ text }: UseRoomManagerProps) {
         );
 
         if (!leftRoom) {
-          console.warn("[RoomManager] Receiver leave room API returned no success");
+          logger.warn({
+            event: "receiver_leave_room_api_returned_no_success",
+            context: {
+              roomId: receiverSession.roomId,
+              peerId: receiverSession.peerId,
+            },
+          });
         }
       }
     } catch (error) {
@@ -344,6 +444,7 @@ export function useRoomManager({ text }: UseRoomManagerProps) {
     // Methods
     processRoomIdInput,
     joinRoom,
+    autoJoinReceiverRoom,
     generateShareLinkAndBroadcast,
     handleLeaveReceiverRoom,
     handleLeaveSenderRoom,
