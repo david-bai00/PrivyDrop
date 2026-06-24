@@ -22,6 +22,7 @@ import {
   config,
 } from "@/app/config/environment";
 import { createLogger } from "@/lib/logger";
+import { SenderPayloadBroadcaster } from "@/lib/app/SenderPayloadBroadcaster";
 import {
   SenderShutdownAction,
   getSenderShutdownPolicy,
@@ -105,6 +106,7 @@ class WebRTCService {
   public receiver: WebRTC_Recipient;
   public fileSender: FileSender;
   public fileReceiver: FileReceiver;
+  private senderPayloadBroadcaster: SenderPayloadBroadcaster;
 
   private static instance: WebRTCService;
   private observer: WebRTCServiceObserver | null = null;
@@ -136,6 +138,15 @@ class WebRTCService {
     this.receiver = new WebRTC_Recipient(webRTCConfig);
     this.fileSender = new FileSender(this.sender);
     this.fileReceiver = new FileReceiver(this.receiver);
+    this.senderPayloadBroadcaster = new SenderPayloadBroadcaster({
+      getPeerIds: () => Array.from(this.sender.peerConnections.keys()),
+      hasPeer: (peerId) => this.sender.peerConnections.has(peerId),
+      sendPayloadSnapshot: (content, files, peerId) =>
+        this.fileSender.sendPayloadSnapshot(content, files, peerId),
+      sendString: (content, peerId) => this.fileSender.sendString(content, peerId),
+      sendFileMeta: (files, peerId) => this.fileSender.sendFileMeta(files, peerId),
+      logger,
+    });
 
     this.initializeEventHandlers();
   }
@@ -448,39 +459,10 @@ class WebRTCService {
     shareContent: string,
     sendFiles: CustomFile[]
   ): Promise<boolean> {
-    const peerIds = Array.from(this.sender.peerConnections.keys());
-    if (peerIds.length === 0) {
-      logger.warn({
-        event: "broadcast_skipped_no_connected_peers",
-      });
-      return false;
-    }
-
-    try {
-      await Promise.all(
-        peerIds.map(async (peerId) => {
-          await this.fileSender.sendPayloadSnapshot(
-            shareContent,
-            sendFiles,
-            peerId
-          );
-
-          if (shareContent) {
-            await this.fileSender.sendString(shareContent, peerId);
-          }
-          if (sendFiles.length > 0) {
-            await this.fileSender.sendFileMeta(sendFiles, peerId);
-          }
-        })
-      );
-      return true;
-    } catch (error) {
-      logger.error({
-        event: "broadcast_failed",
-        context: { error },
-      });
-      return false;
-    }
+    return this.senderPayloadBroadcaster.broadcastToAllPeers(
+      shareContent,
+      sendFiles
+    );
   }
 
   public async broadcastDataToPeer(
@@ -488,32 +470,11 @@ class WebRTCService {
     shareContent: string,
     sendFiles: CustomFile[]
   ): Promise<boolean> {
-    if (!this.sender.peerConnections.has(peerId)) {
-      logger.warn({
-        event: "broadcast_to_peer_skipped_missing_peer",
-        context: { peerId },
-      });
-      return false;
-    }
-
-    try {
-      await this.fileSender.sendPayloadSnapshot(shareContent, sendFiles, peerId);
-
-      if (shareContent) {
-        await this.fileSender.sendString(shareContent, peerId);
-      }
-      if (sendFiles.length > 0) {
-        await this.fileSender.sendFileMeta(sendFiles, peerId);
-      }
-
-      return true;
-    } catch (error) {
-      logger.error({
-        event: "broadcast_to_peer_failed",
-        context: { error, peerId },
-      });
-      return false;
-    }
+    return this.senderPayloadBroadcaster.broadcastToPeer(
+      peerId,
+      shareContent,
+      sendFiles
+    );
   }
 
   public requestFile(fileId: string): void {

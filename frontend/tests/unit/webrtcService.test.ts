@@ -28,6 +28,8 @@ class MockFileSender {
   public setProgressCallback = vi.fn();
   public handlePeerReconnection = vi.fn();
   public sendPayloadSnapshot = vi.fn(async () => undefined);
+  public sendString = vi.fn(async () => undefined);
+  public sendFileMeta = vi.fn(async () => undefined);
   public shutdown = vi.fn();
 }
 
@@ -253,6 +255,77 @@ describe("webrtcService", () => {
       type: "sender_disconnected_changed",
       disconnected: true,
     });
+  });
+
+  it("delegates sender broadcasts to SenderPayloadBroadcaster", async () => {
+    const receiver = new MockPeer();
+    const sender = new MockPeer();
+    const fileReceiver = new MockFileReceiver();
+    const fileSender = new MockFileSender();
+
+    vi.doMock("@/lib/webrtc_Initiator", () => ({
+      default: vi.fn(function MockInitiator() {
+        return sender;
+      }),
+    }));
+    vi.doMock("@/lib/webrtc_Recipient", () => ({
+      default: vi.fn(function MockRecipient() {
+        return receiver;
+      }),
+    }));
+    vi.doMock("@/lib/fileSender", () => ({
+      default: vi.fn(function MockFileSender() {
+        return fileSender;
+      }),
+    }));
+    vi.doMock("@/lib/fileReceiver", () => ({
+      default: vi.fn(function MockFileReceiver() {
+        return fileReceiver;
+      }),
+    }));
+    vi.doMock("@/app/config/environment", () => ({
+      config: { API_URL: "" },
+      getIceServers: () => [],
+      getSocketOptions: () => ({}),
+      getLoggingConfig: () => ({
+        enableBackendLogs: false,
+        enableDebugConsoleLogs: false,
+        enableInfoConsoleLogs: false,
+        backendSampleRates: { debug: 0, info: 0, warn: 1, error: 1 },
+      }),
+    }));
+    vi.doMock("@/app/config/api", () => ({
+      postLogToBackend: vi.fn(async () => undefined),
+    }));
+
+    const { webrtcService } = await import("@/lib/webrtcService");
+    sender.peerConnections.set("peer-2", {});
+
+    await expect(
+      webrtcService.broadcastDataToAllPeers("hello", [])
+    ).resolves.toBe(true);
+    await expect(
+      webrtcService.broadcastDataToPeer("peer-1", "hello", [
+        { name: "demo.txt", size: 10, type: "text/plain", lastModified: 1 },
+      ] as any)
+    ).resolves.toBe(true);
+
+    expect(fileSender.sendPayloadSnapshot).toHaveBeenCalledWith(
+      "hello",
+      [],
+      "peer-1"
+    );
+    expect(fileSender.sendPayloadSnapshot).toHaveBeenCalledWith(
+      "hello",
+      [],
+      "peer-2"
+    );
+    expect(fileSender.sendString).toHaveBeenCalledWith("hello", "peer-1");
+    expect(fileSender.sendString).toHaveBeenCalledWith("hello", "peer-2");
+    expect(fileSender.sendFileMeta).toHaveBeenCalledWith(
+      [{ name: "demo.txt", size: 10, type: "text/plain", lastModified: 1 }],
+      "peer-1"
+    );
   });
 
   it("keeps an active receiver transfer running when another receiver disconnects", async () => {
