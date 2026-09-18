@@ -139,6 +139,10 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 - [**Docker 部署指南**](./docs/DEPLOYMENT_docker.zh-CN.md): 一键部署（内网/公网/full）、HTTPS 自动化、TURN 与排错。
 - [AI Playbook 索引](./docs/ai-playbook/index.zh-CN.md) · [协作规则](./docs/ai-playbook/collab-rules.zh-CN.md)
 
+## 🔗 相关项目
+
+- [**HandyXlate**](https://www.handyxlate.app) — 同一作者出品的 Android 屏幕翻译应用，延续同样的隐私优先理念：端侧 OCR、不上传截图、不需要无障碍服务。适合处理“文字就在眼前、但复制起来很麻烦”的场景。
+
 ## 🤝 参与贡献
 
 我们热烈欢迎任何形式的贡献！无论是报告 Bug、提出功能建议、提交代码还是加星，都对 PrivyDrop 的成长帮助巨大。请阅读我们的 [**贡献指南**](./.github/CONTRIBUTING.zh-CN.md) 来开始你的贡献之旅。

@@ -128,6 +128,10 @@ We provide detailed documentation to help you dive deeper into the project's des
 - [**Docker Deployment Guide**](./docs/DEPLOYMENT_docker.md): One-click deployment (LAN/Public/Full), HTTPS automation, TURN, and troubleshooting.
 - [AI Playbook (zh-CN)](./docs/ai-playbook/index.zh-CN.md) · [Collaboration Rules (zh-CN)](./docs/ai-playbook/collab-rules.zh-CN.md)
 
+## 🔗 Related Projects
+
+- [**HandyXlate**](https://www.handyxlate.app) — an Android screen translation app built by the same author with the same privacy-first approach: on-device OCR, no screenshot upload, and no Accessibility Service required. Use it when the text is already visible on screen but awkward to copy.
+
 ## 🤝 Contributing
 
 We warmly welcome contributions of all forms! Whether it's reporting a bug, suggesting a feature, submitting code or adding a star, your help is invaluable to PrivyDrop's growth. Please read our [**Contribution Guidelines**](./.github/CONTRIBUTING.md) to start your journey.
