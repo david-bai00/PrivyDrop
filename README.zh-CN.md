@@ -142,6 +142,7 @@ bash ./deploy.sh --mode full --domain your-domain.com --with-nginx --with-turn -
 ## 🔗 相关项目
 
 - [**HandyXlate**](https://www.handyxlate.app) — 同一作者出品的 Android 屏幕翻译应用，延续同样的隐私优先理念：端侧 OCR、不上传截图、不需要无障碍服务。适合处理“文字就在眼前、但复制起来很麻烦”的场景。
+- **在 [LINUX DO](https://linux.do) 和我聊聊** — PrivyDrop 最初就是在这个社区被认识，绝大多数设计反馈也来自这里。欢迎提问、报 Bug，以及聊聊“为什么你是这么设计的”。
 
 ## 🤝 参与贡献
 

@@ -21,6 +21,12 @@ interface SenderShareLinkOptions {
   isInRoom: boolean;
   origin: string;
   pathname: string;
+  /**
+   * Acquisition channel of the *sender*. Propagated so the receiver can be
+   * credited to the same channel, which is the only way to compare channels by
+   * real transfers rather than by page views.
+   */
+  senderRef?: string;
 }
 
 export function getSenderRoomStatusText({
@@ -70,10 +76,16 @@ export function buildSenderShareLink({
   isInRoom,
   origin,
   pathname,
+  senderRef,
 }: SenderShareLinkOptions): string {
   if (!isInRoom || !roomId) {
     return "";
   }
 
-  return `${origin}${pathname}?roomId=${roomId}`;
+  // The ref goes through encodeURIComponent so a hostile or malformed value can
+  // never inject extra query parameters into the invite link.
+  const safeRef =
+    senderRef && senderRef !== "direct" ? `&ref=${encodeURIComponent(senderRef)}` : "";
+
+  return `${origin}${pathname}?roomId=${encodeURIComponent(roomId)}${safeRef}`;
 }

@@ -2,4 +2,8 @@ User-agent: *
 Disallow: /api/
 Disallow: /*?roomId=
 Allow: /
+
+# Machine-readable orientation file for AI answer engines.
+# See https://llmstxt.org for the convention.
+Sitemap: https://www.privydrop.app/llms.txt
 Sitemap: https://www.privydrop.app/sitemap.xml

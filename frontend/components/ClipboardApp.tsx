@@ -19,6 +19,8 @@ import { useClipboardUiStore } from "@/stores/clipboardUiStore";
 import { getCachedId } from "@/lib/roomIdCache";
 import { useConnectionFeedback } from "@/hooks/useConnectionFeedback";
 import { buildSenderShareLink } from "@/lib/app/roomPresentation";
+import { captureFirstTouchRef } from "@/lib/tracking";
+import { useFunnelTracking } from "@/hooks/useFunnelTracking";
 import type { Messages } from "@/types/messages";
 
 const ClipboardAppContent = () => {
@@ -47,6 +49,9 @@ const ClipboardAppContent = () => {
   } = useClipboardUiStore();
 
   const richTextToPlainText = useRichTextToPlainText();
+  // Funnel analytics observes store transitions from the outside, so it never
+  // adds a side effect to the WebRTC setup path.
+  useFunnelTracking();
   const shareLink = useMemo(() => {
     if (typeof window === "undefined") {
       return "";
@@ -57,6 +62,7 @@ const ClipboardAppContent = () => {
       isInRoom: isSenderInRoom,
       origin: window.location.origin,
       pathname: window.location.pathname,
+      senderRef: captureFirstTouchRef(),
     });
   }, [isSenderInRoom, shareRoomId]);
 

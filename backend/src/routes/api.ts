@@ -16,7 +16,7 @@
 import { Router, RequestHandler } from "express";
 import { redis } from "../services/redis";
 import * as roomService from "../services/room";
-import { ReferrerTrack, LogMessage } from "../types/room";
+import { ReferrerTrack, FunnelTrackEvent, LogMessage } from "../types/room";
 
 const router = Router();
 
@@ -100,8 +100,47 @@ const checkRoomHandler: RequestHandler<{}, any, CheckRoomRequest> = async (
   }
 };
 
-// Route handler for setting tracking
-const setTrackHandler: RequestHandler<{}, any, ReferrerTrack> = async (
+const TRACK_TTL_SECONDS = 30 * 24 * 60 * 60;
+const MAX_SESSION_KEYS_PER_DAY = 20000;
+
+/**
+ * Keep attacker-controlled strings to a boring, index-safe alphabet. These
+ * values end up as Redis hash fields and are read back by export scripts, so a
+ * stray colon or newline must never be able to forge a dimension.
+ */
+const sanitizeToken = (value: unknown, fallback: string, maxLen = 64): string => {
+  if (typeof value !== "string") return fallback;
+  const cleaned = value.trim().replace(/[^a-zA-Z0-9_.:\-\/]/g, "").slice(0, maxLen);
+  return cleaned.length > 0 ? cleaned : fallback;
+};
+
+const parseTrackDate = (timestamp: unknown): string => {
+  const date = new Date(
+    typeof timestamp === "number" || typeof timestamp === "string"
+      ? timestamp
+      : Date.now()
+  );
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString().split("T")[0];
+  }
+  return date.toISOString().split("T")[0];
+};
+
+/**
+ * Route handler for funnel tracking.
+ *
+ * Backward compatible with the historical `{ ref, timestamp }` payload: a
+ * request without an `event` is recorded as a plain "visit".
+ *
+ * Redis layout written here:
+ * - `referrers:daily:<date>`      hash  <ref>                  -> count  (channel DAU, unchanged shape)
+ * - `funnel:daily:<date>`         hash  <event>                -> count
+ * - `funnel:ref:daily:<date>`     hash  <event>|<ref>          -> count
+ * - `funnel:locale:daily:<date>`  hash  <event>|<locale>       -> count
+ * - `funnel:path:daily:<date>`    hash  <event>|<path>         -> count
+ * - `funnel:sessions:<date>`      set   <sid>                  -> 1     (unique visitors, capped)
+ */
+const setTrackHandler: RequestHandler<{}, any, FunnelTrackEvent | ReferrerTrack> = async (
   req,
   res
 ) => {
@@ -111,18 +150,52 @@ const setTrackHandler: RequestHandler<{}, any, ReferrerTrack> = async (
   }
 
   try {
-    const { ref, timestamp } = req.body;
-    // Statistics by date
-    const date = new Date(timestamp).toISOString().split("T")[0];
-    const dailyKey = `referrers:daily:${date}`;
-    const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
+    const body = (req.body ?? {}) as FunnelTrackEvent;
+    const event = sanitizeToken(body.event, "visit", 40);
+    const ref = sanitizeToken(body.ref, "direct", 64);
+    const locale = sanitizeToken(body.locale, "unknown", 12);
+    const path = sanitizeToken(body.path, "/", 120);
+    const sid = sanitizeToken(body.sid, "", 64);
+    const date = parseTrackDate(body.timestamp);
 
-    // Use MULTI to ensure atomicity of hincrby and expire
-    await redis
+    const tx = redis
       .multi()
-      .hincrby(dailyKey, ref, 1) // "referrers:daily:2024-01-20" : { "producthunt": "5", "twitter": "3" }
-      .expire(dailyKey, thirtyDaysInSeconds) // Set a 30-day expiration
-      .exec();
+      // Legacy channel counter, preserved so existing dashboards keep working.
+      .hincrby(`referrers:daily:${date}`, ref, 1)
+      .expire(`referrers:daily:${date}`, TRACK_TTL_SECONDS)
+      // Funnel steps.
+      .hincrby(`funnel:daily:${date}`, event, 1)
+      .expire(`funnel:daily:${date}`, TRACK_TTL_SECONDS)
+      .hincrby(`funnel:ref:daily:${date}`, `${event}|${ref}`, 1)
+      .expire(`funnel:ref:daily:${date}`, TRACK_TTL_SECONDS)
+      .hincrby(`funnel:locale:daily:${date}`, `${event}|${locale}`, 1)
+      .expire(`funnel:locale:daily:${date}`, TRACK_TTL_SECONDS)
+      .hincrby(`funnel:path:daily:${date}`, `${event}|${path}`, 1)
+      .expire(`funnel:path:daily:${date}`, TRACK_TTL_SECONDS);
+
+    if (sid) {
+      // SCARD is checked lazily: tracking must stay cheap, and a few extra
+      // members on a runaway day is cheaper than a second round trip per event.
+      tx.sadd(`funnel:sessions:${date}`, sid);
+      tx.expire(`funnel:sessions:${date}`, TRACK_TTL_SECONDS);
+    }
+
+    await tx.exec();
+
+    // Best-effort cap so a single viral day cannot grow the session set forever.
+    if (sid) {
+      void redis
+        .scard(`funnel:sessions:${date}`)
+        .then((count) => (count ?? 0) > MAX_SESSION_KEYS_PER_DAY ? count : null)
+        .then((count) => {
+          if (count !== null) {
+            console.warn(
+              `funnel:sessions:${date} is oversized (${count}); consider sampling`
+            );
+          }
+        })
+        .catch(() => undefined);
+    }
 
     res.status(200).json({ success: true });
   } catch (error) {

@@ -117,4 +117,42 @@ describe("roomPresentation", () => {
       })
     ).toBe("https://example.test/share?roomId=room-a");
   });
+
+  it("carries the sender's acquisition channel on the invite link", () => {
+    // The receiver inherits the channel that brought the sender in. That is
+    // what makes "which channel produces real transfers" measurable at all.
+    expect(
+      buildSenderShareLink({
+        roomId: "room-a",
+        isInRoom: true,
+        origin: "https://example.test",
+        pathname: "/share",
+        senderRef: "linux.do",
+      })
+    ).toBe("https://example.test/share?roomId=room-a&ref=linux.do");
+  });
+
+  it("does not add channel params when the sender arrived directly", () => {
+    expect(
+      buildSenderShareLink({
+        roomId: "room-a",
+        isInRoom: true,
+        origin: "https://example.test",
+        pathname: "/share",
+        senderRef: "direct",
+      })
+    ).toBe("https://example.test/share?roomId=room-a");
+  });
+
+  it("encodes refs so they cannot inject extra query parameters", () => {
+    expect(
+      buildSenderShareLink({
+        roomId: "room-a",
+        isInRoom: true,
+        origin: "https://example.test",
+        pathname: "/share",
+        senderRef: "a&roomId=hijacked",
+      })
+    ).toBe("https://example.test/share?roomId=room-a&ref=a%26roomId%3Dhijacked");
+  });
 });
