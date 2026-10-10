@@ -342,6 +342,7 @@ export const en: Messages = {
         sync: "Sync",
         syncLoading: "Synced",
         readClipboard: "Paste RoomID",
+        clearRoomId: "Clear Room ID",
       },
       placeholders: {
         roomId: "Enter RoomID",
@@ -404,11 +405,12 @@ export const en: Messages = {
         error: "Could not set save location.",
       },
       cachedId: {
-        save: "Save ID",
-        use: "Use cached ID",
-        saveTip: "Save current ID for quick reuse later",
-        useTip: "Quick use saved ID; double-click to switch save mode",
-        saveSuccess: "Saved to cache",
+        save: "Save as my room",
+        use: "Fill in my room",
+        saveTip: "Save the current room ID and fill it back in with one click later",
+        saveTipAlreadySaved: "This room ID is already your saved room",
+        useTip: "Fill the saved room ID into the input (joining stays a separate step)",
+        saveSuccess: "Saved as my room",
       },
       generateId: {
         simple: "Simple ID",

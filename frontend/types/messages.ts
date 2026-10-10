@@ -195,6 +195,7 @@ export type Clipboard = {
     sync: string;
     syncLoading: string;
     readClipboard: string;
+    clearRoomId: string;
   };
   placeholders: {
     roomId: string;
@@ -255,6 +256,7 @@ export type Clipboard = {
     save: string;
     use: string;
     saveTip: string;
+    saveTipAlreadySaved: string;
     useTip: string;
     saveSuccess: string;
   };

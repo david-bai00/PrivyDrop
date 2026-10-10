@@ -23,7 +23,7 @@ This map is designed for quick orientation. It lists directories and key entry f
 - `frontend/components/` — UI layer, including the orchestrator and child components.
 
   - `frontend/components/ClipboardApp.tsx` — Top-level UI orchestrator. Integrates 5 business hooks (useWebRTCConnection/useFileTransferHandler/useRoomManager/usePageSetup/useClipboardAppMessages), and handles global drag events plus the Send/Retrieve tabs.
-    - UX: when switching to Retrieve and all of the following hold—“not in a room, no roomId in URL, empty input, cached ID exists”—it auto-fills and joins (reads `frontend/lib/roomIdCache.ts`).
+    - UX: when switching to Retrieve and all of the following hold—“not in a room, no roomId in URL, empty input, cached ID exists”—it **prefills** the input (reads `frontend/lib/roomIdCache.ts`) but **never joins the room**; joining stays an explicit “Join room” action. The prefill reads the current input imperatively (`useClipboardUiStore.getState()`) instead of reactively, so it is evaluated once per tab switch and later user edits (including clearing) are never overwritten.
     - Connection feedback: integrates `useConnectionFeedback` (`frontend/hooks/useConnectionFeedback.ts`) to map WebRTC states to UI messages (negotiating, 8s slow hint, disconnect/reconnect/restored hints when visible). Slow hints reuse `frontend/utils/useOneShotSlowHint.ts`.
 
 - `frontend/hooks/` — Business logic hub (React Hooks).
@@ -40,11 +40,14 @@ This map is designed for quick orientation. It lists directories and key entry f
   - Copy: `frontend/constants/messages/*.{ts}` (zh/en/ja/es/de/fr/ko filled).
   - Types: `frontend/types/messages.ts` (ClipboardApp includes `join_*` and `rtc_*` message keys).
   - `frontend/components/ClipboardApp/SendTabPanel.tsx` — Send panel: rich-text editor, file upload, room ID generation (4-digit vs UUID), share-link generation.
-    - UX: clicking “Use cached ID” triggers join immediately on the sender side, saving one manual click.
+    - UX: consistent with the receiver, “Fill in my room” only writes the input field; joining stays an explicit “Join room” action.
   - `frontend/components/ClipboardApp/RetrieveTabPanel.tsx` — Retrieve panel: room join, file receiving, directory selection (File System Access API), rich-text display.
   - `frontend/components/ClipboardApp/FileListDisplay.tsx` — File list: file/folder grouping, progress tracking, browser-specific download strategies (Chrome auto download; others prompt manual save), download count stats.
   - `frontend/components/ClipboardApp/FullScreenDropZone.tsx` — Full-screen drag overlay/feedback.
-  - `frontend/components/ClipboardApp/*` — Other subcomponents: FileUploadHandler, ShareCard (QR code sharing), TransferProgress, CachedIdActionButton, FileTransferButton.
+  - `frontend/components/ClipboardApp/*` — Other subcomponents: FileUploadHandler, ShareCard (QR code sharing), TransferProgress, FileTransferButton.
+  - `frontend/components/ClipboardApp/ClearableRoomIdInput.tsx` — room ID input wrapper with an inline clear (X) button; clearing only edits local input state, never the cache or the connection.
+  - `frontend/components/ClipboardApp/UseCachedIdButton.tsx` / `SaveCachedIdButton.tsx` — fill-in and save for the cached room ID; both have fixed meanings (fill writes the input, save writes localStorage). The save button renders only when the input length is ≥ `MIN_CACHEABLE_ROOM_ID_LENGTH` (8); when the input already equals the cached room ID it stays visible but disabled, because saving would be a no-op. It is likewise disabled while in a room.
+  - `frontend/lib/app/useCachedRoomId.ts` — reads the localStorage cached room ID and exposes `refreshCachedId` for both panels.
   - `frontend/components/Editor/` — Rich-text editor module: RichTextEditor, toolbar components (BasicFormatTools/FontTools/AlignmentTools/InsertTools), SelectMenu, types, and editor hooks.
   - `frontend/components/blog/` — Blog components: TableOfContents (Chinese heading ID generation + scroll tracking), Mermaid rendering, MDXComponents, ArticleListItem, etc.
   - `frontend/components/common/` — Shared components: clipboard_btn (clipboard read/write buttons), AutoPopupDialog, LazyLoadWrapper, YouTubePlayer.

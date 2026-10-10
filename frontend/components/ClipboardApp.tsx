@@ -41,7 +41,6 @@ const ClipboardAppContent = () => {
   const {
     activeTab,
     isDragging,
-    retrieveRoomIdInput,
     setIsDragging,
     setRetrieveRoomIdInput,
     setActiveTab,
@@ -190,7 +189,16 @@ const ClipboardAppContent = () => {
     };
   }, [activeTab, handleFileDrop, setIsDragging]);
 
-  // Auto-join on switching to receiver tab when cached ID exists
+  // Prefill the cached room ID when the user switches to the receiver tab.
+  //
+  // Filling the input is a purely local, reversible action, so it stays
+  // automatic. Joining the room is NOT: connecting is an explicit action behind
+  // the "Join room" button, so this effect must never call joinRoom.
+  //
+  // The current input value is read imperatively on purpose: the prefill must be
+  // evaluated once per tab switch. Keeping it as a reactive dependency would
+  // re-run the effect while the user types or clears the field and silently
+  // overwrite their edits.
   useEffect(() => {
     if (activeTab !== "retrieve") return;
     if (isReceiverInRoom) return;
@@ -200,20 +208,21 @@ const ClipboardAppContent = () => {
     if (params.get("roomId")) return;
 
     // Do not override user's existing input
-    if ((retrieveRoomIdInput || "").trim().length > 0) return;
+    if (
+      useClipboardUiStore.getState().retrieveRoomIdInput.trim().length > 0
+    ) {
+      return;
+    }
 
     const cached = getCachedId();
     if (!cached || cached.trim().length === 0) return;
 
-    // Fill input then join directly to improve UX
+    // Fill only. The user decides when to connect.
     setRetrieveRoomIdInput(cached);
-    void autoJoinReceiverRoom("auto:cached", cached);
   }, [
     activeTab,
     isReceiverInRoom,
-    retrieveRoomIdInput,
     setRetrieveRoomIdInput,
-    autoJoinReceiverRoom,
   ]);
 
   // Connection feedback observer (Hook)

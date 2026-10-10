@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ClipboardSideMessage } from "@/components/ClipboardApp/ClipboardSideMessage";
 import { getReceiverRoomStatusText } from "@/lib/app/roomPresentation";
@@ -8,7 +7,9 @@ import {
   ReadClipboardButton,
   WriteClipboardButton,
 } from "@/components/common/clipboard_btn";
-import CachedIdActionButton from "@/components/ClipboardApp/CachedIdActionButton";
+import { ClearableRoomIdInput } from "@/components/ClipboardApp/ClearableRoomIdInput";
+import { UseCachedIdButton } from "@/components/ClipboardApp/UseCachedIdButton";
+import { SaveCachedIdButton } from "@/components/ClipboardApp/SaveCachedIdButton";
 import FileListDisplay from "@/components/ClipboardApp/FileListDisplay";
 import type { FileMeta } from "@/types/webrtc";
 import {
@@ -17,6 +18,7 @@ import {
 } from "@/hooks/useClipboardAppMessages";
 import { useFileTransferStore } from "@/stores/fileTransferStore";
 import { useClipboardUiStore } from "@/stores/clipboardUiStore";
+import { useCachedRoomId } from "@/lib/app/useCachedRoomId";
 import { createLogger } from "@/lib/logger";
 
 const logger = createLogger({ scope: "UI.RetrieveTabPanel" });
@@ -54,6 +56,7 @@ export function RetrieveTabPanel({
   const showReceiverMessage = useClipboardAppMessageDispatcher("receiver");
   const { clearReceiverMessage } = useClipboardAppMessages();
   const { retrieveRoomIdInput, setRetrieveRoomIdInput } = useClipboardUiStore();
+  const { cachedId, refreshCachedId } = useCachedRoomId();
   // Get the status from the store
   const {
     retrievedContent,
@@ -143,19 +146,26 @@ export function RetrieveTabPanel({
               title={tActions("readClipboard")}
               onRead={setRetrieveRoomIdInput}
             />
-            {/* Save/Use Cached ID Button placed after Paste button */}
-            <CachedIdActionButton
-              getInputValue={() => retrieveRoomIdInput}
-              setInputValue={setRetrieveRoomIdInput}
-              showMessage={showReceiverMessage}
-            />
-            <Input
-              aria-label="Retrieve Room ID"
-              data-testid="receiver-room-id-input"
+            <ClearableRoomIdInput
               value={retrieveRoomIdInput}
-              onChange={(e) => setRetrieveRoomIdInput(e.target.value)}
+              onChange={setRetrieveRoomIdInput}
+              clearLabel={tActions("clearRoomId")}
+              inputAriaLabel="Retrieve Room ID"
+              inputTestId="receiver-room-id-input"
+              clearTestId="receiver-room-id-clear"
               placeholder={tPlaceholders("roomId")}
-              className="flex-1 min-w-0"
+            />
+            {cachedId && (
+              <UseCachedIdButton
+                onUse={() => setRetrieveRoomIdInput(cachedId)}
+              />
+            )}
+            <SaveCachedIdButton
+              inputValue={retrieveRoomIdInput}
+              cachedId={cachedId}
+              showMessage={showReceiverMessage}
+              onSaved={refreshCachedId}
+              disabled={isReceiverInRoom}
             />
           </div>
         </div>

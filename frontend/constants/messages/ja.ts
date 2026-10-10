@@ -268,6 +268,7 @@ export const ja: Messages = {
         sync: "同期（どうき）",
         syncLoading: "同期完了",
         readClipboard: "ルームIDを貼り付け",
+        clearRoomId: "ルームIDを消去",
       },
       placeholders: {
         roomId: "ルームIDを入力",
@@ -325,11 +326,12 @@ export const ja: Messages = {
         error: "保存場所を設定できませんでした。",
       },
       cachedId: {
-        save: "ID を保存",
-        use: "保存済みIDを使用",
-        saveTip: "現在のIDを保存して次回すぐに使えるようにします",
-        useTip: "保存済みIDを即使用；ダブルクリックで保存モード切替",
-        saveSuccess: "キャッシュに保存しました",
+        save: "マイルームとして保存",
+        use: "マイルームを記入",
+        saveTip: "現在のルームIDを保存し、次回ワンクリックで入力できます",
+        saveTipAlreadySaved: "このルームIDはすでにマイルームとして保存されています",
+        useTip: "保存済みのルームIDを入力欄に記入します（部屋への参加は別操作です）",
+        saveSuccess: "マイルームとして保存しました",
       },
       generateId: {
         simple: "シンプルID",

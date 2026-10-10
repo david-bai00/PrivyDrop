@@ -23,7 +23,7 @@
 - `frontend/components/` — UI，包括协调器与子组件。
 
   - `frontend/components/ClipboardApp.tsx` — 顶层 UI 协调器，集成 5 个业务 hooks（useWebRTCConnection/useFileTransferHandler/useRoomManager/usePageSetup/useClipboardAppMessages），处理全局拖拽事件，并消费 `clipboardUiStore` 中的双标签页、接收端输入框与拖拽提示等纯 UI 输入态；消息层现由 `ClipboardAppMessagesProvider` 包裹，相关 hooks/面板通过 side-specific hook 读取 dispatcher 与当前消息，不再由父组件手动透传消息 props。
-    - 体验增强：切到接收端（retrieve）且满足“未在房间、URL 无 roomId、输入为空、存在缓存ID”时自动填充并加入房间（读取 `frontend/lib/roomIdCache.ts`）。
+    - 体验增强：切到接收端（retrieve）且满足“未在房间、URL 无 roomId、输入为空、存在缓存ID”时**自动预填**输入框（读取 `frontend/lib/roomIdCache.ts`），但**不会自动加入房间**——加入房间必须由用户显式点击“加入房间”完成。预填值以命令式读取（`useClipboardUiStore.getState()`），不作为响应式依赖，因此每次切 tab 只判断一次，用户后续编辑（含清空）不会被覆盖。
     - 连接反馈：集成 `useConnectionFeedback`（`frontend/hooks/useConnectionFeedback.ts`），桥接 WebRTC 连接态到 UI 文案，含协商中提示、8s 慢连接提示、断开/重连/恢复提示（前台可见时提示）。慢提示统一复用 `frontend/utils/useOneShotSlowHint.ts`。
 
 - `frontend/hooks/` — 业务中枢 Hooks。
@@ -40,12 +40,15 @@
   - 文案定义：`frontend/constants/messages/*.{ts}`（已补齐 zh/en/ja/es/de/fr/ko）。
   - 类型定义：`frontend/types/messages.ts`（`ClipboardApp` 下包含 `join_*` 与 `rtc_*` 文案键）。
   - `frontend/components/ClipboardApp/SendTabPanel.tsx` — 发送面板，集成富文本编辑器、文件上传、房间 ID 生成（支持 4 位数字/UUID 两种模式）；顶部房间状态文案改为按 `isSenderInRoom/sharePeerCount` 现算，不再依赖 store 中的展示缓存；sender 侧提示改由 `ClipboardSideMessage` 从消息 context 直接渲染。
-    - 体验增强：点击“使用缓存ID”将立即触发加入房间（sender 侧），减少一次手动点击。
+    - 体验增强：与接收端一致，“填入我的房间”只写入输入框，不触发加入房间；加入房间由“加入房间”按钮显式完成。
   - `frontend/components/ClipboardApp/RetrieveTabPanel.tsx` — 接收面板，处理房间加入、文件接收、目录选择（File System Access API）、富文本内容显示；顶部房间状态文案改为按 `isReceiverInRoom/retrievePeerCount` 现算；receiver 侧提示同样通过 `ClipboardSideMessage` 从消息 context 渲染。
     - 断开收敛：当 sender 已断开时清空旧 receiver side message，避免页面残留旧协商/重连提示。
   - `frontend/components/ClipboardApp/FileListDisplay.tsx` — 文件列表显示组件，支持文件/文件夹分组显示、进度跟踪、多浏览器下载策略（Chrome 自动下载/其他浏览器手动保存）、下载计数统计。
   - `frontend/components/ClipboardApp/FullScreenDropZone.tsx` — 全屏拖拽提示组件，文件拖拽时的视觉反馈。
-  - `frontend/components/ClipboardApp/*` — 其他子组件：FileUploadHandler（文件上传处理）、ShareCard（二维码分享）、TransferProgress（进度条）、CachedIdActionButton（缓存 ID 操作）、FileTransferButton（文件传输按钮）。
+  - `frontend/components/ClipboardApp/*` — 其他子组件：FileUploadHandler（文件上传处理）、ShareCard（二维码分享）、TransferProgress（进度条）、FileTransferButton（文件传输按钮）。
+  - `frontend/components/ClipboardApp/ClearableRoomIdInput.tsx` — 房间 ID 输入框封装，内嵌清空（X）按钮；清空仅修改本地输入值，不触碰缓存、不触发连接。
+  - `frontend/components/ClipboardApp/UseCachedIdButton.tsx` / `SaveCachedIdButton.tsx` — 缓存房间号的填入与保存，两者语义固定（填入只写输入框、保存只写 localStorage）；保存按钮仅在输入长度 ≥ `MIN_CACHEABLE_ROOM_ID_LENGTH`（8）时渲染，输入已等于缓存房间号时保持可见但禁用（此时保存是空操作），并在房中同样禁用。
+  - `frontend/lib/app/useCachedRoomId.ts` — 读取 localStorage 缓存房间号并暴露 `refreshCachedId`，供两个面板共享。
   - `frontend/components/Editor/` — 富文本编辑器模块，包含 RichTextEditor 主编辑器、工具栏组件（BasicFormatTools/FontTools/AlignmentTools/InsertTools）、SelectMenu 下拉选择、类型定义和编辑器 hooks。
   - `frontend/components/blog/` — 博客相关组件，包含 TableOfContents（支持中文目录生成和滚动跟踪）、Mermaid 图表渲染、MDXComponents、ArticleListItem 文章列表。
   - `frontend/components/common/` — 通用组件，包含 clipboard_btn（读写剪贴板按钮）、AutoPopupDialog（自动弹出对话框）、LazyLoadWrapper（懒加载包装器）、YouTubePlayer（YouTube 播放器）。

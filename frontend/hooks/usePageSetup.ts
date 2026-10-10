@@ -5,7 +5,7 @@ interface UsePageSetupProps {
   setRetrieveRoomId: (roomId: string) => void;
   setActiveTab: (tab: "send" | "retrieve") => void;
   autoJoinReceiverRoom: (
-    source: "auto:url" | "auto:cached",
+    source: "auto:url",
     roomId: string
   ) => Promise<unknown> | void;
 }

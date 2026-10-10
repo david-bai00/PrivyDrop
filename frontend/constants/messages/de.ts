@@ -268,6 +268,7 @@ export const de: Messages = {
         sync: "Synchronisieren",
         syncLoading: "Synchronisiert",
         readClipboard: "Raum-ID einfügen",
+        clearRoomId: "Raum-ID löschen",
       },
       placeholders: {
         roomId: "Raum-ID eingeben",
@@ -325,11 +326,12 @@ export const de: Messages = {
         error: "Speicherort konnte nicht festgelegt werden.",
       },
       cachedId: {
-        save: "ID speichern",
-        use: "Gespeicherte ID verwenden",
-        saveTip: "Aktuelle ID für spätere schnelle Nutzung speichern",
-        useTip: "Gespeicherte ID schnell nutzen; Doppelklick zum Speichermodus wechseln",
-        saveSuccess: "Erfolgreich im Cache gespeichert",
+        save: "Als mein Raum speichern",
+        use: "Meinen Raum eintragen",
+        saveTip: "Aktuelle Raum-ID speichern und später mit einem Klick wieder eintragen",
+        saveTipAlreadySaved: "Diese Raum-ID ist bereits dein gespeicherter Raum",
+        useTip: "Trägt die gespeicherte Raum-ID ins Eingabefeld ein (Beitreten bleibt ein separater Schritt)",
+        saveSuccess: "Als mein Raum gespeichert",
       },
       generateId: {
         simple: "Einfache ID",

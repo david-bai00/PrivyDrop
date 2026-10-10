@@ -26,8 +26,8 @@ test("keeps sender and receiver side messages isolated", async ({
     const receiverPanel = page.getByTestId("retrieve-panel");
 
     await page.getByTestId("sender-room-id-input").fill(senderRoomId);
-    await page.getByRole("button", { name: "Save ID" }).click();
-    await waitForText(senderPanel, "Saved to cache", E2E_TIMEOUT.short);
+    await page.getByRole("button", { name: "Save as my room" }).click();
+    await waitForText(senderPanel, "Saved as my room", E2E_TIMEOUT.short);
 
     await page.evaluate(() => {
       const url = new URL(window.location.href);
@@ -37,9 +37,8 @@ test("keeps sender and receiver side messages isolated", async ({
 
     await page.getByTestId("retrieve-tab-button").click();
     await page.getByTestId("receiver-room-id-input").fill(receiverRoomId);
-    await page.getByRole("button", { name: "Use cached ID" }).dblclick();
-    await page.getByRole("button", { name: "Save ID" }).click();
-    await waitForText(receiverPanel, "Saved to cache", E2E_TIMEOUT.short);
+    await page.getByRole("button", { name: "Save as my room" }).click();
+    await waitForText(receiverPanel, "Saved as my room", E2E_TIMEOUT.short);
 
     await page.getByTestId("send-tab-button").click();
     const senderPanelText = ((await senderPanel.textContent()) ?? "").trim();
@@ -47,8 +46,8 @@ test("keeps sender and receiver side messages isolated", async ({
     await page.getByTestId("retrieve-tab-button").click();
     const receiverPanelText = ((await receiverPanel.textContent()) ?? "").trim();
 
-    expect(senderPanelText).toContain("Saved to cache");
-    expect(receiverPanelText).toContain("Saved to cache");
+    expect(senderPanelText).toContain("Saved as my room");
+    expect(receiverPanelText).toContain("Saved as my room");
     expect(consoleErrors).toEqual([]);
 
     await writeJsonArtifact(testInfo, "result.json", {

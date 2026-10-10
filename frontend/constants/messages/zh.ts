@@ -339,6 +339,7 @@ export const zh: Messages = {
         sync: "同步",
         syncLoading: "已同步",
         readClipboard: "粘贴房间ID",
+        clearRoomId: "清空房间ID",
       },
       placeholders: {
         roomId: "输入房间ID",
@@ -399,11 +400,12 @@ export const zh: Messages = {
         error: "无法设置保存位置。",
       },
       cachedId: {
-        save: "保存ID",
-        use: "使用缓存ID",
-        saveTip: "保存ID后，下次可以快捷使用该ID",
-        useTip: "快捷使用已保存ID；双击可切换保存模式",
-        saveSuccess: "缓存成功",
+        save: "保存为我的房间",
+        use: "填入我的房间",
+        saveTip: "把当前房间ID保存下来，下次一键填入",
+        saveTipAlreadySaved: "当前房间号已经是我的房间",
+        useTip: "把已保存的房间ID填入输入框（不会自动加入房间）",
+        saveSuccess: "已保存为我的房间",
       },
       generateId: {
         simple: "简单ID",

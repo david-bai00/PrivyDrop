@@ -343,6 +343,7 @@ export const es: Messages = {
         sync: "Sincronizar",
         syncLoading: "Sincronizado",
         readClipboard: "Pegar ID de Sala",
+        clearRoomId: "Borrar ID de Sala",
       },
       placeholders: {
         roomId: "Ingresa ID de Sala",
@@ -405,11 +406,12 @@ export const es: Messages = {
         error: "No se pudo establecer la ubicación de guardado.",
       },
       cachedId: {
-        save: "Guardar ID",
-        use: "Usar ID en caché",
-        saveTip: "Guarda el ID actual para reutilizarlo rápidamente",
-        useTip: "Usar ID guardado rápido; doble clic para cambiar modo guardar",
-        saveSuccess: "Guardado en caché",
+        save: "Guardar como mi sala",
+        use: "Rellenar mi sala",
+        saveTip: "Guarda el ID de sala actual y rellénalo con un clic más tarde",
+        saveTipAlreadySaved: "Este ID de sala ya es tu sala guardada",
+        useTip: "Rellena el ID de sala guardado en el campo (unirse sigue siendo un paso aparte)",
+        saveSuccess: "Guardado como mi sala",
       },
       generateId: {
         simple: "ID Simple",

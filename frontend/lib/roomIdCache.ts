@@ -3,6 +3,14 @@
 
 const CACHED_KEY = "pd_cached_room_id_v1";
 
+/**
+ * Minimum room ID length that qualifies as a reusable long room ID.
+ *
+ * Short IDs (4 chars) are one-shot rooms and must not be cached, otherwise a
+ * stale short ID would silently prefill the receiver input on every visit.
+ */
+export const MIN_CACHEABLE_ROOM_ID_LENGTH = 8;
+
 function isClient() {
   return typeof window !== "undefined";
 }
@@ -20,7 +28,11 @@ export function getCachedId(): string | null {
 export function setCachedId(id: string): void {
   if (!isClient()) return;
   try {
-    window.localStorage.setItem(CACHED_KEY, id);
+    const trimmed = id.trim();
+    // Guard the invariant at the only write path so no caller can cache a
+    // short one-shot room ID, regardless of what the UI layer allows.
+    if (trimmed.length < MIN_CACHEABLE_ROOM_ID_LENGTH) return;
+    window.localStorage.setItem(CACHED_KEY, trimmed);
   } catch (_) {
     // ignore
   }

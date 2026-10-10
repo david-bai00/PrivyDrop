@@ -1,6 +1,6 @@
 ---
-title: "Un toque y de vuelta, sólido como roca: Auto‑unión por ID en caché y reconexión resiliente en PrivyDrop"
-description: "Novedad en el receptor: auto‑entrada mediante ID en caché y reconexión de extremo a extremo para un flujo más suave — entrada automática, conexión directa con un toque, doble toque para actualizar la caché y recuperación firme en redes inestables."
+title: "Un toque y de vuelta, sólido como roca: Reutilización de salas guardadas y reconexión resiliente en PrivyDrop"
+description: "Guarda un ID de sala largo y reutilízalo después, además de reconexión de extremo a extremo para un flujo más suave y una recuperación firme en redes inestables."
 date: "2025-11-25"
 author: "david bai"
 cover: "/blog-assets/cached-id-reconnect.webp"
@@ -9,6 +9,9 @@ status: "published"
 ---
 
 ![](/blog-assets/cached-id-reconnect.webp)
+
+> ⚠️ **Aviso de versión**
+> Este artículo refleja el comportamiento de una versión anterior. En la versión actual, rellenar una sala guardada y unirse a ella son pasos separados: el ID en caché solo se precarga en el campo y debes pulsar «Unirse a sala» tú mismo; el gesto de doble clic sobre «Usar ID en caché» se ha eliminado y se ha sustituido por un botón independiente «Guardar como mi sala». La sección de reconexión no cambia y sigue siendo válida.
 
 ## Introducción: por qué importan el “auto‑join” y la “reconexión”
 
@@ -126,6 +129,8 @@ sequenceDiagram
 ---
 
 ## Cómo probarlo (hands‑on)
+
+> Los pasos siguientes describen la versión que registró este artículo; en la versión actual, sigue los nombres de los botones y los pasos que aparecen en la aplicación.
 
 Prueba rápida en escritorio:
 

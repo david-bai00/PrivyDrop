@@ -317,6 +317,7 @@ export const fr: Messages = {
         sync: "Synchroniser",
         syncLoading: "Synchronisé",
         readClipboard: "Coller l'ID de salle",
+        clearRoomId: "Effacer l'ID de salle",
       },
       placeholders: {
         roomId: "entrez l'ID de salle",
@@ -378,11 +379,12 @@ export const fr: Messages = {
         error: "Impossible de définir l'emplacement de sauvegarde.",
       },
       cachedId: {
-        save: "Enregistrer l’ID",
-        use: "Utiliser l’ID en cache",
-        saveTip: "Enregistrez l’ID actuel pour une réutilisation rapide",
-        useTip: "Utiliser ID enregistré rapide; double-clic pour changer mode sauvegarde",
-        saveSuccess: "Enregistré dans le cache",
+        save: "Enregistrer comme ma salle",
+        use: "Remplir ma salle",
+        saveTip: "Enregistrez l’ID de salle actuel et remplissez-le plus tard en un clic",
+        saveTipAlreadySaved: "Cet ID de salle est déjà votre salle enregistrée",
+        useTip: "Remplit l’ID de salle enregistré dans le champ (rejoindre reste une étape séparée)",
+        saveSuccess: "Enregistré comme ma salle",
       },
       generateId: {
         simple: "ID Simple",

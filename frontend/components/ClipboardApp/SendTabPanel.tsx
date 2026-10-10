@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import CachedIdActionButton from "@/components/ClipboardApp/CachedIdActionButton";
+import { ClearableRoomIdInput } from "@/components/ClipboardApp/ClearableRoomIdInput";
+import { UseCachedIdButton } from "@/components/ClipboardApp/UseCachedIdButton";
+import { SaveCachedIdButton } from "@/components/ClipboardApp/SaveCachedIdButton";
 import { ClipboardSideMessage } from "@/components/ClipboardApp/ClipboardSideMessage";
 import { getSenderRoomStatusText } from "@/lib/app/roomPresentation";
 import { setSenderRoomSelection } from "@/lib/app/WebRTCStoreCoordinator";
@@ -18,6 +19,7 @@ import type { CustomFile, FileMeta } from "@/types/webrtc";
 import { useClipboardAppMessageDispatcher } from "@/hooks/useClipboardAppMessages";
 
 import { useFileTransferStore } from "@/stores/fileTransferStore";
+import { useCachedRoomId } from "@/lib/app/useCachedRoomId";
 
 // Dynamically import the RichTextEditor
 const RichTextEditor = dynamic(
@@ -62,6 +64,7 @@ export function SendTabPanel({
   const tStatus = useTranslations("text.clipboard.status");
   const tCommon = useTranslations("text.common");
   const showSenderMessage = useClipboardAppMessageDispatcher("sender");
+  const { cachedId, refreshCachedId } = useCachedRoomId();
   // Get the status from the store
   const {
     senderDraftContent: shareContent,
@@ -84,9 +87,8 @@ export function SendTabPanel({
     setInputFieldValue(currentValidatedShareRoomId);
   }, [currentValidatedShareRoomId]);
 
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
+  const handleValueChange = useCallback(
+    (newValue: string) => {
       setInputFieldValue(newValue); // Immediately update the input field display
       processRoomIdInput(newValue); // Call the handler function from the hook, which will perform debounced validation
     },
@@ -188,13 +190,14 @@ export function SendTabPanel({
             {tTitles("share")}
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Input
-              aria-label="Share Room ID"
-              data-testid="sender-room-id-input"
+            <ClearableRoomIdInput
               value={inputFieldValue}
-              onChange={handleInputChange}
+              onChange={handleValueChange}
+              clearLabel={tActions("clearRoomId")}
+              inputAriaLabel="Share Room ID"
+              inputTestId="sender-room-id-input"
+              clearTestId="sender-room-id-clear"
               onPaste={handlePaste}
-              className="flex-1 min-w-0"
               placeholder={tPlaceholders("roomId")}
             />
             <Button
@@ -207,16 +210,18 @@ export function SendTabPanel({
                 ? tGenerateId("random")
                 : tGenerateId("simple")}
             </Button>
-            {/* Save/Use Cached ID Button in between */}
-            <CachedIdActionButton
-              getInputValue={() => inputFieldValue}
-              setInputValue={setInputFieldValue}
+            {cachedId && (
+              <UseCachedIdButton
+                onUse={() => handleValueChange(cachedId)}
+                disabled={isSenderInRoom}
+              />
+            )}
+            <SaveCachedIdButton
+              inputValue={inputFieldValue}
+              cachedId={cachedId}
               showMessage={showSenderMessage}
+              onSaved={refreshCachedId}
               disabled={isSenderInRoom}
-              onUseCached={(id) => {
-                // Immediately join as sender after applying cached ID
-                joinRoom(true, id.trim());
-              }}
             />
             <Button
               className="w-full sm:w-auto px-4"
