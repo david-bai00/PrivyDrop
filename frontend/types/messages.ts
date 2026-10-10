@@ -48,6 +48,8 @@ export type Privacy = {
     informationCollectionParagraph: string;
     dataStorage: string;
     dataStorageParagraph: string;
+    analytics: string;
+    analyticsParagraph: string;
     thirdPartyServices: string;
     thirdPartyServicesParagraph: string;
     amendments: string;

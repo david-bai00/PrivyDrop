@@ -4,7 +4,11 @@ import { getMessages } from "next-intl/server";
 import type { Messages } from "@/types/messages";
 import { supportedLocales, type Locale } from "@/constants/i18n-config";
 import JsonLd from "@/components/seo/JsonLd";
-import { buildFaqJsonLd } from "@/lib/seo/jsonld";
+import {
+  buildFaqJsonLd,
+  buildOpenGraphImages,
+  buildTwitterCard,
+} from "@/lib/seo/jsonld";
 
 export async function generateMetadata({
   params,
@@ -32,7 +36,9 @@ export async function generateMetadata({
       siteName: "PrivyDrop",
       locale: lang,
       type: "website",
+      images: [buildOpenGraphImages()],
     },
+    twitter: buildTwitterCard(),
   };
 }
 

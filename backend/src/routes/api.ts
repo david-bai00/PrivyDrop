@@ -17,6 +17,7 @@ import { Router, RequestHandler } from "express";
 import { redis } from "../services/redis";
 import * as roomService from "../services/room";
 import { ReferrerTrack, FunnelTrackEvent, LogMessage } from "../types/room";
+import { checkTrackRateLimit } from "../services/rateLimit";
 
 const router = Router();
 
@@ -104,6 +105,39 @@ const TRACK_TTL_SECONDS = 30 * 24 * 60 * 60;
 const MAX_SESSION_KEYS_PER_DAY = 20000;
 
 /**
+ * Events the client is allowed to report. Anything else collapses into
+ * `unknown_event` so a caller cannot create unbounded hash fields, which would
+ * turn a public endpoint into a Redis memory amplifier.
+ */
+const KNOWN_EVENTS = new Set([
+  "visit",
+  "room_join",
+  "share_link_copy",
+  "share_qr_view",
+  "receive_join",
+  "receive_invite_landing",
+  "transfer_start",
+  "transfer_complete",
+  "transfer_fail",
+  "cached_id_use",
+  "secondary_action",
+]);
+
+const KNOWN_LOCALES = new Set(["en", "zh", "ja", "es", "de", "fr", "ko"]);
+
+/**
+ * Landing paths are a small closed set in practice, but the parameter is
+ * attacker-controlled, so collapse it to the known route shapes.
+ */
+const normalizePath = (value: string): string => {
+  if (value === "/") return "/";
+  if (/^\/[a-z]{2}$/.test(value)) return value;
+  if (/^\/[a-z]{2}\/(blog|features|about|faq|help|privacy|terms)$/.test(value)) return value;
+  if (/^\/[a-z]{2}\/blog\/.+/.test(value)) return value.replace(/\/$/, "");
+  return "/other";
+};
+
+/**
  * Keep attacker-controlled strings to a boring, index-safe alphabet. These
  * values end up as Redis hash fields and are read back by export scripts, so a
  * stray colon or newline must never be able to forge a dimension.
@@ -150,13 +184,25 @@ const setTrackHandler: RequestHandler<{}, any, FunnelTrackEvent | ReferrerTrack>
   }
 
   try {
+    const rate = await checkTrackRateLimit(req.ip ?? "unknown");
+    if (!rate.allowed) {
+      // Analytics are best-effort: drop silently rather than surface an error
+      // to a page that is otherwise fine.
+      res.status(204).end();
+      return;
+    }
+
     const body = (req.body ?? {}) as FunnelTrackEvent;
     const event = sanitizeToken(body.event, "visit", 40);
     const ref = sanitizeToken(body.ref, "direct", 64);
-    const locale = sanitizeToken(body.locale, "unknown", 12);
-    const path = sanitizeToken(body.path, "/", 120);
+    const locale = KNOWN_LOCALES.has(body.locale as string)
+      ? sanitizeToken(body.locale, "unknown", 2)
+      : "unknown";
+    const path = normalizePath(sanitizeToken(body.path, "/", 120));
     const sid = sanitizeToken(body.sid, "", 64);
     const date = parseTrackDate(body.timestamp);
+
+    const eventName = KNOWN_EVENTS.has(event) ? event : "unknown_event";
 
     const tx = redis
       .multi()
@@ -164,13 +210,13 @@ const setTrackHandler: RequestHandler<{}, any, FunnelTrackEvent | ReferrerTrack>
       .hincrby(`referrers:daily:${date}`, ref, 1)
       .expire(`referrers:daily:${date}`, TRACK_TTL_SECONDS)
       // Funnel steps.
-      .hincrby(`funnel:daily:${date}`, event, 1)
+      .hincrby(`funnel:daily:${date}`, eventName, 1)
       .expire(`funnel:daily:${date}`, TRACK_TTL_SECONDS)
-      .hincrby(`funnel:ref:daily:${date}`, `${event}|${ref}`, 1)
+      .hincrby(`funnel:ref:daily:${date}`, `${eventName}|${ref}`, 1)
       .expire(`funnel:ref:daily:${date}`, TRACK_TTL_SECONDS)
-      .hincrby(`funnel:locale:daily:${date}`, `${event}|${locale}`, 1)
+      .hincrby(`funnel:locale:daily:${date}`, `${eventName}|${locale}`, 1)
       .expire(`funnel:locale:daily:${date}`, TRACK_TTL_SECONDS)
-      .hincrby(`funnel:path:daily:${date}`, `${event}|${path}`, 1)
+      .hincrby(`funnel:path:daily:${date}`, `${eventName}|${path}`, 1)
       .expire(`funnel:path:daily:${date}`, TRACK_TTL_SECONDS);
 
     if (sid) {

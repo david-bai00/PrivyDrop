@@ -9,6 +9,49 @@ export const absoluteUrl = (path: string, siteUrl = getSiteUrl()): string => {
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
 };
 
+/**
+ * Site-wide Open Graph / Twitter card fallback.
+ *
+ * Next.js replaces top-level metadata fields instead of deep-merging them, so a
+ * page that defines its own `openGraph` block drops any image inherited from a
+ * parent layout. Every page therefore spreads these helpers explicitly.
+ */
+export const OG_DEFAULT_IMAGE_PATH = "/og/og-default.png";
+
+export const OG_DEFAULT_IMAGE_ALT =
+  "PrivyDrop — peer-to-peer file and clipboard sharing: no account, no size limit, files never touch our server";
+
+export function buildSocialImage(siteUrl = getSiteUrl()) {
+  return {
+    url: absoluteUrl(OG_DEFAULT_IMAGE_PATH, siteUrl),
+    width: 1200,
+    height: 630,
+    alt: OG_DEFAULT_IMAGE_ALT,
+  };
+}
+
+/** Images block for an `openGraph` entry. Pass a custom relative path for posts. */
+export function buildOpenGraphImages(imagePath?: string, siteUrl = getSiteUrl()) {
+  const path = imagePath || OG_DEFAULT_IMAGE_PATH;
+  return {
+    url: absoluteUrl(path, siteUrl),
+    width: 1200,
+    height: 630,
+    alt: OG_DEFAULT_IMAGE_ALT,
+  };
+}
+
+/** Twitter card block. `summary_large_image` is what makes the card render large. */
+export function buildTwitterCard(imagePath?: string, siteUrl = getSiteUrl()) {
+  return {
+    card: "summary_large_image" as const,
+    title: "PrivyDrop",
+    description:
+      "Peer-to-peer file and clipboard sharing. No account, no size limit, files never touch our server.",
+    images: [absoluteUrl(imagePath || OG_DEFAULT_IMAGE_PATH, siteUrl)],
+  };
+}
+
 export function buildOrganizationJsonLd(params: {
   siteUrl?: string;
   name?: string;

@@ -84,6 +84,9 @@ export const zh: Messages = {
         dataStorage: "数据存储和安全",
         dataStorageParagraph:
           "我们不在服务器上存储任何数据。所有文件传输和剪贴板共享都使用端到端加密，确保信息安全且仅供预期接收者访问。传输完成后，数据将从系统中删除。",
+        analytics: "匿名使用统计",
+        analyticsParagraph:
+          "为了了解哪些功能真正被使用、传输功能是否正常，我们会统计匿名的聚合数据：您访问的页面路径（仅路径，不含链接参数，因此您的房间ID不会被发送）、界面语言，以及分享链接上携带的来源标记（如 ?ref=linux.do）。我们不使用 Cookie、不做跨站追踪、不做设备指纹，也不接入任何第三方统计服务。统计数据仅保存在我们自己的服务器上，30天后自动过期，其中不包含任何可以识别您身份的信息。",
         thirdPartyServices: "第三方服务",
         thirdPartyServicesParagraph:
           "PrivyDrop不与任何第三方服务或平台集成。我们不会与任何第三方共享或出售您的数据。",

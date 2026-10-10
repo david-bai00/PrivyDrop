@@ -77,6 +77,9 @@ export const fr: Messages = {
         dataStorage: "Stockage et sécurité des données",
         dataStorageParagraph:
           "Nous ne stockons aucune de vos données sur nos serveurs. Tous les transferts de fichiers et le partage de presse-papiers sont gérés par un chiffrement de bout en bout, garantissant que vos informations restent sécurisées et accessibles uniquement au destinataire prévu. Une fois le transfert terminé, les données sont supprimées de nos systèmes.",
+        analytics: "Statistiques d'utilisation anonymes",
+        analyticsParagraph:
+          "Pour savoir quelles fonctionnalités sont réellement utilisées et si les transferts fonctionnent, nous comptons des données agrégées anonymes : le chemin de la page visitée (le chemin uniquement, jamais la chaîne de requête, donc votre ID de salle n'est jamais envoyé), la langue de l'interface et le tag de campagne d'un lien entrant (comme ?ref=linux.do). Nous n'utilisons aucun cookie, aucun suivi intersites, aucune empreinte d'appareil et aucun service d'analyse tiers. Les compteurs sont conservés sur nos propres serveurs, expirent après 30 jours et ne contiennent rien qui permette de vous identifier.",
         thirdPartyServices: "Services tiers",
         thirdPartyServicesParagraph:
           "PrivyDrop ne s'intègre à aucun service ou plateforme tiers. Nous ne partageons ni ne vendons vos données à des tiers.",

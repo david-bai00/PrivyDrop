@@ -1,7 +1,15 @@
 // Utilities to cache a single room ID in browser localStorage
 // Works on client only; no-ops on server.
 
-const CACHED_KEY = "pd_cached_room_id_v1";
+/**
+ * localStorage key holding the reusable room ID.
+ *
+ * Exported so end-to-end specs can seed it without hardcoding a versioned
+ * literal that would silently rot on the next key bump.
+ */
+export const CACHED_ROOM_ID_STORAGE_KEY = "pd_cached_room_id_v1";
+
+const CACHED_KEY = CACHED_ROOM_ID_STORAGE_KEY;
 
 /**
  * Minimum room ID length that qualifies as a reusable long room ID.

@@ -2,6 +2,11 @@
 import { Metadata } from "next";
 import { getMessages } from "next-intl/server";
 import { getPostBySlug } from "@/lib/blog";
+import {
+  buildOpenGraphImages,
+  buildTwitterCard,
+  OG_DEFAULT_IMAGE_ALT,
+} from "@/lib/seo/jsonld";
 import { generateMetadata as generateBlogMetadata } from "../metadata";
 import { supportedLocales } from "@/constants/i18n-config";
 import type { Messages } from "@/types/messages";
@@ -24,6 +29,9 @@ export async function generateMetadata({
    const messages = (await getMessages({ locale: lang })) as Messages;
    const blogWord = messages.text.navigation.blog;
   const blogCap = blogWord.charAt(0).toUpperCase() + blogWord.slice(1);
+
+  // Each post ships its own cover image; fall back to the site-wide card.
+  const coverImage = post.frontmatter.cover || undefined;
 
   return {
     title: `${post.frontmatter.title} | PrivyDrop ${blogCap}`,
@@ -48,6 +56,13 @@ export async function generateMetadata({
       publishedTime: post.frontmatter.date,
       modifiedTime: post.frontmatter.date,
       authors: post.frontmatter.author,
+      images: [
+        {
+          ...buildOpenGraphImages(coverImage),
+          alt: post.frontmatter.title || OG_DEFAULT_IMAGE_ALT,
+        },
+      ],
     },
+    twitter: buildTwitterCard(coverImage),
   };
 }

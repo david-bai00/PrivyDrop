@@ -82,6 +82,9 @@ export const en: Messages = {
         dataStorage: "Data Storage and Security",
         dataStorageParagraph:
           "We do not store any of your data on our servers. All file transfers and clipboard sharing are handled using end-to-end encryption, ensuring that your information remains secure and accessible only to the intended recipient. Once the transfer is complete, the data is removed from our systems.",
+        analytics: "Anonymous usage statistics",
+        analyticsParagraph:
+          "To learn which features are actually used and whether transfers work, we count anonymous aggregate data: the page path you visited (path only, never the query string, so your room ID is never sent), your interface language, and the campaign tag on an incoming link (such as ?ref=linux.do). We use no cookies, do no cross-site tracking, do no device fingerprinting, and use no third-party analytics. These counts live on our own servers, expire after 30 days, and contain nothing that identifies you.",
         thirdPartyServices: "Third-Party Services",
         thirdPartyServicesParagraph:
           "PrivyDrop does not integrate with any third-party services or platforms. We do not share or sell your data to any third parties.",
