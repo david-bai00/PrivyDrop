@@ -383,6 +383,8 @@ export const fr: Messages = {
         use: "Remplir ma salle",
         saveTip: "Enregistrez l’ID de salle actuel et remplissez-le plus tard en un clic",
         saveTipAlreadySaved: "Cet ID de salle est déjà votre salle enregistrée",
+        saveTipOverwrite: "Cela remplace l’ID de salle que vous avez déjà enregistré",
+        saveTipInRoom: "Quittez la salle avant d’enregistrer un ID de salle",
         useTip: "Remplit l’ID de salle enregistré dans le champ (rejoindre reste une étape séparée)",
         saveSuccess: "Enregistré comme ma salle",
       },

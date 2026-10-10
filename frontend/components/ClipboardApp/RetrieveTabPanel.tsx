@@ -165,7 +165,8 @@ export function RetrieveTabPanel({
               cachedId={cachedId}
               showMessage={showReceiverMessage}
               onSaved={refreshCachedId}
-              disabled={isReceiverInRoom}
+              isInRoom={isReceiverInRoom}
+              testId="receiver-save-room-id-button"
             />
           </div>
         </div>

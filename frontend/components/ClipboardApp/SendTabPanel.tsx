@@ -221,7 +221,8 @@ export function SendTabPanel({
               cachedId={cachedId}
               showMessage={showSenderMessage}
               onSaved={refreshCachedId}
-              disabled={isSenderInRoom}
+              isInRoom={isSenderInRoom}
+              testId="sender-save-room-id-button"
             />
             <Button
               className="w-full sm:w-auto px-4"

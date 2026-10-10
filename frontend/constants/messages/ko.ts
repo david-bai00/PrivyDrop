@@ -330,6 +330,8 @@ export const ko: Messages = {
         use: "내 방 입력",
         saveTip: "현재 방 ID를 저장하고 다음에 한 번 클릭으로 입력할 수 있어요",
         saveTipAlreadySaved: "이 방 ID는 이미 내 방으로 저장되어 있어요",
+        saveTipOverwrite: "이미 저장된 방 ID를 덮어써요",
+        saveTipInRoom: "방 ID를 저장하려면 먼저 방에서 나가세요",
         useTip: "저장된 방 ID를 입력란에 채웁니다(방 참가는 별도 단계입니다)",
         saveSuccess: "내 방으로 저장되었습니다",
       },

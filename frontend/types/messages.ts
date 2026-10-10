@@ -257,6 +257,8 @@ export type Clipboard = {
     use: string;
     saveTip: string;
     saveTipAlreadySaved: string;
+    saveTipOverwrite: string;
+    saveTipInRoom: string;
     useTip: string;
     saveSuccess: string;
   };

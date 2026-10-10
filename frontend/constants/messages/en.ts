@@ -409,6 +409,8 @@ export const en: Messages = {
         use: "Fill in my room",
         saveTip: "Save the current room ID and fill it back in with one click later",
         saveTipAlreadySaved: "This room ID is already your saved room",
+        saveTipOverwrite: "This replaces the room ID you already saved",
+        saveTipInRoom: "Leave the room before saving a room ID",
         useTip: "Fill the saved room ID into the input (joining stays a separate step)",
         saveSuccess: "Saved as my room",
       },

@@ -404,6 +404,8 @@ export const zh: Messages = {
         use: "填入我的房间",
         saveTip: "把当前房间ID保存下来，下次一键填入",
         saveTipAlreadySaved: "当前房间号已经是我的房间",
+        saveTipOverwrite: "会覆盖你已保存的房间号",
+        saveTipInRoom: "已加入房间，离开房间后才能保存",
         useTip: "把已保存的房间ID填入输入框（不会自动加入房间）",
         saveSuccess: "已保存为我的房间",
       },

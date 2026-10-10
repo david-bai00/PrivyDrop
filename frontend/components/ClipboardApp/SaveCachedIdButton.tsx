@@ -1,73 +1,82 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import Tooltip from "@/components/Tooltip";
+import { setCachedId } from "@/lib/roomIdCache";
 import {
-  MIN_CACHEABLE_ROOM_ID_LENGTH,
-  setCachedId,
-} from "@/lib/roomIdCache";
+  decideSaveCachedIdState,
+} from "@/lib/app/cachedIdPresentation";
 import type { SideMessageDispatcher } from "@/hooks/useClipboardAppMessages";
 
 type Props = {
   /** Current room ID input value; drives whether saving is meaningful. */
   inputValue: string;
-  /** Currently cached room ID, used to detect the already-saved no-op case. */
+  /** Currently saved room ID, used to detect the already-saved no-op case. */
   cachedId?: string | null;
+  /** Whether this panel is currently connected to a room. */
+  isInRoom?: boolean;
   /** Reports the save result to the panel side message channel. */
   showMessage: SideMessageDispatcher;
   /** Called after the cache is written so the caller can refresh its view. */
   onSaved?: () => void;
   className?: string;
-  disabled?: boolean;
+  testId?: string;
 };
 
 /**
  * Save the current room ID as the reusable "my room" ID.
  *
- * Renders only when the input holds a long room ID (>= MIN_CACHEABLE_ROOM_ID_LENGTH).
- * Visibility follows state, but the button's meaning never changes: it always
- * writes the input value to localStorage and nothing else.
+ * The button has one constant meaning: write the input value to localStorage
+ * and nothing else. Whether that write is worth offering is decided by
+ * decideSaveCachedIdState, and the same decision drives both the rendered
+ * state and the click guard.
  *
- * When the input already equals the cached room ID the button stays visible but
- * disabled: the action would be a no-op, and keeping the affordance in place
- * still tells the user "this is a valid long room ID, and it is already saved".
+ * When the input already equals the saved room ID the button stays visible but
+ * disabled: the action would rewrite the same value, and keeping the
+ * affordance in place still tells the user that this is a valid long room ID
+ * which is already saved. Hiding it instead would make the button row jump
+ * every time the input crosses the cacheable length.
  */
 export function SaveCachedIdButton({
   inputValue,
   cachedId,
+  isInRoom = false,
   showMessage,
   onSaved,
   className = "w-full sm:w-auto px-4",
-  disabled = false,
+  testId,
 }: Props) {
   const tCachedId = useTranslations("text.clipboard.cachedId");
-  const isAlreadySaved =
-    !!cachedId && inputValue.trim() === cachedId.trim();
+  const state = useMemo(
+    () => decideSaveCachedIdState({ inputValue, cachedId, isInRoom }),
+    [inputValue, cachedId, isInRoom]
+  );
 
   const handleClick = useCallback(() => {
-    const trimmed = inputValue.trim();
-    if (trimmed.length < MIN_CACHEABLE_ROOM_ID_LENGTH) return;
-    if (trimmed === cachedId?.trim()) return;
+    // Guard on the rendered state rather than re-deriving it, so an enabled
+    // button can never perform a write that changes nothing.
+    if (!state.visible || state.disabled) return;
 
-    setCachedId(trimmed);
+    setCachedId(inputValue.trim());
     showMessage(tCachedId("saveSuccess"));
     onSaved?.();
-  }, [inputValue, cachedId, showMessage, tCachedId, onSaved]);
+  }, [state, inputValue, showMessage, tCachedId, onSaved]);
 
-  if (inputValue.trim().length < MIN_CACHEABLE_ROOM_ID_LENGTH) {
+  if (!state.visible) {
     return null;
   }
 
   return (
-    <Tooltip
-      content={tCachedId(isAlreadySaved ? "saveTipAlreadySaved" : "saveTip")}
-    >
+    <Tooltip content={tCachedId(state.tooltipKey)}>
+      {/* The span keeps the tooltip reachable: the button can be disabled, and a
+          disabled button does not emit pointer events of its own. */}
       <span className="inline-block">
         <Button
           variant="outline"
           className={className}
           onClick={handleClick}
-          disabled={disabled || isAlreadySaved}
+          disabled={state.disabled}
+          data-testid={testId}
         >
           {tCachedId("save")}
         </Button>

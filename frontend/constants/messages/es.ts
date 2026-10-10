@@ -410,6 +410,8 @@ export const es: Messages = {
         use: "Rellenar mi sala",
         saveTip: "Guarda el ID de sala actual y rellénalo con un clic más tarde",
         saveTipAlreadySaved: "Este ID de sala ya es tu sala guardada",
+        saveTipOverwrite: "Esto reemplaza el ID de sala que ya guardaste",
+        saveTipInRoom: "Sal de la sala antes de guardar un ID de sala",
         useTip: "Rellena el ID de sala guardado en el campo (unirse sigue siendo un paso aparte)",
         saveSuccess: "Guardado como mi sala",
       },

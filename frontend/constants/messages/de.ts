@@ -330,6 +330,8 @@ export const de: Messages = {
         use: "Meinen Raum eintragen",
         saveTip: "Aktuelle Raum-ID speichern und später mit einem Klick wieder eintragen",
         saveTipAlreadySaved: "Diese Raum-ID ist bereits dein gespeicherter Raum",
+        saveTipOverwrite: "Ersetzt die bereits gespeicherte Raum-ID",
+        saveTipInRoom: "Verlasse den Raum, bevor du eine Raum-ID speicherst",
         useTip: "Trägt die gespeicherte Raum-ID ins Eingabefeld ein (Beitreten bleibt ein separater Schritt)",
         saveSuccess: "Als mein Raum gespeichert",
       },

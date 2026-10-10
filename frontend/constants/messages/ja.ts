@@ -330,6 +330,8 @@ export const ja: Messages = {
         use: "マイルームを記入",
         saveTip: "現在のルームIDを保存し、次回ワンクリックで入力できます",
         saveTipAlreadySaved: "このルームIDはすでにマイルームとして保存されています",
+        saveTipOverwrite: "保存済みのルームIDを上書きします",
+        saveTipInRoom: "ルームIDを保存するには、まずルームから退出してください",
         useTip: "保存済みのルームIDを入力欄に記入します（部屋への参加は別操作です）",
         saveSuccess: "マイルームとして保存しました",
       },
