@@ -28,3 +28,16 @@ export type {
 const rateLimitService = createRateLimitService(redis);
 
 export const checkRateLimit = rateLimitService.checkRateLimit;
+
+/**
+ * Tracking is written on every page view, so it needs a far higher ceiling than
+ * room joins. The endpoint is still unauthenticated, so the limit exists to stop
+ * a single client from writing unbounded Redis fields, not to gate real users.
+ */
+const trackRateLimitService = createRateLimitService(redis, {
+  prefix: "ratelimit:track:",
+  windowSeconds: 60,
+  limit: 120,
+});
+
+export const checkTrackRateLimit = trackRateLimitService.checkRateLimit;

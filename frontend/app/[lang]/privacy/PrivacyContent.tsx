@@ -13,6 +13,8 @@ export default function PrivacyContent() {
       <p className="text-lg mb-4">{t("sections.informationCollectionParagraph")}</p>
       <h2 className="text-2xl font-bold mb-4">{t("sections.dataStorage")}</h2>
       <p className="text-lg mb-4">{t("sections.dataStorageParagraph")}</p>
+        <h2 className="text-2xl font-bold mb-4">{t("sections.analytics")}</h2>
+        <p className="text-lg mb-4">{t("sections.analyticsParagraph")}</p>
       <h2 className="text-2xl font-bold mb-4">{t("sections.thirdPartyServices")}</h2>
       <p className="text-lg mb-4">{t("sections.thirdPartyServicesParagraph")}</p>
       <h2 className="text-2xl font-bold mb-4">{t("sections.amendments")}</h2>

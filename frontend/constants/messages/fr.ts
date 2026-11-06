@@ -77,6 +77,9 @@ export const fr: Messages = {
         dataStorage: "Stockage et sécurité des données",
         dataStorageParagraph:
           "Nous ne stockons aucune de vos données sur nos serveurs. Tous les transferts de fichiers et le partage de presse-papiers sont gérés par un chiffrement de bout en bout, garantissant que vos informations restent sécurisées et accessibles uniquement au destinataire prévu. Une fois le transfert terminé, les données sont supprimées de nos systèmes.",
+        analytics: "Statistiques d'utilisation anonymes",
+        analyticsParagraph:
+          "Pour savoir quelles fonctionnalités sont réellement utilisées et si les transferts fonctionnent, nous comptons des données agrégées anonymes : le chemin de la page visitée (le chemin uniquement, jamais la chaîne de requête, donc votre ID de salle n'est jamais envoyé), la langue de l'interface et le tag de campagne d'un lien entrant (comme ?ref=linux.do). Nous n'utilisons aucun cookie, aucun suivi intersites, aucune empreinte d'appareil et aucun service d'analyse tiers. Les compteurs sont conservés sur nos propres serveurs, expirent après 30 jours et ne contiennent rien qui permette de vous identifier.",
         thirdPartyServices: "Services tiers",
         thirdPartyServicesParagraph:
           "PrivyDrop ne s'intègre à aucun service ou plateforme tiers. Nous ne partageons ni ne vendons vos données à des tiers.",
@@ -317,6 +320,7 @@ export const fr: Messages = {
         sync: "Synchroniser",
         syncLoading: "Synchronisé",
         readClipboard: "Coller l'ID de salle",
+        clearRoomId: "Effacer l'ID de salle",
       },
       placeholders: {
         roomId: "entrez l'ID de salle",
@@ -378,11 +382,14 @@ export const fr: Messages = {
         error: "Impossible de définir l'emplacement de sauvegarde.",
       },
       cachedId: {
-        save: "Enregistrer l’ID",
-        use: "Utiliser l’ID en cache",
-        saveTip: "Enregistrez l’ID actuel pour une réutilisation rapide",
-        useTip: "Utiliser ID enregistré rapide; double-clic pour changer mode sauvegarde",
-        saveSuccess: "Enregistré dans le cache",
+        save: "Enregistrer comme ma salle",
+        use: "Remplir ma salle",
+        saveTip: "Enregistrez l’ID de salle actuel et remplissez-le plus tard en un clic",
+        saveTipAlreadySaved: "Cet ID de salle est déjà votre salle enregistrée",
+        saveTipOverwrite: "Cela remplace l’ID de salle que vous avez déjà enregistré",
+        saveTipInRoom: "Quittez la salle avant d’enregistrer un ID de salle",
+        useTip: "Remplit l’ID de salle enregistré dans le champ (rejoindre reste une étape séparée)",
+        saveSuccess: "Enregistré comme ma salle",
       },
       generateId: {
         simple: "ID Simple",

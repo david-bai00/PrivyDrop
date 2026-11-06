@@ -1,7 +1,23 @@
 // Utilities to cache a single room ID in browser localStorage
 // Works on client only; no-ops on server.
 
-const CACHED_KEY = "pd_cached_room_id_v1";
+/**
+ * localStorage key holding the reusable room ID.
+ *
+ * Exported so end-to-end specs can seed it without hardcoding a versioned
+ * literal that would silently rot on the next key bump.
+ */
+export const CACHED_ROOM_ID_STORAGE_KEY = "pd_cached_room_id_v1";
+
+const CACHED_KEY = CACHED_ROOM_ID_STORAGE_KEY;
+
+/**
+ * Minimum room ID length that qualifies as a reusable long room ID.
+ *
+ * Short IDs (4 chars) are one-shot rooms and must not be cached, otherwise a
+ * stale short ID would silently prefill the receiver input on every visit.
+ */
+export const MIN_CACHEABLE_ROOM_ID_LENGTH = 8;
 
 function isClient() {
   return typeof window !== "undefined";
@@ -20,7 +36,11 @@ export function getCachedId(): string | null {
 export function setCachedId(id: string): void {
   if (!isClient()) return;
   try {
-    window.localStorage.setItem(CACHED_KEY, id);
+    const trimmed = id.trim();
+    // Guard the invariant at the only write path so no caller can cache a
+    // short one-shot room ID, regardless of what the UI layer allows.
+    if (trimmed.length < MIN_CACHEABLE_ROOM_ID_LENGTH) return;
+    window.localStorage.setItem(CACHED_KEY, trimmed);
   } catch (_) {
     // ignore
   }

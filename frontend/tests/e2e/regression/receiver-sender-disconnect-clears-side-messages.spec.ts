@@ -55,7 +55,7 @@ test("clears stale receiver side messages after the sender disconnects", async (
       "In the room—establishing a direct P2P connection…",
       "Reconnecting…",
       "Connection restored",
-      "Saved to cache",
+      "Saved as my room",
       "The room you are trying to join does not exist. Only the sender can create a room.",
     ];
 

@@ -10,7 +10,9 @@ import { E2E_TIMEOUT } from "../helpers/e2eConfig";
 
 const CACHE_KEY = "pd_cached_room_id_v1";
 
-test("auto-joins the receiver from a cached room id", async ({ browser }, testInfo) => {
+test("prefills the receiver from a cached room id without joining until the user asks", async ({
+  browser,
+}, testInfo) => {
   const roomId = `e2e-receiver-cached-${Date.now()}`;
   const senderConsoleErrors: string[] = [];
   const receiverConsoleErrors: string[] = [];
@@ -50,13 +52,24 @@ test("auto-joins the receiver from a cached room id", async ({ browser }, testIn
     await expect(receiverPage.getByTestId("receiver-room-id-input")).toHaveValue(roomId, {
       timeout: E2E_TIMEOUT.short,
     });
-    await waitForText(receiverStatus(receiverPage), "Connected", E2E_TIMEOUT.long);
-    await waitForText(senderStatus(senderPage), "2 People in the room", E2E_TIMEOUT.long);
-
     await expect(receiverPage.getByTestId("retrieve-tab-button")).toHaveAttribute(
       "aria-selected",
       "true"
     );
+
+    // Prefill alone must not establish a connection: joining stays explicit.
+    await expect(receiverPage.getByTestId("receiver-join-room-button")).toBeEnabled();
+    await expect(receiverPage.getByTestId("receiver-leave-room-button")).toBeDisabled();
+    await expect(receiverStatus(receiverPage)).toContainText(
+      "You can accept an invitation to join the room",
+      { timeout: E2E_TIMEOUT.long }
+    );
+    await expect(senderStatus(senderPage)).toContainText("You're the only one here");
+
+    // Only the explicit join action connects.
+    await receiverPage.getByTestId("receiver-join-room-button").click();
+    await waitForText(receiverStatus(receiverPage), "Connected", E2E_TIMEOUT.long);
+    await waitForText(senderStatus(senderPage), "2 People in the room", E2E_TIMEOUT.long);
     await expect(receiverPage.getByTestId("receiver-join-room-button")).toBeDisabled();
     await expect(receiverPage.getByTestId("receiver-leave-room-button")).toBeEnabled();
     expect(senderConsoleErrors).toEqual([]);

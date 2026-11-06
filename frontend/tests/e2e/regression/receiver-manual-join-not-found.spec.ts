@@ -7,7 +7,7 @@ const CACHE_KEY = "pd_cached_room_id_v1";
 const NOT_FOUND_TEXT =
   "The room you are trying to join does not exist. Only the sender can create a room.";
 
-test("keeps receiver retry affordances when cached auto-join lands on notFound", async ({
+test("keeps receiver retry affordances when an explicit join lands on notFound", async ({
   browser,
 }, testInfo) => {
   const cachedRoomId = `e2e-missing-cached-room-${Date.now()}`;
@@ -35,6 +35,13 @@ test("keeps receiver retry affordances when cached auto-join lands on notFound",
     await expect(page.getByTestId("receiver-room-id-input")).toHaveValue(cachedRoomId, {
       timeout: E2E_TIMEOUT.short,
     });
+
+    // Prefill must not attempt a join, so no error surfaces on tab switch.
+    await expect(page.getByTestId("retrieve-panel")).not.toContainText(NOT_FOUND_TEXT);
+    await expect(page.getByTestId("receiver-join-room-button")).toBeEnabled();
+    await expect(page.getByTestId("receiver-leave-room-button")).toBeDisabled();
+
+    await page.getByTestId("receiver-join-room-button").click();
     await expect(page.getByTestId("retrieve-panel")).toContainText(NOT_FOUND_TEXT, {
       timeout: E2E_TIMEOUT.long,
     });
@@ -42,9 +49,6 @@ test("keeps receiver retry affordances when cached auto-join lands on notFound",
       "You can accept an invitation to join the room",
       { timeout: E2E_TIMEOUT.long }
     );
-
-    await expect(page.getByTestId("receiver-join-room-button")).toBeEnabled();
-    await expect(page.getByTestId("receiver-leave-room-button")).toBeDisabled();
     expect(consoleErrors).toEqual([]);
 
     await writeJsonArtifact(testInfo, "result.json", {

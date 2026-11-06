@@ -5,6 +5,7 @@ import { ArticleListItem } from "@/components/blog/ArticleListItem";
 import { supportedLocales, type Locale } from "@/constants/i18n-config";
 import { unslugifyTag } from "@/utils/tagUtils";
 import type { Messages } from "@/types/messages";
+import { buildOpenGraphImages, buildTwitterCard } from "@/lib/seo/jsonld";
 
 export async function generateMetadata({
   params: { tag, lang },
@@ -34,7 +35,9 @@ export async function generateMetadata({
       siteName: "PrivyDrop",
       locale,
       type: "website",
+      images: [buildOpenGraphImages()],
     },
+    twitter: buildTwitterCard(),
   };
 }
 export default async function TagPage({

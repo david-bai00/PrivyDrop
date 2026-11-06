@@ -42,7 +42,7 @@ test("fills the receiver input from cache without auto-joining after a notFound 
       timeout: E2E_TIMEOUT.long,
     });
 
-    await page.getByRole("button", { name: "Use cached ID" }).click();
+    await page.getByRole("button", { name: "Fill in my room" }).click();
     await expect(receiverInput).toHaveValue(cachedRoomId, { timeout: E2E_TIMEOUT.short });
     await expect(receiverStatus).toContainText("You can accept an invitation to join the room");
     await expect(page.getByTestId("receiver-join-room-button")).toBeEnabled();

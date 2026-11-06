@@ -76,14 +76,32 @@ export const checkRoom = async (roomId: string): Promise<boolean> => {
   return data?.available ?? false;
 };
 
-// Set tracking information
-export const setTrack = async (ref: string) => {
+/**
+ * Send a first-party funnel event. Kept backward compatible with the historical
+ * `{ ref, timestamp }` payload so older cached clients keep working.
+ */
+export const setTrackEvent = async (event: {
+  event: string;
+  ref: string;
+  path?: string;
+  locale?: string;
+  sid?: string;
+  timestamp: string;
+}) => {
   const options = getFetchOptions({
     method: "POST",
-    body: JSON.stringify({ ref, timestamp: new Date().toISOString() }),
+    body: JSON.stringify(event),
   });
   return apiCall<void>(API_ROUTES.set_track, options);
 };
+
+/** @deprecated Use {@link setTrackEvent}; kept so existing call sites still type-check. */
+export const setTrack = async (ref: string) =>
+  setTrackEvent({
+    event: "visit",
+    ref,
+    timestamp: new Date().toISOString(),
+  });
 
 // Log debug messages
 export const postLogToBackend = async (message: string) => {

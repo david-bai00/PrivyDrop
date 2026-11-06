@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { getMessages } from "next-intl/server";
 import type { Messages } from "@/types/messages";
 import type { Locale } from "@/constants/i18n-config";
+import { buildOpenGraphImages, buildTwitterCard } from "@/lib/seo/jsonld";
 
 export async function generateMetadata({
   params,
@@ -30,6 +31,8 @@ export async function generateMetadata({
       siteName: "PrivyDrop",
       locale: lang,
       type: "website",
+      images: [buildOpenGraphImages()],
     },
+    twitter: buildTwitterCard(),
   };
 }

@@ -1,6 +1,6 @@
 ---
-title: "One‑Click Reconnect, Rock‑Solid: A Deep Dive into Cached‑ID Auto‑Join and Resilient Reconnect in PrivyDrop"
-description: "New on the receiver: cached‑ID auto‑join and full‑path reconnect for smoother flows — auto room join, one‑tap direct connect, double‑tap to update the cache, and steady recovery on flaky networks."
+title: "One‑Click Reconnect, Rock‑Solid: A Deep Dive into Saved Rooms and Resilient Reconnect in PrivyDrop"
+description: "Save a long room ID and reuse it later, plus full‑path reconnect for smoother flows and steady recovery on flaky networks."
 date: "2025-11-25"
 author: "david bai"
 cover: "/blog-assets/cached-id-reconnect.webp"
@@ -9,6 +9,9 @@ status: "published"
 ---
 
 ![](/blog-assets/cached-id-reconnect.webp)
+
+> ⚠️ **Version notice**
+> This article records how an earlier version behaved. In the current version, filling in a saved room and joining that room are separate steps: the cached ID is only prefilled into the input, and you have to click “Join room” yourself; the old double‑click gesture on “Use cached ID” has been removed and is replaced by a dedicated “Save as my room” button. The “Reconnect” section below is unaffected and still applies.
 
 ## Introduction: Why “Auto‑Join” and “Reconnect” Matter
 
@@ -126,6 +129,8 @@ sequenceDiagram
 ---
 
 ## Try It (Hands‑On)
+
+> The steps below describe the version this article recorded; in the current version, follow the button names and steps shown in the app.
 
 Desktop quick try:
 

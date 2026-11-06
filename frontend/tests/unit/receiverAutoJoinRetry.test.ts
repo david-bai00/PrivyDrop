@@ -41,13 +41,6 @@ describe("receiverAutoJoinRetry", () => {
     expect(
       shouldRetryReceiverAutoJoin({
         ...base,
-        source: "auto:cached",
-      })
-    ).toBe(true);
-
-    expect(
-      shouldRetryReceiverAutoJoin({
-        ...base,
         source: "manual",
       })
     ).toBe(false);
@@ -97,7 +90,7 @@ describe("receiverAutoJoinRetry", () => {
     const wait = vi.fn(async () => undefined);
 
     const result = await runReceiverAutoJoinWithRetry({
-      source: "auto:cached",
+      source: "auto:url",
       roomId: "room-a",
       token: 4,
       getSnapshot: () => ({

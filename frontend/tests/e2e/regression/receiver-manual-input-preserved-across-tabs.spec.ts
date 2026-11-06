@@ -10,7 +10,7 @@ import { E2E_TIMEOUT } from "../helpers/e2eConfig";
 
 const CACHE_KEY = "pd_cached_room_id_v1";
 
-test("preserves manual receiver input instead of re-triggering cached auto join", async ({
+test("preserves manual receiver input instead of restoring the cached id", async ({
   browser,
 }, testInfo) => {
   const cachedRoomId = `e2e-cached-room-${Date.now()}`;
@@ -52,16 +52,9 @@ test("preserves manual receiver input instead of re-triggering cached auto join"
     await expect(receiverPage.getByTestId("receiver-room-id-input")).toHaveValue(cachedRoomId, {
       timeout: E2E_TIMEOUT.short,
     });
-    await waitForText(receiverStatus(receiverPage), "Connected", E2E_TIMEOUT.long);
-    await waitForText(senderStatus(senderPage), "2 People in the room", E2E_TIMEOUT.long);
-
-    await receiverPage.getByTestId("receiver-leave-room-button").click();
-    await waitForText(
-      receiverStatus(receiverPage),
-      "You can accept an invitation to join the room",
-      E2E_TIMEOUT.medium
-    );
-    await waitForText(senderStatus(senderPage), "You're the only one here", E2E_TIMEOUT.medium);
+    // The prefill is local only - no connection is made without an explicit join.
+    await expect(receiverPage.getByTestId("receiver-join-room-button")).toBeEnabled();
+    await expect(receiverPage.getByTestId("receiver-leave-room-button")).toBeDisabled();
 
     const receiverRoomIdInput = receiverPage.getByTestId("receiver-room-id-input");
     await receiverRoomIdInput.fill(manualRoomId);
@@ -73,6 +66,11 @@ test("preserves manual receiver input instead of re-triggering cached auto join"
     await expect(receiverPage.getByTestId("receiver-join-room-button")).toBeEnabled();
     await expect(receiverPage.getByTestId("receiver-leave-room-button")).toBeDisabled();
     await expect(receiverPage.getByTestId("retrieve-panel")).not.toContainText("Connected");
+    await waitForText(
+      senderStatus(senderPage),
+      "You're the only one here",
+      E2E_TIMEOUT.medium
+    );
     expect(senderConsoleErrors).toEqual([]);
     expect(receiverConsoleErrors).toEqual([]);
 

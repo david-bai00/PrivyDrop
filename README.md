@@ -131,6 +131,7 @@ We provide detailed documentation to help you dive deeper into the project's des
 ## 🔗 Related Projects
 
 - [**HandyXlate**](https://www.handyxlate.app) — an Android screen translation app built by the same author with the same privacy-first approach: on-device OCR, no screenshot upload, and no Accessibility Service required. Use it when the text is already visible on screen but awkward to copy.
+- **Say hi on [LINUX DO](https://linux.do)** — the community where PrivyDrop was first introduced and where most of its design feedback comes from. Questions, bug reports and "why did you build it this way" threads are all welcome.
 
 ## 🤝 Contributing
 

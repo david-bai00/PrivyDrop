@@ -201,10 +201,7 @@ export function useRoomManager({ text }: UseRoomManagerProps) {
   );
 
   const autoJoinReceiverRoom = useCallback(
-    async (
-      source: Extract<ReceiverAutoJoinSource, "auto:url" | "auto:cached">,
-      roomId: string
-    ): Promise<JoinRoomResult> => {
+    async (source: "auto:url", roomId: string): Promise<JoinRoomResult> => {
       const normalizedRoomId = roomId.trim();
 
       if (!normalizedRoomId) {

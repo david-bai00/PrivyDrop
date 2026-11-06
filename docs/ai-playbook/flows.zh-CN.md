@@ -369,8 +369,8 @@ Stores (clipboardUiStore + fileTransferStore)
 - 所有提示默认 4–6 秒自动消失；通过 `useClipboardAppMessages.showSenderMessage(...)` / `showReceiverMessage(...)` 统一展示。
 - 连接反馈提示在“状态迁移 + ever/wasDisc 标记 + 可见性判断”三重约束下触发，避免提示风暴。
 
-10. **切到接收端自动加入（缓存 ID）**：当用户切换到接收端、未在房间、URL 无 `roomId`、输入框为空且本地存在缓存 ID 时，自动填充并直接调用加入房间以提升体验。入口：`frontend/components/ClipboardApp.tsx`（监听 `activeTab` 变化，读取 `frontend/lib/roomIdCache.ts`）。
-11. **发送端“使用缓存 ID”即刻加入**：发送端在 `SendTabPanel` 点击“使用缓存 ID”后会立即调用加入房间（而非仅填充输入框）。入口：`frontend/components/ClipboardApp/CachedIdActionButton.tsx`（`onUseCached` 回调）+ `frontend/components/ClipboardApp/SendTabPanel.tsx`。
+10. **切到接收端预填缓存房间 ID（只填不连）**：当用户切换到接收端、未在房间、URL 无 `roomId`、输入框为空且本地存在缓存 ID 时，自动预填输入框，但**不建立任何连接**。入口：`frontend/components/ClipboardApp.tsx`（监听 `activeTab` 变化，读取 `frontend/lib/roomIdCache.ts`）。关键约束：预填仅在切 tab 时评估一次，输入框当前值以 `useClipboardUiStore.getState()` 命令式读取，**不得**作为 effect 依赖，否则用户清空/编辑时会被重新回填并再次触发入房（旧版 bug 根因）。详见 [`flows/frontend.zh-CN.md`](./flows/frontend.zh-CN.md)。
+11. **缓存房间号的“填入”与“加入”分离**：两个 tab 行为一致——“填入我的房间”只写输入框，加入房间必须显式点击“加入房间”；保存缓存由独立的“保存为我的房间”按钮承担（输入长度 ≥ `MIN_CACHEABLE_ROOM_ID_LENGTH` 时才渲染；已等于缓存房间号时保留可见但禁用，避免空操作）。入口：`frontend/components/ClipboardApp/UseCachedIdButton.tsx`、`SaveCachedIdButton.tsx`、`ClearableRoomIdInput.tsx`。原 `CachedIdActionButton.tsx` 的单/双击与 3 秒保存模式已删除。
 12. **深色主题切换**：提供单按钮 Light/Dark 切换，入口：`frontend/components/web/ThemeToggle.tsx`；集成位置：`frontend/components/web/Header.tsx`（桌面与移动）；局部样式从硬编码颜色迁移为设计令牌（例如接收面板使用 `bg-card text-card-foreground`）。
 
 ### 前端组件架构特化

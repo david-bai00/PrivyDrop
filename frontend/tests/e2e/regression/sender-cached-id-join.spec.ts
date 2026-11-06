@@ -5,7 +5,7 @@ import { E2E_TIMEOUT } from "../helpers/e2eConfig";
 
 const CACHE_KEY = "pd_cached_room_id_v1";
 
-test("uses the cached sender room id to join immediately", async ({
+test("fills the cached sender room id without joining until the user clicks join", async ({
   browser,
 }, testInfo) => {
   const cachedRoomId = `cached-room-${Date.now()}`;
@@ -27,8 +27,8 @@ test("uses the cached sender room id to join immediately", async ({
     const roomIdInput = page.getByTestId("sender-room-id-input");
 
     await roomIdInput.fill(cachedRoomId);
-    await page.getByRole("button", { name: "Save ID" }).click();
-    await waitForText(senderPanel, "Saved to cache", E2E_TIMEOUT.short);
+    await page.getByRole("button", { name: "Save as my room" }).click();
+    await waitForText(senderPanel, "Saved as my room", E2E_TIMEOUT.short);
 
     await expect
       .poll(
@@ -39,8 +39,18 @@ test("uses the cached sender room id to join immediately", async ({
 
     await page.reload({ waitUntil: "networkidle" });
 
-    await page.getByRole("button", { name: "Use cached ID" }).click();
+    await page.getByRole("button", { name: "Fill in my room" }).click();
     await expect(roomIdInput).toHaveValue(cachedRoomId, { timeout: E2E_TIMEOUT.short });
+    await expect(
+      page.getByRole("button", { name: "Save as my room" })
+    ).toBeDisabled();
+
+    // Filling the input is local only: the sender is not in a room yet.
+    await expect(page.getByTestId("sender-join-room-button")).toBeEnabled();
+    await expect(page.getByTestId("sender-leave-room-button")).toBeDisabled();
+    await expect(page.getByTestId("send-panel")).not.toContainText("Connected");
+
+    await page.getByTestId("sender-join-room-button").click();
     await waitForText(senderStatus(page), "You're the only one here", E2E_TIMEOUT.long);
     await expect(page.getByTestId("sender-join-room-button")).toBeDisabled();
     await expect(page.getByTestId("sender-leave-room-button")).toBeEnabled();

@@ -6,7 +6,7 @@ const CACHE_KEY = "pd_cached_room_id_v1";
 const NOT_FOUND_TEXT =
   "The room you are trying to join does not exist. Only the sender can create a room.";
 
-test("overwrites the cached receiver room id from save mode without auto-joining", async ({
+test("overwrites the cached receiver room id with the save button without auto-joining", async ({
   browser,
 }, testInfo) => {
   const originalCachedRoomId = `e2e-original-cached-${Date.now()}`;
@@ -37,19 +37,17 @@ test("overwrites the cached receiver room id from save mode without auto-joining
     const receiverStatus = page.getByTestId("receiver-room-status");
     const receiverInput = page.getByTestId("receiver-room-id-input");
     const receiverJoinButton = page.getByTestId("receiver-join-room-button");
-    const useCachedButton = page.getByRole("button", { name: "Use cached ID" });
+    const useCachedButton = page.getByRole("button", { name: "Fill in my room" });
 
     await expect(receiverInput).toHaveValue(missingRoomId, { timeout: E2E_TIMEOUT.short });
     await expect(receiverPanel).toContainText(NOT_FOUND_TEXT, { timeout: E2E_TIMEOUT.long });
 
-    await useCachedButton.dblclick();
-    const saveOverrideButton = page.getByRole("button", { name: "Save ID" });
-    await expect(saveOverrideButton).toBeVisible({ timeout: E2E_TIMEOUT.short });
-
     await receiverInput.fill(replacementRoomId);
-    await saveOverrideButton.click();
+    const saveButton = page.getByRole("button", { name: "Save as my room" });
+    await expect(saveButton).toBeVisible({ timeout: E2E_TIMEOUT.short });
+    await saveButton.click();
 
-    await expect(receiverPanel).toContainText("Saved to cache", {
+    await expect(receiverPanel).toContainText("Saved as my room", {
       timeout: E2E_TIMEOUT.short,
     });
     await expect(useCachedButton).toBeVisible({ timeout: 5_000 });

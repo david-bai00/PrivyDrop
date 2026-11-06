@@ -48,6 +48,8 @@ export type Privacy = {
     informationCollectionParagraph: string;
     dataStorage: string;
     dataStorageParagraph: string;
+    analytics: string;
+    analyticsParagraph: string;
     thirdPartyServices: string;
     thirdPartyServicesParagraph: string;
     amendments: string;
@@ -195,6 +197,7 @@ export type Clipboard = {
     sync: string;
     syncLoading: string;
     readClipboard: string;
+    clearRoomId: string;
   };
   placeholders: {
     roomId: string;
@@ -255,6 +258,9 @@ export type Clipboard = {
     save: string;
     use: string;
     saveTip: string;
+    saveTipAlreadySaved: string;
+    saveTipOverwrite: string;
+    saveTipInRoom: string;
     useTip: string;
     saveSuccess: string;
   };

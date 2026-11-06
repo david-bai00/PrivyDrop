@@ -82,6 +82,9 @@ export const en: Messages = {
         dataStorage: "Data Storage and Security",
         dataStorageParagraph:
           "We do not store any of your data on our servers. All file transfers and clipboard sharing are handled using end-to-end encryption, ensuring that your information remains secure and accessible only to the intended recipient. Once the transfer is complete, the data is removed from our systems.",
+        analytics: "Anonymous usage statistics",
+        analyticsParagraph:
+          "To learn which features are actually used and whether transfers work, we count anonymous aggregate data: the page path you visited (path only, never the query string, so your room ID is never sent), your interface language, and the campaign tag on an incoming link (such as ?ref=linux.do). We use no cookies, do no cross-site tracking, do no device fingerprinting, and use no third-party analytics. These counts live on our own servers, expire after 30 days, and contain nothing that identifies you.",
         thirdPartyServices: "Third-Party Services",
         thirdPartyServicesParagraph:
           "PrivyDrop does not integrate with any third-party services or platforms. We do not share or sell your data to any third parties.",
@@ -342,6 +345,7 @@ export const en: Messages = {
         sync: "Sync",
         syncLoading: "Synced",
         readClipboard: "Paste RoomID",
+        clearRoomId: "Clear Room ID",
       },
       placeholders: {
         roomId: "Enter RoomID",
@@ -404,11 +408,14 @@ export const en: Messages = {
         error: "Could not set save location.",
       },
       cachedId: {
-        save: "Save ID",
-        use: "Use cached ID",
-        saveTip: "Save current ID for quick reuse later",
-        useTip: "Quick use saved ID; double-click to switch save mode",
-        saveSuccess: "Saved to cache",
+        save: "Save as my room",
+        use: "Fill in my room",
+        saveTip: "Save the current room ID and fill it back in with one click later",
+        saveTipAlreadySaved: "This room ID is already your saved room",
+        saveTipOverwrite: "This replaces the room ID you already saved",
+        saveTipInRoom: "Leave the room before saving a room ID",
+        useTip: "Fill the saved room ID into the input (joining stays a separate step)",
+        saveSuccess: "Saved as my room",
       },
       generateId: {
         simple: "Simple ID",

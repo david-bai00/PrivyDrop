@@ -84,6 +84,9 @@ export const zh: Messages = {
         dataStorage: "数据存储和安全",
         dataStorageParagraph:
           "我们不在服务器上存储任何数据。所有文件传输和剪贴板共享都使用端到端加密，确保信息安全且仅供预期接收者访问。传输完成后，数据将从系统中删除。",
+        analytics: "匿名使用统计",
+        analyticsParagraph:
+          "为了了解哪些功能真正被使用、传输功能是否正常，我们会统计匿名的聚合数据：您访问的页面路径（仅路径，不含链接参数，因此您的房间ID不会被发送）、界面语言，以及分享链接上携带的来源标记（如 ?ref=linux.do）。我们不使用 Cookie、不做跨站追踪、不做设备指纹，也不接入任何第三方统计服务。统计数据仅保存在我们自己的服务器上，30天后自动过期，其中不包含任何可以识别您身份的信息。",
         thirdPartyServices: "第三方服务",
         thirdPartyServicesParagraph:
           "PrivyDrop不与任何第三方服务或平台集成。我们不会与任何第三方共享或出售您的数据。",
@@ -339,6 +342,7 @@ export const zh: Messages = {
         sync: "同步",
         syncLoading: "已同步",
         readClipboard: "粘贴房间ID",
+        clearRoomId: "清空房间ID",
       },
       placeholders: {
         roomId: "输入房间ID",
@@ -399,11 +403,14 @@ export const zh: Messages = {
         error: "无法设置保存位置。",
       },
       cachedId: {
-        save: "保存ID",
-        use: "使用缓存ID",
-        saveTip: "保存ID后，下次可以快捷使用该ID",
-        useTip: "快捷使用已保存ID；双击可切换保存模式",
-        saveSuccess: "缓存成功",
+        save: "保存为我的房间",
+        use: "填入我的房间",
+        saveTip: "把当前房间ID保存下来，下次一键填入",
+        saveTipAlreadySaved: "当前房间号已经是我的房间",
+        saveTipOverwrite: "会覆盖你已保存的房间号",
+        saveTipInRoom: "已加入房间，离开房间后才能保存",
+        useTip: "把已保存的房间ID填入输入框（不会自动加入房间）",
+        saveSuccess: "已保存为我的房间",
       },
       generateId: {
         simple: "简单ID",

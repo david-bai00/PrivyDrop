@@ -1,6 +1,6 @@
 ---
-title: "Un clic et ça repart, solide comme un roc : Auto‑join via ID en cache et reconnexion résiliente dans PrivyDrop"
-description: "Nouveauté côté réception : auto‑entrée grâce à l’ID en cache et reconnexion de bout en bout pour un flux plus fluide — entrée automatique, connexion directe en un clic, double‑clic pour mettre à jour le cache, et reprise fiable sur réseau instable."
+title: "Un clic et ça repart, solide comme un roc : réutilisation des salles enregistrées et reconnexion résiliente dans PrivyDrop"
+description: "Enregistrez un long ID de salle et réutilisez-le plus tard, plus une reconnexion de bout en bout pour un flux plus fluide et une reprise fiable sur réseau instable."
 date: "2025-11-25"
 author: "david bai"
 cover: "/blog-assets/cached-id-reconnect.webp"
@@ -9,6 +9,9 @@ status: "published"
 ---
 
 ![](/blog-assets/cached-id-reconnect.webp)
+
+> ⚠️ **Avis de version**
+> Cet article décrit le comportement d’une version antérieure. Dans la version actuelle, remplir une salle enregistrée et rejoindre cette salle sont deux étapes distinctes : l’ID en cache n’est que pré-rempli dans le champ et vous devez cliquer vous-même sur « Rejoindre la salle » ; le geste de double-clic sur « Utiliser l’ID en cache » a été supprimé et remplacé par un bouton dédié « Enregistrer comme ma salle ». La section sur la reconnexion reste inchangée et toujours valable.
 
 ## Introduction : pourquoi « auto‑join » et « reconnexion »
 
@@ -126,6 +129,8 @@ sequenceDiagram
 ---
 
 ## Prise en main (hands‑on)
+
+> Les étapes ci-dessous décrivent la version consignée dans cet article ; dans la version actuelle, suivez les noms de boutons et les étapes affichés dans l’application.
 
 Essai rapide sur desktop :
 

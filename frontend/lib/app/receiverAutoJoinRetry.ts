@@ -10,7 +10,7 @@ export type JoinRoomResult =
   | { ok: true }
   | { ok: false; reason: JoinRoomFailureReason };
 
-export type ReceiverAutoJoinSource = "manual" | "auto:url" | "auto:cached";
+export type ReceiverAutoJoinSource = "manual" | "auto:url";
 
 export const RECEIVER_AUTO_JOIN_RETRY_DELAYS_MS = [200, 400, 800] as const;
 
@@ -38,7 +38,7 @@ interface RunReceiverAutoJoinWithRetryOptions {
   wait?: (ms: number) => Promise<void>;
 }
 
-const AUTO_JOIN_SOURCES: ReceiverAutoJoinSource[] = ["auto:url", "auto:cached"];
+const AUTO_JOIN_SOURCES: ReceiverAutoJoinSource[] = ["auto:url"];
 
 export function classifyJoinRoomFailureReason(message: string): JoinRoomFailureReason {
   if (message.startsWith("Rate limit exceeded")) {
