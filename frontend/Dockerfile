@@ -5,9 +5,9 @@ ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
 
-ENV http_proxy ${HTTP_PROXY} \
-    https_proxy ${HTTPS_PROXY} \
-    no_proxy ${NO_PROXY}
+ENV http_proxy=${HTTP_PROXY} \
+    https_proxy=${HTTPS_PROXY} \
+    no_proxy=${NO_PROXY}
 
 WORKDIR /app
 # Copy package files
@@ -15,7 +15,7 @@ COPY package*.json ./
 COPY pnpm-lock.yaml ./
 
 # Install pnpm
-RUN npm install -g pnpm --no-audit --no-fund
+RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile

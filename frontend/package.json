@@ -63,5 +63,13 @@
     "tailwindcss": "^3.4.7",
     "typescript": "^5.5.4",
     "vitest": "^4.1.2"
+  },
+  "packageManager": "pnpm@10.30.3",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "@swc/core",
+      "sharp"
+    ]
   }
 }
