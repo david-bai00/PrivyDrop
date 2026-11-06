@@ -22,6 +22,7 @@ import {
 } from "../helpers/mockSaveDirectory";
 import {
   waitForReconnectRecovered,
+  waitForReconnectInterruption,
   waitForResumeRequestAfter,
 } from "../helpers/reconnect";
 
@@ -72,7 +73,17 @@ test("resumes a file transfer after peer reconnection", async ({
       )
       .toBeGreaterThan(0);
 
+    // A local close can leave the room labels briefly unchanged; force signaling
+    // offline too and observe interruption before treating a later state as recovery.
+    await receiverContext.setOffline(true);
     await closeTrackedPeerConnections(receiverPage);
+    await waitForReconnectInterruption(
+      senderRoomStatus,
+      receiverRoomStatus,
+      receiverPanel,
+      E2E_TIMEOUT.long
+    );
+    await receiverContext.setOffline(false);
 
     const partialSizeAfterInterrupt =
       (await getMockFileSize(receiverPage, fixture.fileName)) ?? 0;
@@ -86,6 +97,18 @@ test("resumes a file transfer after peer reconnection", async ({
       receiverRoomStatus,
       receiverPanel
     );
+
+    // Labels alone can still describe the closed peer; require a live connection.
+    await expect
+      .poll(
+        async () => receiverPage.evaluate(() =>
+          (window as any).__rtcPeerConnections.some(
+            (peer: RTCPeerConnection) => peer.connectionState === "connected"
+          )
+        ),
+        { timeout: E2E_TIMEOUT.long }
+      )
+      .toBe(true);
 
     const requestCountBeforeResume = (await getCapturedFileRequests(receiverPage)).length;
     await requestFileFromReceiver(receiverPage, fixture.fileName);
